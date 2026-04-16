@@ -1,0 +1,86 @@
+{
+  "commerce": {
+    "wishlist": {
+      "title": "Wishlist",
+      "subtitle": "Saved products for quick return.",
+      "authRequired": "Login is required to use wishlist.",
+      "goToLogin": "Go to login",
+      "states": {
+        "loading": "Loading wishlist...",
+        "empty": "Wishlist is empty."
+      },
+      "actions": {
+        "add": "Add to wishlist",
+        "remove": "Remove",
+        "viewProduct": "View product"
+      }
+    },
+    "cart": {
+      "title": "Cart",
+      "subtitle": "Review items before checkout.",
+      "authRequired": "Login is required to use cart.",
+      "goToLogin": "Go to login",
+      "states": {
+        "loading": "Loading cart...",
+        "empty": "Cart is empty."
+      },
+      "actions": {
+        "add": "Add",
+        "remove": "Remove",
+        "checkout": "Proceed to checkout"
+      },
+      "summary": {
+        "title": "Summary",
+        "items": "Items: {count}"
+      },
+      "labels": {
+        "eta": " · ETA {days}d"
+      },
+      "warnings": {
+        "availabilityOrPriceChanged": "Availability or price changed for one or more items. Review before checkout."
+      }
+    },
+    "checkout": {
+      "title": "Checkout",
+      "subtitle": "Contact, delivery and payment placeholder flow.",
+      "authRequired": "Login is required to checkout.",
+      "goToLogin": "Go to login",
+      "emptyCart": "Your cart is empty.",
+      "goToCatalog": "Go to catalog",
+      "sections": {
+        "contact": "Contact information",
+        "delivery": "Delivery method",
+        "payment": "Payment method",
+        "orderReview": "Order review"
+      },
+      "fields": {
+        "fullName": "Full name",
+        "phone": "Phone",
+        "email": "Email",
+        "deliveryMethod": "Delivery method",
+        "deliveryAddress": "Delivery address",
+        "paymentMethod": "Payment method",
+        "comment": "Comment"
+      },
+      "delivery": {
+        "pickup": "Pickup",
+        "courier": "Courier",
+        "novaPoshta": "Nova Poshta"
+      },
+      "payment": {
+        "cardPlaceholder": "Card payment (placeholder)",
+        "cashOnDelivery": "Cash on delivery"
+      },
+      "actions": {
+        "submit": "Place order",
+        "submitting": "Placing order..."
+      },
+      "review": {
+        "deliveryFee": "Delivery fee: {fee} {currency}",
+        "total": "Total: {total} {currency}"
+      },
+      "success": "Order created: {orderNumber}",
+      "submitError": "Failed to place order. Check required fields."
+    }
+  }
+}

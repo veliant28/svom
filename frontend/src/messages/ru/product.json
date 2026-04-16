@@ -1,0 +1,26 @@
+{
+  "product": {
+    "card": {
+      "viewDetails": "Подробнее",
+      "fitment": {
+        "fits": "Подходит к вашему авто",
+        "noData": "Совместимость не указана",
+        "notFits": "Не подходит к выбранному авто"
+      },
+      "labels": {
+        "eta": " · ETA {days} дн."
+      }
+    },
+    "detail": {
+      "notFound": "Товар не найден.",
+      "backToCatalog": "Назад к каталогу",
+      "skuLabel": "SKU",
+      "labels": {
+        "eta": " · ETA {days} дн."
+      },
+      "attributesTitle": "Характеристики",
+      "fitmentTitle": "Совместимость",
+      "fitmentEmpty": "Совместимость для этого товара пока не указана."
+    }
+  }
+}

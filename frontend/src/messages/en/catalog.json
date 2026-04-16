@@ -1,0 +1,55 @@
+{
+  "catalog": {
+    "title": "Catalog",
+    "subtitle": "First storefront catalog layer",
+    "showcaseSubtitle": "Catalog slice powered by DRF endpoint.",
+    "resultCount": "Found: {count}",
+    "empty": "No products found for selected filters.",
+    "taxonomy": {
+      "brands": "Brands",
+      "categories": "Categories"
+    },
+    "filters": {
+      "query": {
+        "label": "Query",
+        "placeholder": "Search by name, SKU, article"
+      },
+      "brand": {
+        "label": "Brand",
+        "all": "All brands"
+      },
+      "category": {
+        "label": "Category",
+        "all": "All categories"
+      },
+      "minPrice": "Min price",
+      "maxPrice": "Max price",
+      "flags": {
+        "featured": "Featured only",
+        "new": "New only",
+        "bestseller": "Bestseller only"
+      },
+      "actions": {
+        "apply": "Apply query",
+        "reset": "Reset"
+      }
+    },
+    "fitment": {
+      "vehicleSelectorLabel": "Fit products to my vehicle",
+      "vehiclePlaceholder": "No selected vehicle",
+      "fitmentModeLabel": "Fitment mode",
+      "clearFitment": "Clear fitment",
+      "garageLoading": "Loading garage...",
+      "activeVehicle": "Selected: {vehicle}",
+      "noVehicleSelected": "Select a garage vehicle to show compatible products.",
+      "resultCountLoading": "Loading filtered results...",
+      "resultCount": "Filtered results: {count}",
+      "fitmentModes": {
+        "all": "All products",
+        "only": "Compatible only",
+        "with_data": "With fitment data only",
+        "unknown": "Without fitment data only"
+      }
+    }
+  }
+}

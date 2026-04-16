@@ -1,0 +1,28 @@
+{
+  "backoffice": {
+    "utr": {
+      "label": "UTR",
+      "title": "UTR постачальник",
+      "actions": {
+        "importBrands": "Імпортувати бренди"
+      },
+      "messages": {
+        "brandsImported": "Імпорт брендів UTR запущено.",
+        "brandsImportedSummary": "Імпорт брендів UTR завершено: створено {created}, оновлено {updated}, пропущено {skipped}, дублів у вхідних даних {duplicate_in_payload}, помилок {errors}.",
+        "brandsImportFailed": "Не вдалося запустити імпорт брендів UTR."
+      },
+      "status": {
+        "lastBrandsImport": "Останній імпорт брендів",
+        "brandsCount": "Імпортовано брендів",
+        "lastBrandsError": "Остання помилка імпорту брендів",
+        "totalReceived": "Отримано від UTR",
+        "processed": "Опрацьовано",
+        "created": "Створено",
+        "updated": "Оновлено",
+        "skipped": "Пропущено",
+        "duplicateInPayload": "Дублі у вхідних даних",
+        "errors": "Помилок"
+      }
+    }
+  }
+}

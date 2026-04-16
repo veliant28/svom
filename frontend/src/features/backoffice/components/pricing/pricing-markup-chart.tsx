@@ -1,0 +1,95 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+
+type MarkupBucket = {
+  label: string;
+  count: number;
+};
+
+type PricingMarkupChartProps = {
+  items: MarkupBucket[];
+  emptyLabel: string;
+};
+
+export function PricingMarkupChart({ items, emptyLabel }: PricingMarkupChartProps) {
+  const chartRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    let chart: { dispose: () => void; resize: () => void; setOption: (option: object) => void } | null = null;
+    let disposed = false;
+
+    async function mount() {
+      if (!chartRef.current) {
+        return;
+      }
+      const echarts = await import("echarts");
+      if (disposed || !chartRef.current) {
+        return;
+      }
+
+      chart = echarts.init(chartRef.current);
+      chart.setOption({
+        grid: { left: 28, right: 16, top: 20, bottom: 26, containLabel: true },
+        tooltip: {
+          trigger: "axis",
+          axisPointer: { type: "shadow" },
+        },
+        xAxis: {
+          type: "category",
+          data: items.map((item) => item.label),
+          axisLabel: {
+            color: "#64748b",
+            fontSize: 11,
+          },
+          axisLine: { lineStyle: { color: "#cbd5e1" } },
+        },
+        yAxis: {
+          type: "value",
+          axisLabel: {
+            color: "#64748b",
+            fontSize: 11,
+          },
+          splitLine: { lineStyle: { color: "#e2e8f0" } },
+        },
+        series: [
+          {
+            type: "bar",
+            data: items.map((item) => item.count),
+            barMaxWidth: 32,
+            itemStyle: {
+              borderRadius: [6, 6, 0, 0],
+              color: "#2563eb",
+            },
+          },
+        ],
+      });
+    }
+
+    void mount();
+
+    const onResize = () => {
+      chart?.resize();
+    };
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      disposed = true;
+      window.removeEventListener("resize", onResize);
+      chart?.dispose();
+    };
+  }, [items]);
+
+  if (!items.length) {
+    return (
+      <div
+        className="flex h-[190px] items-center justify-center rounded-xl border text-sm"
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)", color: "var(--muted)" }}
+      >
+        {emptyLabel}
+      </div>
+    );
+  }
+
+  return <div ref={chartRef} className="h-[210px] w-full" />;
+}

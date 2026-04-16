@@ -1,0 +1,62 @@
+{
+  "backoffice": {
+    "dashboard": {
+      "title": "Operations Dashboard",
+      "subtitle": "Import pipeline and pricing overview.",
+      "actions": {
+        "refresh": "Refresh"
+      },
+      "cards": {
+        "sources": "Active Sources",
+        "runs": "Import Runs",
+        "errors": "Errors",
+        "errors24h": "{count} in 24h",
+        "repriced": "Repriced Products",
+        "rawOffers": "Raw Offers",
+        "invalidRawOffers": "{count} invalid",
+        "supplierOffers": "Supplier Offers",
+        "productPrices": "Product Prices",
+        "unmatched": "Unmatched Offers",
+        "conflicts": "Conflicts",
+        "autoMatched": "Auto Matched",
+        "manuallyResolved": "Manually Resolved"
+      },
+      "charts": {
+        "runStatuses": "Run Statuses",
+        "matchRateBySupplier": "Match Rate by Supplier"
+      },
+      "latestRuns": {
+        "title": "Latest Imports",
+        "subtitle": "Recent pipeline executions and outcomes.",
+        "columns": {
+          "source": "Source",
+          "status": "Status",
+          "rows": "Rows",
+          "errors": "Errors",
+          "repriced": "Repriced"
+        }
+      },
+      "states": {
+        "empty": "No dashboard data yet."
+      },
+      "quality": {
+        "title": "Latest Import Quality",
+        "subtitle": "Quality metrics for latest run ({source}).",
+        "processed": "Processed",
+        "errors": "Errors",
+        "errorRate": "Error rate",
+        "skipped": "Skipped"
+      },
+      "attention": {
+        "title": "Requires Operator Attention",
+        "subtitle": "Imports with degraded quality or threshold alerts.",
+        "columns": {
+          "source": "Source",
+          "status": "Status",
+          "matchRate": "Match rate",
+          "errorRate": "Error rate"
+        }
+      }
+    }
+  }
+}

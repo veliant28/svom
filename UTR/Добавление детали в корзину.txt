@@ -1,0 +1,71 @@
+Для додавання деталі в кошик потрібно відправляти наступний запит:
+
+POST https://order24-api.utr.ua/carts/current/items
+додавши при цьому в headers
+
+Authorization: Bearer eyJ0eXAiOiJKV1Q...<br>
+Де в Authorization після ключового слова Bearer потрібно передати отриманий при проходженні аутентифікації token
+
+
+Body:
+{
+   "detail":"58023",
+   "quantity":"1"
+}
+де: detail – id деталі,
+quantity – кількість
+
+Ці дані можна отримати із запиту Пошук деталей по артикулу або Пошук деталі по артикулу и бренду
+В результаті ви отримаєте одну із наступних відповідей:
+
+
+
+
+Содержание
+1	Помилка аутентифікації
+2	Значення не допустимо
+3	Нема в наявності
+4	Товар додано до кошика
+Помилка аутентифікації
+Можливі відповіді API при помилці аутентифиікації приведено в розділі Ошибка аутентификации
+
+
+
+Значення не допустимо
+Status Code: : 400 Bad Request
+Body:
+{
+    "code": 400,
+    "message": "Значение недопустимо.\r\n"
+}
+Нема в наявності
+Status Code: 400 Bad Request
+Body:
+{
+    "code": 400,
+    "message": " Позиции {id} - {name} нет в наличии в количестве {n} шт."
+} 
+
+
+
+Товар додано до кошика
+Status Code: 201 Created
+Body:
+{
+        "id": 362836,
+        "detail": {
+            "detailCard": {
+                "description": "",
+                "images": [
+                    {
+                        "imagePath": "/images/autodb/brand/mahle original/OC90.jpg",
+                        "fullImagePath": "http://order24-api.utr.ua/images/autodb/brand/mahle original/OC90.jpg",
+                        "fileSystemType": "autodb"
+                    },
+                    ...
+                ],
+                "title": "Фильтр масляный Mahle Lanos/Aveo (в карт. коробке)"
+            },
+            ...
+        "quantityInCart": 1
+}

@@ -1,0 +1,42 @@
+{
+  "backoffice": {
+    "autocatalog": {
+      "title": "Автокаталог",
+      "subtitle": "Каталог авто UTR внутри backoffice.",
+      "search": "Поиск по марке, модели, модификации или двигателю",
+      "filters": {
+        "make": "Марка",
+        "model": "Модель",
+        "year": "Год",
+        "allYears": "Все годы",
+        "allMakes": "Все марки",
+        "allModels": "Все модели",
+        "allModifications": "Все модификации",
+        "allCapacities": "Все объемы",
+        "allEngines": "Все двигатели",
+        "engine": "Двигатель",
+        "capacity": "Объем"
+      },
+      "empty": "Авто не найдены.",
+      "pagination": {
+        "total": "Всего строк: {count}",
+        "prev": "Назад",
+        "next": "Вперед",
+        "page": "Страница {current} из {total}",
+        "perPage": "На странице"
+      },
+      "table": {
+        "columns": {
+          "year": "Год",
+          "make": "Марка",
+          "model": "Модель",
+          "modification": "Модификация",
+          "capacity": "Объем",
+          "engine": "Двигатель",
+          "hp": "Мощность HP",
+          "kw": "Мощность KW"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "common": {
+    "header": {
+      "brand": "SVOM",
+      "catalog": "Catalog",
+      "garage": "My Garage",
+      "search": "Search",
+      "wishlist": "Wishlist",
+      "cart": "Cart ({count})",
+      "login": "Login",
+      "logout": "Logout",
+      "backoffice": "Backoffice"
+    },
+    "home": {
+      "brand": "SVOM",
+      "title": "SVOM Storefront",
+      "subtitle": "Storefront skeleton ready for further development",
+      "featured": "Featured products",
+      "heroPlaceholder": "Hero slider placeholder. Add slides in Django admin.",
+      "performanceTagline": "SVOM Performance"
+    },
+    "theme": {
+      "switch": "Toggle theme mode",
+      "mode": {
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System"
+      }
+    }
+  }
+}

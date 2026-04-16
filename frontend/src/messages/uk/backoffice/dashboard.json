@@ -1,0 +1,62 @@
+{
+  "backoffice": {
+    "dashboard": {
+      "title": "Операційний дашборд",
+      "subtitle": "Огляд імпорту та ціноутворення.",
+      "actions": {
+        "refresh": "Оновити"
+      },
+      "cards": {
+        "sources": "Активні джерела",
+        "runs": "Запуски імпорту",
+        "errors": "Помилки",
+        "errors24h": "{count} за 24 год",
+        "repriced": "Переоцінені товари",
+        "rawOffers": "Сирі офери",
+        "invalidRawOffers": "{count} невалідних",
+        "supplierOffers": "Офери постачальників",
+        "productPrices": "Ціни товарів",
+        "unmatched": "Незіставлені офери",
+        "conflicts": "Конфлікти",
+        "autoMatched": "Автоматично зіставлено",
+        "manuallyResolved": "Зіставлено вручну"
+      },
+      "charts": {
+        "runStatuses": "Статуси запусків",
+        "matchRateBySupplier": "Частка зіставлення за постачальниками"
+      },
+      "latestRuns": {
+        "title": "Останні запуски",
+        "subtitle": "Нещодавні виконання пайплайна.",
+        "columns": {
+          "source": "Джерело",
+          "status": "Статус",
+          "rows": "Рядки",
+          "errors": "Помилки",
+          "repriced": "Переоцінено"
+        }
+      },
+      "states": {
+        "empty": "Поки немає даних дашборда."
+      },
+      "quality": {
+        "title": "Якість останнього імпорту",
+        "subtitle": "Метрики останнього запуску ({source}).",
+        "processed": "Оброблено",
+        "errors": "Помилки",
+        "errorRate": "Частка помилок",
+        "skipped": "Пропущено"
+      },
+      "attention": {
+        "title": "Потребує уваги оператора",
+        "subtitle": "Запуски з деградацією якості або пороговими сповіщеннями.",
+        "columns": {
+          "source": "Джерело",
+          "status": "Статус",
+          "matchRate": "Частка зіставлення",
+          "errorRate": "Частка помилок"
+        }
+      }
+    }
+  }
+}

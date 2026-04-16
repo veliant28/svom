@@ -1,0 +1,360 @@
+{
+  "backoffice": {
+    "suppliers": {
+      "title": "Поставщики",
+      "subtitle": "Единое рабочее место оператора для UTR и GPL.",
+      "actions": {
+        "settings": "Настройки",
+        "import": "Импорт",
+        "importRuns": "Запуски",
+        "importErrors": "Ошибки",
+        "importQuality": "Качество",
+        "products": "Товары",
+        "brands": "Бренды",
+        "refreshAll": "Обновить"
+      },
+      "summary": {
+        "subtitle": "Краткая сводка по последним импортам."
+      },
+      "importPage": {
+        "title": "Импорт прайсов",
+        "subtitle": "Операторский экран lifecycle прайса: запрос, скачивание и импорт в промежуточную таблицу товаров."
+      },
+      "priceLifecycle": {
+        "operations": {
+          "title": "Управление прайсом",
+          "subtitle": "Последовательность действий: Запрос -> Скачать -> Импорт в таблицу товаров."
+        },
+        "locale": {
+          "utr": "UTR",
+          "gpl": "GPL"
+        },
+        "actions": {
+          "request": "Запрос",
+          "download": "Скачать",
+          "import": "Импорт",
+          "delete": "Удалить"
+        },
+        "messages": {
+          "requested": "Запрос прайса отправлен.",
+          "requestFailed": "Не удалось отправить запрос прайса.",
+          "downloaded": "Прайс успешно скачан.",
+          "downloadFailed": "Не удалось скачать прайс.",
+          "imported": "Товары импортированы в промежуточную таблицу.",
+          "importFailed": "Не удалось импортировать товары в промежуточную таблицу.",
+          "deleted": "Прайс удален.",
+          "deletedLocalOnly": "Прайс удален локально. В UTR удалить не удалось: {reason}",
+          "deleteFailed": "Не удалось удалить прайс."
+        },
+        "params": {
+          "format": "Формат",
+          "supplier": "Поставщик",
+          "inStockOnly": "Только в наличии",
+          "showScancode": "Показывать штрихкод",
+          "utrArticle": "Показывать артикул UTR",
+          "dynamicHint": "Параметры получены от UTR API: бренды {brands}, категории {categories}, модели {models}.",
+          "source": {
+            "utr_api": "Источник параметров: UTR API (export-params)",
+            "gpl_api": "Источник параметров: GPL API (/api/prices)",
+            "fallback": "Источник параметров: fallback из реального файла прайса"
+          },
+          "filterMode": "Фильтр UTR",
+          "filterNone": "Без фильтра",
+          "filterBrands": "По брендам",
+          "filterCategories": "По категориям",
+          "filterModels": "По моделям",
+          "filterOneOfRule": "За один запрос UTR допускает только один тип фильтра: бренды, категории или модели.",
+          "selectedCount": "Выбрано: {count}",
+          "manualPlaceholderModels": "Доп. модели через запятую: ABARTH, ACURA, ...",
+          "truncatedHint": "Показан ограниченный набор опций. Для полного охвата используйте поле моделей."
+        },
+        "notes": {
+          "utrGeneration": "UTR формирует прайс около 3 минут. Пока генерация не завершена, скачивание недоступно.",
+          "gplReady": "Для GPL генерация отдельного файла обычно не требуется: после запроса прайс доступен к скачиванию."
+        },
+        "state": {
+          "title": "Состояние прайс-флоу",
+          "subtitle": "Текущее состояние запроса, генерации, скачивания и импорта.",
+          "lastRequestStatus": "Статус последнего запроса",
+          "generation": "Генерация прайса",
+          "generatingWait": "Ожидание генерации, осталось ~{seconds} сек",
+          "generationDone": "Генерация завершена",
+          "downloadAvailable": "Прайс доступен для скачивания",
+          "yes": "Да",
+          "no": "Нет",
+          "lastDownloaded": "Последнее успешное скачивание",
+          "lastImported": "Последний импорт в товары",
+          "cooldown": "Cooldown UTR",
+          "cooldownUtr": "Cooldown UTR",
+          "cooldownNotApplicableLabel": "Ограничения запроса",
+          "cooldownNotApplicableValue": "Не применяется для этого поставщика",
+          "cooldownReady": "Можно отправлять запрос",
+          "cooldownWait": "Подождите {seconds} сек",
+          "lastError": "Последняя ошибка"
+        },
+        "summary": {
+          "noRequests": "Запросы прайса еще не выполнялись.",
+          "cooldownActive": "Cooldown активен: повторный запрос временно заблокирован.",
+          "generating": "Прайс формируется. Дождитесь завершения и переходите к скачиванию.",
+          "readyToDownload": "Прайс готов. Следующий шаг: скачивание.",
+          "readyToImport": "Прайс скачан. Следующий шаг: импорт в таблицу товаров.",
+          "imported": "Прайс импортирован в промежуточную таблицу товаров.",
+          "failed": "Последняя операция завершилась ошибкой. Проверьте текст ошибки и повторите шаг.",
+          "idle": "Состояние ожидает следующего действия."
+        },
+        "table": {
+          "title": "Таблица прайсов поставщика",
+          "subtitle": "Реестр запросов/файлов прайса с параметрами, статусами, складами, уровнями цен и действиями.",
+          "search": "Поиск по файлу, ID, формату или статусу",
+          "empty": "Записи прайсов отсутствуют.",
+          "generating": "Генерация, ~{seconds} сек",
+          "paramFormat": "Формат: {format}",
+          "paramInStock": "Только позиции в наличии",
+          "paramAll": "Все позиции",
+          "paramScancodeOn": "Штрихкод включен",
+          "paramScancodeOff": "Штрихкод выключен",
+          "paramBrands": "Бренды: {count}",
+          "paramCategories": "Категории: {count}",
+          "paramModels": "Модели: {count}",
+          "rowsValue": "Строк: {count}",
+          "columns": {
+            "file": "Файл / Идентификатор",
+            "requested": "Запрошен",
+            "status": "Статус",
+            "params": "Параметры",
+            "prices": "Цены",
+            "warehouses": "Склады",
+            "rows": "Объем",
+            "actions": "Действия"
+          }
+        }
+      },
+      "productsPage": {
+        "title": "Товары импорта",
+        "subtitle": "Промежуточная таблица импортированных товаров до основного маппинга и дальнейшей обработки.",
+        "search": "Поиск по SKU, артикулу, бренду и названию",
+        "empty": "Импортированные товары не найдены.",
+        "actions": {
+          "publishMapped": "Опубликовать сопоставленные"
+        },
+        "messages": {
+          "publishSuccess": "Публикация завершена. Сопоставленных: {matched}, создано: {created}, обновлено: {updated}, пропущено: {skipped}, ошибок: {errors}.",
+          "publishFailed": "Не удалось опубликовать сопоставленные товары."
+        },
+        "pagination": {
+          "total": "Всего строк: {count}",
+          "prev": "Назад",
+          "next": "Вперед",
+          "page": "Страница {current} из {total}",
+          "perPage": "На странице"
+        },
+        "tooltip": {
+          "price": "Цена",
+          "updatedAt": "Обновлено"
+        },
+        "table": {
+          "columns": {
+            "sku": "SKU / Артикул",
+            "brand": "Бренд",
+            "product": "Товар",
+            "prices": "Цены",
+            "warehouses": "Склады",
+            "stock": "Остаток",
+            "state": "Статус"
+          }
+        },
+        "review": {
+          "filters": {
+            "brand": "Фильтр по бренду",
+            "allSuppliers": "Все поставщики",
+            "allReasons": "Все причины",
+            "allCategories": "Все категории"
+          },
+          "statuses": {
+            "needs_review": "Требует проверки",
+            "auto_mapped": "Авто-маппинг",
+            "manual_mapped": "Подтверждено вручную",
+            "unmapped": "Не сопоставлено"
+          },
+          "sorting": {
+            "confidenceDesc": "Уверенность: сначала высокие",
+            "confidenceAsc": "Уверенность: сначала низкие",
+            "reasonAsc": "Причина: А-Я",
+            "reasonDesc": "Причина: Я-А",
+            "categoryAsc": "Категория: А-Я",
+            "categoryDesc": "Категория: Я-А",
+            "createdDesc": "Сначала новые",
+            "createdAsc": "Сначала старые"
+          },
+          "table": {
+            "columns": {
+              "category": "Категория",
+              "reason": "Причина",
+              "confidence": "Уверенность"
+            }
+          },
+          "analytics": {
+            "title": "Аналитика review",
+            "subtitle": "Строк в текущем срезе: {count}",
+            "topReasons": "Топ причин",
+            "topBrands": "Топ брендов",
+            "topCategories": "Топ категорий",
+            "topSignatures": "Топ сигнатур названий",
+            "topOpportunities": "Топ групп для безопасного auto-подтверждения"
+          },
+          "bulk": {
+            "title": "Массовые действия review",
+            "selected": "Выбрано: {count}",
+            "selectAll": "Выбрать все строки на странице",
+            "selectOne": "Выбрать строку",
+            "confirmCurrent": "Подтвердить текущую категорию",
+            "markNeedsReview": "Снять подтверждение",
+            "reassignAuto": "Пересчитать auto",
+            "categorySearch": "Поиск категории для массового применения",
+            "chooseCategory": "Выберите категорию",
+            "applyCategory": "Применить категорию",
+            "safePromote": "Безопасно перевести в auto",
+            "actionLabels": {
+              "confirm_current": "Подтвердить текущую категорию",
+              "set_category": "Применить выбранную категорию",
+              "mark_needs_review": "Снять подтверждение",
+              "reassign_auto": "Пересчитать auto"
+            }
+          },
+          "messages": {
+            "bulkSuccess": "Массовое действие выполнено: обновлено {updated} строк ({action}).",
+            "bulkFailed": "Не удалось выполнить массовое действие.",
+            "categoryRequired": "Выберите категорию для массового применения.",
+            "promoted": "Безопасное авто-подтверждение выполнено: {count} строк переведено в auto_mapped.",
+            "promotionFailed": "Не удалось выполнить безопасное авто-подтверждение."
+          }
+        },
+        "categoryMapping": {
+          "openBadgeAria": "Открыть сопоставление категории",
+          "title": "Сопоставление категории товара",
+          "subtitle": "Выберите нашу категорию для позиции поставщика.",
+          "searchPlaceholder": "Поиск по нашим категориям",
+          "fields": {
+            "sku": "SKU",
+            "article": "Артикул",
+            "brand": "Бренд",
+            "product": "Название товара",
+            "supplier": "Поставщик",
+            "status": "Статус",
+            "currentCategory": "Текущая категория",
+            "matchedProductCategory": "Категория связанного товара",
+            "selectedCategory": "Выбранная категория"
+          },
+          "actions": {
+            "save": "Сохранить",
+            "clear": "Снять сопоставление",
+            "cancel": "Отмена"
+          },
+          "states": {
+            "notMapped": "Не сопоставлено",
+            "noCategories": "Категории не найдены.",
+            "noSelection": "Категория не выбрана.",
+            "nonLeafCategory": "Не листовая категория"
+          },
+          "messages": {
+            "loadFailed": "Не удалось загрузить сопоставление категории.",
+            "searchFailed": "Не удалось выполнить поиск категорий.",
+            "saveFailed": "Не удалось сохранить сопоставление категории.",
+            "saved": "Сопоставление категории сохранено.",
+            "clearFailed": "Не удалось снять сопоставление категории.",
+            "cleared": "Сопоставление категории снято.",
+            "clearConfirm": "Снять сопоставление категории для этой позиции?",
+            "notFound": "Позиция не найдена."
+          }
+        }
+      },
+      "brandsPage": {
+        "title": "Бренды",
+        "subtitle": "Рабочая страница импорта брендов UTR.",
+        "panelTitle": "Импорт брендов UTR",
+        "panelSubtitle": "Запуск импорта, сводка результата и таблица импортированных брендов.",
+        "tableTitle": "Импортированные бренды UTR",
+        "onlyUtrTitle": "Недоступно для выбранного поставщика",
+        "onlyUtr": "Экран брендов работает только для поставщика UTR.",
+        "filters": {
+          "search": "Поиск по названию бренда",
+          "all": "Все бренды",
+          "active": "Только активные",
+          "inactive": "Только неактивные"
+        },
+        "states": {
+          "empty": "Бренды не найдены."
+        },
+        "table": {
+          "columns": {
+            "name": "Название бренда",
+            "status": "Статус",
+            "updated": "Обновлено"
+          }
+        },
+        "pagination": {
+          "total": "Всего строк: {count}",
+          "prev": "Назад",
+          "next": "Вперёд",
+          "page": "Страница {current} из {total}"
+        },
+        "stats": {
+          "received": "Получено брендов",
+          "imported": "Импортировано брендов",
+          "lastImportAt": "Дата последнего импорта"
+        },
+        "actions": {
+          "import": "Импортировать"
+        }
+      },
+      "states": {
+        "emptyWorkspace": "Рабочее пространство поставщика недоступно."
+      },
+      "cooldown": {
+        "title": "Ограничения и cooldown",
+        "subtitle": "Backend ограничивает частоту запросов для безопасной работы с API поставщика.",
+        "lastRequest": "Последний запрос",
+        "nextRequest": "Следующий доступный запрос",
+        "status": "Статус",
+        "seconds": "Интервал, сек"
+      },
+      "prices": {
+        "title": "Прайс поставщика",
+        "subtitle": "Последние импортированные позиции с поиском и фильтрами.",
+        "filters": {
+          "search": "Поиск по SKU, артикулу, бренду или товару",
+          "all": "Все позиции",
+          "available": "Только доступные",
+          "unavailable": "Только недоступные"
+        },
+        "states": {
+          "empty": "Позиции прайса не найдены."
+        },
+        "table": {
+          "columns": {
+            "articleSku": "SKU / Артикул",
+            "brand": "Бренд",
+            "product": "Товар",
+            "price": "Цена",
+            "currency": "Валюта",
+            "stock": "Остаток",
+            "availability": "Доступность",
+            "updatedAt": "Обновлено"
+          },
+          "leadTime": "Срок поставки: {days} дн."
+        },
+        "pagination": {
+          "total": "Всего строк: {count}",
+          "prev": "Назад",
+          "next": "Вперед",
+          "page": "Страница {current} из {total}"
+        }
+      },
+      "footer": {
+        "availableSuppliers": "Доступно поставщиков: {count}",
+        "cooldownActive": "Cooldown активен: {seconds} сек.",
+        "cooldownReady": "Cooldown не блокирует действия."
+      }
+    }
+  }
+}

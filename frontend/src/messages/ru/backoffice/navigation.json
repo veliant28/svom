@@ -1,0 +1,23 @@
+{
+  "backoffice": {
+    "navigation": {
+      "brand": "SVOM",
+      "title": "Бэк-офис",
+      "dashboard": "Дашборд",
+      "suppliers": "Поставщики",
+      "products": "Товары",
+      "pricing": "Цена",
+      "brands": "Бренды",
+      "categories": "Категории",
+      "importRuns": "Запуски импорта",
+      "importErrors": "Ошибки импорта",
+      "matching": "Сопоставление",
+      "matchingUnmatched": "Несопоставленные",
+      "matchingConflicts": "Конфликты",
+      "importSchedules": "Расписания импорта",
+      "importQuality": "Качество импорта",
+      "orders": "Заказы",
+      "autocatalog": "Автокаталог"
+    }
+  }
+}

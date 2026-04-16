@@ -1,0 +1,47 @@
+{
+  "backoffice": {
+    "importQuality": {
+      "title": "Import Quality",
+      "subtitle": "Track quality metrics, degradation and operator attention flags.",
+      "cards": {
+        "totalRuns": "Quality Runs",
+        "attentionRuns": "Attention Runs",
+        "failedRuns": "Failed",
+        "partialRuns": "Partial",
+        "avgMatchRate": "Avg Match Rate",
+        "avgErrorRate": "Avg Error Rate"
+      },
+      "filters": {
+        "search": "Search by run, source or status",
+        "allSources": "All sources",
+        "allAttention": "All attention states",
+        "attentionOnly": "Attention only",
+        "noAttention": "No attention"
+      },
+      "actions": {
+        "compare": "Compare"
+      },
+      "states": {
+        "emptySummary": "No quality summary data.",
+        "emptyRuns": "No quality runs."
+      },
+      "table": {
+        "columns": {
+          "source": "Source",
+          "status": "Status",
+          "matchRate": "Match rate",
+          "errorRate": "Error rate",
+          "attention": "Attention",
+          "actions": "Actions"
+        }
+      },
+      "comparison": {
+        "title": "Run Comparison",
+        "empty": "No comparison data.",
+        "matchRateDelta": "Match rate delta",
+        "errorRateDelta": "Error rate delta",
+        "requiresAttention": "Requires attention"
+      }
+    }
+  }
+}

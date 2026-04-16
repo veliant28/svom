@@ -1,0 +1,55 @@
+{
+  "catalog": {
+    "title": "Каталог",
+    "subtitle": "Первый слой storefront-каталога",
+    "showcaseSubtitle": "Витрина каталога работает через DRF endpoint.",
+    "resultCount": "Найдено: {count}",
+    "empty": "По выбранным фильтрам товары не найдены.",
+    "taxonomy": {
+      "brands": "Бренды",
+      "categories": "Категории"
+    },
+    "filters": {
+      "query": {
+        "label": "Запрос",
+        "placeholder": "Поиск по названию, SKU, артикулу"
+      },
+      "brand": {
+        "label": "Бренд",
+        "all": "Все бренды"
+      },
+      "category": {
+        "label": "Категория",
+        "all": "Все категории"
+      },
+      "minPrice": "Цена от",
+      "maxPrice": "Цена до",
+      "flags": {
+        "featured": "Только рекомендованные",
+        "new": "Только новинки",
+        "bestseller": "Только бестселлеры"
+      },
+      "actions": {
+        "apply": "Применить",
+        "reset": "Сбросить"
+      }
+    },
+    "fitment": {
+      "vehicleSelectorLabel": "Подобрать под мое авто",
+      "vehiclePlaceholder": "Без выбранного авто",
+      "fitmentModeLabel": "Режим совместимости",
+      "clearFitment": "Сбросить совместимость",
+      "garageLoading": "Загружаем гараж...",
+      "activeVehicle": "Выбрано: {vehicle}",
+      "noVehicleSelected": "Выберите авто из гаража, чтобы показать совместимые товары.",
+      "resultCountLoading": "Загружаем отфильтрованные результаты...",
+      "resultCount": "Результатов после фильтра: {count}",
+      "fitmentModes": {
+        "all": "Все товары",
+        "only": "Только совместимые",
+        "with_data": "Только с данными совместимости",
+        "unknown": "Только без данных совместимости"
+      }
+    }
+  }
+}

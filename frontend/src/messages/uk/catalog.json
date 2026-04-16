@@ -1,0 +1,55 @@
+{
+  "catalog": {
+    "title": "Каталог",
+    "subtitle": "Перший шар storefront-каталогу",
+    "showcaseSubtitle": "Вітрина каталогу працює через DRF endpoint.",
+    "resultCount": "Знайдено: {count}",
+    "empty": "За вибраними фільтрами товари не знайдено.",
+    "taxonomy": {
+      "brands": "Бренди",
+      "categories": "Категорії"
+    },
+    "filters": {
+      "query": {
+        "label": "Запит",
+        "placeholder": "Пошук за назвою, SKU, артикулом"
+      },
+      "brand": {
+        "label": "Бренд",
+        "all": "Усі бренди"
+      },
+      "category": {
+        "label": "Категорія",
+        "all": "Усі категорії"
+      },
+      "minPrice": "Ціна від",
+      "maxPrice": "Ціна до",
+      "flags": {
+        "featured": "Лише рекомендовані",
+        "new": "Лише новинки",
+        "bestseller": "Лише бестселери"
+      },
+      "actions": {
+        "apply": "Застосувати",
+        "reset": "Скинути"
+      }
+    },
+    "fitment": {
+      "vehicleSelectorLabel": "Підібрати під моє авто",
+      "vehiclePlaceholder": "Без вибраного авто",
+      "fitmentModeLabel": "Режим сумісності",
+      "clearFitment": "Скинути сумісність",
+      "garageLoading": "Завантажуємо гараж...",
+      "activeVehicle": "Вибрано: {vehicle}",
+      "noVehicleSelected": "Оберіть авто з гаража, щоб показати сумісні товари.",
+      "resultCountLoading": "Завантажуємо відфільтровані результати...",
+      "resultCount": "Результатів після фільтра: {count}",
+      "fitmentModes": {
+        "all": "Усі товари",
+        "only": "Лише сумісні",
+        "with_data": "Лише з даними сумісності",
+        "unknown": "Лише без даних сумісності"
+      }
+    }
+  }
+}

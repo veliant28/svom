@@ -1,0 +1,29 @@
+{
+  "backoffice": {
+    "imports": {
+      "title": "Import and synchronization",
+      "subtitle": "Run manual import and price/stock sync from one place.",
+      "actions": {
+        "runImport": "Run manual import",
+        "syncPrices": "Sync prices and stock"
+      },
+      "messages": {
+        "importStarted": "Import started.",
+        "importStartFailed": "Unable to start import. Please try again later.",
+        "pricesSyncStarted": "Price and stock update started.",
+        "pricesSyncFailed": "Unable to start price and stock update."
+      },
+      "status": {
+        "lastRunStatus": "Last run status",
+        "lastSuccess": "Last successful run",
+        "lastFailure": "Last failed run",
+        "lastError": "Last error message"
+      },
+      "history": {
+        "title": "Run history",
+        "empty": "Run history is empty.",
+        "row": "Rows: {rows}, errors: {errors}"
+      }
+    }
+  }
+}

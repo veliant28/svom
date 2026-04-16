@@ -1,0 +1,47 @@
+{
+  "backoffice": {
+    "importQuality": {
+      "title": "Качество импорта",
+      "subtitle": "Контроль метрик качества, деградации и флагов внимания оператора.",
+      "cards": {
+        "totalRuns": "Запуски качества",
+        "attentionRuns": "С вниманием оператора",
+        "failedRuns": "С ошибкой",
+        "partialRuns": "Частичные",
+        "avgMatchRate": "Средняя доля сопоставления",
+        "avgErrorRate": "Средняя доля ошибок"
+      },
+      "filters": {
+        "search": "Поиск по запуску, источнику или статусу",
+        "allSources": "Все источники",
+        "allAttention": "Все состояния внимания",
+        "attentionOnly": "Только требующие внимания",
+        "noAttention": "Без внимания"
+      },
+      "actions": {
+        "compare": "Сравнить"
+      },
+      "states": {
+        "emptySummary": "Нет сводных данных качества.",
+        "emptyRuns": "Запуски качества не найдены."
+      },
+      "table": {
+        "columns": {
+          "source": "Источник",
+          "status": "Статус",
+          "matchRate": "Доля сопоставления",
+          "errorRate": "Доля ошибок",
+          "attention": "Внимание",
+          "actions": "Действия"
+        }
+      },
+      "comparison": {
+        "title": "Сравнение запусков",
+        "empty": "Нет данных для сравнения.",
+        "matchRateDelta": "Изменение доли сопоставления",
+        "errorRateDelta": "Изменение доли ошибок",
+        "requiresAttention": "Требует внимания"
+      }
+    }
+  }
+}

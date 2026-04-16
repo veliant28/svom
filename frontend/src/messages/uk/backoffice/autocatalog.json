@@ -1,0 +1,42 @@
+{
+  "backoffice": {
+    "autocatalog": {
+      "title": "Автокаталог",
+      "subtitle": "Каталог авто UTR всередині backoffice.",
+      "search": "Пошук за маркою, моделлю, модифікацією або двигуном",
+      "filters": {
+        "make": "Марка",
+        "model": "Модель",
+        "year": "Рік",
+        "allYears": "Усі роки",
+        "allMakes": "Усі марки",
+        "allModels": "Усі моделі",
+        "allModifications": "Усі модифікації",
+        "allCapacities": "Усі об'єми",
+        "allEngines": "Усі двигуни",
+        "engine": "Двигун",
+        "capacity": "Об'єм"
+      },
+      "empty": "Авто не знайдено.",
+      "pagination": {
+        "total": "Усього рядків: {count}",
+        "prev": "Назад",
+        "next": "Вперед",
+        "page": "Сторінка {current} з {total}",
+        "perPage": "На сторінці"
+      },
+      "table": {
+        "columns": {
+          "year": "Рік",
+          "make": "Марка",
+          "model": "Модель",
+          "modification": "Модифікація",
+          "capacity": "Об'єм",
+          "engine": "Двигун",
+          "hp": "Потужність HP",
+          "kw": "Потужність KW"
+        }
+      }
+    }
+  }
+}

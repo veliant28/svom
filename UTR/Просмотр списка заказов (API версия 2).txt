@@ -1,0 +1,106 @@
+Для перегляду списка замовлень потрібно відправити наступний запит:
+
+GET https://order24-api.utr.ua/api/order-list/{date}
+{date} - дата початку періоду для выборки замовлень (кінець періоду - поточна дата)
+додавши при цьому в headers
+
+Authorization: Bearer eyJ0eXAiOiJKV1Q...<br>
+Де в Authorization після ключового слова Bearer потрібно передати отриманий при проходженні аутентифікації token
+
+Також запит може бути уточнено шляхом вказання поточної сторінки та кількості елеметів на сторінці:
+
+GET https://order24-api.utr.ua/api/order-list/{date}?page=1&limit=20&mode=period
+Можливо також виконати пошук замовлень, які містять певну деталь
+
+GET https://order24-api.utr.ua/api/order-list/{date}/{detail_id}
+де: {detail_id} – код товара
+
+В результаті ви отримаєте одну із наступних відповідей:
+
+Помилка аутентифікації
+Можливі відповіді API при помилці аутентифікації приведено в розділі Помилка аутентификації
+
+Замовлення не знайдено
+Status Code: 200 OK
+Body:
+[]
+
+
+Список замовлень
+Status Code: 200 OK
+Body:
+[
+    {
+        "id": 6802274,
+        "externalCode": "УЭТ000008",
+        "date": "2024-02-13T08:31:22+02:00",
+        "orderItems": [
+            {
+                "detail": {
+                    "multiplicity": 1,
+                    "id": 1022206,
+                    "brand": {
+                        "name": "SACHS",
+                        "externalCode": "00005"
+                    },
+                    "displayBrand": "SACHS",
+                    "article": "317 577",
+                    "title": "Амортизатор",
+                    "quantity": 1,
+                    "remains": [
+                        {
+                            "storage": {
+                                "id": 15,
+                                "name": "Kиїв Правий",
+                                "originalName": "Kиев Правый"
+                            },
+                            "remain": "6"
+                        },
+                        {
+                            "storage": {
+                                "id": 23,
+                                "name": "Дніпро",
+                                "originalName": "Днепр"
+                            },
+                            "remain": "2"
+                        },
+                        ...
+                    ],
+                    "detailScanCodes": [
+                        {
+                            "scanCode": "4013872967957"
+                        }
+                    ],
+                    "category": {
+                        "name": "Амортизатор"
+                    },
+                    "modifier": 0,
+                    "isDisabled": false,
+                    "hasPartnerRemain": false
+                },
+                "storage": {
+                    "id": 15,
+                    "name": "Kиїв Правий",
+                    "originalName": "Kиев Правый"
+                },
+                "quantity": 1,
+                "price": {
+                    "amount": 2158.3
+                }
+            }
+        ],
+        "status": "processing",
+        "delivery": {
+            "name": "Курьер Киев Розничный Магазин 9:00"
+        },
+        "paymentType": "nal",
+        "comment": "test4",
+        "amount": {
+            "amount": 2158.3,
+            "currency": {
+                "code": "UAH"
+            }
+        }
+    },
+    ...
+]

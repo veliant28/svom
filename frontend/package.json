@@ -1,0 +1,29 @@
+{
+  "name": "svom-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "dev:stable": "rm -rf .next && next dev --webpack --port 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test:unit": "node --experimental-strip-types --test tests/*.test.mts"
+  },
+  "dependencies": {
+    "echarts": "^5.6.0",
+    "lucide-react": "1.8.0",
+    "next": "16.2.3",
+    "next-intl": "4.9.1",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.1.13",
+    "@types/node": "24.7.2",
+    "@types/react": "19.1.17",
+    "@types/react-dom": "19.1.9",
+    "tailwindcss": "4.1.13",
+    "typescript": "5.9.3"
+  }
+}

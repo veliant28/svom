@@ -1,0 +1,26 @@
+{
+  "product": {
+    "card": {
+      "viewDetails": "View details",
+      "fitment": {
+        "fits": "Fits your vehicle",
+        "noData": "Fitment not specified",
+        "notFits": "Not compatible with selected vehicle"
+      },
+      "labels": {
+        "eta": " · ETA {days}d"
+      }
+    },
+    "detail": {
+      "notFound": "Product not found.",
+      "backToCatalog": "Back to catalog",
+      "skuLabel": "SKU",
+      "labels": {
+        "eta": " · ETA {days}d"
+      },
+      "attributesTitle": "Attributes",
+      "fitmentTitle": "Fitment",
+      "fitmentEmpty": "Fitment for this product is not specified yet."
+    }
+  }
+}

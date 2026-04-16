@@ -1,0 +1,33 @@
+{
+  "backoffice": {
+    "importRuns": {
+      "title": "Import Runs",
+      "subtitle": "Track execution status and repricing follow-up.",
+      "filters": {
+        "search": "Search run by source/status",
+        "allStatuses": "All statuses",
+        "allSources": "All sources"
+      },
+      "actions": {
+        "refresh": "Refresh",
+        "reprice": "Reprice after import",
+        "repriceDone": "Reprice action completed ({mode}).",
+        "repriceFailed": "Unable to run repricing."
+      },
+      "table": {
+        "columns": {
+          "source": "Source",
+          "status": "Status",
+          "rows": "Rows",
+          "offers": "Created/Updated",
+          "errors": "Errors",
+          "repriced": "Repriced",
+          "actions": "Actions"
+        }
+      },
+      "states": {
+        "empty": "No import runs found."
+      }
+    }
+  }
+}

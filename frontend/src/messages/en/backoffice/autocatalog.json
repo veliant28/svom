@@ -1,0 +1,42 @@
+{
+  "backoffice": {
+    "autocatalog": {
+      "title": "Autocatalog",
+      "subtitle": "UTR vehicle catalog in the backoffice workspace.",
+      "search": "Search by make, model, modification, or engine",
+      "filters": {
+        "make": "Make",
+        "model": "Model",
+        "year": "Year",
+        "allYears": "All years",
+        "allMakes": "All makes",
+        "allModels": "All models",
+        "allModifications": "All modifications",
+        "allCapacities": "All capacities",
+        "allEngines": "All engines",
+        "engine": "Engine",
+        "capacity": "Capacity"
+      },
+      "empty": "No vehicles found.",
+      "pagination": {
+        "total": "Total rows: {count}",
+        "prev": "Prev",
+        "next": "Next",
+        "page": "Page {current} of {total}",
+        "perPage": "Per page"
+      },
+      "table": {
+        "columns": {
+          "year": "Year",
+          "make": "Make",
+          "model": "Model",
+          "modification": "Modification",
+          "capacity": "Capacity",
+          "engine": "Engine",
+          "hp": "Power HP",
+          "kw": "Power KW"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,261 @@
+Параметри запиту
+Перед відправкою запросу на формування прайс-листа необхідно отримати список доступних форматів та список брендів, по яким прайс-лист може бути сформовано. Зробити це можно, виконавши наступний запрос:
+
+GET https://order24-api.utr.ua/pricelists/export-params
+додав при цьому в headers
+
+Authorization: Bearer eyJ0eXAiOiJKV1Q...
+
+
+Де в Authorization після ключового слова Bearer потрібно передати отриманий при проходженні аутентифікації token
+
+В результаті ви отримаєте одну із наступних відповідей:
+
+Помилка аутентифікації
+Можливі відповіді API при помилці аутентифікації наведено в розділі Ошибка аутентификации
+
+
+
+Список параметрів
+Status Code: 200 OK
+Body:
+{
+    "supportedFormats": [
+        "xlsx",
+        "txt",
+        "csv",
+        ...
+    ],
+    "supportedFormatsExt": [
+        {
+            "format": "xlsx",
+            "caption": "xlsx - Microsoft Excel 2007-2013 XML"
+        },
+        {
+            "format": "txt",
+            "caption": "txt"
+        },
+        {
+            "format": "csv",
+            "caption": "csv (UTF-8)"
+        },
+        ...
+    ],
+    "brands": [
+        {
+            "id": 506938,
+            "name": "3R",
+            "externalCode": "01433"
+        },
+        {
+            "id": 562288,
+            "name": "4CARS",
+            "externalCode": "01551"
+        },
+        ...
+    ],
+    "visibleBrands": [
+        {
+            "id": 910,
+            "title": "1A FIRST AUTOMOTIVE",
+            "isOriginal": false,
+            "synonyms": [],
+            "aliases": [],
+            "isUtr": false
+        },        
+        {
+            "id": 559,
+            "title": "VW",
+            "isOriginal": true,
+            "synonyms": [
+                {
+                    "id": 123,
+                    "title": "VOLKSWAGEN"
+                },
+                {
+                    "id": 478,
+                    "title": "VW (SVW)"
+                }
+            ],
+            "aliases": [],
+            "isUtr": false,
+            "parent": {
+                "id": 1,
+                "parent": {
+                    "id": 374,
+                    "title": "VAG",
+                    "isOriginal": true,
+                    "synonyms": [],
+                    "aliases": [
+                        {
+                            "id": 2,
+                            "alias": {
+                                "id": 558,
+                                "title": "AUDI",
+                                "isOriginal": true,
+                                "synonyms": [],
+                                "aliases": [],
+                                "isUtr": false
+                            }
+                        },
+                        ...
+                    ],
+                    "isUtr": false
+                }
+            }
+        },
+        ...
+    ],
+    "models": [
+        {
+            "name": "ABARTH"
+        },
+        {
+            "name": "AC"
+        },
+        {
+            "name": "ACURA"
+        },
+        ...
+    ],
+    "categories": [
+        {
+            "id": "12",
+            "title": "Автозапчасти - Двигатель",
+            "quantity": "54281"
+        },
+        {
+            "id": "13",
+            "title": "Автозапчасти - Кузов",
+            "quantity": "5426"
+        },
+        ...
+    ]
+}
+
+
+Запит на формування прайс-листа
+Для додавання задачі на формування прайс-листа необхідно відправляти наступний запит:
+
+POST https://order24-api.utr.ua/pricelists/export-request
+додавши при цьому в headers
+Authorization: Bearer eyJ0eXAiOiJKV1Q...
+Де в Authorization після ключового слова Bearer потрібно передати отриманий при проходженні аутентифікації token
+
+
+Body:
+{
+	"categoriesId": [],
+	"format": "csv",
+	"inStock": true,
+	"modelsId": [],
+	"showScancode": false,
+	"utrArticle": false,
+	"visibleBrandsId": [
+		2, 910
+	]
+}
+де:
+visibleBrandsId - массив ідентифікаторів брендів, по яким необхідно сформувати прайс-лист (із списка visibleBrands)
+categoriesId - массив ідентифікаторів категорій, по яким необхідно сформувати прайс-лист (із списка categories)
+modelsId - массив назв моделей, по яким необхідно сформувати прайс-лист (із списка models)
+format - формат прайс-листа (із списка допустимих форматів)
+utrArticle - флаг включення в прайс-лист додаткового поля - артикула Юник Трейд
+showScancode - флаг включення в прайс-лист додаткового поля - штрих-коду деталі Трейд
+inStock - флаг включення в прайс лише позицій с залишками
+
+Увага! В межах одного запиту на формування прайс-листа лише один з трьох масивів visibleBrandsId, categoriesId, modelsId може містити значення для фільтрації. Два з них завжди мають бути прожніми
+В разі вдалої авторизації ви отримаєте наступну відповідь:
+
+{
+    "fileSize": "",
+    "id": 758115,
+    "format": "csv",
+    "originalFormat": "csv",
+    "isInStock": true,
+    "showScancode": false,
+    "utrArticle": false,
+    "locale": "ua",
+    "status": "in queue",
+    "createdAt": "2024-02-14T08:33:07+02:00",
+    "brands": [
+        "All brands"
+    ],
+    "visibleBrands": [
+        "1A FIRST AUTOMOTIVE",
+        "4MAX"
+    ],
+    "models": [],
+    "categories": [],
+    "uploadedToFileServer": false
+}
+де:
+Id - ідентифікатор прайс-листа. Дане поле необхідно для перевірки статуса и наступного завантаження прайс-листа
+Status - статус прайс-листа, "in queue" - в черзі, "complete" - сформовано
+
+Перевірка стану прайс-листа
+Для перевірки стану прайс-листа необхідно відправляти наступний запит:
+
+GET https://order24-api.utr.ua/pricelists/{id}
+де:
+id - ідентифікатор прайс-листа (отриманий в поле id відповіді на запит на формування прайс-листа). В результаті отримуєм одну із наступних відповідей:
+
+data: in queue - прайс лист формується
+data: complete - прайс лист сформовано
+Отримання списка своїх прайс-листів
+Для отримання списка прайс-листів необхідно відправляти наступний запит:
+
+GET https://order24-api.utr.ua/pricelists
+додавши при цьому в headers
+Authorization: Bearer eyJ0eXAiOiJKV1Q...
+де в Authorization після ключового слова Bearer потрібно передати отриманий при проходженні аутентифікаціх token
+
+В разі вдалої авторизації ви отримаєте наступну відповідь:
+
+[
+    {
+        "fileSize": "888Б",
+        "id": 758115,
+        "format": "csv",
+        "originalFormat": "csv",
+        "isInStock": true,
+        "showScancode": false,
+        "utrArticle": false,
+        "locale": "ua",
+        "status": "complete",
+        "token": "2ef73f4297dedffb572170fcd69f48c6",
+        "createdAt": "2024-02-14T08:33:07+02:00",
+        "finishedAt": "2024-02-14T08:33:37+02:00",
+        "size": 888,
+        "brands": [
+            "All brands"
+        ],
+        "visibleBrands": [
+            "1A FIRST AUTOMOTIVE",
+            "4MAX"
+        ],
+        "models": [],
+        "categories": [],
+        "uploadedToFileServer": true
+    }
+]
+
+
+Завантаження прайс-листа
+Для завантаження прайс-листа необхідно відправляти наступний запит:
+
+https://order24-api.utr.ua/pricelists/export/{token}
+де:
+token - ідентифікатор прайс-листа, отриманий в полі token результату запроса на отримання списку прайс-листів
+
+додавши при цьому в headers
+Authorization: Bearer eyJ0eXAiOiJKV1Q...
+Де в Authorization після ключевого слова Bearer потрібно передати отриманий при проходженні аутентифікації token
+
+Увага! Запит можливо виконати лише для прайс-листів, у яких поле Status - статус прайс-листа має значення "complete" - сформовано
+Видалення прайс-листа
+Для видалення прайс-листа із списку необхідно відправляти наступний запрос:
+
+DELETE https://order24-api.utr.ua/pricelists/delete/{id}
+де:
+id - ідентифікатор прайс-листа (отриманий в полі id)

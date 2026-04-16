@@ -1,0 +1,86 @@
+{
+  "commerce": {
+    "wishlist": {
+      "title": "Избранное",
+      "subtitle": "Сохраненные товары для быстрого возврата.",
+      "authRequired": "Для избранного нужна авторизация.",
+      "goToLogin": "Перейти ко входу",
+      "states": {
+        "loading": "Загружаем избранное...",
+        "empty": "Избранное пусто."
+      },
+      "actions": {
+        "add": "В избранное",
+        "remove": "Удалить",
+        "viewProduct": "Открыть товар"
+      }
+    },
+    "cart": {
+      "title": "Корзина",
+      "subtitle": "Проверьте позиции перед оформлением.",
+      "authRequired": "Для корзины нужна авторизация.",
+      "goToLogin": "Перейти ко входу",
+      "states": {
+        "loading": "Загружаем корзину...",
+        "empty": "Корзина пуста."
+      },
+      "actions": {
+        "add": "Добавить",
+        "remove": "Удалить",
+        "checkout": "Перейти к оформлению"
+      },
+      "summary": {
+        "title": "Итог",
+        "items": "Позиций: {count}"
+      },
+      "labels": {
+        "eta": " · ETA {days} дн."
+      },
+      "warnings": {
+        "availabilityOrPriceChanged": "Доступность или цена изменились для одной или нескольких позиций. Проверьте заказ перед оформлением."
+      }
+    },
+    "checkout": {
+      "title": "Оформление",
+      "subtitle": "Базовый flow: контакты, доставка, платежный placeholder.",
+      "authRequired": "Для checkout нужна авторизация.",
+      "goToLogin": "Перейти ко входу",
+      "emptyCart": "Ваша корзина пуста.",
+      "goToCatalog": "Перейти в каталог",
+      "sections": {
+        "contact": "Контактные данные",
+        "delivery": "Способ доставки",
+        "payment": "Способ оплаты",
+        "orderReview": "Проверка заказа"
+      },
+      "fields": {
+        "fullName": "ФИО",
+        "phone": "Телефон",
+        "email": "Email",
+        "deliveryMethod": "Способ доставки",
+        "deliveryAddress": "Адрес доставки",
+        "paymentMethod": "Способ оплаты",
+        "comment": "Комментарий"
+      },
+      "delivery": {
+        "pickup": "Самовывоз",
+        "courier": "Курьер",
+        "novaPoshta": "Новая Почта"
+      },
+      "payment": {
+        "cardPlaceholder": "Оплата картой (placeholder)",
+        "cashOnDelivery": "Наложенный платеж"
+      },
+      "actions": {
+        "submit": "Оформить заказ",
+        "submitting": "Оформляем..."
+      },
+      "review": {
+        "deliveryFee": "Стоимость доставки: {fee} {currency}",
+        "total": "Итого: {total} {currency}"
+      },
+      "success": "Заказ создан: {orderNumber}",
+      "submitError": "Не удалось оформить заказ. Проверьте обязательные поля."
+    }
+  }
+}

@@ -1,0 +1,360 @@
+{
+  "backoffice": {
+    "suppliers": {
+      "title": "Постачальники",
+      "subtitle": "Єдине робоче місце оператора для UTR і GPL.",
+      "actions": {
+        "settings": "Налаштування",
+        "import": "Імпорт",
+        "importRuns": "Запуски",
+        "importErrors": "Помилки",
+        "importQuality": "Якість",
+        "products": "Товари",
+        "brands": "Бренди",
+        "refreshAll": "Оновити"
+      },
+      "summary": {
+        "subtitle": "Коротке зведення за останніми імпортами."
+      },
+      "importPage": {
+        "title": "Імпорт прайсів",
+        "subtitle": "Операторський lifecycle-екран: запит, завантаження та імпорт у проміжну таблицю товарів."
+      },
+      "priceLifecycle": {
+        "operations": {
+          "title": "Керування прайсом",
+          "subtitle": "Послідовність дій: Запит -> Завантажити -> Імпорт у таблицю товарів."
+        },
+        "locale": {
+          "utr": "UTR",
+          "gpl": "GPL"
+        },
+        "actions": {
+          "request": "Запит",
+          "download": "Завантажити",
+          "import": "Імпорт",
+          "delete": "Видалити"
+        },
+        "messages": {
+          "requested": "Запит прайса надіслано.",
+          "requestFailed": "Не вдалося надіслати запит прайса.",
+          "downloaded": "Прайс успішно завантажено.",
+          "downloadFailed": "Не вдалося завантажити прайс.",
+          "imported": "Товари імпортовано в проміжну таблицю.",
+          "importFailed": "Не вдалося імпортувати товари в проміжну таблицю.",
+          "deleted": "Прайс видалено.",
+          "deletedLocalOnly": "Прайс видалено локально. В UTR видалити не вдалося: {reason}",
+          "deleteFailed": "Не вдалося видалити прайс."
+        },
+        "params": {
+          "format": "Формат",
+          "supplier": "Постачальник",
+          "inStockOnly": "Лише в наявності",
+          "showScancode": "Показувати штрихкод",
+          "utrArticle": "Показувати артикул UTR",
+          "dynamicHint": "Параметри отримані з UTR API: бренди {brands}, категорії {categories}, моделі {models}.",
+          "source": {
+            "utr_api": "Джерело параметрів: UTR API (export-params)",
+            "gpl_api": "Джерело параметрів: GPL API (/api/prices)",
+            "fallback": "Джерело параметрів: fallback з реального прайс-файлу"
+          },
+          "filterMode": "Фільтр UTR",
+          "filterNone": "Без фільтра",
+          "filterBrands": "За брендами",
+          "filterCategories": "За категоріями",
+          "filterModels": "За моделями",
+          "filterOneOfRule": "За один запит UTR дозволяє лише один тип фільтра: бренди, категорії або моделі.",
+          "selectedCount": "Вибрано: {count}",
+          "manualPlaceholderModels": "Дод. моделі через кому: ABARTH, ACURA, ...",
+          "truncatedHint": "Показано обмежений набір опцій. Для повного охоплення використовуйте поле моделей."
+        },
+        "notes": {
+          "utrGeneration": "UTR зазвичай формує прайс приблизно 3 хвилини. Поки генерація триває, завантаження недоступне.",
+          "gplReady": "Для GPL окрема асинхронна генерація зазвичай не потрібна: прайс доступний одразу після запиту."
+        },
+        "state": {
+          "title": "Стан прайс-флоу",
+          "subtitle": "Поточний стан запиту, генерації, завантаження та імпорту.",
+          "lastRequestStatus": "Статус останнього запиту",
+          "generation": "Генерація прайса",
+          "generatingWait": "Очікування генерації, залишилось ~{seconds} сек",
+          "generationDone": "Генерацію завершено",
+          "downloadAvailable": "Прайс доступний для завантаження",
+          "yes": "Так",
+          "no": "Ні",
+          "lastDownloaded": "Останнє успішне завантаження",
+          "lastImported": "Останній імпорт у товари",
+          "cooldown": "Cooldown UTR",
+          "cooldownUtr": "Cooldown UTR",
+          "cooldownNotApplicableLabel": "Обмеження запиту",
+          "cooldownNotApplicableValue": "Не застосовується для цього постачальника",
+          "cooldownReady": "Запит можна надсилати",
+          "cooldownWait": "Зачекайте {seconds} сек",
+          "lastError": "Остання помилка"
+        },
+        "summary": {
+          "noRequests": "Запити прайса ще не виконувались.",
+          "cooldownActive": "Cooldown активний: повторний запит тимчасово заблокований.",
+          "generating": "Прайс формується. Дочекайтесь завершення і переходьте до завантаження.",
+          "readyToDownload": "Прайс готовий. Наступний крок: завантаження.",
+          "readyToImport": "Прайс завантажено. Наступний крок: імпорт у таблицю товарів.",
+          "imported": "Прайс імпортовано в проміжну таблицю товарів.",
+          "failed": "Остання операція завершилась помилкою. Перевірте текст помилки та повторіть крок.",
+          "idle": "Стан очікує наступної операторської дії."
+        },
+        "table": {
+          "title": "Таблиця прайсів постачальника",
+          "subtitle": "Реєстр запитів/файлів прайса з параметрами, статусами, складами, рівнями цін та діями.",
+          "search": "Пошук за файлом, ID, форматом або статусом",
+          "empty": "Записи прайсів відсутні.",
+          "generating": "Генерація, ~{seconds} сек",
+          "paramFormat": "Формат: {format}",
+          "paramInStock": "Лише позиції в наявності",
+          "paramAll": "Усі позиції",
+          "paramScancodeOn": "Штрихкод увімкнено",
+          "paramScancodeOff": "Штрихкод вимкнено",
+          "paramBrands": "Бренди: {count}",
+          "paramCategories": "Категорії: {count}",
+          "paramModels": "Моделі: {count}",
+          "rowsValue": "Рядків: {count}",
+          "columns": {
+            "file": "Файл / Ідентифікатор",
+            "requested": "Запитано",
+            "status": "Статус",
+            "params": "Параметри",
+            "prices": "Ціни",
+            "warehouses": "Склади",
+            "rows": "Обсяг",
+            "actions": "Дії"
+          }
+        }
+      },
+      "productsPage": {
+        "title": "Товари імпорту",
+        "subtitle": "Проміжна таблиця імпортованих товарів до основного мапінгу та подальшої обробки.",
+        "search": "Пошук за SKU, артикулом, брендом і назвою",
+        "empty": "Імпортовані товари не знайдено.",
+        "actions": {
+          "publishMapped": "Опублікувати зіставлені"
+        },
+        "messages": {
+          "publishSuccess": "Публікацію завершено. Зіставлених: {matched}, створено: {created}, оновлено: {updated}, пропущено: {skipped}, помилок: {errors}.",
+          "publishFailed": "Не вдалося опублікувати зіставлені товари."
+        },
+        "pagination": {
+          "total": "Усього рядків: {count}",
+          "prev": "Назад",
+          "next": "Вперед",
+          "page": "Сторінка {current} з {total}",
+          "perPage": "На сторінці"
+        },
+        "tooltip": {
+          "price": "Ціна",
+          "updatedAt": "Оновлено"
+        },
+        "table": {
+          "columns": {
+            "sku": "SKU / Артикул",
+            "brand": "Бренд",
+            "product": "Товар",
+            "prices": "Ціни",
+            "warehouses": "Склади",
+            "stock": "Залишок",
+            "state": "Статус"
+          }
+        },
+        "review": {
+          "filters": {
+            "brand": "Фільтр за брендом",
+            "allSuppliers": "Усі постачальники",
+            "allReasons": "Усі причини",
+            "allCategories": "Усі категорії"
+          },
+          "statuses": {
+            "needs_review": "Потребує перевірки",
+            "auto_mapped": "Авто-мапінг",
+            "manual_mapped": "Підтверджено вручну",
+            "unmapped": "Не зіставлено"
+          },
+          "sorting": {
+            "confidenceDesc": "Упевненість: спочатку високі",
+            "confidenceAsc": "Упевненість: спочатку низькі",
+            "reasonAsc": "Причина: А-Я",
+            "reasonDesc": "Причина: Я-А",
+            "categoryAsc": "Категорія: А-Я",
+            "categoryDesc": "Категорія: Я-А",
+            "createdDesc": "Спочатку нові",
+            "createdAsc": "Спочатку старі"
+          },
+          "table": {
+            "columns": {
+              "category": "Категорія",
+              "reason": "Причина",
+              "confidence": "Упевненість"
+            }
+          },
+          "analytics": {
+            "title": "Аналітика review",
+            "subtitle": "Рядків у поточному зрізі: {count}",
+            "topReasons": "Топ причин",
+            "topBrands": "Топ брендів",
+            "topCategories": "Топ категорій",
+            "topSignatures": "Топ сигнатур назви",
+            "topOpportunities": "Топ груп для безпечного auto-підтвердження"
+          },
+          "bulk": {
+            "title": "Масові дії review",
+            "selected": "Вибрано: {count}",
+            "selectAll": "Вибрати всі рядки на сторінці",
+            "selectOne": "Вибрати рядок",
+            "confirmCurrent": "Підтвердити поточну категорію",
+            "markNeedsReview": "Зняти підтвердження",
+            "reassignAuto": "Переобчислити auto",
+            "categorySearch": "Пошук категорії для масового застосування",
+            "chooseCategory": "Оберіть категорію",
+            "applyCategory": "Застосувати категорію",
+            "safePromote": "Безпечно перевести в auto",
+            "actionLabels": {
+              "confirm_current": "Підтвердити поточну категорію",
+              "set_category": "Застосувати вибрану категорію",
+              "mark_needs_review": "Зняти підтвердження",
+              "reassign_auto": "Переобчислити auto"
+            }
+          },
+          "messages": {
+            "bulkSuccess": "Масову дію виконано: оновлено {updated} рядків ({action}).",
+            "bulkFailed": "Не вдалося виконати масову дію.",
+            "categoryRequired": "Оберіть категорію для масового застосування.",
+            "promoted": "Безпечне авто-підтвердження виконано: {count} рядків переведено в auto_mapped.",
+            "promotionFailed": "Не вдалося виконати безпечне авто-підтвердження."
+          }
+        },
+        "categoryMapping": {
+          "openBadgeAria": "Відкрити зіставлення категорії",
+          "title": "Зіставлення категорії товару",
+          "subtitle": "Оберіть нашу категорію для позиції постачальника.",
+          "searchPlaceholder": "Пошук по наших категоріях",
+          "fields": {
+            "sku": "SKU",
+            "article": "Артикул",
+            "brand": "Бренд",
+            "product": "Назва товару",
+            "supplier": "Постачальник",
+            "status": "Статус",
+            "currentCategory": "Поточна категорія",
+            "matchedProductCategory": "Категорія пов’язаного товару",
+            "selectedCategory": "Обрана категорія"
+          },
+          "actions": {
+            "save": "Зберегти",
+            "clear": "Зняти зіставлення",
+            "cancel": "Скасувати"
+          },
+          "states": {
+            "notMapped": "Не зіставлено",
+            "noCategories": "Категорії не знайдено.",
+            "noSelection": "Категорію не вибрано.",
+            "nonLeafCategory": "Не листова категорія"
+          },
+          "messages": {
+            "loadFailed": "Не вдалося завантажити зіставлення категорії.",
+            "searchFailed": "Не вдалося виконати пошук категорій.",
+            "saveFailed": "Не вдалося зберегти зіставлення категорії.",
+            "saved": "Зіставлення категорії збережено.",
+            "clearFailed": "Не вдалося зняти зіставлення категорії.",
+            "cleared": "Зіставлення категорії знято.",
+            "clearConfirm": "Зняти зіставлення категорії для цієї позиції?",
+            "notFound": "Позицію не знайдено."
+          }
+        }
+      },
+      "brandsPage": {
+        "title": "Бренди",
+        "subtitle": "Робоча сторінка імпорту брендів UTR.",
+        "panelTitle": "Імпорт брендів UTR",
+        "panelSubtitle": "Запуск імпорту, підсумок результату і таблиця імпортованих брендів.",
+        "tableTitle": "Імпортовані бренди UTR",
+        "onlyUtrTitle": "Недоступно для вибраного постачальника",
+        "onlyUtr": "Екран брендів працює лише для постачальника UTR.",
+        "filters": {
+          "search": "Пошук за назвою бренду",
+          "all": "Усі бренди",
+          "active": "Тільки активні",
+          "inactive": "Тільки неактивні"
+        },
+        "states": {
+          "empty": "Бренди не знайдено."
+        },
+        "table": {
+          "columns": {
+            "name": "Назва бренду",
+            "status": "Статус",
+            "updated": "Оновлено"
+          }
+        },
+        "pagination": {
+          "total": "Усього рядків: {count}",
+          "prev": "Назад",
+          "next": "Вперед",
+          "page": "Сторінка {current} з {total}"
+        },
+        "stats": {
+          "received": "Отримано брендів",
+          "imported": "Імпортовано брендів",
+          "lastImportAt": "Дата останнього імпорту"
+        },
+        "actions": {
+          "import": "Імпортувати"
+        }
+      },
+      "states": {
+        "emptyWorkspace": "Робочий простір постачальника недоступний."
+      },
+      "cooldown": {
+        "title": "Обмеження і cooldown",
+        "subtitle": "Backend обмежує частоту запитів для безпечної роботи з API постачальника.",
+        "lastRequest": "Останній запит",
+        "nextRequest": "Наступний доступний запит",
+        "status": "Статус",
+        "seconds": "Інтервал, сек"
+      },
+      "prices": {
+        "title": "Прайс постачальника",
+        "subtitle": "Останні імпортовані позиції з пошуком і фільтрами.",
+        "filters": {
+          "search": "Пошук за SKU, артикулом, брендом або товаром",
+          "all": "Усі позиції",
+          "available": "Тільки доступні",
+          "unavailable": "Тільки недоступні"
+        },
+        "states": {
+          "empty": "Позиції прайсу не знайдено."
+        },
+        "table": {
+          "columns": {
+            "articleSku": "SKU / Артикул",
+            "brand": "Бренд",
+            "product": "Товар",
+            "price": "Ціна",
+            "currency": "Валюта",
+            "stock": "Залишок",
+            "availability": "Доступність",
+            "updatedAt": "Оновлено"
+          },
+          "leadTime": "Термін постачання: {days} дн."
+        },
+        "pagination": {
+          "total": "Усього рядків: {count}",
+          "prev": "Назад",
+          "next": "Вперед",
+          "page": "Сторінка {current} з {total}"
+        }
+      },
+      "footer": {
+        "availableSuppliers": "Доступно постачальників: {count}",
+        "cooldownActive": "Cooldown активний: {seconds} сек.",
+        "cooldownReady": "Cooldown не блокує дії."
+      }
+    }
+  }
+}

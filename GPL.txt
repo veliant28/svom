@@ -1,0 +1,1799 @@
+GPL API for Clients
+Для початку роботи з API, потрібно:
+включити доступ в налаштуваннях аккаунта, а також вибрати всі необхідні налаштування API.
+отримати токен, за допомогою Auth > Login запиту
+відправляти отриманий токен з кожним API запитом, одним із способів:
+Через Authorization header
+Authorization: Bearer eyJhbGciOiJIUzI1NiI...
+Через Query string parameter
+http://online.gpl.ua/api/prices/?token=eyJhbGciOiJIUzI1NiI...
+Через POST parameter
+token=eyJhbGciOiJIUzI1NiI...
+AUTHORIZATION
+Bearer Token
+Token
+<token>
+Auth
+AUTHORIZATION
+Bearer Token
+This folder is using Bearer Token from collectionGPL API for Clients
+POST
+Login
+{{site-url}}/api/auth/login
+Отримати токену доступу access_token
+HEADERS
+Content-Type
+application/json
+Body
+raw
+{
+    "login": "123456",
+    "password": "123456"
+}
+
+Example Request
+
+curl --location -g '{{site-url}}/api/auth/login' \
+--header 'Content-Type: application/json' \
+--data '{
+    "login": "123456",
+    "password": "123456"
+}'
+
+Example Response
+
+{
+  "access_token": "xxxxxxxxxxxx",
+  "token_type": "bearer",
+  "expires_in": 86400
+}
+
+POST
+Me
+{{site-url}}/api/auth/me
+Отримати автентифікованого користувача
+AUTHORIZATION
+Bearer Token
+This request is using Bearer Token from collectionGPL API for Clients
+HEADERS
+Content-Type
+
+Example Request
+
+curl --location -g --request POST '{{site-url}}/api/auth/me' \
+--header 'Content-Type: application/json'
+
+Example Response
+
+{
+  "id": 111,
+  "login": "1111",
+  "name": "Test test",
+  "email": "test@gpl.ua",
+  "phone": "+38 (067) 111-11-11"
+}
+
+POST
+Refresh
+{{site-url}}/api/auth/refresh
+Оновити токен
+AUTHORIZATION
+Bearer Token
+This request is using Bearer Token from collectionGPL API for Clients
+HEADERS
+Content-Type
+application/json
+
+Example Request
+
+curl --location -g --request POST '{{site-url}}/api/auth/refresh' \
+--header 'Content-Type: application/json'
+
+Example Response
+
+{
+  "access_token": "xxxxxxxx",
+  "token_type": "bearer",
+  "expires_in": 86400
+}
+
+POST
+Logout
+{{site-url}}/api/auth/logout
+Вийти (вилучити токен)
+AUTHORIZATION
+Bearer Token
+This request is using Bearer Token from collectionGPL API for Clients
+HEADERS
+Content-Type
+application/json
+
+Example Request
+
+curl --location -g --request POST '{{site-url}}/api/auth/logout' \
+--header 'Content-Type: application/json'
+
+Example Response
+
+{
+  "message": "Successfully logged out"
+}
+
+Orders
+AUTHORIZATION
+Bearer Token
+This folder is using Bearer Token from collectionGPL API for Clients
+POST
+All
+{{site-url}}/api/orders/all
+Отримати список всіх замовлень
+AUTHORIZATION
+Bearer Token
+This request is using Bearer Token from collectionGPL API for Clients
+HEADERS
+Content-Type
+application/json
+
+Example Request
+
+curl --location -g --request POST '{{site-url}}/api/orders/all' \
+--header 'Content-Type: application/json'
+
+{
+  "data": [
+    {
+      "id": 105,
+      "weight": "60.000",
+      "price": "17065.5750",
+      "created_at": "2018-12-27 12:52:55",
+      "products": [
+        {
+          "id": 57,
+          "article": "1552A2",
+          "name": "Aral HighTronic F 5W-30 4Lx4",
+          "weight": "4.000",
+          "unit": "шт",
+          "count": 10,
+          "price": "1223.6625"
+        },
+        {
+          "id": 27,
+          "article": "AR-20488",
+          "name": "Aral BlueTronic 10W-40 1Lx12",
+          "weight": "1.000",
+          "unit": "шт",
+          "count": 20,
+          "price": "241.4475"
+        }
+      ],
+      "status": {
+        "id": 4,
+        "slug": "marking removal",
+        "name": "На видалення"
+      },
+      "currency": {
+        "id": 980,
+        "currency": "UAH",
+        "symbol": "₴"
+      }
+    },
+    {
+      "id": 37,
+      "weight": "3.000",
+      "price": "426.6650",
+      "created_at": "2018-12-26 12:40:53",
+      "products": [
+        {
+          "id": 252524,
+          "article": "ATF-001",
+          "name": "ATF-A 1L x20",
+          "weight": "1.000",
+          "unit": "шт",
+          "count": 1,
+          "price": "226.6650"
+        },
+        {
+          "id": 254398,
+          "article": "ATF-D2-001",
+          "name": "ATF-D2 1L x20",
+          "weight": "1.000",
+          "unit": "шт",
+          "count": 2,
+          "price": "100.0000"
+        }
+      ],
+      "status": {
+        "id": 1,
+        "slug": "pending",
+        "name": "Новий"
+      },
+      "currency": {
+        "id": 980,
+        "currency": "UAH",
+        "symbol": "₴"
+      }
+    },
+    "..."
+  ],
+  "links": {
+    "first": "http://online.gpl.ua/api/orders/all?page=1",
+    "last": "http://online.gpl.ua/api/orders/all?page=1",
+    "prev": null,
+    "next": null
+  },
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "path": "http://online.gpl.ua/api/orders/all",
+    "per_page": 100,
+    "to": 58,
+    "total": 58
+  },
+  "code": 200,
+  "status": "success"
+}
+
+POST
+Show
+{{site-url}}/api/orders/show/37
+Оримати замовлення
+AUTHORIZATION
+Bearer Token
+This request is using Bearer Token from collectionGPL API for Clients
+
+Example Request
+
+curl --location -g --request POST '{{site-url}}/api/orders/show/37'
+
+Example Response
+
+{
+  "data": {
+    "id": 37,
+    "weight": "3.000",
+    "price": "426.6650",
+    "created_at": "2018-12-26 12:40:53",
+    "products": [
+      {
+        "id": 252524,
+        "article": "ATF-001",
+        "name": "ATF-A 1L x20",
+        "weight": "1.000",
+        "unit": "шт",
+        "count": 1,
+        "price": "226.6650"
+      },
+      {
+        "id": 254398,
+        "article": "ATF-D2-001",
+        "name": "ATF-D2 1L x20",
+        "weight": "1.000",
+        "unit": "шт",
+        "count": 2,
+        "price": "100.0000"
+      }
+    ],
+    "status": {
+      "id": 1,
+      "slug": "pending",
+      "name": "Новий"
+    },
+    "currency": {
+      "id": 980,
+      "currency": "UAH",
+      "symbol": "₴"
+    }
+  },
+  "code": 200,
+  "status": "success"
+}
+
+POST
+Store
+{{site-url}}/api/orders/store
+Створити нове замовлення
+Потрібно передати массив продуктів, в якому кожен елемент включає:
+id - id продукту
+count - кількість продуктів до замовлення
+AUTHORIZATION
+Bearer Token
+Token
+{{access_token}}
+HEADERS
+Content-Type
+application/json
+Body
+raw
+{
+	"test": "0",
+    "products": [
+        {
+            "id": 28,
+            "count": 2
+        }
+    ]
+}
+
+Example Request
+
+curl --location -g '{{site-url}}/api/orders/store' \
+--header 'Content-Type: application/json' \
+--data '{
+	"products":[
+		{
+			"id":57,
+			"count":10
+		},
+		{
+			"id":27,
+			"count":20
+		}
+	]
+}'
+
+Example Response
+
+{
+  "data": {
+    "id": 106,
+    "weight": 60,
+    "price": 17065.575,
+    "created_at": "2019-01-02 11:48:26",
+    "products": [
+      {
+        "id": 27,
+        "article": "AR-20488",
+        "name": "Aral BlueTronic 10W-40 1Lx12",
+        "weight": "1.000",
+        "unit": "шт",
+        "count": 20,
+        "price": "241.4475"
+      },
+      {
+        "id": 57,
+        "article": "1552A2",
+        "name": "Aral HighTronic F 5W-30 4Lx4",
+        "weight": "4.000",
+        "unit": "шт",
+        "count": 10,
+        "price": "1223.6625"
+      }
+    ],
+    "status": {
+      "id": 3,
+      "slug": "confirmed",
+      "name": "Очікування синхронізації"
+    },
+    "currency": {
+      "id": 980,
+      "currency": "UAH",
+      "symbol": "₴"
+    }
+  },
+  "code": 201,
+  "status": "success"
+}
+
+POST
+Cancel
+{{site-url}}/api/orders/cancel/105
+Скасувати замовлення
+AUTHORIZATION
+Bearer Token
+This request is using Bearer Token from collectionGPL API for Clients
+
+Example Request
+
+curl --location -g --request POST '{{site-url}}/api/orders/cancel/105'
+
+Example Response
+
+{
+  "data": {
+    "id": 105,
+    "weight": "60.000",
+    "price": "17065.5750",
+    "created_at": "2018-12-27 12:52:55",
+    "products": [
+      {
+        "id": 27,
+        "article": "AR-20488",
+        "name": "Aral BlueTronic 10W-40 1Lx12",
+        "weight": "1.000",
+        "unit": "шт",
+        "count": 20,
+        "price": "241.4475"
+      },
+      {
+        "id": 57,
+        "article": "1552A2",
+        "name": "Aral HighTronic F 5W-30 4Lx4",
+        "weight": "4.000",
+        "unit": "шт",
+        "count": 10,
+        "price": "1223.6625"
+      }
+    ],
+    "status": {
+      "id": 4,
+      "slug": "marking removal",
+      "name": "На видалення"
+    },
+    "currency": {
+      "id": 980,
+      "currency": "UAH",
+      "symbol": "₴"
+    }
+  },
+  "code": 200,
+  "status": "success"
+}
+
+Prices
+AUTHORIZATION
+Bearer Token
+This folder is using Bearer Token from collectionGPL API for Clients
+POST
+Get
+{{site-url}}/api/prices?page=1
+Отримати список цін
+Також не обовзяковим POST параметром filter можна передати дані для фільтрування результатів:
+articles - приймає массив артиклів
+is_vat - допомагає відфільтрувати товари з ПДВ. Приймає значення true, або false
+AUTHORIZATION
+Bearer Token
+This request is using Bearer Token from collectionGPL API for Clients
+HEADERS
+Content-Type
+application/json
+PARAMS
+page
+1
+Body
+raw
+{
+	"filter": {
+		"articles": [
+			"15529F", "AR-22004", "1555"
+		],
+        "is_vat": 1
+	}
+}
+
+Example Request
+
+curl --location -g --request POST '{{site-url}}/api/prices?page=1'
+
+Example Response
+
+{
+  "current_page": 1,
+  "data": {
+    "titles": {
+      "cid": "Код",
+      "category": "Група",
+      "article": "Артикул",
+      "name": "Найменування",
+      "description": "Опис",
+      "price_currency_980": "Ціна UAH",
+      "price_currency_840": "Ціна USD",
+      "price_type_1_currency_980": "Базова ціна UAH",
+      "price_type_1_currency_840": "Базова ціна USD",
+      "count_warehouse_3": "Склад Київ",
+      "count_warehouse_4": "Склад Львів"
+    },
+    "items": [
+      {
+        "cid": "0285023",
+        "category": "ARAL",
+        "article": "15529F",
+        "name": "Aral HighTronic F 5W-30 60L",
+        "description": "ACEA A1/B1, A5/B5 • API SL/CF • erfüllt Ford WSS-M2C913-A, WSS-M2C913-B, WSS-M2C913-C, WSS-M2C913-D • ILSAC GF-4",
+        "price_currency_980": "8635.23",
+        "price_currency_840": "310.06",
+        "price_type_1_currency_980": "14392.04",
+        "price_type_1_currency_840": "516.77",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "14"
+      },
+      {
+        "cid": "0088254",
+        "category": "ARAL",
+        "article": "AR-22004",
+        "name": "Aral Turboral 10W-40 5Lx4",
+        "description": "ACEA E3, E5, E7 • API CI-4/SL • MB-Freigabe 228.3/ 229.1/ 235.28 • MAN M 3275 • Volvo VDS-2 • Renault RLD • DAF HP-1/HP-2 • Deutz DQC III-10 • MTU Ölkategorie Typ 2 • Caterpillar ECF-2 • Cummins CES 20076, CES 20077, CES 20078 • Mack EOM-Plus",
+        "price_currency_980": "625.06",
+        "price_currency_840": "22.44",
+        "price_type_1_currency_980": "1041.77",
+        "price_type_1_currency_840": "37.41",
+        "count_warehouse_3": "31",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0033851",
+        "category": "ARAL",
+        "article": "AR-20632",
+        "name": "Aral High Tronic 5W-40 208L",
+        "description": "ACEA C3 • API SN/CF • MB-Freigabe 229.31/ 229.51/ 226.5 • VW 502 00/ 505 00/ 505 01 • BMW Longlife-04 • Porsche A40 • erfüllt Ford WSS-M2C917-A • Renault RN0700 / RN0710",
+        "price_currency_980": "23282.75",
+        "price_currency_840": "836.01",
+        "price_type_1_currency_980": "38804.59",
+        "price_type_1_currency_840": "1393.34",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "0"
+      },
+      {
+        "cid": "0302508",
+        "category": "ARAL",
+        "article": "151CED",
+        "name": "Aral HighTronic J 5W-30 1Lx12",
+        "description": "ACEA C2 • Meets Fiat 9.55535-S1 • PSA Approval B71 2290",
+        "price_currency_980": "197.48",
+        "price_currency_840": "7.09",
+        "price_type_1_currency_980": "329.13",
+        "price_type_1_currency_840": "11.82",
+        "count_warehouse_3": "3",
+        "count_warehouse_4": "4"
+      },
+      {
+        "cid": "0302509",
+        "category": "ARAL",
+        "article": "1555F7",
+        "name": "Aral HighTronic J 5W-30 4Lx4",
+        "description": "ACEA C2 • Meets Fiat 9.55535-S1 • PSA Approval B71 2290",
+        "price_currency_980": "746.41",
+        "price_currency_840": "26.80",
+        "price_type_1_currency_980": "1244.02",
+        "price_type_1_currency_840": "44.67",
+        "count_warehouse_3": "0",
+        "count_warehouse_4": "4"
+      },
+      {
+        "cid": "0302511",
+        "category": "ARAL",
+        "article": "158CC1",
+        "name": "Aral High Tronic M 5W-40 4Lx4",
+        "description": "ACEA A3/B3, A3/B4 • API SN/CF • BMW Longlife-01• MB-Approval 226.5/ 229.3/ 229.5 • Porsche A40 • Renault RN 0700 / RN 0710 • VW 502 00/ 505 00",
+        "price_currency_980": "658.64",
+        "price_currency_840": "23.65",
+        "price_type_1_currency_980": "1097.74",
+        "price_type_1_currency_840": "39.42",
+        "count_warehouse_3": "16",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0302582",
+        "category": "ARAL",
+        "article": "156E9C",
+        "name": "Aral SuperTronic 0W-40 1Lx12",
+        "description": "ACEA C2/C3 • API SN/CF • MB-Freigabe 229.31/ 229.51 • BMW Longlife-04 • erfüllt Fiat 9.55535-S2",
+        "price_currency_980": "254.72",
+        "price_currency_840": "9.15",
+        "price_type_1_currency_980": "424.53",
+        "price_type_1_currency_840": "15.24",
+        "count_warehouse_3": "14",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0302583",
+        "category": "ARAL",
+        "article": "1592BE",
+        "name": "Aral SuperTronic 0W-40 4Lx4",
+        "description": "ACEA C2/C3 • API SN/CF • MB-Freigabe 229.31/ 229.51 • BMW Longlife-04 • erfüllt Fiat 9.55535-S2",
+        "price_currency_980": "933.78",
+        "price_currency_840": "33.53",
+        "price_type_1_currency_980": "1556.29",
+        "price_type_1_currency_840": "55.88",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "27"
+      },
+      {
+        "cid": "0007523",
+        "category": "ARAL",
+        "article": "AR-20488",
+        "name": "Aral BlueTronic 10W-40 1Lx12",
+        "description": "ACEA A3/B3, A3/B4 • API SL/CF • MB-Freigabe 229.1 • VW 501 01/ 505 00 • erfüllt Fiat 9.55535-D2",
+        "price_currency_980": "140.24",
+        "price_currency_840": "5.04",
+        "price_type_1_currency_980": "233.73",
+        "price_type_1_currency_840": "8.39",
+        "count_warehouse_3": "95",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0007524",
+        "category": "ARAL",
+        "article": "AR-20480",
+        "name": "Aral BlueTronic 10W-40 208L",
+        "description": "ACEA A3/B3, A3/B4 • API SL/CF • MB-Freigabe 229.1 • VW 501 01/ 505 00 • erfüllt Fiat 9.55535-D2",
+        "price_currency_980": "18473.45",
+        "price_currency_840": "663.32",
+        "price_type_1_currency_980": "30789.08",
+        "price_type_1_currency_840": "1105.53",
+        "count_warehouse_3": "2",
+        "count_warehouse_4": "45"
+      },
+      {
+        "cid": "0007525",
+        "category": "ARAL",
+        "article": "AR-20484",
+        "name": "Aral BlueTronic 10W-40 4Lx4",
+        "description": "ACEA A3/B3, A3/B4 • API SL/CF • MB-Freigabe 229.1 • VW 501 01/ 505 00 • erfüllt Fiat 9.55535-D2",
+        "price_currency_980": "525.46",
+        "price_currency_840": "18.87",
+        "price_type_1_currency_980": "875.77",
+        "price_type_1_currency_840": "31.45",
+        "count_warehouse_3": "58",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0007526",
+        "category": "ARAL",
+        "article": "AR-10481",
+        "name": "Aral BlueTronic 10W-40 60L",
+        "description": "ACEA A3/B3, A3/B4 • API SL/CF • MB-Freigabe 229.1 • VW 501 01/ 505 00 • erfüllt Fiat 9.55535-D2",
+        "price_currency_980": "6026.99",
+        "price_currency_840": "216.41",
+        "price_type_1_currency_980": "10044.98",
+        "price_type_1_currency_840": "360.68",
+        "count_warehouse_3": "6",
+        "count_warehouse_4": "59"
+      },
+      {
+        "cid": "0007532",
+        "category": "ARAL",
+        "article": "AR-20637",
+        "name": "Aral High Tronic 5W-40 1Lx12",
+        "description": "ACEA C3 • API SN/CF • MB-Freigabe 229.31/ 229.51/ 226.5 • VW 502 00/ 505 00/ 505 01 • BMW Longlife-04 • Porsche A40 • erfüllt Ford WSS-M2C917-A • Renault RN0700 / RN0710",
+        "price_currency_980": "179.16",
+        "price_currency_840": "6.43",
+        "price_type_1_currency_980": "298.60",
+        "price_type_1_currency_840": "10.72",
+        "count_warehouse_3": "85",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0007533",
+        "category": "ARAL",
+        "article": "AR-20634",
+        "name": "Aral High Tronic 5W-40 4Lx4",
+        "description": "ACEA C3 • API SN/CF • MB-Freigabe 229.31/ 229.51/ 226.5 • VW 502 00/ 505 00/ 505 01 • BMW Longlife-04 • Porsche A40 • erfüllt Ford WSS-M2C917-A • Renault RN0700 / RN0710",
+        "price_currency_980": "661.69",
+        "price_currency_840": "23.76",
+        "price_type_1_currency_980": "1102.82",
+        "price_type_1_currency_840": "39.60",
+        "count_warehouse_3": "66",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0007534",
+        "category": "ARAL",
+        "article": "AR-20631",
+        "name": "Aral High Tronic 5W-40 60L",
+        "description": "ACEA C3 • API SN/CF • MB-Freigabe 229.31/ 229.51/ 226.5 • VW 502 00/ 505 00/ 505 01 • BMW Longlife-04 • Porsche A40 • erfüllt Ford WSS-M2C917-A • Renault RN0700 / RN0710",
+        "price_currency_980": "7221.59",
+        "price_currency_840": "259.30",
+        "price_type_1_currency_980": "12035.98",
+        "price_type_1_currency_840": "432.17",
+        "count_warehouse_3": "11",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0007538",
+        "category": "ARAL",
+        "article": "AR-23930",
+        "name": "Aral MegaTurboral 10W-40 208L",
+        "description": "ACEA E4, E7 • API CF • MB-Freigabe 228.5 • Volvo VDS-3 • Scania LDF-3 • Renault RLD-2 • Deutz DQC 111-10 • MTU Ölkategorie 3 • MACK EO-N",
+        "price_currency_980": "21989.51",
+        "price_currency_840": "789.57",
+        "price_type_1_currency_980": "36649.18",
+        "price_type_1_currency_840": "1315.95",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "0"
+      },
+      {
+        "cid": "0007541",
+        "category": "ARAL",
+        "article": "AR-10451",
+        "name": "Aral SuperTronic 0W-40 60L",
+        "description": "ACEA C2/C3 • API SN/CF • MB-Freigabe 229.31/ 229.51 • BMW Longlife-04 • erfüllt Fiat 9.55535-S2",
+        "price_currency_980": "12059.70",
+        "price_currency_840": "433.02",
+        "price_type_1_currency_980": "20099.51",
+        "price_type_1_currency_840": "721.71",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "1"
+      },
+      {
+        "cid": "0007543",
+        "category": "ARAL",
+        "article": "AR-20478",
+        "name": "Aral SuperTronic LongLife III 5W-30 1Lx12",
+        "description": "ACEA C3 • MB-Freigabe 229.51 • VW 503 01/ 504 00/ 507 00 (erfüllt die technischen Anforderungen der ehemaligen VW-Norm 503 01) • BMW Longlife-04 • Porsche C30",
+        "price_currency_980": "207.97",
+        "price_currency_840": "7.47",
+        "price_type_1_currency_980": "346.62",
+        "price_type_1_currency_840": "12.45",
+        "count_warehouse_3": "84",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0007544",
+        "category": "ARAL",
+        "article": "AR-20479",
+        "name": "Aral SuperTronic LongLife III 5W-30 4Lx4",
+        "description": "ACEA C3 • MB-Freigabe 229.51 • VW 503 01/ 504 00/ 507 00 (erfüllt die technischen Anforderungen der ehemaligen VW-Norm 503 01) • BMW Longlife-04 • Porsche C30",
+        "price_currency_980": "790.87",
+        "price_currency_840": "28.40",
+        "price_type_1_currency_980": "1318.11",
+        "price_type_1_currency_840": "47.33",
+        "count_warehouse_3": "91",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0007545",
+        "category": "ARAL",
+        "article": "AR-10471",
+        "name": "Aral SuperTronic LongLife III 5W-30 60L",
+        "description": "ACEA C3 • MB-Freigabe 229.51 • VW 503 01/ 504 00/ 507 00 (erfüllt die technischen Anforderungen der ehemaligen VW-Norm 503 01) • BMW Longlife-04 • Porsche C30",
+        "price_currency_980": "9010.34",
+        "price_currency_840": "323.53",
+        "price_type_1_currency_980": "15017.23",
+        "price_type_1_currency_840": "539.22",
+        "count_warehouse_3": "3",
+        "count_warehouse_4": "1"
+      },
+      {
+        "cid": "0204406",
+        "category": "ARAL",
+        "article": "14AF79",
+        "name": "Aral BlueTronic 10W-40 20L",
+        "description": "ACEA A3/B3, A3/B4 • API SL/CF • MB-Freigabe 229.1 • VW 501 01/ 505 00 • erfüllt Fiat 9.55535-D2",
+        "price_currency_980": "2006.07",
+        "price_currency_840": "72.03",
+        "price_type_1_currency_980": "3343.45",
+        "price_type_1_currency_840": "120.05",
+        "count_warehouse_3": "4",
+        "count_warehouse_4": "7"
+      },
+      {
+        "cid": "0204407",
+        "category": "ARAL",
+        "article": "1505B1",
+        "name": "Aral High Tronic 5W-40 20L",
+        "description": "ACEA C3 • API SN/CF • MB-Freigabe 229.31/ 229.51/ 226.5 • VW 502 00/ 505 00/ 505 01 • BMW Longlife-04 • Porsche A40 • erfüllt Ford WSS-M2C917-A • Renault RN0700 / RN0710",
+        "price_currency_980": "2625.60",
+        "price_currency_840": "94.28",
+        "price_type_1_currency_980": "4376.00",
+        "price_type_1_currency_840": "157.13",
+        "count_warehouse_3": "4",
+        "count_warehouse_4": "2"
+      },
+      {
+        "cid": "0087959",
+        "category": "ARAL",
+        "article": "AR-22000",
+        "name": "Aral Turboral 10W-40 208L",
+        "description": "ACEA E3, E5, E7 • API CI-4/SL • MB-Freigabe 228.3/ 229.1/ 235.28 • MAN M 3275 • Volvo VDS-2 • Renault RLD • DAF HP-1/HP-2 • Deutz DQC III-10 • MTU Ölkategorie Typ 2 • Caterpillar ECF-2 • Cummins CES 20076, CES 20077, CES 20078 • Mack EOM-Plus",
+        "price_currency_980": "19376.12",
+        "price_currency_840": "695.73",
+        "price_type_1_currency_980": "32293.54",
+        "price_type_1_currency_840": "1159.55",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "27"
+      },
+      {
+        "cid": "0087960",
+        "category": "ARAL",
+        "article": "AR-22001",
+        "name": "Aral Turboral 10W-40 60L",
+        "description": "ACEA E3, E5, E7 • API CI-4/SL • MB-Freigabe 228.3/ 229.1/ 235.28 • MAN M 3275 • Volvo VDS-2 • Renault RLD • DAF HP-1/HP-2 • Deutz DQC III-10 • MTU Ölkategorie Typ 2 • Caterpillar ECF-2 • Cummins CES 20076, CES 20077, CES 20078 • Mack EOM-Plus",
+        "price_currency_980": "5674.39",
+        "price_currency_840": "203.75",
+        "price_type_1_currency_980": "9457.32",
+        "price_type_1_currency_840": "339.58",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "33"
+      },
+      {
+        "cid": "0087961",
+        "category": "ARAL",
+        "article": "AR-22003",
+        "name": "Aral Turboral 10W-40 20L",
+        "description": "ACEA E3, E5, E7 • API CI-4/SL • MB-Freigabe 228.3/ 229.1/ 235.28 • MAN M 3275 • Volvo VDS-2 • Renault RLD • DAF HP-1/HP-2 • Deutz DQC III-10 • MTU Ölkategorie Typ 2 • Caterpillar ECF-2 • Cummins CES 20076, CES 20077, CES 20078 • Mack EOM-Plus",
+        "price_currency_980": "2047.28",
+        "price_currency_840": "73.51",
+        "price_type_1_currency_980": "3412.14",
+        "price_type_1_currency_840": "122.52",
+        "count_warehouse_3": "7",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0131891",
+        "category": "ARAL",
+        "article": "14F90C",
+        "name": "Aral HighTronic J 5W-30 60L",
+        "description": "ACEA C2 • Meets Fiat 9.55535-S1 • PSA Approval B71 2290",
+        "price_currency_980": "8018.18",
+        "price_currency_840": "287.91",
+        "price_type_1_currency_980": "13363.63",
+        "price_type_1_currency_840": "479.84",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "2"
+      },
+      {
+        "cid": "0067702",
+        "category": "ARAL",
+        "article": "AR-10472",
+        "name": "Aral SuperTronic LongLife III 5W-30 20L",
+        "description": "ACEA C3 • MB-Freigabe 229.51 • VW 503 01/ 504 00/ 507 00 (erfüllt die technischen Anforderungen der ehemaligen VW-Norm 503 01) • BMW Longlife-04 • Porsche C30",
+        "price_currency_980": "3114.05",
+        "price_currency_840": "111.81",
+        "price_type_1_currency_980": "5190.08",
+        "price_type_1_currency_840": "186.36",
+        "count_warehouse_3": "4",
+        "count_warehouse_4": "20"
+      },
+      {
+        "cid": "0038830",
+        "category": "ARAL",
+        "article": "AR-13931",
+        "name": "Aral MegaTurboral 10W-40 60L",
+        "description": "ACEA E4, E7 • API CF • MB-Freigabe 228.5 • Volvo VDS-3 • Scania LDF-3 • Renault RLD-2 • Deutz DQC 111-10 • MTU Ölkategorie 3 • MACK EO-N",
+        "price_currency_980": "6983.28",
+        "price_currency_840": "250.75",
+        "price_type_1_currency_980": "11638.80",
+        "price_type_1_currency_840": "417.91",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "8"
+      },
+      {
+        "cid": "0204104",
+        "category": "ARAL",
+        "article": "AR-10338",
+        "name": "Aral HighTronic F 5W-30 1Lx12",
+        "description": "ACEA A1/B1, A5/B5 • API SL/CF • erfüllt Ford WSS-M2C913-A, WSS-M2C913-B, WSS-M2C913-C, WSS-M2C913-D • ILSAC GF-4",
+        "price_currency_980": "179.35",
+        "price_currency_840": "6.44",
+        "price_type_1_currency_980": "298.92",
+        "price_type_1_currency_840": "10.73",
+        "count_warehouse_3": "5",
+        "count_warehouse_4": "36"
+      },
+      {
+        "cid": "0204105",
+        "category": "ARAL",
+        "article": "1552A2",
+        "name": "Aral HighTronic F 5W-30 4Lx4",
+        "description": "ACEA A1/B1, A5/B5 • API SL/CF • erfüllt Ford WSS-M2C913-A, WSS-M2C913-B, WSS-M2C913-C, WSS-M2C913-D • ILSAC GF-4",
+        "price_currency_980": "710.73",
+        "price_currency_840": "25.52",
+        "price_type_1_currency_980": "1184.55",
+        "price_type_1_currency_840": "42.53",
+        "count_warehouse_3": "15",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0204106",
+        "category": "ARAL",
+        "article": "AR-21387",
+        "name": "Aral HighTronic G 5W-30 1Lx12",
+        "description": "ACEA C3 • API SN/CF • MB-Freigabe 229.52/ 229.51/ 229.31 • GM dexos2®",
+        "price_currency_980": "195.57",
+        "price_currency_840": "7.02",
+        "price_type_1_currency_980": "325.95",
+        "price_type_1_currency_840": "11.70",
+        "count_warehouse_3": "16",
+        "count_warehouse_4": "49"
+      },
+      {
+        "cid": "0204107",
+        "category": "ARAL",
+        "article": "155EA7",
+        "name": "Aral HighTronic G 5W-30 4Lx4",
+        "description": "ACEA C3 • API SN/CF • MB-Freigabe 229.52/ 229.51/ 229.31 • GM dexos2®",
+        "price_currency_980": "741.83",
+        "price_currency_840": "26.64",
+        "price_type_1_currency_980": "1236.38",
+        "price_type_1_currency_840": "44.39",
+        "count_warehouse_3": "10",
+        "count_warehouse_4": "20"
+      },
+      {
+        "cid": "0204109",
+        "category": "ARAL",
+        "article": "14AF38",
+        "name": "Aral MegaTurboral 10W-40 LA 20L",
+        "description": "ACEA E6, E7\nAPI CI-4\nMB-Freigabe 228.51/ 235.27\nDeutz DQC IV-10LA\nMAN M 3477\nMTU Oil Category 3.1\nRVI RLD-2 RXD\nVolvo VDS 3\nVoith-Retarder Ölklasse A",
+        "price_currency_980": "2362.10",
+        "price_currency_840": "84.82",
+        "price_type_1_currency_980": "3936.84",
+        "price_type_1_currency_840": "141.36",
+        "count_warehouse_3": "2",
+        "count_warehouse_4": "0"
+      },
+      {
+        "cid": "0204112",
+        "category": "ARAL",
+        "article": "15548E",
+        "name": "Aral Getriebeöl ATF 55 1Lx12",
+        "description": "ZF TE-ML 04D, 14A • Voith H55.6335xx • MB-Freigabe 236.9 • MAN 339 Typ Z1/V1 • Volvo Transmission Oil 9734 • entspricht Ford Mercon® • entspricht GM Dexron® IIIH • Allison C4",
+        "price_currency_980": "171.34",
+        "price_currency_840": "6.15",
+        "price_type_1_currency_980": "285.56",
+        "price_type_1_currency_840": "10.25",
+        "count_warehouse_3": "15",
+        "count_warehouse_4": "100"
+      },
+      {
+        "cid": "0204114",
+        "category": "ARAL",
+        "article": "154EC0",
+        "name": "Aral Getriebeöl ATF 22 1Lx12",
+        "description": "ZF TE-ML 04D, 11A, 14A • Voith H55.6335xx • MB-Freigabe 236.6 • MAN 339 Typ Z1/V1 • entspricht Ford Mercon® • entspricht GM Dexron® II",
+        "price_currency_980": "146.34",
+        "price_currency_840": "5.25",
+        "price_type_1_currency_980": "243.91",
+        "price_type_1_currency_840": "8.76",
+        "count_warehouse_3": "6",
+        "count_warehouse_4": "9"
+      },
+      {
+        "cid": "0204116",
+        "category": "ARAL",
+        "article": "15546A",
+        "name": "Aral Getriebeöl EP SYNTH 75W-90 1Lx12",
+        "description": "API GL-4 + • VW 501 50",
+        "price_currency_980": "297.08",
+        "price_currency_840": "10.67",
+        "price_type_1_currency_980": "495.13",
+        "price_type_1_currency_840": "17.78",
+        "count_warehouse_3": "6",
+        "count_warehouse_4": "9"
+      },
+      {
+        "cid": "0038925",
+        "category": "ARAL",
+        "article": "AR-20470",
+        "name": "Aral SuperTronic LongLife III 5W-30 208L",
+        "description": "ACEA C3 • MB-Freigabe 229.51 • VW 503 01/ 504 00/ 507 00 (erfüllt die technischen Anforderungen der ehemaligen VW-Norm 503 01) • BMW Longlife-04 • Porsche C30",
+        "price_currency_980": "28976.80",
+        "price_currency_840": "1040.46",
+        "price_type_1_currency_980": "48294.66",
+        "price_type_1_currency_840": "1734.10",
+        "count_warehouse_3": "2",
+        "count_warehouse_4": "5"
+      },
+      {
+        "cid": "0038926",
+        "category": "ARAL",
+        "article": "AR-13932",
+        "name": "Aral MegaTurboral 10W-40 20L",
+        "description": "ACEA E4, E7 • API CF • MB-Freigabe 228.5 • Volvo VDS-3 • Scania LDF-3 • Renault RLD-2 • Deutz DQC 111-10 • MTU Ölkategorie 3 • MACK EO-N",
+        "price_currency_980": "2386.14",
+        "price_currency_840": "85.68",
+        "price_type_1_currency_980": "3976.91",
+        "price_type_1_currency_840": "142.80",
+        "count_warehouse_3": "0",
+        "count_warehouse_4": "7"
+      },
+      {
+        "cid": "0203630",
+        "category": "ARAL",
+        "article": "AR-20485",
+        "name": "Aral BlueTronic 10W-40 5Lx4",
+        "description": "ACEA A3/B3, A3/B4 • API SL/CF • MB-Freigabe 229.1 • VW 501 01/ 505 00 • erfüllt Fiat 9.55535-D2",
+        "price_currency_980": "643.76",
+        "price_currency_840": "23.12",
+        "price_type_1_currency_980": "1072.93",
+        "price_type_1_currency_840": "38.53",
+        "count_warehouse_3": "20",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0203631",
+        "category": "ARAL",
+        "article": "AR-20635",
+        "name": "Aral High Tronic 5W-40 5Lx4",
+        "description": "ACEA C3 • API SN/CF • MB-Freigabe 229.31/ 229.51/ 226.5 • VW 502 00/ 505 00/ 505 01 • BMW Longlife-04 • Porsche A40 • erfüllt Ford WSS-M2C917-A • Renault RN0700 / RN0710",
+        "price_currency_980": "830.36",
+        "price_currency_840": "29.82",
+        "price_type_1_currency_980": "1383.94",
+        "price_type_1_currency_840": "49.69",
+        "count_warehouse_3": "45",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0203632",
+        "category": "ARAL",
+        "article": "AR-20475",
+        "name": "Aral SuperTronic LongLife III 5W-30 5Lx4",
+        "description": "ACEA C3 • MB-Freigabe 229.51 • VW 503 01/ 504 00/ 507 00 (erfüllt die technischen Anforderungen der ehemaligen VW-Norm 503 01) • BMW Longlife-04 • Porsche C30",
+        "price_currency_980": "988.15",
+        "price_currency_840": "35.48",
+        "price_type_1_currency_980": "1646.92",
+        "price_type_1_currency_840": "59.14",
+        "count_warehouse_3": "38",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0159310",
+        "category": "EVO",
+        "article": "HYDRAULIC 32 200L",
+        "name": "HYDRAULIC OIL 32, 200L",
+        "description": "DIN 51524 Part 2 HLP, ISO-L-FD (HYDRAULIC OIL 10-22), ISO-L-HM (HYDRAULIC OIL 32-100), AFNOR NF E 48-603 HM, ISO 11158 HM, ASTM D 6158 HM, Denison HF-0/HF-1/HF-2, Cincinnati Machine P-68, Eaton Brochure 694 for 35VQ25A, GM LS-2, FZG 12, Vickers Vane Pump",
+        "price_currency_980": "9389.08",
+        "price_currency_840": "337.13",
+        "price_type_1_currency_980": "15648.46",
+        "price_type_1_currency_840": "561.88",
+        "count_warehouse_3": "0",
+        "count_warehouse_4": "11"
+      },
+      {
+        "cid": "0159312",
+        "category": "EVO",
+        "article": "HYDRAULIC 68 200L",
+        "name": "HYDRAULIC OIL 68, 200L",
+        "description": "DIN 51524 Part 2 HLP, ISO-L-FD (HYDRAULIC OIL 10-22), ISO-L-HM (HYDRAULIC OIL 32-100), AFNOR NF E 48-603 HM, ISO 11158 HM, ASTM D 6158 HM, Denison HF-0/HF-1/HF-2, Cincinnati Machine P-69, Eaton Brochure 694 for 35VQ25A, GM LS-2, FZG 12, Vickers Vane Pump",
+        "price_currency_980": "9581.98",
+        "price_currency_840": "344.06",
+        "price_type_1_currency_980": "15969.96",
+        "price_type_1_currency_840": "573.43",
+        "count_warehouse_3": "0",
+        "count_warehouse_4": "30"
+      },
+      {
+        "cid": "0159314",
+        "category": "EVO",
+        "article": "HYDRAULIC 32 20L",
+        "name": "HYDRAULIC OIL 32, 20L",
+        "description": "DIN 51524 Part 2 HLP, ISO-L-FD (HYDRAULIC OIL 10-22), ISO-L-HM (HYDRAULIC OIL 32-100), AFNOR NF E 48-603 HM, ISO 11158 HM, ASTM D 6158 HM, Denison HF-0/HF-1/HF-2, Cincinnati Machine P-68, Eaton Brochure 694 for 35VQ25A, GM LS-2, FZG 12, Vickers Vane Pump",
+        "price_currency_980": "1216.35",
+        "price_currency_840": "43.68",
+        "price_type_1_currency_980": "2027.25",
+        "price_type_1_currency_840": "72.79",
+        "count_warehouse_3": "3",
+        "count_warehouse_4": "7"
+      },
+      {
+        "cid": "0269340",
+        "category": "REPSOL",
+        "article": "RP137E51",
+        "name": "RP ELITE NEO 5W20 CP-1 (12х1Л)",
+        "description": "API SN-RC; ILSAC GF-5;американські,азіатські авто \n",
+        "price_currency_980": "166.64",
+        "price_currency_840": "5.98",
+        "price_type_1_currency_980": "252.49",
+        "price_type_1_currency_840": "9.07",
+        "count_warehouse_3": "3",
+        "count_warehouse_4": "6"
+      },
+      {
+        "cid": "0269408",
+        "category": "REPSOL",
+        "article": "RP024D51",
+        "name": "RP CARTAGO GL-4+ 75W80 CP-1  (12х1Л)",
+        "description": "трансмісія, синтетика, API GL-4+",
+        "price_currency_980": "140.20",
+        "price_currency_840": "5.03",
+        "price_type_1_currency_980": "212.42",
+        "price_type_1_currency_840": "7.63",
+        "count_warehouse_3": "16",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0269409",
+        "category": "REPSOL",
+        "article": "RP026A51",
+        "name": "RP MATIC VI ATF (DEXRON VI) CP-1 (12х1Л)",
+        "description": "трансміссія,ATF",
+        "price_currency_980": "183.02",
+        "price_currency_840": "6.57",
+        "price_type_1_currency_980": "277.30",
+        "price_type_1_currency_840": "9.96",
+        "count_warehouse_3": "3",
+        "count_warehouse_4": "33"
+      },
+      {
+        "cid": "0269410",
+        "category": "REPSOL",
+        "article": "RPP141L55",
+        "name": "RP ELITE COMPETICION 5W40 CP-5  (5х5Л) !!! Акція 5л по ціні 4л",
+        "description": "моторне синтетичне, API SN/CF, ACEA A3/B3, A3/B4, VW 502.00/505.00, MB 229.3, BMW LL-01",
+        "price_currency_980": "615.37",
+        "price_currency_840": "22.10",
+        "price_type_1_currency_980": "932.38",
+        "price_type_1_currency_840": "33.48",
+        "count_warehouse_3": "60",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0270329",
+        "category": "REPSOL",
+        "article": "RP137B51",
+        "name": "RP ELITE NEO 10W30 CP-1 (12х1Л)",
+        "description": "API SN-RC; ILSAC GF-5;американські,азіатські авто \n",
+        "price_currency_980": "125.93",
+        "price_currency_840": "4.52",
+        "price_type_1_currency_980": "190.80",
+        "price_type_1_currency_840": "6.85",
+        "count_warehouse_3": "3",
+        "count_warehouse_4": "7"
+      },
+      {
+        "cid": "0197866",
+        "category": "EVO",
+        "article": "DF-X 85W-1402 20L",
+        "name": "DF-X 85W-140 GL-5 20L",
+        "description": "API GL-5, Mil-L-2105D, ZF TE-ML-05A/07A/17B, CS 3000B, Ford M2C9002-A, Mack GO-G, Scania STO 1:0",
+        "price_currency_980": "1815.27",
+        "price_currency_840": "65.18",
+        "price_type_1_currency_980": "3025.45",
+        "price_type_1_currency_840": "108.63",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "10"
+      },
+      {
+        "cid": "0197867",
+        "category": "EVO",
+        "article": "DF-X 85W-1402 200L",
+        "name": "DF-X 85W-140 GL-5 200L",
+        "description": "API GL-5, Mil-L-2105D, ZF TE-ML-05A/07A/17B, CS 3000B, Ford M2C9002-A, Mack GO-G, Scania STO 1:0",
+        "price_currency_980": "16902.78",
+        "price_currency_840": "606.92",
+        "price_type_1_currency_980": "28171.30",
+        "price_type_1_currency_840": "1011.54",
+        "count_warehouse_3": "0",
+        "count_warehouse_4": "2"
+      },
+      {
+        "cid": "0019077",
+        "category": "SHELL",
+        "article": "0019077",
+        "name": "SHELL Helix HX7 10W-40  1L",
+        "description": "",
+        "price_currency_980": "118.14",
+        "price_currency_840": "4.24",
+        "price_type_1_currency_980": "196.90",
+        "price_type_1_currency_840": "7.07",
+        "count_warehouse_3": "33",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0309549",
+        "category": "SHELL",
+        "article": "0309549",
+        "name": "SHELL Helix HX8 ECT C3 5W-30 1L",
+        "description": "",
+        "price_currency_980": "160.08",
+        "price_currency_840": "5.75",
+        "price_type_1_currency_980": "266.80",
+        "price_type_1_currency_840": "9.58",
+        "count_warehouse_3": "4",
+        "count_warehouse_4": "11"
+      },
+      {
+        "cid": "0241250",
+        "category": "EVO",
+        "article": "MULTITYPE1L",
+        "name": "MULTITYPE ATF 1Lx9",
+        "description": "Meets requirements : Toyota ATF T-III/T-IV/D-II/WS, Nissan Matic Fluid C/D/J/K, Honda ATF-Z1 (except in CVT), Mazda ATF M-V, Mitsubishi/Hyundai/Kia SP-II/SP-III, Suzuki ATF 3314, Subaru ATF/ATF 5AT/ATF HP, GM Dexron IID/IIE/IIIG/IIIH, TASA, Ford Mercon/M2C 138CJ/166H/922A1/924A, Aisin Warner JWS 3309/3324, Isuzu Besco ATF II/III, Allison C4/TES-228, JASO M 315-2013 Type 1A, MB 236.1/236.6/236.7/236.8/236.9/236.10, BMW 7045E/8072B, Chrysler ATF+3/ATF+4, VAG G-055-025, Volvo 1161540, ZF TE-ML 09/11A/11B",
+        "price_currency_980": "143.10",
+        "price_currency_840": "5.14",
+        "price_type_1_currency_980": "238.50",
+        "price_type_1_currency_840": "8.56",
+        "count_warehouse_3": "19",
+        "count_warehouse_4": "37"
+      },
+      {
+        "cid": "0248682",
+        "category": "OE VW AUDI",
+        "article": "G052167M2",
+        "name": "VW AUDI Special Plus 5W-40 1Lx12",
+        "description": "",
+        "price_currency_980": "242.32",
+        "price_currency_840": "8.70",
+        "price_type_1_currency_980": "403.86",
+        "price_type_1_currency_840": "14.50",
+        "count_warehouse_3": "10",
+        "count_warehouse_4": "88"
+      },
+      {
+        "cid": "0248687",
+        "category": "OE TOYOTA",
+        "article": "08880-80835",
+        "name": "TOYOTA SYNTHETIC 5W-40 5Lx4 (NEW)",
+        "description": "",
+        "price_currency_980": "1248.60",
+        "price_currency_840": "44.83",
+        "price_type_1_currency_980": "2080.99",
+        "price_type_1_currency_840": "74.72",
+        "count_warehouse_3": "3",
+        "count_warehouse_4": "6"
+      },
+      {
+        "cid": "0248688",
+        "category": "OE TOYOTA",
+        "article": "08880-80836",
+        "name": "TOYOTA SYNTHETIC 5W-40 1Lx12 (NEW)",
+        "description": "",
+        "price_currency_980": "303.56",
+        "price_currency_840": "10.90",
+        "price_type_1_currency_980": "505.94",
+        "price_type_1_currency_840": "18.17",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "0"
+      },
+      {
+        "cid": "0248689",
+        "category": "OE TOYOTA",
+        "article": "08885-80606",
+        "name": "TOYOTA UNIVERSAL SYNTHETIC 75W-90 1Lx12",
+        "description": "",
+        "price_currency_980": "404.69",
+        "price_currency_840": "14.53",
+        "price_type_1_currency_980": "674.48",
+        "price_type_1_currency_840": "24.22",
+        "count_warehouse_3": "4",
+        "count_warehouse_4": "20"
+      },
+      {
+        "cid": "0240872",
+        "category": "OE VW AUDI",
+        "article": "G052167M4",
+        "name": "VW AUDI Special Plus 5W-40 5Lx4",
+        "description": "",
+        "price_currency_980": "1145.18",
+        "price_currency_840": "41.12",
+        "price_type_1_currency_980": "1908.64",
+        "price_type_1_currency_840": "68.53",
+        "count_warehouse_3": "10",
+        "count_warehouse_4": "65"
+      },
+      {
+        "cid": "0020228",
+        "category": "BI POWER",
+        "article": "0020228",
+        "name": "JO Bi-Power Moto 4T 1Lx12 10W-40",
+        "description": "",
+        "price_currency_980": "106.28",
+        "price_currency_840": "3.82",
+        "price_type_1_currency_980": "177.13",
+        "price_type_1_currency_840": "6.36",
+        "count_warehouse_3": "38",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0160613",
+        "category": "EVO",
+        "article": "HYDRAULIC 100 200L",
+        "name": "HYDRAULIC OIL 100, 200L",
+        "description": "DIN 51524 Part 2 HLP, ISO-L-HM (HYDRAULIC OIL 32-100), AFNOR NF E 48-603 HM, ISO 11158 HM, ASTM D 6158 HM, Denison HF-0,HF-1,HF-2, Cincinnati Machine P-68, P-69, P-70, Eaton Brochure 694 for 35VQ25A, GM LS-2, Vickers Vane Pump",
+        "price_currency_980": "10527.39",
+        "price_currency_840": "378.00",
+        "price_type_1_currency_980": "17545.65",
+        "price_type_1_currency_840": "630.01",
+        "count_warehouse_3": "0",
+        "count_warehouse_4": "16"
+      },
+      {
+        "cid": "0029095",
+        "category": "OE GM",
+        "article": "1942043",
+        "name": "GM 10W-40 1 Liter (x20)",
+        "description": "",
+        "price_currency_980": "96.16",
+        "price_currency_840": "3.45",
+        "price_type_1_currency_980": "160.27",
+        "price_type_1_currency_840": "5.75",
+        "count_warehouse_3": "93",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0029096",
+        "category": "OE GM",
+        "article": "1942044",
+        "name": "GM 10W-40 2 Liter (x10)",
+        "description": "",
+        "price_currency_980": "186.60",
+        "price_currency_840": "6.70",
+        "price_type_1_currency_980": "311.00",
+        "price_type_1_currency_840": "11.17",
+        "count_warehouse_3": "24",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0029097",
+        "category": "OE GM",
+        "article": "1942046",
+        "name": "GM 10W-40 5 Liter (x4)",
+        "description": "",
+        "price_currency_980": "405.83",
+        "price_currency_840": "14.57",
+        "price_type_1_currency_980": "676.39",
+        "price_type_1_currency_840": "24.29",
+        "count_warehouse_3": " > 100",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0031840",
+        "category": "OE GM",
+        "article": "1942001",
+        "name": "GM DEXOS 2 5W-30 2 Liter (x10)",
+        "description": "",
+        "price_currency_980": "261.97",
+        "price_currency_840": "9.41",
+        "price_type_1_currency_980": "436.61",
+        "price_type_1_currency_840": "15.68",
+        "count_warehouse_3": "38",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0033814",
+        "category": "OE TOYOTA",
+        "article": "00279-000Т4",
+        "name": "TOYOTA ATF Type T-IV 1qt (946 ml)х12",
+        "description": "",
+        "price_currency_980": "171.44",
+        "price_currency_840": "6.16",
+        "price_type_1_currency_980": "285.74",
+        "price_type_1_currency_840": "10.26",
+        "count_warehouse_3": "6",
+        "count_warehouse_4": "28"
+      },
+      {
+        "cid": "0033815",
+        "category": "OE TOYOTA",
+        "article": "00289-ATFWS",
+        "name": "TOYOTA ATF WS 1qt (946 ml)х12",
+        "description": "",
+        "price_currency_980": "262.35",
+        "price_currency_840": "9.42",
+        "price_type_1_currency_980": "437.25",
+        "price_type_1_currency_840": "15.70",
+        "count_warehouse_3": "65",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0033835",
+        "category": "EVO",
+        "article": "TRD3 200L",
+        "name": "TRD3 TRUCK DIESEL 15W-40 200L",
+        "description": "API CI-4/SL, ACEA E3/E7/B3/B4/A3\nCorresponds MB 228.3/229.1, VDS-3, MAN M3275, Cummins CES 20076/20077/20078, Mack EO-N/EO-M+, Global\nDHD-1, CAT ECF-1-a/ECF-2, Deutz DQC III-10, MTU Type 2",
+        "price_currency_980": "13466.09",
+        "price_currency_840": "483.52",
+        "price_type_1_currency_980": "22443.49",
+        "price_type_1_currency_840": "805.87",
+        "count_warehouse_3": "0",
+        "count_warehouse_4": "17"
+      },
+      {
+        "cid": "0033845",
+        "category": "BI POWER",
+        "article": "0033845",
+        "name": "JO Trans 75w90 Manual 1Lx12",
+        "description": "",
+        "price_currency_980": "172.45",
+        "price_currency_840": "6.19",
+        "price_type_1_currency_980": "287.41",
+        "price_type_1_currency_840": "10.32",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "86"
+      },
+      {
+        "cid": "0033849",
+        "category": "BI POWER",
+        "article": "0033849",
+        "name": "JO MATIC ATF DIII 1Lx12",
+        "description": "",
+        "price_currency_980": "125.33",
+        "price_currency_840": "4.50",
+        "price_type_1_currency_980": "208.88",
+        "price_type_1_currency_840": "7.50",
+        "count_warehouse_3": "4",
+        "count_warehouse_4": "51"
+      },
+      {
+        "cid": "0033875",
+        "category": "EVO",
+        "article": "2T RAC (RED) 1L",
+        "name": "MOTO 2T RACING (RED) 1Lx9",
+        "description": "API TC, JACO FC",
+        "price_currency_980": "88.34",
+        "price_currency_840": "3.17",
+        "price_type_1_currency_980": "147.23",
+        "price_type_1_currency_840": "5.29",
+        "count_warehouse_3": "20",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0033876",
+        "category": "EVO",
+        "article": "2T BIO (GREEN) 1L",
+        "name": "MOTO 2T BIO (GREEN) 1Lx9",
+        "description": "API TC, JACO FC",
+        "price_currency_980": "96.74",
+        "price_currency_840": "3.47",
+        "price_type_1_currency_980": "161.23",
+        "price_type_1_currency_840": "5.79",
+        "count_warehouse_3": "22",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0018903",
+        "category": "SHELL",
+        "article": "0018903",
+        "name": "SHELL Helix Ultra 5W-40 1L",
+        "description": "",
+        "price_currency_980": "161.42",
+        "price_currency_840": "5.80",
+        "price_type_1_currency_980": "269.03",
+        "price_type_1_currency_840": "9.66",
+        "count_warehouse_3": "18",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0287434",
+        "category": "OE MITSUBISHI",
+        "article": "MZ313771",
+        "name": "MITSUBISHI DIAQUEEN ATF J2 1qt (946 ml)х12",
+        "description": "",
+        "price_currency_980": "365.61",
+        "price_currency_840": "13.13",
+        "price_type_1_currency_980": "609.36",
+        "price_type_1_currency_840": "21.88",
+        "count_warehouse_3": "6",
+        "count_warehouse_4": "83"
+      },
+      {
+        "cid": "0287439",
+        "category": "OE NISSAN",
+        "article": "999PK005W30N",
+        "name": "NISSAN 5W30 Blend 1qt (946 ml)х12",
+        "description": "",
+        "price_currency_980": "114.96",
+        "price_currency_840": "4.13",
+        "price_type_1_currency_980": "191.61",
+        "price_type_1_currency_840": "6.88",
+        "count_warehouse_3": "7",
+        "count_warehouse_4": "3"
+      },
+      {
+        "cid": "0287440",
+        "category": "OE TOYOTA",
+        "article": "00279-1QT20",
+        "name": "TOYOTA Motor Oil 5W-20 1qt (946 ml)х12",
+        "description": "",
+        "price_currency_980": "113.46",
+        "price_currency_840": "4.07",
+        "price_type_1_currency_980": "189.10",
+        "price_type_1_currency_840": "6.79",
+        "count_warehouse_3": "19",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0300552",
+        "category": "OE VW AUDI",
+        "article": "G052182A2",
+        "name": "VW AUDI ATF DSG 1Lx6 (G052182A2)",
+        "description": "",
+        "price_currency_980": "572.59",
+        "price_currency_840": "20.56",
+        "price_type_1_currency_980": "954.32",
+        "price_type_1_currency_840": "34.27",
+        "count_warehouse_3": "6",
+        "count_warehouse_4": "12"
+      },
+      {
+        "cid": "0300553",
+        "category": "OE VW AUDI",
+        "article": "G004000M2",
+        "name": "VW AUDI Power Steering Fluid 1Lx12 (G004000M2)",
+        "description": "",
+        "price_currency_980": "318.45",
+        "price_currency_840": "11.43",
+        "price_type_1_currency_980": "530.74",
+        "price_type_1_currency_840": "19.06",
+        "count_warehouse_3": "12",
+        "count_warehouse_4": "21"
+      },
+      {
+        "cid": "0302595",
+        "category": "OE TOYOTA",
+        "article": "08885-00705",
+        "name": "TOYOTA Gear Oil 75W-80 GL-4 (Japan) 4L (x6)",
+        "description": "",
+        "price_currency_980": "1427.57",
+        "price_currency_840": "51.26",
+        "price_type_1_currency_980": "2379.28",
+        "price_type_1_currency_840": "85.43",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "2"
+      },
+      {
+        "cid": "0302596",
+        "category": "OE TOYOTA",
+        "article": "08885-02106",
+        "name": "TOYOTA Gear Oil Super 75W-90 GL-5 (Japan) 1L (x24)",
+        "description": "",
+        "price_currency_980": "406.59",
+        "price_currency_840": "14.60",
+        "price_type_1_currency_980": "677.66",
+        "price_type_1_currency_840": "24.33",
+        "count_warehouse_3": "7",
+        "count_warehouse_4": "24"
+      },
+      {
+        "cid": "0218027",
+        "category": "EVO",
+        "article": "GEAROIL EP150 20L",
+        "name": "GEAROIL EP 150, 20L",
+        "description": "DIN 51517-3 CLP, AGMA 9005-E02, US Steel 224, David Brown S1.53.101(E)",
+        "price_currency_980": "1377.77",
+        "price_currency_840": "49.47",
+        "price_type_1_currency_980": "2296.28",
+        "price_type_1_currency_840": "82.45",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "15"
+      },
+      {
+        "cid": "0218030",
+        "category": "EVO",
+        "article": "MULTIGEAR75W-80 20L",
+        "name": "MULTIGEAR 75W-80 20L",
+        "description": "Corresponds API GL-4, MAN 341 Typ Z4/E3, ZF TE-ML 01L/02L/16K, Mil-L-2105, DAF, Volvo 97305, Eaton Europe (extended drain), Iveco, Renault",
+        "price_currency_980": "3213.26",
+        "price_currency_840": "115.38",
+        "price_type_1_currency_980": "5355.44",
+        "price_type_1_currency_840": "192.30",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "0"
+      },
+      {
+        "cid": "0218032",
+        "category": "EVO",
+        "article": "COMPRESSOR 46 10L",
+        "name": "COMPRESSOR OIL 46, 10L",
+        "description": "DIN 51506 VDL, DIN 51352-2, ISO 6743-3A-DAH",
+        "price_currency_980": "828.45",
+        "price_currency_840": "29.75",
+        "price_type_1_currency_980": "1380.76",
+        "price_type_1_currency_840": "49.58",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "45"
+      },
+      {
+        "cid": "0218033",
+        "category": "EVO",
+        "article": "COMPRESSOR 68 10L",
+        "name": "COMPRESSOR OIL 68, 10L",
+        "description": "DIN 51506 VDL, DIN 51352-2; ISO 6743-3A-DAH",
+        "price_currency_980": "907.44",
+        "price_currency_840": "32.58",
+        "price_type_1_currency_980": "1512.41",
+        "price_type_1_currency_840": "54.31",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "5"
+      },
+      {
+        "cid": "0284306",
+        "category": "OE BMW",
+        "article": "83212365930",
+        "name": "BMW Twinpower Tubo Oil Longlife-01 SAE 5W-30 1L (x12)",
+        "description": "",
+        "price_currency_980": "244.80",
+        "price_currency_840": "8.79",
+        "price_type_1_currency_980": "407.99",
+        "price_type_1_currency_840": "14.65",
+        "count_warehouse_3": "4",
+        "count_warehouse_4": "11"
+      },
+      {
+        "cid": "0284426",
+        "category": "EVO",
+        "article": "E5 10W-40 BULK",
+        "name": "E5 10W-40 SM/CF  (налив) L",
+        "description": "API SM/CF, ACEA A3/B4, MB 229.1, VW 502.00/505.00",
+        "price_currency_980": "54.00",
+        "price_currency_840": "1.94",
+        "price_type_1_currency_980": "89.99",
+        "price_type_1_currency_840": "3.23",
+        "count_warehouse_3": "0",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0038956",
+        "category": "EVO",
+        "article": "MG-X 75W-90 200L",
+        "name": "MG-X 75W-90 GL-4/5 Manual 200L",
+        "description": "API GL-4/GL-5, MB 235.6, ZF TE-ML 05A/07A/16B/17A, MAN 342 M2, MAN 341 Z1, SCANIA STO 1:0",
+        "price_currency_980": "24134.67",
+        "price_currency_840": "866.60",
+        "price_type_1_currency_980": "40224.46",
+        "price_type_1_currency_840": "1444.33",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "5"
+      },
+      {
+        "cid": "0021009",
+        "category": "BI POWER",
+        "article": "0021009",
+        "name": "JO Bi-Power 10w40 4Lx4 SM/CF",
+        "description": "",
+        "price_currency_980": "328.02",
+        "price_currency_840": "11.78",
+        "price_type_1_currency_980": "546.70",
+        "price_type_1_currency_840": "19.63",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": " > 100"
+      },
+      {
+        "cid": "0021010",
+        "category": "BI POWER",
+        "article": "0021010",
+        "name": "JO Bi-Power 5w30 1Lx12 SM/CF",
+        "description": "",
+        "price_currency_980": "159.08",
+        "price_currency_840": "5.71",
+        "price_type_1_currency_980": "265.13",
+        "price_type_1_currency_840": "9.52",
+        "count_warehouse_3": "5",
+        "count_warehouse_4": "68"
+      },
+      {
+        "cid": "0021012",
+        "category": "BI POWER",
+        "article": "0021012",
+        "name": "JO Bi-Power 5w40 1Lx12 SM/CF",
+        "description": "",
+        "price_currency_980": "153.40",
+        "price_currency_840": "5.51",
+        "price_type_1_currency_980": "255.66",
+        "price_type_1_currency_840": "9.18",
+        "count_warehouse_3": "2",
+        "count_warehouse_4": "15"
+      },
+      {
+        "cid": "0021014",
+        "category": "BI POWER",
+        "article": "0021014",
+        "name": "JO Bi-Power Turbo Diesel 10w40 1Lx12 CF",
+        "description": "",
+        "price_currency_980": "110.95",
+        "price_currency_840": "3.98",
+        "price_type_1_currency_980": "184.92",
+        "price_type_1_currency_840": "6.64",
+        "count_warehouse_3": "6",
+        "count_warehouse_4": "49"
+      },
+      {
+        "cid": "0021015",
+        "category": "BI POWER",
+        "article": "0021015",
+        "name": "JO Bi-Power Turbo Diesel 10w40 5Lx4 CF",
+        "description": "",
+        "price_currency_980": "462.70",
+        "price_currency_840": "16.61",
+        "price_type_1_currency_980": "771.17",
+        "price_type_1_currency_840": "27.69",
+        "count_warehouse_3": "2",
+        "count_warehouse_4": "39"
+      },
+      {
+        "cid": "0021016",
+        "category": "BI POWER",
+        "article": "0021016",
+        "name": "JO Bi-Power Turbo Diesel 5w40 1Lx12 CF",
+        "description": "",
+        "price_currency_980": "169.61",
+        "price_currency_840": "6.09",
+        "price_type_1_currency_980": "282.68",
+        "price_type_1_currency_840": "10.15",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "72"
+      },
+      {
+        "cid": "0160702",
+        "category": "EVO",
+        "article": "Manual 80W-90 20L",
+        "name": "MG 80W-90 GL-4 Manual 20L",
+        "description": "API GL-4, MB 235.5, ZF TE-ML 02B/17A, MAN 341 Z, VW TL 726",
+        "price_currency_980": "1580.97",
+        "price_currency_840": "56.77",
+        "price_type_1_currency_980": "2634.95",
+        "price_type_1_currency_840": "94.61",
+        "count_warehouse_3": "2",
+        "count_warehouse_4": "20"
+      },
+      {
+        "cid": "0204361",
+        "category": "OE BMW",
+        "article": "83212365929",
+        "name": "BMW Twinpower Tubo Oil Longlife-04 SAE 0W-30 1L (x12)",
+        "description": "",
+        "price_currency_980": "331.23",
+        "price_currency_840": "11.89",
+        "price_type_1_currency_980": "552.05",
+        "price_type_1_currency_840": "19.82",
+        "count_warehouse_3": "14",
+        "count_warehouse_4": "28"
+      },
+      {
+        "cid": "0204362",
+        "category": "OE BMW",
+        "article": "83212365933",
+        "name": "BMW Twinpower Tubo Oil Longlife-04 SAE 5W-30 1L (x12)",
+        "description": "",
+        "price_currency_980": "251.86",
+        "price_currency_840": "9.04",
+        "price_type_1_currency_980": "419.76",
+        "price_type_1_currency_840": "15.07",
+        "count_warehouse_3": "27",
+        "count_warehouse_4": "35"
+      },
+      {
+        "cid": "0204365",
+        "category": "OE BMW",
+        "article": "83212365925",
+        "name": "BMW M Twinpower Tubo Oil Longlife-01 SAE 0W-40 1L (x12)",
+        "description": "",
+        "price_currency_980": "428.92",
+        "price_currency_840": "15.40",
+        "price_type_1_currency_980": "714.86",
+        "price_type_1_currency_840": "25.67",
+        "count_warehouse_3": "11",
+        "count_warehouse_4": "16"
+      },
+      {
+        "cid": "0204367",
+        "category": "EVO",
+        "article": "ATF DII 20 L",
+        "name": "GR ATF DII 20L",
+        "description": "Dexron IID, MAN 339 Z1/V1, Allison C4, ZF TE-ML 03D/ 09B/11A/14A, Voith 55.6335, MB 236.1, Caterpillar TO-2",
+        "price_currency_980": "1976.69",
+        "price_currency_840": "70.98",
+        "price_type_1_currency_980": "3294.48",
+        "price_type_1_currency_840": "118.29",
+        "count_warehouse_3": "1",
+        "count_warehouse_4": "1"
+      },
+      {
+        "cid": "0132137",
+        "category": "OE HONDA",
+        "article": "08200-9007",
+        "name": "HONDA Genuie Dual Pump Fluid II 1qt (946 ml)х12",
+        "description": "",
+        "price_currency_980": "293.43",
+        "price_currency_840": "10.54",
+        "price_type_1_currency_980": "489.05",
+        "price_type_1_currency_840": "17.56",
+        "count_warehouse_3": "2",
+        "count_warehouse_4": "40"
+      },
+      {
+        "cid": "0158697",
+        "category": "SHELL",
+        "article": "0158697",
+        "name": "SHELL Helix HX8 5W-30  4L",
+        "description": "",
+        "price_currency_980": "573.32",
+        "price_currency_840": "20.59",
+        "price_type_1_currency_980": "955.53",
+        "price_type_1_currency_840": "34.31",
+        "count_warehouse_3": "7",
+        "count_warehouse_4": "27"
+      }
+    ]
+  },
+  "first_page_url": "http://online.gpl.ua/api/prices?page=1",
+  "from": 1,
+  "last_page": 13,
+  "last_page_url": "http://online.gpl.ua/api/prices?page=13",
+  "next_page_url": "http://online.gpl.ua/api/prices?page=2",
+  "path": "http://online.gpl.ua/api/prices",
+  "per_page": 100,
+  "prev_page_url": null,
+  "to": 100,
+  "total": 1289
+}

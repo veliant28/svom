@@ -1,0 +1,685 @@
+{
+  "backoffice": {
+    "common": {
+      "loading": "Загрузка...",
+      "requestFailed": "Не удалось выполнить запрос.",
+      "toast": {
+        "errors": {
+          "defaultAction": "Не удалось выполнить действие. Попробуйте позже.",
+          "network": "Проблема с сетью. Проверьте подключение и повторите попытку.",
+          "supplierUnavailable": "Поставщик временно недоступен.",
+          "cooldown": "Слишком рано повторять запрос. Попробуйте чуть позже.",
+          "cooldownSeconds": "Слишком рано повторять запрос. Подождите {seconds} секунд."
+        }
+      },
+      "closeSidebar": "Закрыть боковую панель",
+      "yes": "Да",
+      "no": "Нет",
+      "statuses": {
+        "unknown": "Неизвестно",
+        "pending": "Ожидает",
+        "running": "Выполняется",
+        "generating": "Генерируется",
+        "ready": "Готово",
+        "downloaded": "Скачан",
+        "imported": "Импортирован",
+        "success": "Успешно",
+        "partial": "Частично",
+        "failed": "Ошибка",
+        "processed": "Обработан",
+        "skipped": "Пропущен",
+        "attention": "Требует внимания",
+        "enabled": "Включено",
+        "disabled": "Выключено",
+        "active": "Активно",
+        "inactive": "Неактивно",
+        "connected": "Подключено",
+        "disconnected": "Не подключено",
+        "expired": "Истек токен",
+        "error": "Ошибка",
+        "new": "Новый",
+        "confirmed": "Подтвержден",
+        "awaiting_procurement": "Ожидает закупки",
+        "reserved": "Зарезервирован",
+        "partially_reserved": "Частично зарезервирован",
+        "ready_to_ship": "Готов к отправке",
+        "shipped": "Отправлен",
+        "completed": "Завершен",
+        "cancelled": "Отменен",
+        "draft": "Черновик",
+        "placed": "Оформлен",
+        "unavailable": "Недоступно",
+        "ok": "Норма",
+        "customer_request": "Запрос клиента",
+        "payment_failed": "Ошибка оплаты",
+        "supplier_shortage": "Дефицит у поставщика",
+        "operator_decision": "Решение оператора",
+        "other": "Другое",
+        "stock_shortage": "Недостаток остатка",
+        "price_changed": "Изменилась цена",
+        "supplier_unavailable": "Поставщик недоступен",
+        "lead_time_too_long": "Слишком долгий срок поставки",
+        "unmapped": "Не сопоставлен",
+        "unmatched": "Не сопоставлен",
+        "auto_matched": "Сопоставлен автоматически",
+        "manual_match_required": "Требуется ручное сопоставление",
+        "manually_matched": "Сопоставлен вручную",
+        "auto_mapped": "Сопоставлен автоматически",
+        "manual_mapped": "Вручную",
+        "needs_review": "Проверка",
+        "ignored": "Игнорирован",
+        "brand_conflict": "Конфликт бренда",
+        "article_conflict": "Конфликт артикула",
+        "ambiguous_match": "Неоднозначное совпадение",
+        "missing_brand": "Не указан бренд",
+        "missing_article": "Не указан артикул"
+      },
+      "topbar": {
+        "role": "Операционный контур",
+        "toggleSidebar": "Переключить боковую панель",
+        "toggleTheme": "Переключить тему",
+        "themeMode": {
+          "light": "Светлая",
+          "dark": "Темная",
+          "system": "Системная"
+        },
+        "logout": "Выйти"
+      },
+      "rawOffers": {
+        "title": "Сырые офферы",
+        "subtitle": "Промежуточный слой офферов поставщиков перед итоговым upsert.",
+        "filters": {
+          "search": "Поиск по SKU, артикулу или бренду",
+          "all": "Все строки",
+          "valid": "Только валидные",
+          "invalid": "Только невалидные"
+        },
+        "actions": {
+          "refresh": "Обновить"
+        },
+        "table": {
+          "columns": {
+            "supplier": "Поставщик",
+            "sku": "SKU / Артикул",
+            "brand": "Бренд",
+            "price": "Цена",
+            "stock": "Остаток",
+            "state": "Состояние"
+          }
+        },
+        "states": {
+          "empty": "Сырые офферы не найдены."
+        }
+      },
+      "supplierOffers": {
+        "title": "Офферы поставщиков",
+        "subtitle": "Операционная матрица офферов для входа в ценообразование.",
+        "filters": {
+          "search": "Поиск по товару, поставщику или SKU",
+          "all": "Все офферы",
+          "available": "В наличии",
+          "unavailable": "Недоступны"
+        },
+        "actions": {
+          "refresh": "Обновить"
+        },
+        "table": {
+          "columns": {
+            "supplier": "Поставщик",
+            "product": "Товар",
+            "supplierSku": "SKU поставщика",
+            "price": "Закупочная цена",
+            "stock": "Остаток",
+            "availability": "Доступность"
+          }
+        },
+        "states": {
+          "empty": "Офферы поставщиков не найдены."
+        }
+      },
+      "productPrices": {
+        "title": "Цены товаров",
+        "subtitle": "Финальные рассчитанные цены после политик и переоценки.",
+        "filters": {
+          "search": "Поиск по товару, бренду или политике"
+        },
+        "actions": {
+          "refresh": "Обновить"
+        },
+        "table": {
+          "columns": {
+            "product": "Товар",
+            "category": "Категория",
+            "purchasePrice": "Закупка",
+            "finalPrice": "Финальная",
+            "policy": "Политика",
+            "updated": "Обновлено"
+          }
+        },
+        "states": {
+          "empty": "Цены товаров не найдены."
+        }
+      },
+      "importSchedules": {
+        "title": "Расписания импорта",
+        "subtitle": "Настройка автоматического импорта по источникам.",
+        "filters": {
+          "search": "Поиск источника"
+        },
+        "states": {
+          "empty": "Источники не найдены."
+        },
+        "actions": {
+          "enable": "Включить",
+          "disable": "Выключить",
+          "saveDefaults": "Сохранить значения по умолчанию"
+        },
+        "messages": {
+          "scheduleUpdated": "Состояние расписания обновлено для {source}.",
+          "scheduleSaved": "Настройки расписания сохранены для {source}.",
+          "actionFailed": "Не удалось обновить расписание."
+        },
+        "table": {
+          "columns": {
+            "source": "Источник",
+            "enabled": "Автоимпорт",
+            "cron": "Расписание",
+            "nextRun": "Следующий запуск",
+            "lastResult": "Последний результат",
+            "actions": "Действия"
+          },
+          "lastRunSummary": "строк: {rows} / ошибок: {errors}"
+        }
+      },
+      "brandAliases": {
+        "title": "Алиасы брендов",
+        "subtitle": "Нормализация алиасов брендов поставщиков к каноническим брендам.",
+        "form": {
+          "alias": "Алиас поставщика",
+          "canonical": "Канонический бренд"
+        },
+        "filters": {
+          "search": "Поиск по алиасу или каноническому бренду"
+        },
+        "states": {
+          "empty": "Алиасы пока не добавлены."
+        },
+        "actions": {
+          "create": "Создать",
+          "activate": "Активировать",
+          "deactivate": "Деактивировать"
+        },
+        "messages": {
+          "created": "Алиас бренда создан.",
+          "updated": "Алиас бренда обновлен.",
+          "actionFailed": "Не удалось обновить алиасы брендов."
+        },
+        "table": {
+          "columns": {
+            "alias": "Алиас",
+            "canonical": "Канонический",
+            "scope": "Область",
+            "priority": "Приоритет",
+            "status": "Статус",
+            "actions": "Действия"
+          },
+          "scopeGlobal": "Глобально"
+        }
+      },
+      "brands": {
+        "title": "Бренды",
+        "subtitle": "Операционное управление брендами каталога.",
+        "create": {
+          "title": "Создание бренда"
+        },
+        "edit": {
+          "title": "Редактирование: {name}",
+          "fallbackTitle": "Редактирование бренда"
+        },
+        "modal": {
+          "subtitle": "Изменения сохраняются в catalog.Brand."
+        },
+        "fields": {
+          "name": "Название бренда",
+          "isActive": "Активен"
+        },
+        "filters": {
+          "search": "Поиск по названию бренда",
+          "all": "Все",
+          "active": "Только активные",
+          "inactive": "Только неактивные"
+        },
+        "actions": {
+          "create": "Создать бренд",
+          "edit": "Редактировать",
+          "delete": "Удалить",
+          "save": "Сохранить",
+          "cancel": "Отмена"
+        },
+        "messages": {
+          "nameRequired": "Укажите название бренда.",
+          "created": "Бренд создан.",
+          "createFailed": "Не удалось создать бренд.",
+          "updated": "Бренд обновлен.",
+          "updateFailed": "Не удалось обновить бренд.",
+          "deleteConfirm": "Удалить бренд «{name}»?",
+          "deleted": "Бренд удалён.",
+          "deleteFailed": "Не удалось удалить бренд."
+        },
+        "states": {
+          "empty": "Бренды не найдены."
+        },
+        "table": {
+          "columns": {
+            "name": "Бренд",
+            "status": "Статус",
+            "updated": "Обновлено",
+            "actions": "Действия"
+          }
+        },
+        "pagination": {
+          "total": "Всего брендов: {count}",
+          "prev": "Назад",
+          "next": "Вперед",
+          "page": "Страница {current} из {total}"
+        }
+      },
+      "products": {
+        "title": "Товары",
+        "subtitle": "Операционное управление товарами каталога.",
+        "create": {
+          "title": "Создание товара"
+        },
+        "edit": {
+          "title": "Редактирование товара"
+        },
+        "modal": {
+          "subtitle": "Изменения сохраняются в catalog.Product."
+        },
+        "fields": {
+          "sku": "SKU",
+          "article": "Артикул",
+          "name": "Название товара",
+          "brand": "Бренд",
+          "category": "Категория"
+        },
+        "flags": {
+          "active": "Активен",
+          "featured": "Рекомендуемый",
+          "new": "Новинка",
+          "bestseller": "Хит продаж"
+        },
+        "filters": {
+          "search": "Поиск по SKU, названию, бренду или категории",
+          "allStates": "Любой статус",
+          "active": "Только активные",
+          "inactive": "Только неактивные",
+          "allBrands": "Все бренды",
+          "allCategories": "Все категории"
+        },
+        "actions": {
+          "refresh": "Обновить",
+          "create": "Создать товар",
+          "pricing": "Цена",
+          "bulkActions": "Массовые действия",
+          "selectPage": "Выбрать страницу",
+          "unselectPage": "Снять выбор страницы",
+          "edit": "Редактировать",
+          "delete": "Удалить",
+          "save": "Сохранить",
+          "cancel": "Отмена",
+          "bulkReindex": "Переиндексировать",
+          "bulkDelete": "Удалить выбранные"
+        },
+        "messages": {
+          "required": "Заполните обязательные поля: SKU, название, бренд и категория.",
+          "created": "Товар создан.",
+          "createFailed": "Не удалось создать товар.",
+          "updated": "Товар обновлен.",
+          "updateFailed": "Не удалось обновить товар.",
+          "deleteConfirm": "Удалить товар «{name}»?",
+          "deleted": "Товар удалён.",
+          "deleteFailed": "Не удалось удалить товар.",
+          "reindexQueued": "Переиндексация поставлена в очередь для {count} товар(ов).",
+          "reindexFailed": "Не удалось поставить переиндексацию в очередь.",
+          "bulkDeleteConfirm": "Удалить выбранные товары ({count})?",
+          "bulkDeleted": "Удалено товаров: {count}.",
+          "bulkDeletePartial": "Удалено: {deleted}. Не удалось удалить: {failed}.",
+          "bulkDeleteFailed": "Не удалось удалить выбранные товары."
+        },
+        "states": {
+          "empty": "Товары не найдены.",
+          "editingUnavailable": "Редактируемый товар отсутствует в текущей странице."
+        },
+        "tooltips": {
+          "actionEdit": "Редактировать товар",
+          "actionDelete": "Удалить товар",
+          "openPricing": "Открыть управление ценами и наценками.",
+          "bulkActions": "Массовые действия с выбранными товарами.",
+          "pricePrimary": "Основная цена товара для каталога.",
+          "priceWithMarkup": "Цена с наценкой",
+          "supplierPrice": "Цена поставщика",
+          "appliedMarkup": "Примененная наценка",
+          "policy": "Политика",
+          "policyGlobal": "Общая наценка",
+          "policyCategory": "Наценка по категориям",
+          "notSet": "Не задано",
+          "updatedAt": "Обновлено"
+        },
+        "table": {
+          "supplierArticle": "Артикул поставщика",
+          "columns": {
+            "select": "Выбор",
+            "product": "Товар",
+            "brand": "Бренд",
+            "price": "Цена",
+            "warehouses": "Склады",
+            "stock": "Остаток",
+            "status": "Статус",
+            "actions": "Действия"
+          }
+        },
+        "pagination": {
+          "total": "Всего товаров: {count}",
+          "prev": "Назад",
+          "next": "Вперед",
+          "page": "Страница {current} из {total}"
+        }
+      },
+      "pricing": {
+        "title": "Управление ценами",
+        "subtitle": "Простая панель наценок и переоценки товаров.",
+        "actions": {
+          "refresh": "Обновить",
+          "increase": "Увеличить процент",
+          "decrease": "Уменьшить процент",
+          "applyGlobal": "Применить общую наценку",
+          "applyCategory": "Применить для категории",
+          "recalculateAll": "Пересчитать все товары",
+          "recalculateCategory": "Пересчитать категорию"
+        },
+        "fields": {
+          "globalPercent": "Общая наценка",
+          "categoryPercent": "Наценка категории",
+          "categorySearch": "Поиск категории",
+          "selectCategory": "Выберите категорию",
+          "includeChildren": "Применять и к подкатегориям"
+        },
+        "blocks": {
+          "chart": {
+            "title": "Текущая картина по наценке",
+            "subtitle": "Распределение товаров по диапазонам наценки"
+          },
+          "global": {
+            "title": "Общая наценка",
+            "scope": "Применяется ко всем активным товарам: {count}",
+            "hint": "Диапазон: 0–100%"
+          },
+          "category": {
+            "title": "Наценка по категориям",
+            "impact": "Затронуто товаров: {count}"
+          },
+          "top": {
+            "title": "Top / Not top",
+            "ready": "Режим доступен.",
+            "unavailable": "Отдельной ценовой логики top/not top в проекте сейчас нет.",
+            "stats": "Top: {top} · Not top: {other}"
+          },
+          "recalculate": {
+            "title": "Применение и пересчет"
+          }
+        },
+        "tooltips": {
+          "chart": "Показывает, у скольких товаров наценка в каждом диапазоне.",
+          "global": "Общая наценка влияет на товары без более приоритетных правил.",
+          "category": "Наценка категории имеет приоритет над общей. Можно включить подкатегории.",
+          "top": "Блок top/not top активируется только когда есть отдельная бизнес-логика для этого сегмента.",
+          "recalculate": "Пересчет обновляет финальные цены на основе текущих правил.",
+          "recalculateAll": "Запустить пересчет всех активных товаров.",
+          "recalculateCategory": "Запустить пересчет только выбранной категории."
+        },
+        "messages": {
+          "globalApplied": "Общая наценка применена. Затронуто товаров: {count}. Режим: {mode}.",
+          "globalFailed": "Не удалось применить общую наценку.",
+          "categoryApplied": "Наценка категории применена. Товаров: {count}, категорий: {categories}.",
+          "categoryFailed": "Не удалось применить наценку для категории.",
+          "recalculateQueued": "Пересчет запущен. Затронуто товаров: {count}. Режим: {mode}.",
+          "recalculateFailed": "Не удалось запустить пересчет."
+        },
+        "states": {
+          "empty": "Нет данных для управления ценами.",
+          "chartEmpty": "Нет данных для графика."
+        }
+      },
+      "categories": {
+        "title": "Категории",
+        "subtitle": "Операционное управление категориями каталога.",
+        "create": {
+          "title": "Создание категории"
+        },
+        "edit": {
+          "title": "Редактирование: {name}",
+          "fallbackTitle": "Редактирование категории"
+        },
+        "modal": {
+          "subtitle": "Изменения сохраняются в catalog.Category."
+        },
+        "fields": {
+          "name": "Название категории",
+          "parentNone": "Без родительской категории",
+          "description": "Описание (необязательно)",
+          "isActive": "Активна"
+        },
+        "filters": {
+          "search": "Поиск по названию категории",
+          "all": "Все",
+          "active": "Только активные",
+          "inactive": "Только неактивные",
+          "anyParent": "Любой уровень",
+          "rootOnly": "Только корневые"
+        },
+        "actions": {
+          "create": "Создать категорию",
+          "edit": "Редактировать",
+          "delete": "Удалить",
+          "save": "Сохранить",
+          "cancel": "Отмена"
+        },
+        "messages": {
+          "nameRequired": "Укажите название категории.",
+          "created": "Категория создана.",
+          "createFailed": "Не удалось создать категорию.",
+          "updated": "Категория обновлена.",
+          "updateFailed": "Не удалось обновить категорию.",
+          "deleteConfirm": "Удалить категорию «{name}»?",
+          "deleted": "Категория удалена.",
+          "deleteFailed": "Не удалось удалить категорию."
+        },
+        "states": {
+          "empty": "Категории не найдены."
+        },
+        "table": {
+          "columns": {
+            "name": "Категория",
+            "status": "Статус",
+            "updated": "Обновлено",
+            "actions": "Действия"
+          },
+          "rootLabel": "Корень"
+        },
+        "pagination": {
+          "total": "Всего категорий: {count}",
+          "prev": "Назад",
+          "next": "Вперед",
+          "page": "Страница {current} из {total}"
+        }
+      },
+      "articleRules": {
+        "title": "Правила артикулов",
+        "subtitle": "Настройка правил нормализации артикулов и источниковых переопределений.",
+        "form": {
+          "name": "Название правила",
+          "pattern": "Шаблон",
+          "replacement": "Замена"
+        },
+        "ruleTypes": {
+          "remove_separators": "Удалить разделители",
+          "strip_prefix": "Удалить префикс",
+          "strip_suffix": "Удалить суффикс",
+          "regex_replace": "Замена по регулярному выражению",
+          "force_uppercase": "Верхний регистр"
+        },
+        "filters": {
+          "search": "Поиск правил"
+        },
+        "states": {
+          "empty": "Правила нормализации не найдены."
+        },
+        "actions": {
+          "create": "Создать",
+          "activate": "Активировать",
+          "deactivate": "Деактивировать"
+        },
+        "messages": {
+          "created": "Правило артикулов создано.",
+          "updated": "Правило артикулов обновлено.",
+          "actionFailed": "Не удалось обновить правила артикулов."
+        },
+        "table": {
+          "columns": {
+            "name": "Название",
+            "type": "Тип",
+            "pattern": "Шаблон",
+            "replacement": "Замена",
+            "priority": "Приоритет",
+            "status": "Статус",
+            "actions": "Действия"
+          }
+        }
+      },
+      "orders": {
+        "title": "Заказы",
+        "subtitle": "Операционная очередь заказов со статусами закупки и действиями.",
+        "filters": {
+          "search": "Поиск по заказу, клиенту или товару",
+          "allStatuses": "Все статусы"
+        },
+        "actions": {
+          "refresh": "Обновить",
+          "bulkConfirm": "Массово подтвердить",
+          "bulkAwaiting": "Массово перевести в ожидание закупки",
+          "open": "Открыть",
+          "confirm": "Подтвердить",
+          "awaiting": "В ожидание закупки"
+        },
+        "table": {
+          "columns": {
+            "select": "Выбор",
+            "order": "Заказ",
+            "status": "Статус",
+            "issues": "Проблемы",
+            "total": "Итого",
+            "actions": "Действия"
+          }
+        },
+        "states": {
+          "empty": "Заказы не найдены."
+        }
+      },
+      "orderDetail": {
+        "title": "Заказ",
+        "titleWithNumber": "Заказ {orderNumber}",
+        "subtitle": "Операции по заказу, закупке позиций и назначению поставщиков.",
+        "actions": {
+          "backToOrders": "Назад к заказам",
+          "confirm": "Подтвердить",
+          "awaiting": "В ожидание закупки",
+          "reserve": "Зарезервировать позиции",
+          "readyToShip": "Готов к отправке",
+          "cancel": "Отменить заказ",
+          "recommendSupplier": "Подобрать поставщика",
+          "setRecommendedSupplier": "Назначить рекомендованного поставщика"
+        },
+        "cancelReasons": {
+          "customer_request": "Запрос клиента",
+          "payment_failed": "Ошибка оплаты",
+          "supplier_shortage": "Дефицит у поставщика",
+          "unavailable": "Недоступно",
+          "operator_decision": "Решение оператора",
+          "other": "Другое"
+        },
+        "summary": {
+          "status": "Статус",
+          "customer": "Клиент",
+          "totals": "Итоги",
+          "itemsIssues": "Позиций: {items}, проблем: {issues}"
+        },
+        "table": {
+          "columns": {
+            "product": "Товар",
+            "qty": "Кол-во",
+            "availability": "Наличие",
+            "supplier": "Поставщик",
+            "procurement": "Закупка",
+            "actions": "Действия"
+          },
+          "eta": "ETA: {days} дн.",
+          "recommended": "Рекомендован: {value}",
+          "selected": "Выбран: {value}",
+          "suggestedNow": "Актуально сейчас: {value}"
+        },
+        "states": {
+          "notFound": "Заказ не найден.",
+          "emptyItems": "Позиции заказа отсутствуют."
+        }
+      },
+      "procurement": {
+        "title": "Закупки",
+        "subtitle": "Операционный список заказов, требующих распределения и резервирования у поставщиков.",
+        "actions": {
+          "openSuggestions": "Открыть рекомендации поставщиков",
+          "refresh": "Обновить",
+          "openOrder": "Открыть заказ"
+        },
+        "table": {
+          "columns": {
+            "order": "Заказ",
+            "status": "Статус",
+            "issues": "Проблемы",
+            "total": "Итого",
+            "actions": "Действия"
+          }
+        },
+        "states": {
+          "empty": "Заказы для закупки не найдены."
+        }
+      },
+      "procurementSuggestions": {
+        "title": "Рекомендации закупки",
+        "subtitle": "Группировка рекомендаций по поставщикам: что и у кого закупать.",
+        "actions": {
+          "backToProcurement": "Назад к закупкам",
+          "refresh": "Обновить"
+        },
+        "unassigned": "Без назначения",
+        "supplierCode": "Код поставщика: {code}",
+        "groupTotals": "Позиций: {items} · Количество: {quantity}",
+        "table": {
+          "columns": {
+            "order": "Заказ",
+            "product": "Товар",
+            "qty": "Кол-во",
+            "offer": "Оффер",
+            "fulfillment": "Исполнение",
+            "status": "Статус"
+          },
+          "stock": "Остаток: {value}",
+          "eta": "ETA: {days} дн."
+        },
+        "states": {
+          "empty": "Рекомендации по закупке отсутствуют."
+        }
+      }
+    }
+  }
+}

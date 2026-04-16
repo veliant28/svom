@@ -1,0 +1,11 @@
+{
+  "search": {
+    "title": "Search",
+    "subtitle": "Search supports query, brand, category and garage fitment.",
+    "states": {
+      "noCriteria": "Enter a query or select filters.",
+      "searching": "Searching...",
+      "found": "Found: {count}"
+    }
+  }
+}

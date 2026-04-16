@@ -1,0 +1,41 @@
+# macOS
+.DS_Store
+
+# secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+*.log
+
+# Next / Node
+node_modules/
+.next/
+out/
+dist/
+build/
+
+# generated artifacts
+category_mapping_exports/
+*.xlsx
+*.csv

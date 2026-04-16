@@ -1,0 +1,685 @@
+{
+  "backoffice": {
+    "common": {
+      "loading": "Loading...",
+      "requestFailed": "Request failed.",
+      "toast": {
+        "errors": {
+          "defaultAction": "Unable to complete the action. Please try again later.",
+          "network": "Network problem. Check your connection and try again.",
+          "supplierUnavailable": "Supplier is temporarily unavailable.",
+          "cooldown": "This action is on cooldown. Please try again shortly.",
+          "cooldownSeconds": "Too early to repeat this action. Wait {seconds} seconds."
+        }
+      },
+      "closeSidebar": "Close sidebar",
+      "yes": "Yes",
+      "no": "No",
+      "statuses": {
+        "unknown": "Unknown",
+        "pending": "Pending",
+        "running": "Running",
+        "generating": "Generating",
+        "ready": "Ready",
+        "downloaded": "Downloaded",
+        "imported": "Imported",
+        "success": "Success",
+        "partial": "Partial",
+        "failed": "Failed",
+        "processed": "Processed",
+        "skipped": "Skipped",
+        "attention": "Needs attention",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "active": "Active",
+        "inactive": "Inactive",
+        "connected": "Connected",
+        "disconnected": "Disconnected",
+        "expired": "Token expired",
+        "error": "Error",
+        "new": "New",
+        "confirmed": "Confirmed",
+        "awaiting_procurement": "Awaiting procurement",
+        "reserved": "Reserved",
+        "partially_reserved": "Partially reserved",
+        "ready_to_ship": "Ready to ship",
+        "shipped": "Shipped",
+        "completed": "Completed",
+        "cancelled": "Cancelled",
+        "draft": "Draft",
+        "placed": "Placed",
+        "unavailable": "Unavailable",
+        "ok": "OK",
+        "customer_request": "Customer request",
+        "payment_failed": "Payment failed",
+        "supplier_shortage": "Supplier shortage",
+        "operator_decision": "Operator decision",
+        "other": "Other",
+        "stock_shortage": "Stock shortage",
+        "price_changed": "Price changed",
+        "supplier_unavailable": "Supplier unavailable",
+        "lead_time_too_long": "Lead time too long",
+        "unmapped": "Unmapped",
+        "unmatched": "Unmatched",
+        "auto_matched": "Auto matched",
+        "manual_match_required": "Manual match required",
+        "manually_matched": "Manually matched",
+        "auto_mapped": "Auto mapped",
+        "manual_mapped": "Manually mapped",
+        "needs_review": "Review",
+        "ignored": "Ignored",
+        "brand_conflict": "Brand conflict",
+        "article_conflict": "Article conflict",
+        "ambiguous_match": "Ambiguous match",
+        "missing_brand": "Missing brand",
+        "missing_article": "Missing article"
+      },
+      "topbar": {
+        "role": "Operations",
+        "toggleSidebar": "Toggle sidebar",
+        "toggleTheme": "Toggle theme",
+        "themeMode": {
+          "light": "Light",
+          "dark": "Dark",
+          "system": "System"
+        },
+        "logout": "Logout"
+      },
+      "rawOffers": {
+        "title": "Raw Offers",
+        "subtitle": "Staging layer for supplier offers before final upsert.",
+        "filters": {
+          "search": "Search by SKU/article/brand",
+          "all": "All rows",
+          "valid": "Valid only",
+          "invalid": "Invalid only"
+        },
+        "actions": {
+          "refresh": "Refresh"
+        },
+        "table": {
+          "columns": {
+            "supplier": "Supplier",
+            "sku": "SKU / Article",
+            "brand": "Brand",
+            "price": "Price",
+            "stock": "Stock",
+            "state": "State"
+          }
+        },
+        "states": {
+          "empty": "No raw offers found."
+        }
+      },
+      "supplierOffers": {
+        "title": "Supplier Offers",
+        "subtitle": "Operational supplier offer matrix for pricing input.",
+        "filters": {
+          "search": "Search by product/supplier/SKU",
+          "all": "All offers",
+          "available": "Available",
+          "unavailable": "Unavailable"
+        },
+        "actions": {
+          "refresh": "Refresh"
+        },
+        "table": {
+          "columns": {
+            "supplier": "Supplier",
+            "product": "Product",
+            "supplierSku": "Supplier SKU",
+            "price": "Purchase price",
+            "stock": "Stock",
+            "availability": "Availability"
+          }
+        },
+        "states": {
+          "empty": "No supplier offers found."
+        }
+      },
+      "productPrices": {
+        "title": "Product Prices",
+        "subtitle": "Final calculated prices after policies and repricing.",
+        "filters": {
+          "search": "Search by product/brand/policy"
+        },
+        "actions": {
+          "refresh": "Refresh"
+        },
+        "table": {
+          "columns": {
+            "product": "Product",
+            "category": "Category",
+            "purchasePrice": "Purchase",
+            "finalPrice": "Final",
+            "policy": "Policy",
+            "updated": "Updated"
+          }
+        },
+        "states": {
+          "empty": "No product prices found."
+        }
+      },
+      "importSchedules": {
+        "title": "Import Schedules",
+        "subtitle": "Configure automatic imports per source.",
+        "filters": {
+          "search": "Search source"
+        },
+        "states": {
+          "empty": "No sources found."
+        },
+        "actions": {
+          "enable": "Enable",
+          "disable": "Disable",
+          "saveDefaults": "Save defaults"
+        },
+        "messages": {
+          "scheduleUpdated": "Schedule state updated for {source}.",
+          "scheduleSaved": "Schedule settings saved for {source}.",
+          "actionFailed": "Unable to update the import schedule."
+        },
+        "table": {
+          "columns": {
+            "source": "Source",
+            "enabled": "Auto import",
+            "cron": "Schedule",
+            "nextRun": "Next run",
+            "lastResult": "Last result",
+            "actions": "Actions"
+          },
+          "lastRunSummary": "rows: {rows} / errors: {errors}"
+        }
+      },
+      "brandAliases": {
+        "title": "Brand Aliases",
+        "subtitle": "Normalize supplier brand aliases to canonical brand names.",
+        "form": {
+          "alias": "Supplier alias",
+          "canonical": "Canonical brand"
+        },
+        "filters": {
+          "search": "Search alias or canonical"
+        },
+        "states": {
+          "empty": "No aliases yet."
+        },
+        "actions": {
+          "create": "Create",
+          "activate": "Activate",
+          "deactivate": "Deactivate"
+        },
+        "messages": {
+          "created": "Brand alias created.",
+          "updated": "Brand alias updated.",
+          "actionFailed": "Unable to update brand aliases."
+        },
+        "table": {
+          "columns": {
+            "alias": "Alias",
+            "canonical": "Canonical",
+            "scope": "Scope",
+            "priority": "Priority",
+            "status": "Status",
+            "actions": "Actions"
+          },
+          "scopeGlobal": "Global"
+        }
+      },
+      "brands": {
+        "title": "Brands",
+        "subtitle": "Operational management for catalog brands.",
+        "create": {
+          "title": "Create Brand"
+        },
+        "edit": {
+          "title": "Edit: {name}",
+          "fallbackTitle": "Edit Brand"
+        },
+        "modal": {
+          "subtitle": "Changes are saved directly to catalog.Brand."
+        },
+        "fields": {
+          "name": "Brand name",
+          "isActive": "Active"
+        },
+        "filters": {
+          "search": "Search by brand name",
+          "all": "All",
+          "active": "Active only",
+          "inactive": "Inactive only"
+        },
+        "actions": {
+          "create": "Create brand",
+          "edit": "Edit",
+          "delete": "Delete",
+          "save": "Save",
+          "cancel": "Cancel"
+        },
+        "messages": {
+          "nameRequired": "Brand name is required.",
+          "created": "Brand created.",
+          "createFailed": "Unable to create brand.",
+          "updated": "Brand updated.",
+          "updateFailed": "Unable to update brand.",
+          "deleteConfirm": "Delete brand \"{name}\"?",
+          "deleted": "Brand deleted.",
+          "deleteFailed": "Unable to delete brand."
+        },
+        "states": {
+          "empty": "No brands found."
+        },
+        "table": {
+          "columns": {
+            "name": "Brand",
+            "status": "Status",
+            "updated": "Updated",
+            "actions": "Actions"
+          }
+        },
+        "pagination": {
+          "total": "Total brands: {count}",
+          "prev": "Prev",
+          "next": "Next",
+          "page": "Page {current} of {total}"
+        }
+      },
+      "products": {
+        "title": "Products",
+        "subtitle": "Operational management for catalog products.",
+        "create": {
+          "title": "Create Product"
+        },
+        "edit": {
+          "title": "Edit Product"
+        },
+        "modal": {
+          "subtitle": "Changes are saved directly to catalog.Product."
+        },
+        "fields": {
+          "sku": "SKU",
+          "article": "Article",
+          "name": "Product name",
+          "brand": "Brand",
+          "category": "Category"
+        },
+        "flags": {
+          "active": "Active",
+          "featured": "Featured",
+          "new": "New",
+          "bestseller": "Bestseller"
+        },
+        "filters": {
+          "search": "Search by SKU, product name, brand, or category",
+          "allStates": "Any state",
+          "active": "Active only",
+          "inactive": "Inactive only",
+          "allBrands": "All brands",
+          "allCategories": "All categories"
+        },
+        "actions": {
+          "refresh": "Refresh",
+          "create": "Create product",
+          "pricing": "Price",
+          "bulkActions": "Bulk actions",
+          "selectPage": "Select page",
+          "unselectPage": "Clear page selection",
+          "edit": "Edit",
+          "delete": "Delete",
+          "save": "Save",
+          "cancel": "Cancel",
+          "bulkReindex": "Reindex",
+          "bulkDelete": "Delete selected"
+        },
+        "messages": {
+          "required": "Required fields: SKU, name, brand, and category.",
+          "created": "Product created.",
+          "createFailed": "Unable to create product.",
+          "updated": "Product updated.",
+          "updateFailed": "Unable to update product.",
+          "deleteConfirm": "Delete product \"{name}\"?",
+          "deleted": "Product deleted.",
+          "deleteFailed": "Unable to delete product.",
+          "reindexQueued": "Reindex queued for {count} product(s).",
+          "reindexFailed": "Unable to queue reindex.",
+          "bulkDeleteConfirm": "Delete selected products ({count})?",
+          "bulkDeleted": "Deleted products: {count}.",
+          "bulkDeletePartial": "Deleted: {deleted}. Failed to delete: {failed}.",
+          "bulkDeleteFailed": "Unable to delete selected products."
+        },
+        "states": {
+          "empty": "No products found.",
+          "editingUnavailable": "The product to edit is not available on the current page."
+        },
+        "tooltips": {
+          "actionEdit": "Edit product",
+          "actionDelete": "Delete product",
+          "openPricing": "Open price and markup controls.",
+          "bulkActions": "Bulk actions for selected products.",
+          "pricePrimary": "Primary catalog price for this product.",
+          "priceWithMarkup": "Price with markup",
+          "supplierPrice": "Supplier price",
+          "appliedMarkup": "Applied markup",
+          "policy": "Policy",
+          "policyGlobal": "Global markup",
+          "policyCategory": "Category markup",
+          "notSet": "Not set",
+          "updatedAt": "Updated"
+        },
+        "table": {
+          "supplierArticle": "Supplier article",
+          "columns": {
+            "select": "Select",
+            "product": "Product",
+            "brand": "Brand",
+            "price": "Price",
+            "warehouses": "Warehouses",
+            "stock": "Stock",
+            "status": "Status",
+            "actions": "Actions"
+          }
+        },
+        "pagination": {
+          "total": "Total products: {count}",
+          "prev": "Prev",
+          "next": "Next",
+          "page": "Page {current} of {total}"
+        }
+      },
+      "pricing": {
+        "title": "Pricing Control",
+        "subtitle": "Simple markup and repricing panel.",
+        "actions": {
+          "refresh": "Refresh",
+          "increase": "Increase percent",
+          "decrease": "Decrease percent",
+          "applyGlobal": "Apply global markup",
+          "applyCategory": "Apply to category",
+          "recalculateAll": "Recalculate all products",
+          "recalculateCategory": "Recalculate category"
+        },
+        "fields": {
+          "globalPercent": "Global markup",
+          "categoryPercent": "Category markup",
+          "categorySearch": "Search category",
+          "selectCategory": "Select category",
+          "includeChildren": "Include subcategories"
+        },
+        "blocks": {
+          "chart": {
+            "title": "Current Markup Overview",
+            "subtitle": "Products grouped by markup ranges"
+          },
+          "global": {
+            "title": "Global markup",
+            "scope": "Applied to all active products: {count}",
+            "hint": "Range: 0–100%"
+          },
+          "category": {
+            "title": "Category markup",
+            "impact": "Affected products: {count}"
+          },
+          "top": {
+            "title": "Top / Not top",
+            "ready": "Mode is available.",
+            "unavailable": "Separate pricing scope for top/not top is not configured in this project.",
+            "stats": "Top: {top} · Not top: {other}"
+          },
+          "recalculate": {
+            "title": "Apply and recalculate"
+          }
+        },
+        "tooltips": {
+          "chart": "Shows how many products fall into each markup range.",
+          "global": "Global markup affects products without higher-priority pricing rules.",
+          "category": "Category markup has higher priority than global. You can include subcategories.",
+          "top": "This block is enabled only when the project has a dedicated top/not top pricing scope.",
+          "recalculate": "Recalculation updates final prices using current rules.",
+          "recalculateAll": "Run recalculation for all active products.",
+          "recalculateCategory": "Run recalculation for the selected category only."
+        },
+        "messages": {
+          "globalApplied": "Global markup applied. Affected products: {count}. Mode: {mode}.",
+          "globalFailed": "Unable to apply global markup.",
+          "categoryApplied": "Category markup applied. Products: {count}, categories: {categories}.",
+          "categoryFailed": "Unable to apply category markup.",
+          "recalculateQueued": "Recalculation started. Affected products: {count}. Mode: {mode}.",
+          "recalculateFailed": "Unable to start recalculation."
+        },
+        "states": {
+          "empty": "No pricing data available.",
+          "chartEmpty": "No chart data available."
+        }
+      },
+      "categories": {
+        "title": "Categories",
+        "subtitle": "Operational management for catalog categories.",
+        "create": {
+          "title": "Create Category"
+        },
+        "edit": {
+          "title": "Edit: {name}",
+          "fallbackTitle": "Edit Category"
+        },
+        "modal": {
+          "subtitle": "Changes are saved directly to catalog.Category."
+        },
+        "fields": {
+          "name": "Category name",
+          "parentNone": "No parent category",
+          "description": "Description (optional)",
+          "isActive": "Active"
+        },
+        "filters": {
+          "search": "Search by category name",
+          "all": "All",
+          "active": "Active only",
+          "inactive": "Inactive only",
+          "anyParent": "Any level",
+          "rootOnly": "Root only"
+        },
+        "actions": {
+          "create": "Create category",
+          "edit": "Edit",
+          "delete": "Delete",
+          "save": "Save",
+          "cancel": "Cancel"
+        },
+        "messages": {
+          "nameRequired": "Category name is required.",
+          "created": "Category created.",
+          "createFailed": "Unable to create category.",
+          "updated": "Category updated.",
+          "updateFailed": "Unable to update category.",
+          "deleteConfirm": "Delete category \"{name}\"?",
+          "deleted": "Category deleted.",
+          "deleteFailed": "Unable to delete category."
+        },
+        "states": {
+          "empty": "No categories found."
+        },
+        "table": {
+          "columns": {
+            "name": "Category",
+            "status": "Status",
+            "updated": "Updated",
+            "actions": "Actions"
+          },
+          "rootLabel": "Root"
+        },
+        "pagination": {
+          "total": "Total categories: {count}",
+          "prev": "Prev",
+          "next": "Next",
+          "page": "Page {current} of {total}"
+        }
+      },
+      "articleRules": {
+        "title": "Article Rules",
+        "subtitle": "Configure article normalization rules and supplier-specific overrides.",
+        "form": {
+          "name": "Rule name",
+          "pattern": "Pattern",
+          "replacement": "Replacement"
+        },
+        "ruleTypes": {
+          "remove_separators": "Remove separators",
+          "strip_prefix": "Strip prefix",
+          "strip_suffix": "Strip suffix",
+          "regex_replace": "Regex replace",
+          "force_uppercase": "Force uppercase"
+        },
+        "filters": {
+          "search": "Search rules"
+        },
+        "states": {
+          "empty": "No normalization rules yet."
+        },
+        "actions": {
+          "create": "Create",
+          "activate": "Activate",
+          "deactivate": "Deactivate"
+        },
+        "messages": {
+          "created": "Article rule created.",
+          "updated": "Article rule updated.",
+          "actionFailed": "Unable to update article rules."
+        },
+        "table": {
+          "columns": {
+            "name": "Name",
+            "type": "Type",
+            "pattern": "Pattern",
+            "replacement": "Replacement",
+            "priority": "Priority",
+            "status": "Status",
+            "actions": "Actions"
+          }
+        }
+      },
+      "orders": {
+        "title": "Orders",
+        "subtitle": "Operational order queue with procurement statuses and actions.",
+        "filters": {
+          "search": "Search by order, customer or product",
+          "allStatuses": "All statuses"
+        },
+        "actions": {
+          "refresh": "Refresh",
+          "bulkConfirm": "Bulk confirm",
+          "bulkAwaiting": "Bulk awaiting procurement",
+          "open": "Open",
+          "confirm": "Confirm",
+          "awaiting": "Awaiting procurement"
+        },
+        "table": {
+          "columns": {
+            "select": "Select",
+            "order": "Order",
+            "status": "Status",
+            "issues": "Issues",
+            "total": "Total",
+            "actions": "Actions"
+          }
+        },
+        "states": {
+          "empty": "No orders found."
+        }
+      },
+      "orderDetail": {
+        "title": "Order",
+        "titleWithNumber": "Order {orderNumber}",
+        "subtitle": "Order operations, item procurement and supplier assignment.",
+        "actions": {
+          "backToOrders": "Back to orders",
+          "confirm": "Confirm",
+          "awaiting": "Awaiting procurement",
+          "reserve": "Reserve items",
+          "readyToShip": "Ready to ship",
+          "cancel": "Cancel order",
+          "recommendSupplier": "Recommend supplier",
+          "setRecommendedSupplier": "Set recommended supplier"
+        },
+        "cancelReasons": {
+          "customer_request": "Customer request",
+          "payment_failed": "Payment failed",
+          "supplier_shortage": "Supplier shortage",
+          "unavailable": "Unavailable",
+          "operator_decision": "Operator decision",
+          "other": "Other"
+        },
+        "summary": {
+          "status": "Status",
+          "customer": "Customer",
+          "totals": "Totals",
+          "itemsIssues": "Items: {items}, issues: {issues}"
+        },
+        "table": {
+          "columns": {
+            "product": "Product",
+            "qty": "Qty",
+            "availability": "Availability",
+            "supplier": "Supplier",
+            "procurement": "Procurement",
+            "actions": "Actions"
+          },
+          "eta": "ETA: {days}d",
+          "recommended": "Recommended: {value}",
+          "selected": "Selected: {value}",
+          "suggestedNow": "Suggested now: {value}"
+        },
+        "states": {
+          "notFound": "Order not found.",
+          "emptyItems": "No order items."
+        }
+      },
+      "procurement": {
+        "title": "Procurement",
+        "subtitle": "Operational list of orders that require supplier allocation and reservation.",
+        "actions": {
+          "openSuggestions": "Open supplier suggestions",
+          "refresh": "Refresh",
+          "openOrder": "Open order"
+        },
+        "table": {
+          "columns": {
+            "order": "Order",
+            "status": "Status",
+            "issues": "Issues",
+            "total": "Total",
+            "actions": "Actions"
+          }
+        },
+        "states": {
+          "empty": "No procurement orders."
+        }
+      },
+      "procurementSuggestions": {
+        "title": "Procurement Suggestions",
+        "subtitle": "Grouped supplier recommendations for what to procure and from whom.",
+        "actions": {
+          "backToProcurement": "Back to procurement",
+          "refresh": "Refresh"
+        },
+        "unassigned": "Unassigned",
+        "supplierCode": "Supplier code: {code}",
+        "groupTotals": "Items: {items} · Quantity: {quantity}",
+        "table": {
+          "columns": {
+            "order": "Order",
+            "product": "Product",
+            "qty": "Qty",
+            "offer": "Offer",
+            "fulfillment": "Fulfillment",
+            "status": "Status"
+          },
+          "stock": "Stock: {value}",
+          "eta": "ETA: {days}d"
+        },
+        "states": {
+          "empty": "No procurement suggestions."
+        }
+      }
+    }
+  }
+}

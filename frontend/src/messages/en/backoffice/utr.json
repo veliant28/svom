@@ -1,0 +1,28 @@
+{
+  "backoffice": {
+    "utr": {
+      "label": "UTR",
+      "title": "UTR supplier",
+      "actions": {
+        "importBrands": "Import brands"
+      },
+      "messages": {
+        "brandsImported": "UTR brands import started.",
+        "brandsImportedSummary": "UTR brands import finished: created {created}, updated {updated}, skipped {skipped}, duplicate rows in payload {duplicate_in_payload}, errors {errors}.",
+        "brandsImportFailed": "Unable to start UTR brands import."
+      },
+      "status": {
+        "lastBrandsImport": "Last brands import",
+        "brandsCount": "Imported brands",
+        "lastBrandsError": "Last brands import error",
+        "totalReceived": "Received from UTR",
+        "processed": "Processed",
+        "created": "Created",
+        "updated": "Updated",
+        "skipped": "Skipped",
+        "duplicateInPayload": "Duplicates in payload",
+        "errors": "Errors"
+      }
+    }
+  }
+}

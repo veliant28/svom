@@ -1,0 +1,13 @@
+{
+  "backoffice": {
+    "errors": {
+      "title": "Recent errors",
+      "states": {
+        "empty": "No errors found."
+      },
+      "actions": {
+        "failed": "Action failed."
+      }
+    }
+  }
+}

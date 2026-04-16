@@ -1,0 +1,27 @@
+{
+  "backoffice": {
+    "importErrors": {
+      "title": "Import Errors",
+      "subtitle": "Operational queue of row-level parsing/matching issues.",
+      "filters": {
+        "search": "Search by SKU, message or error code",
+        "allSources": "All sources"
+      },
+      "actions": {
+        "refresh": "Refresh"
+      },
+      "table": {
+        "columns": {
+          "source": "Source",
+          "errorCode": "Error code",
+          "sku": "SKU",
+          "message": "Message",
+          "created": "Created"
+        }
+      },
+      "states": {
+        "empty": "No import errors found."
+      }
+    }
+  }
+}

@@ -1,0 +1,685 @@
+{
+  "backoffice": {
+    "common": {
+      "loading": "Завантаження...",
+      "requestFailed": "Не вдалося виконати запит.",
+      "toast": {
+        "errors": {
+          "defaultAction": "Не вдалося виконати дію. Спробуйте пізніше.",
+          "network": "Проблема з мережею. Перевірте підключення і повторіть спробу.",
+          "supplierUnavailable": "Постачальник тимчасово недоступний.",
+          "cooldown": "Повторювати запит зарано. Спробуйте трохи пізніше.",
+          "cooldownSeconds": "Повторювати запит зарано. Зачекайте {seconds} секунд."
+        }
+      },
+      "closeSidebar": "Закрити бічну панель",
+      "yes": "Так",
+      "no": "Ні",
+      "statuses": {
+        "unknown": "Невідомо",
+        "pending": "Очікує",
+        "running": "Виконується",
+        "generating": "Генерується",
+        "ready": "Готово",
+        "downloaded": "Завантажено",
+        "imported": "Імпортовано",
+        "success": "Успішно",
+        "partial": "Частково",
+        "failed": "Помилка",
+        "processed": "Оброблено",
+        "skipped": "Пропущено",
+        "attention": "Потребує уваги",
+        "enabled": "Увімкнено",
+        "disabled": "Вимкнено",
+        "active": "Активно",
+        "inactive": "Неактивно",
+        "connected": "Підключено",
+        "disconnected": "Не підключено",
+        "expired": "Токен прострочено",
+        "error": "Помилка",
+        "new": "Новий",
+        "confirmed": "Підтверджено",
+        "awaiting_procurement": "Очікує закупівлі",
+        "reserved": "Зарезервовано",
+        "partially_reserved": "Частково зарезервовано",
+        "ready_to_ship": "Готове до відправлення",
+        "shipped": "Відправлено",
+        "completed": "Завершено",
+        "cancelled": "Скасовано",
+        "draft": "Чернетка",
+        "placed": "Оформлено",
+        "unavailable": "Недоступно",
+        "ok": "Норма",
+        "customer_request": "Запит клієнта",
+        "payment_failed": "Помилка оплати",
+        "supplier_shortage": "Дефіцит у постачальника",
+        "operator_decision": "Рішення оператора",
+        "other": "Інше",
+        "stock_shortage": "Нестача залишку",
+        "price_changed": "Змінилася ціна",
+        "supplier_unavailable": "Постачальник недоступний",
+        "lead_time_too_long": "Занадто довгий термін постачання",
+        "unmapped": "Не зіставлено",
+        "unmatched": "Не зіставлено",
+        "auto_matched": "Зіставлено автоматично",
+        "manual_match_required": "Потрібне ручне зіставлення",
+        "manually_matched": "Зіставлено вручну",
+        "auto_mapped": "Зіставлено автоматично",
+        "manual_mapped": "Зіставлено вручну",
+        "needs_review": "Перевірка",
+        "ignored": "Ігноровано",
+        "brand_conflict": "Конфлікт бренду",
+        "article_conflict": "Конфлікт артикулу",
+        "ambiguous_match": "Неоднозначний збіг",
+        "missing_brand": "Бренд не вказано",
+        "missing_article": "Артикул не вказано"
+      },
+      "topbar": {
+        "role": "Операційний контур",
+        "toggleSidebar": "Перемкнути бічну панель",
+        "toggleTheme": "Перемкнути тему",
+        "themeMode": {
+          "light": "Світла",
+          "dark": "Темна",
+          "system": "Системна"
+        },
+        "logout": "Вийти"
+      },
+      "rawOffers": {
+        "title": "Сирі офери",
+        "subtitle": "Проміжний шар оферів постачальників перед фінальним upsert.",
+        "filters": {
+          "search": "Пошук за SKU, артикулом або брендом",
+          "all": "Усі рядки",
+          "valid": "Лише валідні",
+          "invalid": "Лише невалідні"
+        },
+        "actions": {
+          "refresh": "Оновити"
+        },
+        "table": {
+          "columns": {
+            "supplier": "Постачальник",
+            "sku": "SKU / Артикул",
+            "brand": "Бренд",
+            "price": "Ціна",
+            "stock": "Залишок",
+            "state": "Стан"
+          }
+        },
+        "states": {
+          "empty": "Сирі офери не знайдено."
+        }
+      },
+      "supplierOffers": {
+        "title": "Офери постачальників",
+        "subtitle": "Операційна матриця оферів для входу в ціноутворення.",
+        "filters": {
+          "search": "Пошук за товаром, постачальником або SKU",
+          "all": "Усі офери",
+          "available": "У наявності",
+          "unavailable": "Недоступні"
+        },
+        "actions": {
+          "refresh": "Оновити"
+        },
+        "table": {
+          "columns": {
+            "supplier": "Постачальник",
+            "product": "Товар",
+            "supplierSku": "SKU постачальника",
+            "price": "Закупівельна ціна",
+            "stock": "Залишок",
+            "availability": "Доступність"
+          }
+        },
+        "states": {
+          "empty": "Офери постачальників не знайдено."
+        }
+      },
+      "productPrices": {
+        "title": "Ціни товарів",
+        "subtitle": "Фінальні розраховані ціни після політик і переоцінки.",
+        "filters": {
+          "search": "Пошук за товаром, брендом або політикою"
+        },
+        "actions": {
+          "refresh": "Оновити"
+        },
+        "table": {
+          "columns": {
+            "product": "Товар",
+            "category": "Категорія",
+            "purchasePrice": "Закупівля",
+            "finalPrice": "Фінальна",
+            "policy": "Політика",
+            "updated": "Оновлено"
+          }
+        },
+        "states": {
+          "empty": "Ціни товарів не знайдено."
+        }
+      },
+      "importSchedules": {
+        "title": "Розклади імпорту",
+        "subtitle": "Налаштування автоматичного імпорту для джерел.",
+        "filters": {
+          "search": "Пошук джерела"
+        },
+        "states": {
+          "empty": "Джерела не знайдено."
+        },
+        "actions": {
+          "enable": "Увімкнути",
+          "disable": "Вимкнути",
+          "saveDefaults": "Зберегти типові значення"
+        },
+        "messages": {
+          "scheduleUpdated": "Стан розкладу оновлено для {source}.",
+          "scheduleSaved": "Налаштування розкладу збережено для {source}.",
+          "actionFailed": "Не вдалося оновити розклад імпорту."
+        },
+        "table": {
+          "columns": {
+            "source": "Джерело",
+            "enabled": "Автоімпорт",
+            "cron": "Розклад",
+            "nextRun": "Наступний запуск",
+            "lastResult": "Останній результат",
+            "actions": "Дії"
+          },
+          "lastRunSummary": "рядків: {rows} / помилок: {errors}"
+        }
+      },
+      "brandAliases": {
+        "title": "Аліаси брендів",
+        "subtitle": "Нормалізація аліасів брендів постачальників до канонічних брендів.",
+        "form": {
+          "alias": "Аліас постачальника",
+          "canonical": "Канонічний бренд"
+        },
+        "filters": {
+          "search": "Пошук за аліасом або канонічним брендом"
+        },
+        "states": {
+          "empty": "Аліаси ще не додано."
+        },
+        "actions": {
+          "create": "Створити",
+          "activate": "Активувати",
+          "deactivate": "Деактивувати"
+        },
+        "messages": {
+          "created": "Аліас бренду створено.",
+          "updated": "Аліас бренду оновлено.",
+          "actionFailed": "Не вдалося оновити аліаси брендів."
+        },
+        "table": {
+          "columns": {
+            "alias": "Аліас",
+            "canonical": "Канонічний",
+            "scope": "Область",
+            "priority": "Пріоритет",
+            "status": "Статус",
+            "actions": "Дії"
+          },
+          "scopeGlobal": "Глобально"
+        }
+      },
+      "brands": {
+        "title": "Бренди",
+        "subtitle": "Операційне керування брендами каталогу.",
+        "create": {
+          "title": "Створення бренду"
+        },
+        "edit": {
+          "title": "Редагування: {name}",
+          "fallbackTitle": "Редагування бренду"
+        },
+        "modal": {
+          "subtitle": "Зміни зберігаються в catalog.Brand."
+        },
+        "fields": {
+          "name": "Назва бренду",
+          "isActive": "Активний"
+        },
+        "filters": {
+          "search": "Пошук за назвою бренду",
+          "all": "Усі",
+          "active": "Лише активні",
+          "inactive": "Лише неактивні"
+        },
+        "actions": {
+          "create": "Створити бренд",
+          "edit": "Редагувати",
+          "delete": "Видалити",
+          "save": "Зберегти",
+          "cancel": "Скасувати"
+        },
+        "messages": {
+          "nameRequired": "Вкажіть назву бренду.",
+          "created": "Бренд створено.",
+          "createFailed": "Не вдалося створити бренд.",
+          "updated": "Бренд оновлено.",
+          "updateFailed": "Не вдалося оновити бренд.",
+          "deleteConfirm": "Видалити бренд «{name}»?",
+          "deleted": "Бренд видалено.",
+          "deleteFailed": "Не вдалося видалити бренд."
+        },
+        "states": {
+          "empty": "Бренди не знайдено."
+        },
+        "table": {
+          "columns": {
+            "name": "Бренд",
+            "status": "Статус",
+            "updated": "Оновлено",
+            "actions": "Дії"
+          }
+        },
+        "pagination": {
+          "total": "Усього брендів: {count}",
+          "prev": "Назад",
+          "next": "Вперед",
+          "page": "Сторінка {current} з {total}"
+        }
+      },
+      "products": {
+        "title": "Товари",
+        "subtitle": "Операційне керування товарами каталогу.",
+        "create": {
+          "title": "Створення товару"
+        },
+        "edit": {
+          "title": "Редагування товару"
+        },
+        "modal": {
+          "subtitle": "Зміни зберігаються в catalog.Product."
+        },
+        "fields": {
+          "sku": "SKU",
+          "article": "Артикул",
+          "name": "Назва товару",
+          "brand": "Бренд",
+          "category": "Категорія"
+        },
+        "flags": {
+          "active": "Активний",
+          "featured": "Рекомендований",
+          "new": "Новинка",
+          "bestseller": "Хіт продажу"
+        },
+        "filters": {
+          "search": "Пошук за SKU, назвою, брендом або категорією",
+          "allStates": "Будь-який статус",
+          "active": "Лише активні",
+          "inactive": "Лише неактивні",
+          "allBrands": "Усі бренди",
+          "allCategories": "Усі категорії"
+        },
+        "actions": {
+          "refresh": "Оновити",
+          "create": "Створити товар",
+          "pricing": "Ціна",
+          "bulkActions": "Масові дії",
+          "selectPage": "Вибрати сторінку",
+          "unselectPage": "Зняти вибір сторінки",
+          "edit": "Редагувати",
+          "delete": "Видалити",
+          "save": "Зберегти",
+          "cancel": "Скасувати",
+          "bulkReindex": "Переіндексувати",
+          "bulkDelete": "Видалити вибрані"
+        },
+        "messages": {
+          "required": "Заповніть обов'язкові поля: SKU, назва, бренд і категорія.",
+          "created": "Товар створено.",
+          "createFailed": "Не вдалося створити товар.",
+          "updated": "Товар оновлено.",
+          "updateFailed": "Не вдалося оновити товар.",
+          "deleteConfirm": "Видалити товар «{name}»?",
+          "deleted": "Товар видалено.",
+          "deleteFailed": "Не вдалося видалити товар.",
+          "reindexQueued": "Переіндексацію поставлено в чергу для {count} товар(ів).",
+          "reindexFailed": "Не вдалося поставити переіндексацію в чергу.",
+          "bulkDeleteConfirm": "Видалити вибрані товари ({count})?",
+          "bulkDeleted": "Видалено товарів: {count}.",
+          "bulkDeletePartial": "Видалено: {deleted}. Не вдалося видалити: {failed}.",
+          "bulkDeleteFailed": "Не вдалося видалити вибрані товари."
+        },
+        "states": {
+          "empty": "Товари не знайдено.",
+          "editingUnavailable": "Товар для редагування відсутній на поточній сторінці."
+        },
+        "tooltips": {
+          "actionEdit": "Редагувати товар",
+          "actionDelete": "Видалити товар",
+          "openPricing": "Відкрити керування цінами та націнками.",
+          "bulkActions": "Масові дії з вибраними товарами.",
+          "pricePrimary": "Основна ціна товару для каталогу.",
+          "priceWithMarkup": "Ціна з націнкою",
+          "supplierPrice": "Ціна постачальника",
+          "appliedMarkup": "Застосована націнка",
+          "policy": "Політика",
+          "policyGlobal": "Загальна націнка",
+          "policyCategory": "Націнка за категоріями",
+          "notSet": "Не задано",
+          "updatedAt": "Оновлено"
+        },
+        "table": {
+          "supplierArticle": "Артикул постачальника",
+          "columns": {
+            "select": "Вибір",
+            "product": "Товар",
+            "brand": "Бренд",
+            "price": "Ціна",
+            "warehouses": "Склади",
+            "stock": "Залишок",
+            "status": "Статус",
+            "actions": "Дії"
+          }
+        },
+        "pagination": {
+          "total": "Усього товарів: {count}",
+          "prev": "Назад",
+          "next": "Вперед",
+          "page": "Сторінка {current} з {total}"
+        }
+      },
+      "pricing": {
+        "title": "Керування цінами",
+        "subtitle": "Проста панель націнок і переоцінки товарів.",
+        "actions": {
+          "refresh": "Оновити",
+          "increase": "Збільшити відсоток",
+          "decrease": "Зменшити відсоток",
+          "applyGlobal": "Застосувати загальну націнку",
+          "applyCategory": "Застосувати для категорії",
+          "recalculateAll": "Перерахувати всі товари",
+          "recalculateCategory": "Перерахувати категорію"
+        },
+        "fields": {
+          "globalPercent": "Загальна націнка",
+          "categoryPercent": "Націнка категорії",
+          "categorySearch": "Пошук категорії",
+          "selectCategory": "Оберіть категорію",
+          "includeChildren": "Застосовувати й до підкатегорій"
+        },
+        "blocks": {
+          "chart": {
+            "title": "Поточна картина по націнці",
+            "subtitle": "Розподіл товарів за діапазонами націнки"
+          },
+          "global": {
+            "title": "Загальна націнка",
+            "scope": "Застосовується до всіх активних товарів: {count}",
+            "hint": "Діапазон: 0–100%"
+          },
+          "category": {
+            "title": "Націнка за категоріями",
+            "impact": "Зачеплено товарів: {count}"
+          },
+          "top": {
+            "title": "Top / Not top",
+            "ready": "Режим доступний.",
+            "unavailable": "Окремої цінової логіки top/not top у проєкті зараз немає.",
+            "stats": "Top: {top} · Not top: {other}"
+          },
+          "recalculate": {
+            "title": "Застосування та перерахунок"
+          }
+        },
+        "tooltips": {
+          "chart": "Показує, у скількох товарів націнка в кожному діапазоні.",
+          "global": "Загальна націнка впливає на товари без пріоритетніших правил.",
+          "category": "Націнка категорії має вищий пріоритет за загальну. Можна включити підкатегорії.",
+          "top": "Блок top/not top активується лише коли є окрема бізнес-логіка для цього сегмента.",
+          "recalculate": "Перерахунок оновлює фінальні ціни на основі поточних правил.",
+          "recalculateAll": "Запустити перерахунок усіх активних товарів.",
+          "recalculateCategory": "Запустити перерахунок лише вибраної категорії."
+        },
+        "messages": {
+          "globalApplied": "Загальну націнку застосовано. Зачеплено товарів: {count}. Режим: {mode}.",
+          "globalFailed": "Не вдалося застосувати загальну націнку.",
+          "categoryApplied": "Націнку категорії застосовано. Товарів: {count}, категорій: {categories}.",
+          "categoryFailed": "Не вдалося застосувати націнку для категорії.",
+          "recalculateQueued": "Перерахунок запущено. Зачеплено товарів: {count}. Режим: {mode}.",
+          "recalculateFailed": "Не вдалося запустити перерахунок."
+        },
+        "states": {
+          "empty": "Немає даних для керування цінами.",
+          "chartEmpty": "Немає даних для графіка."
+        }
+      },
+      "categories": {
+        "title": "Категорії",
+        "subtitle": "Операційне керування категоріями каталогу.",
+        "create": {
+          "title": "Створення категорії"
+        },
+        "edit": {
+          "title": "Редагування: {name}",
+          "fallbackTitle": "Редагування категорії"
+        },
+        "modal": {
+          "subtitle": "Зміни зберігаються в catalog.Category."
+        },
+        "fields": {
+          "name": "Назва категорії",
+          "parentNone": "Без батьківської категорії",
+          "description": "Опис (необов'язково)",
+          "isActive": "Активна"
+        },
+        "filters": {
+          "search": "Пошук за назвою категорії",
+          "all": "Усі",
+          "active": "Лише активні",
+          "inactive": "Лише неактивні",
+          "anyParent": "Будь-який рівень",
+          "rootOnly": "Лише кореневі"
+        },
+        "actions": {
+          "create": "Створити категорію",
+          "edit": "Редагувати",
+          "delete": "Видалити",
+          "save": "Зберегти",
+          "cancel": "Скасувати"
+        },
+        "messages": {
+          "nameRequired": "Вкажіть назву категорії.",
+          "created": "Категорію створено.",
+          "createFailed": "Не вдалося створити категорію.",
+          "updated": "Категорію оновлено.",
+          "updateFailed": "Не вдалося оновити категорію.",
+          "deleteConfirm": "Видалити категорію «{name}»?",
+          "deleted": "Категорію видалено.",
+          "deleteFailed": "Не вдалося видалити категорію."
+        },
+        "states": {
+          "empty": "Категорії не знайдено."
+        },
+        "table": {
+          "columns": {
+            "name": "Категорія",
+            "status": "Статус",
+            "updated": "Оновлено",
+            "actions": "Дії"
+          },
+          "rootLabel": "Корінь"
+        },
+        "pagination": {
+          "total": "Усього категорій: {count}",
+          "prev": "Назад",
+          "next": "Вперед",
+          "page": "Сторінка {current} з {total}"
+        }
+      },
+      "articleRules": {
+        "title": "Правила артикулів",
+        "subtitle": "Налаштування правил нормалізації артикулів і джерельних перевизначень.",
+        "form": {
+          "name": "Назва правила",
+          "pattern": "Шаблон",
+          "replacement": "Заміна"
+        },
+        "ruleTypes": {
+          "remove_separators": "Видалити розділювачі",
+          "strip_prefix": "Видалити префікс",
+          "strip_suffix": "Видалити суфікс",
+          "regex_replace": "Заміна за регулярним виразом",
+          "force_uppercase": "Верхній регістр"
+        },
+        "filters": {
+          "search": "Пошук правил"
+        },
+        "states": {
+          "empty": "Правила нормалізації не знайдено."
+        },
+        "actions": {
+          "create": "Створити",
+          "activate": "Активувати",
+          "deactivate": "Деактивувати"
+        },
+        "messages": {
+          "created": "Правило артикулів створено.",
+          "updated": "Правило артикулів оновлено.",
+          "actionFailed": "Не вдалося оновити правила артикулів."
+        },
+        "table": {
+          "columns": {
+            "name": "Назва",
+            "type": "Тип",
+            "pattern": "Шаблон",
+            "replacement": "Заміна",
+            "priority": "Пріоритет",
+            "status": "Статус",
+            "actions": "Дії"
+          }
+        }
+      },
+      "orders": {
+        "title": "Замовлення",
+        "subtitle": "Операційна черга замовлень зі статусами закупівлі та діями.",
+        "filters": {
+          "search": "Пошук за замовленням, клієнтом або товаром",
+          "allStatuses": "Усі статуси"
+        },
+        "actions": {
+          "refresh": "Оновити",
+          "bulkConfirm": "Масово підтвердити",
+          "bulkAwaiting": "Масово перевести в очікування закупівлі",
+          "open": "Відкрити",
+          "confirm": "Підтвердити",
+          "awaiting": "В очікування закупівлі"
+        },
+        "table": {
+          "columns": {
+            "select": "Вибір",
+            "order": "Замовлення",
+            "status": "Статус",
+            "issues": "Проблеми",
+            "total": "Разом",
+            "actions": "Дії"
+          }
+        },
+        "states": {
+          "empty": "Замовлення не знайдено."
+        }
+      },
+      "orderDetail": {
+        "title": "Замовлення",
+        "titleWithNumber": "Замовлення {orderNumber}",
+        "subtitle": "Операції із замовленням, закупівлею позицій і призначенням постачальників.",
+        "actions": {
+          "backToOrders": "Назад до замовлень",
+          "confirm": "Підтвердити",
+          "awaiting": "В очікування закупівлі",
+          "reserve": "Зарезервувати позиції",
+          "readyToShip": "Готове до відправлення",
+          "cancel": "Скасувати замовлення",
+          "recommendSupplier": "Підібрати постачальника",
+          "setRecommendedSupplier": "Призначити рекомендованого постачальника"
+        },
+        "cancelReasons": {
+          "customer_request": "Запит клієнта",
+          "payment_failed": "Помилка оплати",
+          "supplier_shortage": "Дефіцит у постачальника",
+          "unavailable": "Недоступно",
+          "operator_decision": "Рішення оператора",
+          "other": "Інше"
+        },
+        "summary": {
+          "status": "Статус",
+          "customer": "Клієнт",
+          "totals": "Підсумки",
+          "itemsIssues": "Позицій: {items}, проблем: {issues}"
+        },
+        "table": {
+          "columns": {
+            "product": "Товар",
+            "qty": "К-сть",
+            "availability": "Наявність",
+            "supplier": "Постачальник",
+            "procurement": "Закупівля",
+            "actions": "Дії"
+          },
+          "eta": "ETA: {days} дн.",
+          "recommended": "Рекомендовано: {value}",
+          "selected": "Обрано: {value}",
+          "suggestedNow": "Актуально зараз: {value}"
+        },
+        "states": {
+          "notFound": "Замовлення не знайдено.",
+          "emptyItems": "Позиції замовлення відсутні."
+        }
+      },
+      "procurement": {
+        "title": "Закупівлі",
+        "subtitle": "Операційний список замовлень, що потребують розподілу та резервування у постачальників.",
+        "actions": {
+          "openSuggestions": "Відкрити рекомендації постачальників",
+          "refresh": "Оновити",
+          "openOrder": "Відкрити замовлення"
+        },
+        "table": {
+          "columns": {
+            "order": "Замовлення",
+            "status": "Статус",
+            "issues": "Проблеми",
+            "total": "Разом",
+            "actions": "Дії"
+          }
+        },
+        "states": {
+          "empty": "Замовлень для закупівлі не знайдено."
+        }
+      },
+      "procurementSuggestions": {
+        "title": "Рекомендації закупівлі",
+        "subtitle": "Групування рекомендацій за постачальниками: що і в кого закуповувати.",
+        "actions": {
+          "backToProcurement": "Назад до закупівель",
+          "refresh": "Оновити"
+        },
+        "unassigned": "Без призначення",
+        "supplierCode": "Код постачальника: {code}",
+        "groupTotals": "Позицій: {items} · Кількість: {quantity}",
+        "table": {
+          "columns": {
+            "order": "Замовлення",
+            "product": "Товар",
+            "qty": "К-сть",
+            "offer": "Офер",
+            "fulfillment": "Виконання",
+            "status": "Статус"
+          },
+          "stock": "Залишок: {value}",
+          "eta": "ETA: {days} дн."
+        },
+        "states": {
+          "empty": "Рекомендації із закупівлі відсутні."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,360 @@
+{
+  "backoffice": {
+    "suppliers": {
+      "title": "Suppliers",
+      "subtitle": "Single operator workspace for UTR and GPL.",
+      "actions": {
+        "settings": "Settings",
+        "import": "Import",
+        "importRuns": "Runs",
+        "importErrors": "Errors",
+        "importQuality": "Quality",
+        "products": "Products",
+        "brands": "Brands",
+        "refreshAll": "Refresh"
+      },
+      "summary": {
+        "subtitle": "Short summary of latest import activity."
+      },
+      "importPage": {
+        "title": "Price Import",
+        "subtitle": "Operator lifecycle screen for price requests, downloads, and raw-product import."
+      },
+      "priceLifecycle": {
+        "operations": {
+          "title": "Price Operations",
+          "subtitle": "Operational sequence: Request -> Download -> Import to raw products table."
+        },
+        "locale": {
+          "utr": "UTR",
+          "gpl": "GPL"
+        },
+        "actions": {
+          "request": "Request",
+          "download": "Download",
+          "import": "Import",
+          "delete": "Delete"
+        },
+        "messages": {
+          "requested": "Price request sent.",
+          "requestFailed": "Failed to send price request.",
+          "downloaded": "Price downloaded successfully.",
+          "downloadFailed": "Failed to download price.",
+          "imported": "Products imported into raw table.",
+          "importFailed": "Failed to import products into raw table.",
+          "deleted": "Price list deleted.",
+          "deletedLocalOnly": "Price list deleted locally. UTR delete failed: {reason}",
+          "deleteFailed": "Failed to delete price list."
+        },
+        "params": {
+          "format": "Format",
+          "supplier": "Supplier",
+          "inStockOnly": "In stock only",
+          "showScancode": "Include barcode",
+          "utrArticle": "Include UTR article",
+          "dynamicHint": "Parameters loaded from UTR API: brands {brands}, categories {categories}, models {models}.",
+          "source": {
+            "utr_api": "Parameter source: UTR API (export-params)",
+            "gpl_api": "Parameter source: GPL API (/api/prices)",
+            "fallback": "Parameter source: fallback from real price file"
+          },
+          "filterMode": "UTR filter",
+          "filterNone": "No filter",
+          "filterBrands": "By brands",
+          "filterCategories": "By categories",
+          "filterModels": "By models",
+          "filterOneOfRule": "UTR allows only one filter type per request: brands, categories, or models.",
+          "selectedCount": "Selected: {count}",
+          "manualPlaceholderModels": "Extra models comma-separated: ABARTH, ACURA, ...",
+          "truncatedHint": "Only a limited option set is shown. For full coverage use the models input."
+        },
+        "notes": {
+          "utrGeneration": "UTR usually needs around 3 minutes to generate the file. Download is blocked while generation is in progress.",
+          "gplReady": "GPL usually does not require asynchronous file generation: the price is available for download right after request."
+        },
+        "state": {
+          "title": "Price Flow State",
+          "subtitle": "Current state of request, generation, download, and import.",
+          "lastRequestStatus": "Last request status",
+          "generation": "Price generation",
+          "generatingWait": "Generating, ~{seconds} sec remaining",
+          "generationDone": "Generation completed",
+          "downloadAvailable": "Price available for download",
+          "yes": "Yes",
+          "no": "No",
+          "lastDownloaded": "Last successful download",
+          "lastImported": "Last import to products",
+          "cooldown": "UTR cooldown",
+          "cooldownUtr": "UTR cooldown",
+          "cooldownNotApplicableLabel": "Request limits",
+          "cooldownNotApplicableValue": "Not applicable for this supplier",
+          "cooldownReady": "Request is allowed",
+          "cooldownWait": "Wait {seconds} sec",
+          "lastError": "Last error"
+        },
+        "summary": {
+          "noRequests": "No price requests yet.",
+          "cooldownActive": "Cooldown is active: repeated request is temporarily blocked.",
+          "generating": "Price is generating. Wait and then proceed to download.",
+          "readyToDownload": "Price is ready. Next step: download.",
+          "readyToImport": "Price is downloaded. Next step: import to raw products.",
+          "imported": "Price has been imported to raw products table.",
+          "failed": "Last operation failed. Check error details and retry.",
+          "idle": "Waiting for the next operator action."
+        },
+        "table": {
+          "title": "Supplier Price Table",
+          "subtitle": "Registry of price requests/files with parameters, statuses, warehouses, price levels, and actions.",
+          "search": "Search by file, ID, format, or status",
+          "empty": "No price records found.",
+          "generating": "Generating, ~{seconds} sec",
+          "paramFormat": "Format: {format}",
+          "paramInStock": "In-stock items only",
+          "paramAll": "All items",
+          "paramScancodeOn": "Barcode on",
+          "paramScancodeOff": "Barcode off",
+          "paramBrands": "Brands: {count}",
+          "paramCategories": "Categories: {count}",
+          "paramModels": "Models: {count}",
+          "rowsValue": "Rows: {count}",
+          "columns": {
+            "file": "File / Identifier",
+            "requested": "Requested",
+            "status": "Status",
+            "params": "Parameters",
+            "prices": "Prices",
+            "warehouses": "Warehouses",
+            "rows": "Size",
+            "actions": "Actions"
+          }
+        }
+      },
+      "productsPage": {
+        "title": "Imported Products",
+        "subtitle": "Intermediate table of imported products before core mapping and further processing.",
+        "search": "Search by SKU, article, brand, or name",
+        "empty": "No imported products found.",
+        "actions": {
+          "publishMapped": "Publish mapped items"
+        },
+        "messages": {
+          "publishSuccess": "Publish completed. Mapped: {matched}, created: {created}, updated: {updated}, skipped: {skipped}, errors: {errors}.",
+          "publishFailed": "Failed to publish mapped supplier products."
+        },
+        "pagination": {
+          "total": "Total rows: {count}",
+          "prev": "Prev",
+          "next": "Next",
+          "page": "Page {current} of {total}",
+          "perPage": "Per page"
+        },
+        "tooltip": {
+          "price": "Price",
+          "updatedAt": "Updated"
+        },
+        "table": {
+          "columns": {
+            "sku": "SKU / Article",
+            "brand": "Brand",
+            "product": "Product",
+            "prices": "Prices",
+            "warehouses": "Warehouses",
+            "stock": "Stock",
+            "state": "State"
+          }
+        },
+        "review": {
+          "filters": {
+            "brand": "Filter by brand",
+            "allSuppliers": "All suppliers",
+            "allReasons": "All reasons",
+            "allCategories": "All categories"
+          },
+          "statuses": {
+            "needs_review": "Needs review",
+            "auto_mapped": "Auto mapped",
+            "manual_mapped": "Manual mapped",
+            "unmapped": "Unmapped"
+          },
+          "sorting": {
+            "confidenceDesc": "Confidence: high to low",
+            "confidenceAsc": "Confidence: low to high",
+            "reasonAsc": "Reason: A-Z",
+            "reasonDesc": "Reason: Z-A",
+            "categoryAsc": "Category: A-Z",
+            "categoryDesc": "Category: Z-A",
+            "createdDesc": "Newest first",
+            "createdAsc": "Oldest first"
+          },
+          "table": {
+            "columns": {
+              "category": "Category",
+              "reason": "Reason",
+              "confidence": "Confidence"
+            }
+          },
+          "analytics": {
+            "title": "Review analytics",
+            "subtitle": "Rows in current scope: {count}",
+            "topReasons": "Top reasons",
+            "topBrands": "Top brands",
+            "topCategories": "Top categories",
+            "topSignatures": "Top title signatures",
+            "topOpportunities": "Top groups for safe auto-promotion"
+          },
+          "bulk": {
+            "title": "Review bulk actions",
+            "selected": "Selected: {count}",
+            "selectAll": "Select all rows on current page",
+            "selectOne": "Select row",
+            "confirmCurrent": "Confirm current category",
+            "markNeedsReview": "Remove confirmation",
+            "reassignAuto": "Reassign auto",
+            "categorySearch": "Search category for bulk apply",
+            "chooseCategory": "Choose category",
+            "applyCategory": "Apply category",
+            "safePromote": "Safe promote to auto",
+            "actionLabels": {
+              "confirm_current": "Confirm current category",
+              "set_category": "Apply selected category",
+              "mark_needs_review": "Remove confirmation",
+              "reassign_auto": "Reassign auto"
+            }
+          },
+          "messages": {
+            "bulkSuccess": "Bulk action completed: updated {updated} rows ({action}).",
+            "bulkFailed": "Failed to execute bulk action.",
+            "categoryRequired": "Choose a category before bulk apply.",
+            "promoted": "Safe promotion completed: {count} rows moved to auto_mapped.",
+            "promotionFailed": "Failed to execute safe promotion."
+          }
+        },
+        "categoryMapping": {
+          "openBadgeAria": "Open category mapping",
+          "title": "Supplier Item Category Mapping",
+          "subtitle": "Choose one of our categories for this supplier item.",
+          "searchPlaceholder": "Search our categories",
+          "fields": {
+            "sku": "SKU",
+            "article": "Article",
+            "brand": "Brand",
+            "product": "Product name",
+            "supplier": "Supplier",
+            "status": "Status",
+            "currentCategory": "Current category",
+            "matchedProductCategory": "Matched product category",
+            "selectedCategory": "Selected category"
+          },
+          "actions": {
+            "save": "Save",
+            "clear": "Clear mapping",
+            "cancel": "Cancel"
+          },
+          "states": {
+            "notMapped": "Not mapped",
+            "noCategories": "No categories found.",
+            "noSelection": "No category selected.",
+            "nonLeafCategory": "Non-leaf category"
+          },
+          "messages": {
+            "loadFailed": "Failed to load category mapping.",
+            "searchFailed": "Failed to search categories.",
+            "saveFailed": "Failed to save category mapping.",
+            "saved": "Category mapping saved.",
+            "clearFailed": "Failed to clear category mapping.",
+            "cleared": "Category mapping cleared.",
+            "clearConfirm": "Clear category mapping for this item?",
+            "notFound": "Item not found."
+          }
+        }
+      },
+      "brandsPage": {
+        "title": "Brands",
+        "subtitle": "UTR brands workflow page.",
+        "panelTitle": "UTR Brands Import",
+        "panelSubtitle": "Run import, review summary, and inspect imported UTR brands.",
+        "tableTitle": "Imported UTR Brands",
+        "onlyUtrTitle": "Unavailable for selected supplier",
+        "onlyUtr": "Brands workflow is available only for UTR.",
+        "filters": {
+          "search": "Search by brand name",
+          "all": "All brands",
+          "active": "Active only",
+          "inactive": "Inactive only"
+        },
+        "states": {
+          "empty": "No brands found."
+        },
+        "table": {
+          "columns": {
+            "name": "Brand name",
+            "status": "Status",
+            "updated": "Updated"
+          }
+        },
+        "pagination": {
+          "total": "Total rows: {count}",
+          "prev": "Prev",
+          "next": "Next",
+          "page": "Page {current} of {total}"
+        },
+        "stats": {
+          "received": "Received brands",
+          "imported": "Imported brands",
+          "lastImportAt": "Last import date"
+        },
+        "actions": {
+          "import": "Import"
+        }
+      },
+      "states": {
+        "emptyWorkspace": "Supplier workspace is unavailable."
+      },
+      "cooldown": {
+        "title": "Limits and cooldown",
+        "subtitle": "Backend enforces request pacing for safe supplier API usage.",
+        "lastRequest": "Last request",
+        "nextRequest": "Next allowed request",
+        "status": "Status",
+        "seconds": "Interval, sec"
+      },
+      "prices": {
+        "title": "Supplier price table",
+        "subtitle": "Latest imported rows with search and basic filters.",
+        "filters": {
+          "search": "Search by SKU, article, brand or product",
+          "all": "All rows",
+          "available": "Available only",
+          "unavailable": "Unavailable only"
+        },
+        "states": {
+          "empty": "No supplier price rows found."
+        },
+        "table": {
+          "columns": {
+            "articleSku": "SKU / Article",
+            "brand": "Brand",
+            "product": "Product",
+            "price": "Price",
+            "currency": "Currency",
+            "stock": "Stock",
+            "availability": "Availability",
+            "updatedAt": "Updated"
+          },
+          "leadTime": "Lead time: {days} days"
+        },
+        "pagination": {
+          "total": "Total rows: {count}",
+          "prev": "Prev",
+          "next": "Next",
+          "page": "Page {current} of {total}"
+        }
+      },
+      "footer": {
+        "availableSuppliers": "Available suppliers: {count}",
+        "cooldownActive": "Cooldown active: {seconds} sec.",
+        "cooldownReady": "Cooldown is not blocking actions."
+      }
+    }
+  }
+}

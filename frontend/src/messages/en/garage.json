@@ -1,0 +1,83 @@
+{
+  "garage": {
+    "page": {
+      "title": "My Garage",
+      "subtitle": "Add vehicles from the autocatalog and use them to find compatible products in the catalog.",
+      "states": {
+        "loading": "Loading garage...",
+        "error": "Failed to load garage vehicles."
+      }
+    },
+    "form": {
+      "title": "Add vehicle to garage",
+      "subtitle": "Use cascade selectors and save via API.",
+      "fields": {
+        "make": {
+          "label": "Make",
+          "placeholder": "Choose make",
+          "loadingPlaceholder": "Loading makes..."
+        },
+        "model": {
+          "label": "Model",
+          "placeholder": "Choose model",
+          "loadingPlaceholder": "Loading models..."
+        },
+        "year": {
+          "label": "Year",
+          "placeholder": "Choose year",
+          "anyOption": "Any year",
+          "loadingPlaceholder": "Loading years..."
+        },
+        "modification": {
+          "label": "Modification",
+          "placeholder": "Choose modification",
+          "loadingPlaceholder": "Loading modifications..."
+        },
+        "capacity": {
+          "label": "Capacity",
+          "placeholder": "Choose capacity",
+          "loadingPlaceholder": "Loading capacities..."
+        },
+        "engine": {
+          "label": "Engine",
+          "placeholder": "Choose engine",
+          "loadingPlaceholder": "Loading engines..."
+        },
+        "isPrimary": "Set as primary vehicle"
+      },
+      "actions": {
+        "submit": "Add vehicle",
+        "submitting": "Adding..."
+      },
+      "messages": {
+        "success": "Vehicle has been added to the garage.",
+        "error": "Failed to add vehicle. Check selected values.",
+        "authRequired": "Sign in to add a vehicle to your garage."
+      }
+    },
+    "empty": {
+      "title": "Garage is empty",
+      "description": "Use the form to add your first vehicle and enable compatibility fitment in the catalog."
+    },
+    "card": {
+      "primary": "Primary",
+      "labels": {
+        "year": "Year",
+        "modification": "Modification",
+        "engine": "Engine",
+        "power": "Power"
+      },
+      "fallback": {
+        "year": "N/A",
+        "modification": "Modification N/A",
+        "engine": "Engine N/A",
+        "power": "N/A"
+      },
+      "actions": {
+        "makePrimary": "Set primary",
+        "delete": "Delete",
+        "pending": "Updating..."
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "backoffice": {
+    "importQuality": {
+      "title": "Якість імпорту",
+      "subtitle": "Контроль метрик якості, деградації та прапорів уваги оператора.",
+      "cards": {
+        "totalRuns": "Запуски якості",
+        "attentionRuns": "З увагою оператора",
+        "failedRuns": "З помилкою",
+        "partialRuns": "Часткові",
+        "avgMatchRate": "Середня частка зіставлення",
+        "avgErrorRate": "Середня частка помилок"
+      },
+      "filters": {
+        "search": "Пошук за запуском, джерелом або статусом",
+        "allSources": "Усі джерела",
+        "allAttention": "Усі стани уваги",
+        "attentionOnly": "Лише ті, що потребують уваги",
+        "noAttention": "Без уваги"
+      },
+      "actions": {
+        "compare": "Порівняти"
+      },
+      "states": {
+        "emptySummary": "Немає зведених даних якості.",
+        "emptyRuns": "Запуски якості не знайдено."
+      },
+      "table": {
+        "columns": {
+          "source": "Джерело",
+          "status": "Статус",
+          "matchRate": "Частка зіставлення",
+          "errorRate": "Частка помилок",
+          "attention": "Увага",
+          "actions": "Дії"
+        }
+      },
+      "comparison": {
+        "title": "Порівняння запусків",
+        "empty": "Немає даних для порівняння.",
+        "matchRateDelta": "Зміна частки зіставлення",
+        "errorRateDelta": "Зміна частки помилок",
+        "requiresAttention": "Потребує уваги"
+      }
+    }
+  }
+}

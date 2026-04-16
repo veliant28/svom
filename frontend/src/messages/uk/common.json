@@ -1,0 +1,31 @@
+{
+  "common": {
+    "header": {
+      "brand": "SVOM",
+      "catalog": "Каталог",
+      "garage": "Мій гараж",
+      "search": "Пошук",
+      "wishlist": "Обране",
+      "cart": "Кошик ({count})",
+      "login": "Увійти",
+      "logout": "Вийти",
+      "backoffice": "Бек-офіс"
+    },
+    "home": {
+      "brand": "SVOM",
+      "title": "SVOM Storefront",
+      "subtitle": "Каркас storefront для подальшого розвитку",
+      "featured": "Популярні товари",
+      "heroPlaceholder": "Плейсхолдер hero-слайдера. Додайте слайди в Django admin.",
+      "performanceTagline": "SVOM Performance"
+    },
+    "theme": {
+      "switch": "Перемкнути режим теми",
+      "mode": {
+        "light": "Світла",
+        "dark": "Темна",
+        "system": "Системна"
+      }
+    }
+  }
+}

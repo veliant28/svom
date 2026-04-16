@@ -1,0 +1,86 @@
+{
+  "commerce": {
+    "wishlist": {
+      "title": "Обране",
+      "subtitle": "Збережені товари для швидкого повернення.",
+      "authRequired": "Для обраного потрібна авторизація.",
+      "goToLogin": "Перейти до входу",
+      "states": {
+        "loading": "Завантажуємо обране...",
+        "empty": "Обране порожнє."
+      },
+      "actions": {
+        "add": "В обране",
+        "remove": "Видалити",
+        "viewProduct": "Переглянути товар"
+      }
+    },
+    "cart": {
+      "title": "Кошик",
+      "subtitle": "Перевірте позиції перед оформленням.",
+      "authRequired": "Для кошика потрібна авторизація.",
+      "goToLogin": "Перейти до входу",
+      "states": {
+        "loading": "Завантажуємо кошик...",
+        "empty": "Кошик порожній."
+      },
+      "actions": {
+        "add": "Додати",
+        "remove": "Видалити",
+        "checkout": "Перейти до оформлення"
+      },
+      "summary": {
+        "title": "Підсумок",
+        "items": "Позицій: {count}"
+      },
+      "labels": {
+        "eta": " · ETA {days} дн."
+      },
+      "warnings": {
+        "availabilityOrPriceChanged": "Доступність або ціна змінилися для однієї чи кількох позицій. Перевірте замовлення перед оформленням."
+      }
+    },
+    "checkout": {
+      "title": "Оформлення",
+      "subtitle": "Базовий flow: контакти, доставка, платіжний placeholder.",
+      "authRequired": "Для checkout потрібна авторизація.",
+      "goToLogin": "Перейти до входу",
+      "emptyCart": "Ваш кошик порожній.",
+      "goToCatalog": "Перейти до каталогу",
+      "sections": {
+        "contact": "Контактні дані",
+        "delivery": "Спосіб доставки",
+        "payment": "Спосіб оплати",
+        "orderReview": "Перегляд замовлення"
+      },
+      "fields": {
+        "fullName": "ПІБ",
+        "phone": "Телефон",
+        "email": "Email",
+        "deliveryMethod": "Спосіб доставки",
+        "deliveryAddress": "Адреса доставки",
+        "paymentMethod": "Спосіб оплати",
+        "comment": "Коментар"
+      },
+      "delivery": {
+        "pickup": "Самовивіз",
+        "courier": "Курʼєр",
+        "novaPoshta": "Нова Пошта"
+      },
+      "payment": {
+        "cardPlaceholder": "Оплата карткою (placeholder)",
+        "cashOnDelivery": "Післяплата"
+      },
+      "actions": {
+        "submit": "Оформити замовлення",
+        "submitting": "Оформлення..."
+      },
+      "review": {
+        "deliveryFee": "Вартість доставки: {fee} {currency}",
+        "total": "Разом: {total} {currency}"
+      },
+      "success": "Замовлення створено: {orderNumber}",
+      "submitError": "Не вдалося оформити замовлення. Перевірте обовʼязкові поля."
+    }
+  }
+}

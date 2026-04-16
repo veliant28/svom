@@ -1,0 +1,120 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.theme-dark, .theme-dark *));
+
+:root {
+  --bg: #f4f6f7;
+  --surface: #ffffff;
+  --surface-2: #e8ecf0;
+  --text: #161d23;
+  --muted: #4d5d6b;
+  --accent: #e4501f;
+  --border: #d0d8df;
+  --status-success-bg: #ecfdf3;
+  --status-success-border: #86efac;
+  --status-success-text: #166534;
+  --status-warning-bg: #fff7ed;
+  --status-warning-border: #fdba74;
+  --status-warning-text: #9a3412;
+  --status-error-bg: #fef2f2;
+  --status-error-border: #fecaca;
+  --status-error-text: #991b1b;
+  --status-info-bg: #eff6ff;
+  --status-info-border: #bfdbfe;
+  --status-info-text: #1e3a8a;
+}
+
+.theme-dark {
+  --bg: #101619;
+  --surface: #172126;
+  --surface-2: #1f2d34;
+  --text: #e8edf1;
+  --muted: #8ca1b1;
+  --accent: #f37d1d;
+  --border: #2f404b;
+  --status-success-bg: #123222;
+  --status-success-border: #1f6f46;
+  --status-success-text: #9be9bc;
+  --status-warning-bg: #3f260e;
+  --status-warning-border: #a76222;
+  --status-warning-text: #fdc98f;
+  --status-error-bg: #3f1b21;
+  --status-error-border: #9f2f3e;
+  --status-error-text: #ffb8c2;
+  --status-info-bg: #132740;
+  --status-info-border: #2b4f7f;
+  --status-info-text: #bcd7ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  background: radial-gradient(circle at 10% 0%, #fef3ea 0%, var(--bg) 45%);
+  color: var(--text);
+}
+
+.theme-dark body {
+  background: radial-gradient(circle at 85% -15%, #2f1d17 0%, var(--bg) 45%);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Global interactive cursor affordance */
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+input[type="file"],
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"],
+select,
+summary,
+a[href],
+[role="button"],
+[role="link"],
+[role="tab"],
+[role="menuitem"],
+[role="menuitemcheckbox"],
+[role="menuitemradio"],
+[role="option"],
+[role="switch"],
+[role="checkbox"],
+[role="radio"],
+[aria-haspopup="menu"],
+[aria-haspopup="listbox"] {
+  cursor: pointer;
+}
+
+label:has(input[type="checkbox"]:not(:disabled)),
+label:has(input[type="radio"]:not(:disabled)),
+label:has(select:not(:disabled)) {
+  cursor: pointer;
+}
+
+/* Disabled elements should never look clickable */
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled,
+[disabled],
+[aria-disabled="true"],
+[data-disabled],
+[data-disabled="true"],
+label:has(input[type="checkbox"]:disabled),
+label:has(input[type="radio"]:disabled),
+label:has(select:disabled) {
+  cursor: not-allowed;
+}

@@ -1,0 +1,62 @@
+{
+  "backoffice": {
+    "dashboard": {
+      "title": "Операционный дашборд",
+      "subtitle": "Обзор импорта и ценообразования.",
+      "actions": {
+        "refresh": "Обновить"
+      },
+      "cards": {
+        "sources": "Активные источники",
+        "runs": "Запуски импорта",
+        "errors": "Ошибки",
+        "errors24h": "{count} за 24 ч",
+        "repriced": "Переоцененные товары",
+        "rawOffers": "Сырые офферы",
+        "invalidRawOffers": "{count} невалидных",
+        "supplierOffers": "Офферы поставщиков",
+        "productPrices": "Цены товаров",
+        "unmatched": "Несопоставленные офферы",
+        "conflicts": "Конфликты",
+        "autoMatched": "Автоматически сопоставлены",
+        "manuallyResolved": "Сопоставлены вручную"
+      },
+      "charts": {
+        "runStatuses": "Статусы запусков",
+        "matchRateBySupplier": "Доля сопоставления по поставщикам"
+      },
+      "latestRuns": {
+        "title": "Последние запуски",
+        "subtitle": "Недавние выполнения пайплайна.",
+        "columns": {
+          "source": "Источник",
+          "status": "Статус",
+          "rows": "Строки",
+          "errors": "Ошибки",
+          "repriced": "Переоценено"
+        }
+      },
+      "states": {
+        "empty": "Пока нет данных дашборда."
+      },
+      "quality": {
+        "title": "Качество последнего импорта",
+        "subtitle": "Метрики последнего запуска ({source}).",
+        "processed": "Обработано",
+        "errors": "Ошибки",
+        "errorRate": "Доля ошибок",
+        "skipped": "Пропущено"
+      },
+      "attention": {
+        "title": "Требует внимания оператора",
+        "subtitle": "Запуски с деградацией качества или срабатыванием порогов.",
+        "columns": {
+          "source": "Источник",
+          "status": "Статус",
+          "matchRate": "Доля сопоставления",
+          "errorRate": "Доля ошибок"
+        }
+      }
+    }
+  }
+}
