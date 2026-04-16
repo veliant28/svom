@@ -954,14 +954,13 @@ export function ProductsPage() {
             <div
               role="menu"
               className="absolute left-0 top-full z-30 mt-1 min-w-[240px] rounded-lg border p-1.5 shadow-xl"
-              style={{ borderColor: "#cbd5e1", backgroundColor: "#ffffff" }}
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
             >
               <button
                 type="button"
                 role="menuitem"
                 disabled={!selectedIds.length || Boolean(runningAction)}
-                className="flex h-10 w-full items-center rounded-md px-3 text-left text-sm font-normal leading-5 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 disabled:opacity-50"
-                style={{ color: "var(--text)", fontFamily: "inherit" }}
+                className="flex h-10 w-full items-center rounded-md px-3 text-left text-sm font-normal leading-5 text-slate-900 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-700/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 disabled:opacity-50"
                 onClick={() => {
                   setBulkActionsOpen(false);
                   void runBulkReindex();
@@ -973,8 +972,7 @@ export function ProductsPage() {
                 type="button"
                 role="menuitem"
                 disabled={!selectedIds.length || Boolean(runningAction)}
-                className="flex h-10 w-full items-center rounded-md px-3 text-left text-sm font-normal leading-5 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 disabled:opacity-50"
-                style={{ color: "#b91c1c", fontFamily: "inherit" }}
+                className="flex h-10 w-full items-center rounded-md px-3 text-left text-sm font-normal leading-5 text-slate-900 hover:bg-red-50 hover:text-red-700 dark:text-slate-100 dark:hover:bg-red-950/35 dark:hover:text-red-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 disabled:opacity-50"
                 onClick={() => {
                   setBulkActionsOpen(false);
                   setBulkDeleteOpen(true);

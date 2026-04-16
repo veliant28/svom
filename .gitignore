@@ -34,8 +34,18 @@ node_modules/
 out/
 dist/
 build/
+*.tsbuildinfo
 
 # generated artifacts
 category_mapping_exports/
 *.xlsx
 *.csv
+
+# local editor/temp caches
+.idea/
+.vscode/
+.cache/
+tmp/
+temp/
+*.tmp
+*.swp
