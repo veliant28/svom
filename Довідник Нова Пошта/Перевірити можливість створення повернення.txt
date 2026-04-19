@@ -1,0 +1,67 @@
+Перевірити можливість створення повернення
+Метод CheckPossibilityCreateReturn працює в моделі AdditionalService і дозволяє перевірити можливість створення заявки на повернення.
+
+Метод доступний лише клієнтам відправників. У разі успіху повертаються блоки адрес, які можна використовувати для створення заявки. 
+
+Текст запиту
+Параметр	Тип	Опис
+Number*	string[36]	Номер документа
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AdditionalServiceGeneral",
+   "calledMethod": "CheckPossibilityCreateReturn",
+   "methodProperties": {
+"Number" : "20450520287825"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+NonCash	bool	Можливість використання безготівкового розрахунку (false/true)
+City	string[36]	Місто отримувача
+Counterparty	string[36]	Контрагент-отримувач
+ContactPerson	string[36]	Контактна персона
+Address	string[100]	Адреса отримувача
+Phone	string[36]	Телефон отримувача
+Ref	string[36]	Ідентифікатор блоку
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"NonCash" : true,
+"City" : "Київ",
+"Counterparty" : "ТОВ Яблуневий сад",
+"ContactPerson" : "Іванов Іван Іванович",
+"Address" : "м. Київ,  вул. Хрещатик, буд. 1",
+"Phone" : "380950000000",
+"Ref" : "00000000-0000-0000-0000-000000000000"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

@@ -1,0 +1,85 @@
+Онлайн-пошук вулиць у довіднику населених пунктів
+Метод searchSettlementStreets працює в моделі Address. Цей метод необхідний для ОНЛАЙН-ПОШУКУ вулиць у вибраному населеному пункті. Завдяки цьому методу немає необхідності на своїй стороні зберігати довідники та здійснювати їхнє оновлення.
+
+Текст запиту
+Параметр	Тип	Опис
+StreetName*	string[36]	Назва вулиці
+SettlementRef*	string[36]	Ідентифікатор (REF) населеного пункту із довідника населених пунктів України
+Limit	string[36]	Кількість відповідей
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AddressGeneral",
+   "calledMethod": "searchSettlementStreets",
+   "methodProperties": {
+"StreetName" : "Хрещатик",
+"SettlementRef" : "00000000-0000-0000-0000-000000000000",
+"Limit" : "50"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+TotalCount	string[36]	Кількість знайдених об'єктів
+Addresses	array	Масив об'єктів, що містить деталі кожної знайденої адреси.
+SettlementRef (string[50]): Унікальний ідентифікатор (REF) населеного пункту.
+SettlementStreetRef (string[50]): Унікальний ідентифікатор (REF) вулиці.
+SettlementStreetDescription (string[50]): Назва вулиці.
+Present (string[50]): Повна назва вулиці, що включає тип вулиці та її назву.
+StreetsType (string[50]): Унікальний ідентифікатор (REF) типу вулиці (наприклад, вулиця, проспект тощо).
+StreetsTypeDescription (string[50]): Тип вулиці.
+Location (object): Локація.
+lat (number): Географічна широта локації.
+lon (number): Географічна довгота локації.
+SettlementStreetDescriptionRu (string[50]): Назва вулиці російською мовою.
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"TotalCount" : "1",
+"Addresses" : [
+{
+"SettlementRef":"e718a680-4b33-11e4-ab6d-005056801329",
+"SettlementStreetRef":"ad090b1f-6845-11e6-8304-00505688561d",
+"SettlementStreetDescription":"Хрещатик",
+"Present":"вул. Хрещатик",
+"StreetsType":"0f1d7fbb-4bba-11e4-ab6d-005056801329",
+"StreetsTypeDescription":"вул.",
+"Location":
+{
+"lat":50.44806099962443",
+"lon":30.52225599065423
+}
+",
+"SettlementStreetDescriptionRu":"Крещатик"
+}
+]
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

@@ -26,6 +26,7 @@ export type CartItem = {
   estimated_delivery_days: number | null;
   procurement_source_summary: string;
   is_sellable: boolean;
+  max_order_quantity: number | null;
   warning: string;
 };
 

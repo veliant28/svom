@@ -1,0 +1,99 @@
+Довідник міст компанії
+Метод getCities працює в моделі Address. Цей метод завантажує довідник населених пунктів України, де є відділення компанії «Нова пошта» і можна оформити доставку на відділення чи за адресою.
+
+Щоб знайти конкретний населений пункт, потрібно в значенні параметра FindByString (пошук за рядками) задати назву. Наприклад:
+
+"methodProperties": { "FindByString": "Бровари" }
+
+Необхідно зберігати копію довідників на стороні клієнта та підтримувати її в актуальному стані. Рекомендовано оновлювати довідники щодня.
+
+Текст запиту
+Параметр	Тип	Опис
+Ref	string[36]	Ідентифікатор міста
+Page	string[36]	Номер сторінки для відображення
+FindByString	string[36]	Пошук за назвою міста
+Limit	string[36]	Кількість записів на сторінці. Працює разом із параметром Page
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AddressGeneral",
+   "calledMethod": "getCities",
+   "methodProperties": {
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"Page" : "1",
+"FindByString" : "Київ",
+"Limit" : "20"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+Description	string[50]	Місто українською мовою
+DescriptionRu	string[50]	Місто російською мовою
+Ref	string[36]	Ідентифікатор міста
+Delivery1	string[36]	Наявність доставки відправлення в днях тижня
+Delivery2	string[36]	Наявність доставки відправлення в днях тижня
+Delivery3	string[36]	Наявність доставки відправлення в днях тижня
+Delivery4	string[36]	Наявність доставки відправлення в днях тижня
+Delivery5	string[36]	Наявність доставки відправлення в днях тижня
+Delivery6	string[36]	Наявність доставки відправлення в днях тижня
+Delivery7	string[36]	Наявність доставки відправлення в днях тижня
+Area	string[36]	Область
+SettlementType	string[36]	Ідентифікатор (REF) типу населеного пункту
+IsBranch	string[36]	Показник належності міста до філіальної мережі компанії «Нова пошта» (1 — філіал, 0 — партнер)
+PreventEntryNewStreetsUser	string[36]	Ознака налаштування «Заборонити введення нових вулиць користувачем» (1 — так, 0 — ні)
+Conglomerates	string[36]	Конгломерат
+CityID	string[36]	Код міста
+SettlementTypeDescriptionRu	string[36]	Опис типу населеного пункту російською мовою
+SettlementTypeDescription	string[36]	Опис типу населеного пункту українською мовою
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"Description" : "Київ",
+"DescriptionRu" : "Киев",
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"Delivery1" : "1",
+"Delivery2" : "1",
+"Delivery3" : "1",
+"Delivery4" : "1",
+"Delivery5" : "1",
+"Delivery6" : "0",
+"Delivery7" : "0",
+"Area" : "00000000-0000-0000-0000-000000000000",
+"SettlementType" : "00000000-0000-0000-0000-000000000000",
+"IsBranch" : "0",
+"PreventEntryNewStreetsUser" : "null",
+"Conglomerates" : "null",
+"CityID" : "890",
+"SettlementTypeDescriptionRu" : "село",
+"SettlementTypeDescription" : "село"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

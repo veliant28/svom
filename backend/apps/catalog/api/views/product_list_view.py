@@ -1,4 +1,5 @@
 from rest_framework.generics import ListAPIView
+from rest_framework.pagination import PageNumberPagination
 
 from apps.catalog.api.filters import ProductFilterSet
 from apps.catalog.api.serializers import ProductListSerializer
@@ -8,7 +9,13 @@ from apps.search.services import ProductSearchService
 
 
 class ProductListAPIView(ListAPIView):
+    class CatalogProductPagination(PageNumberPagination):
+        page_size = 52
+        page_size_query_param = "page_size"
+        max_page_size = 100
+
     serializer_class = ProductListSerializer
+    pagination_class = CatalogProductPagination
     filterset_class = ProductFilterSet
     ordering_fields = ("name", "created_at", "product_price__final_price")
     ordering = ("name",)

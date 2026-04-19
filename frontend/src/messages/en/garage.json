@@ -3,6 +3,7 @@
     "page": {
       "title": "My Garage",
       "subtitle": "Add vehicles from the autocatalog and use them to find compatible products in the catalog.",
+      "addFromHeaderHint": "Add and quick-select vehicle actions are now available in the header car button.",
       "states": {
         "loading": "Loading garage...",
         "error": "Failed to load garage vehicles."
@@ -77,6 +78,12 @@
         "makePrimary": "Set primary",
         "delete": "Delete",
         "pending": "Updating..."
+      },
+      "messages": {
+        "makePrimarySuccess": "Primary vehicle updated.",
+        "makePrimaryFailed": "Failed to update primary vehicle.",
+        "deleteSuccess": "Vehicle removed from garage.",
+        "deleteFailed": "Failed to remove vehicle from garage."
       }
     }
   }

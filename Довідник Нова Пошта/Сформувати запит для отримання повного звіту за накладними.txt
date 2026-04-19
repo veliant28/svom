@@ -1,0 +1,92 @@
+Сформувати запит для отримання повного звіту за накладними
+Метод generateReport працює в моделі InternetDocument. Цей метод формує запит для отримання повного звіту за накладними.
+
+Текст запиту
+Параметр	Тип	Опис
+DocumentRefs*	array	Список документів
+Type*	string[36]	Форма документа для друку: xls або csv
+DateTime*	string[36]	Дата доставки
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "InternetDocumentGeneral",
+   "calledMethod": "generateReport",
+   "methodProperties": {
+"DocumentRefs" : [
+"00000000-0000-0000-0000-000000000000",
+"00000000-0000-0000-0000-000000000000"
+],
+"Type" : "csv",
+"DateTime" : "дд.мм.рррр"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+Ref	string[36]	Ідентифікатор (REF) контактної особи
+DateTime	string[36]	Дата доставки
+PreferredDeliveryDate	string[36]	Бажана дата доставки
+Weight	string[36]	Вага
+SeatsAmount	string[36]	Кількість місць відправлення, ціле число
+IntDocNumber	string[36]	Номер інтернет-документа
+Cost	string[36]	Оціночна вартість
+CitySender	string[36]	Ідентифікатор (REF) міста відправника
+CityRecipient	string[36]	Ідентифікатор (REF) міста отримувача
+State	string[36]	Штат
+SenderAddress	string[36]	Ідентифікатор (REF) адреси відправника
+RecipientAddress	string[36]	Ідентифікатор (REF) адреси отримувача
+CostOnSite	string[36]	Вартість доставки
+PayerType	string[36]	Тип платника
+PaymentMethod	string[36]	Форма розрахунку (Cash/NonCash)
+AfterpaymentOnGoodsCost	string[36]	Вартість зворотної доставки
+PackingNumber	string[36]	Нопер пакування
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"DateTime" : "дд.мм.рррр",
+"PreferredDeliveryDate" : "дд.мм.рррр",
+"Weight" : "1",
+"SeatsAmount" : "2",
+"IntDocNumber" : "",
+"Cost" : "500",
+"CitySender" : "00000000-0000-0000-0000-000000000000",
+"CityRecipient" : "00000000-0000-0000-0000-000000000000",
+"State" : "",
+"SenderAddress" : "00000000-0000-0000-0000-000000000000",
+"RecipientAddress" : "00000000-0000-0000-0000-000000000000",
+"CostOnSite" : "45",
+"PayerType" : "Sender",
+"PaymentMethod" : "Cash",
+"AfterpaymentOnGoodsCost" : "500",
+"PackingNumber" : "123456"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

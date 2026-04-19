@@ -13,6 +13,13 @@
         "add": "В избранное",
         "remove": "Удалить",
         "viewProduct": "Открыть товар"
+      },
+      "messages": {
+        "authRequiredAction": "Чтобы управлять избранным, войдите в аккаунт.",
+        "added": "Товар добавлен в избранное.",
+        "removed": "Товар удалён из избранного.",
+        "loadFailed": "Не удалось загрузить избранное.",
+        "actionFailed": "Не удалось обновить избранное."
       }
     },
     "cart": {
@@ -38,6 +45,14 @@
       },
       "warnings": {
         "availabilityOrPriceChanged": "Доступность или цена изменились для одной или нескольких позиций. Проверьте заказ перед оформлением."
+      },
+      "messages": {
+        "authRequiredAction": "Чтобы управлять корзиной, войдите в аккаунт.",
+        "added": "Товар добавлен в корзину.",
+        "removed": "Товар удалён из корзины.",
+        "quantityUpdated": "Количество в корзине обновлено.",
+        "loadFailed": "Не удалось загрузить корзину.",
+        "actionFailed": "Не удалось обновить корзину."
       }
     },
     "checkout": {
@@ -54,18 +69,38 @@
         "orderReview": "Проверка заказа"
       },
       "fields": {
-        "fullName": "ФИО",
+        "lastName": "Фамилия",
+        "firstName": "Имя",
+        "middleName": "Отчество",
         "phone": "Телефон",
-        "email": "Email",
-        "deliveryMethod": "Способ доставки",
-        "deliveryAddress": "Адрес доставки",
+        "npCity": "Город",
+        "npDestination": "Отделение / почтомат",
+        "npStreet": "Улица",
+        "npHouse": "Дом",
+        "npApartment": "Квартира / офис",
         "paymentMethod": "Способ оплаты",
         "comment": "Комментарий"
+      },
+      "deliveryOptions": {
+        "pickup": "Самовывоз",
+        "novaPoshtaWarehouse": "Новая Почта отделение/почтомат",
+        "novaPoshtaCourier": "Новая Почта курьером"
       },
       "delivery": {
         "pickup": "Самовывоз",
         "courier": "Курьер",
         "novaPoshta": "Новая Почта"
+      },
+      "placeholders": {
+        "npCity": "Начните вводить город",
+        "npDestination": "Начните вводить отделение или почтомат",
+        "npStreet": "Начните вводить улицу",
+        "npHouse": "Например 12А",
+        "npApartment": "Например 45"
+      },
+      "lookup": {
+        "loading": "Загрузка...",
+        "noResults": "Ничего не найдено"
       },
       "payment": {
         "cardPlaceholder": "Оплата картой (placeholder)",
@@ -80,7 +115,47 @@
         "total": "Итого: {total} {currency}"
       },
       "success": "Заказ создан: {orderNumber}",
+      "phoneFormatError": "Введите телефон в формате 38(0XX)XXX-XX-XX.",
+      "errors": {
+        "deliveryCityRequired": "Выберите город доставки Новой Почты.",
+        "deliveryDestinationRequired": "Выберите отделение или почтомат Новой Почты.",
+        "deliveryStreetRequired": "Выберите улицу и укажите номер дома для курьерской доставки."
+      },
       "submitError": "Не удалось оформить заказ. Проверьте обязательные поля."
+    },
+    "orders": {
+      "title": "Мои заказы",
+      "subtitle": "История и состав ваших заказов.",
+      "authRequired": "Для просмотра заказов нужна авторизация.",
+      "goToLogin": "Перейти ко входу",
+      "states": {
+        "loading": "Загружаем заказы...",
+        "empty": "Заказов пока нет.",
+        "error": "Не удалось загрузить заказы."
+      },
+      "labels": {
+        "items": "Позиций: {count}",
+        "client": "Клиент: {fullName}"
+      },
+      "table": {
+        "sku": "Артикул",
+        "product": "Товар",
+        "qty": "Кол-во",
+        "total": "Сумма"
+      },
+      "status": {
+        "draft": "Черновик",
+        "placed": "Создан",
+        "new": "Новый",
+        "confirmed": "Подтвержден",
+        "awaiting_procurement": "Ожидает закупки",
+        "reserved": "Зарезервирован",
+        "partially_reserved": "Частично зарезервирован",
+        "ready_to_ship": "Готов к отправке",
+        "shipped": "Отправлен",
+        "completed": "Выполнен",
+        "cancelled": "Отменен"
+      }
     }
   }
 }

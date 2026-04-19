@@ -4,6 +4,12 @@
     "subtitle": "Первый слой storefront-каталога",
     "showcaseSubtitle": "Витрина каталога работает через DRF endpoint.",
     "resultCount": "Найдено: {count}",
+    "pagination": {
+      "prev": "Назад",
+      "next": "Вперед",
+      "page": "Страница {current} из {total}",
+      "perPage": "На странице: {count}"
+    },
     "empty": "По выбранным фильтрам товары не найдены.",
     "taxonomy": {
       "brands": "Бренды",

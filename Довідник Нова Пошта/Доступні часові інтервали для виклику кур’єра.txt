@@ -1,0 +1,61 @@
+Доступні часові інтервали для виклику кур’єра
+Метод getPickupTimeIntervals працює в моделі CommonGeneral і дозволяє отримати доступні для вибору часові інтервали для візиту кур'єра.
+
+Текст запиту
+Параметр	Тип	Опис
+SenderCityRef*	string[36]	Ідентифікатор (REF) міста відправника
+DateTime*	string[36]	Дата доступних для вибору часових інтервалів
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "CommonGeneral",
+   "calledMethod": "getPickupTimeIntervals",
+   "methodProperties": {
+"SenderCityRef" : ""00000000-0000-0000-0000-000000000000",
+"DateTime" : ""29.12.2023"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+Number	string[36]	Назва часового інтервалу
+Start	string[36]	Час початку дії часового інтервалу
+End	string[36]	Час завершення дії часового інтервалу
+BoundaryTime	string[36]	Піковий час забору посилки
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"Number" : ""CityPickingTimeInterval3",
+"Start" : ""08:00",
+"End" : ""17:00",
+"BoundaryTime" : ""14:50"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

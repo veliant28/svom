@@ -1,0 +1,63 @@
+Створити адресу контрагента (відправник / одержувач)
+Метод save працює в моделі Address. Цей метод зберігає адресу контрагента (отримувача чи відправника).
+
+Текст запиту
+Параметр	Тип	Опис
+CounterpartyRef*	string[36]	Ідентифікатор (REF) контрагента
+StreetRef*	string[36]	Ідентифікатор (REF) вулиці, дані з довідника вулиць компанії
+BuildingNumber*	string[36]	Номер будинку
+Flat*	string[36]	Номер квартири
+Note	string[40]	Коментар
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AddressGeneral",
+   "calledMethod": "save",
+   "methodProperties": {
+"CounterpartyRef" : "00000000-0000-0000-0000-000000000000",
+"StreetRef" : "00000000-0000-0000-0000-000000000000",
+"BuildingNumber" : "7",
+"Flat" : "2",
+"Note" : "Коментар"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+Ref	string[36]	Ідентифікатор (REF) адреси
+Description	string[50]	Опис адреси
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"Description" : "вул. Хрещатик, 7 кв. 2"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

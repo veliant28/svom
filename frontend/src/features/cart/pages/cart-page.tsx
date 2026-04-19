@@ -1,8 +1,10 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { CartProductQuantityStepper } from "@/features/cart/components/cart-product-quantity-stepper";
 import { CartSummaryBlock } from "@/features/cart/components/cart-summary-block";
 import { useCart } from "@/features/cart/hooks/use-cart";
 import { Link } from "@/i18n/navigation";
@@ -10,7 +12,7 @@ import { Link } from "@/i18n/navigation";
 export function CartPage() {
   const t = useTranslations("commerce.cart");
   const { isAuthenticated } = useAuth();
-  const { cart, isLoading, updateItemQuantity, removeItem } = useCart();
+  const { cart, isLoading, removeItem } = useCart();
 
   if (!isAuthenticated) {
     return (
@@ -51,59 +53,50 @@ export function CartPage() {
                 {t("warnings.availabilityOrPriceChanged")}
               </div>
             ) : null}
-            {items.map((item) => (
-              <article key={item.id} className="rounded-xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
-                <p className="text-sm font-semibold">{item.product.name}</p>
-                <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
-                  {item.product.brand_name}
-                </p>
-                <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
-                  {item.availability_label}
-                  {item.estimated_delivery_days ? t("labels.eta", { days: item.estimated_delivery_days }) : ""}
-                </p>
-                {item.warning ? (
-                  <p className="mt-1 text-xs" style={{ color: "var(--danger, #b42318)" }}>
-                    {item.warning}
+            {items.map((item) => {
+              return (
+                <article key={item.id} className="rounded-xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="min-w-0 truncate text-sm font-semibold">{item.product.name}</p>
+                    <div className="inline-flex items-center gap-3 shrink-0">
+                      <CartProductQuantityStepper productId={item.product.id} maxQuantity={item.max_order_quantity} />
+                      <div className="inline-flex items-center gap-2">
+                        <p className="text-sm font-semibold tabular-nums whitespace-nowrap">
+                          {item.line_total} {item.product.currency}
+                        </p>
+                        <span className="group relative inline-flex">
+                          <button
+                            type="button"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md border disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500"
+                            style={{
+                              borderColor: "#ef4444",
+                              backgroundColor: "var(--surface)",
+                              color: "#dc2626",
+                            }}
+                            aria-label={t("actions.remove")}
+                            onClick={() => void removeItem(item.id)}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                          <span role="tooltip" className="header-tooltip hidden group-hover:block">
+                            {t("actions.remove")}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
+                    {item.product.brand_name}
                   </p>
-                ) : null}
-
-                <div className="mt-3 flex items-center justify-between gap-2">
-                  <div className="inline-flex items-center gap-2">
-                    <button
-                      type="button"
-                      className="h-8 rounded-md border px-2 text-xs"
-                      style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
-                      onClick={() => void updateItemQuantity(item.id, Math.max(item.quantity - 1, 0))}
-                    >
-                      -
-                    </button>
-                    <span className="text-sm">{item.quantity}</span>
-                    <button
-                      type="button"
-                      className="h-8 rounded-md border px-2 text-xs"
-                      style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
-                      onClick={() => void updateItemQuantity(item.id, item.quantity + 1)}
-                    >
-                      +
-                    </button>
-                  </div>
-
-                  <div className="text-right">
-                    <p className="text-sm font-semibold">
-                      {item.line_total} {item.product.currency}
+                  {item.warning ? (
+                    <p className="mt-1 text-xs" style={{ color: "var(--danger, #b42318)" }}>
+                      {item.warning}
                     </p>
-                    <button
-                      type="button"
-                      className="mt-1 text-xs"
-                      style={{ color: "var(--danger, #b42318)" }}
-                      onClick={() => void removeItem(item.id)}
-                    >
-                      {t("actions.remove")}
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))}
+                  ) : null}
+
+                </article>
+              );
+            })}
           </div>
 
           <div className="space-y-3">
@@ -114,8 +107,8 @@ export function CartPage() {
             />
             <Link
               href="/checkout"
-              className="inline-flex w-full justify-center rounded-md border px-3 py-2 text-sm"
-              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+              className="inline-flex w-full justify-center rounded-md border px-3 py-2 text-sm !text-white transition-colors hover:border-[#356f49] hover:bg-[#3f8258]"
+              style={{ borderColor: "#3f8a5a", backgroundColor: "#4b9264", color: "#ffffff" }}
             >
               {t("actions.checkout")}
             </Link>

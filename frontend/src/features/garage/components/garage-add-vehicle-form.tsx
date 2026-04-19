@@ -7,13 +7,11 @@ import { useTranslations } from "next-intl";
 import { createGarageVehicle } from "@/features/garage/api/create-garage-vehicle";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useVehicleCascade } from "@/features/garage/hooks/use-vehicle-cascade";
-import { isApiRequestError } from "@/shared/api/http-client";
+import { useStorefrontFeedback } from "@/shared/hooks/use-storefront-feedback";
 
 type GarageAddVehicleFormProps = {
   onCreated: () => Promise<void> | void;
 };
-
-type SubmitState = "idle" | "success" | "error";
 
 function formatEngineLabel(
   engine: {
@@ -32,41 +30,6 @@ function formatEngineLabel(
   return [engine.engine, powerLabel].filter(Boolean).join(" · ");
 }
 
-function getApiErrorText(error: unknown): string | null {
-  if (!isApiRequestError(error)) {
-    return null;
-  }
-
-  const payload = error.payload;
-  if (!payload || typeof payload !== "object") {
-    return error.message || null;
-  }
-
-  const detail = payload.detail;
-  if (typeof detail === "string" && detail.trim()) {
-    return detail.trim();
-  }
-
-  const message = payload.message;
-  if (typeof message === "string" && message.trim()) {
-    return message.trim();
-  }
-
-  for (const value of Object.values(payload)) {
-    if (typeof value === "string" && value.trim()) {
-      return value.trim();
-    }
-    if (Array.isArray(value)) {
-      const firstString = value.find((item) => typeof item === "string" && item.trim());
-      if (typeof firstString === "string") {
-        return firstString.trim();
-      }
-    }
-  }
-
-  return error.message || null;
-}
-
 export function GarageAddVehicleForm({ onCreated }: GarageAddVehicleFormProps) {
   const [isMounted, setIsMounted] = useState(false);
 
@@ -76,6 +39,7 @@ export function GarageAddVehicleForm({ onCreated }: GarageAddVehicleFormProps) {
 
   const { token, isAuthenticated } = useAuth();
   const t = useTranslations("garage.form");
+  const { showApiError, showSuccess } = useStorefrontFeedback();
   const {
     selectedYear,
     selectedMake,
@@ -105,8 +69,6 @@ export function GarageAddVehicleForm({ onCreated }: GarageAddVehicleFormProps) {
 
   const [isPrimary, setIsPrimary] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitState, setSubmitState] = useState<SubmitState>("idle");
-  const [submitErrorText, setSubmitErrorText] = useState<string | null>(null);
 
   const isSubmitDisabled = useMemo(
     () =>
@@ -170,8 +132,6 @@ export function GarageAddVehicleForm({ onCreated }: GarageAddVehicleFormProps) {
             return;
           }
 
-          setSubmitState("idle");
-          setSubmitErrorText(null);
           setIsSubmitting(true);
 
           try {
@@ -182,7 +142,7 @@ export function GarageAddVehicleForm({ onCreated }: GarageAddVehicleFormProps) {
               car_modification: Number(selectedEngine),
               is_primary: isPrimary,
             });
-            setSubmitState("success");
+            showSuccess(t("messages.success"));
             setSelectedMake("");
             setSelectedModel("");
             setSelectedYear("");
@@ -192,8 +152,7 @@ export function GarageAddVehicleForm({ onCreated }: GarageAddVehicleFormProps) {
             setIsPrimary(false);
             await onCreated();
           } catch (error) {
-            setSubmitErrorText(getApiErrorText(error));
-            setSubmitState("error");
+            showApiError(error, t("messages.error"));
           } finally {
             setIsSubmitting(false);
           }
@@ -339,15 +298,6 @@ export function GarageAddVehicleForm({ onCreated }: GarageAddVehicleFormProps) {
           {isSubmitting ? t("actions.submitting") : t("actions.submit")}
         </button>
       </form>
-
-      {submitState !== "idle" ? (
-        <p
-          className="mt-3 text-xs"
-          style={{ color: submitState === "success" ? "var(--success, #136f3a)" : "var(--danger, #b42318)" }}
-        >
-          {submitState === "success" ? t("messages.success") : submitErrorText || t("messages.error")}
-        </p>
-      ) : null}
     </section>
   );
 }

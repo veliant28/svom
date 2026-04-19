@@ -3,6 +3,7 @@ from __future__ import annotations
 from rest_framework import serializers
 
 from apps.commerce.models import Order, OrderItem
+from apps.commerce.services.nova_poshta.tracking_status_catalog import resolve_tracking_status_text
 
 
 class BackofficeOrderItemOperationalSerializer(serializers.ModelSerializer):
@@ -44,6 +45,11 @@ class BackofficeOrderOperationalListSerializer(serializers.ModelSerializer):
     user_id = serializers.CharField(source="user.id", read_only=True)
     items_count = serializers.SerializerMethodField()
     issues_count = serializers.SerializerMethodField()
+    nova_poshta_waybill_number = serializers.SerializerMethodField()
+    nova_poshta_waybill_status_code = serializers.SerializerMethodField()
+    nova_poshta_waybill_status_text = serializers.SerializerMethodField()
+    nova_poshta_waybill_has_error = serializers.SerializerMethodField()
+    nova_poshta_waybill_exists = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -64,6 +70,11 @@ class BackofficeOrderOperationalListSerializer(serializers.ModelSerializer):
             "currency",
             "items_count",
             "issues_count",
+            "nova_poshta_waybill_exists",
+            "nova_poshta_waybill_number",
+            "nova_poshta_waybill_status_code",
+            "nova_poshta_waybill_status_text",
+            "nova_poshta_waybill_has_error",
             "placed_at",
         )
 
@@ -80,6 +91,43 @@ class BackofficeOrderOperationalListSerializer(serializers.ModelSerializer):
             for item in obj.items.all()
             if item.procurement_status in problematic_statuses or bool(item.shortage_reason_code)
         )
+
+    @staticmethod
+    def _active_waybill(obj: Order):
+        waybills = getattr(obj, "backoffice_active_waybills", None)
+        if isinstance(waybills, list) and waybills:
+            return waybills[0]
+        return None
+
+    def get_nova_poshta_waybill_exists(self, obj: Order) -> bool:
+        return self._active_waybill(obj) is not None
+
+    def get_nova_poshta_waybill_number(self, obj: Order) -> str:
+        waybill = self._active_waybill(obj)
+        if not waybill:
+            return ""
+        return waybill.np_number or ""
+
+    def get_nova_poshta_waybill_status_code(self, obj: Order) -> str:
+        waybill = self._active_waybill(obj)
+        if not waybill:
+            return ""
+        return waybill.status_code or ""
+
+    def get_nova_poshta_waybill_status_text(self, obj: Order) -> str:
+        waybill = self._active_waybill(obj)
+        if not waybill:
+            return ""
+        return resolve_tracking_status_text(
+            status_code=waybill.status_code,
+            status_text=waybill.status_text,
+        )
+
+    def get_nova_poshta_waybill_has_error(self, obj: Order) -> bool:
+        waybill = self._active_waybill(obj)
+        if not waybill:
+            return False
+        return bool(waybill.last_sync_error)
 
 
 class BackofficeOrderOperationalDetailSerializer(BackofficeOrderOperationalListSerializer):

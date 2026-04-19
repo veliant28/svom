@@ -1,0 +1,132 @@
+Завантажити параметри контрагента
+Метод getCounterpartyOptions працює в моделі Counterparty і використовується для отримання параметрів контрагента-відправника для замовлення додаткових послуг (див.  «Формування запиту на створення експрес-накладної із додатковими послугами»). Замовити послуги можна через особистого менеджера.
+
+Текст запиту
+Параметр	Тип	Опис
+Ref*	string[36]	Ідентифікатор (REF) контрагента
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "CounterpartyGeneral",
+   "calledMethod": "getCounterpartyOptions",
+   "methodProperties": {
+"Ref" : "00000000-0000-0000-0000-000000000000"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+AddressDocumentDelivery	bool	Адресна доставка документів
+AfterpaymentType	bool	Тип для послуги «Контроль оплати»
+BackwardDeliverySubtypesDocuments	bool	Зворотна доставка документів
+BlockInternationalSenderLKK	bool	Міжнародна доставка
+CalculationByFactualWeight	bool	Розрахунок за фактичною вагою
+CanAfterpaymentOnGoodsCost	bool	Сплата коштів за товар (Контроль оплати)
+CanCreditDocuments	bool	Оформлення кредиту
+CanEWTransporter	bool	ParameterName
+CanForwardingService	bool	Експедирування (Контроль поштучної передачі)
+CanNonCashPayment	bool	Безготівковий розрахунок
+CanPayTheThirdPerson	bool	Оплата третьою особою
+CanSameDayDelivery	bool	Доставка день в день
+CanSameDayDeliveryStandart	bool	Доставка день в день (локал-стандарт)
+CanSentFromPostomat	bool	Відправка з поштомата
+CanSignedDocuments	bool	Доступна послуга «Підписання документів»
+CarCall	bool	Послуга «Виклик авто»
+CreditDocuments	bool	Зворотна доставка кредитних документів
+CustomerReturn	bool	Послуга «Автоповернення відправлень»
+DayCustomerReturn	bool	День автоповернення
+DebtorParams	array	Дані заборгованності
+DeliveryByHand	bool	Доставка в руки
+DescentFromFloor	bool	Спуск з поверху
+FillingWarranty	bool	Заповнення гарантійного талону
+HaveMoneyWallets	bool	Електронний гаманець
+HideDeliveryCost	bool	Приховати вартість доставки
+InternationalDelivery	bool	Міжнародна доставка
+InternationalDeliveryServiceType	bool	Тип міжнародної доставки
+LoyaltyProgram	bool	Програма лояльності
+MainCounterparty	bool	Головний контрагент
+PickupService	bool	Можливість замовлення послуги Pick Up
+PrintMarkingAllowedTypes	object	Тип доступного маркування
+SecurePayment	bool	Надійна покупка
+Services	bool	Послуги
+ShowDeliveryByHand	bool	Доставка особисто в руки
+SignedDocuments	bool	Зворотна доставка підписаних документів
+TransferPricingConditions	bool	Умови трансфертного ціноутворення
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"AddressDocumentDelivery" : true,
+"AfterpaymentType" : true,
+"BackwardDeliverySubtypesDocuments" : true,
+"BlockInternationalSenderLKK" : true,
+"CalculationByFactualWeight" : true,
+"CanAfterpaymentOnGoodsCost" : true,
+"CanCreditDocuments" : true,
+"CanEWTransporter" : true,
+"CanForwardingService" : true,
+"CanNonCashPayment" : true,
+"CanPayTheThirdPerson" : true,
+"CanSameDayDelivery" : true,
+"CanSameDayDeliveryStandart" : true,
+"CanSentFromPostomat" : true,
+"CanSignedDocuments" : true,
+"CarCall" : true,
+"CreditDocuments" : true,
+"CustomerReturn" : true,
+"DayCustomerReturn" : true,
+"DebtorParams" : [
+{
+"AgreementId":"56897",
+"PaymTermId":"2банківськідні",
+"PastDueDebts":"0.00",
+"BlockedStatus":"2"
+}
+],
+"DeliveryByHand" : true,
+"DescentFromFloor" : true,
+"FillingWarranty" : true,
+"HaveMoneyWallets" : true,
+"HideDeliveryCost" : true,
+"InternationalDelivery" : true,
+"InternationalDeliveryServiceType" : true,
+"LoyaltyProgram" : true,
+"MainCounterparty" : true,
+"PickupService" : true,
+"PrintMarkingAllowedTypes" : {
+"vbf":123
+},
+"SecurePayment" : true,
+"Services" : true,
+"ShowDeliveryByHand" : true,
+"SignedDocuments" : true,
+"TransferPricingConditions" : true
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

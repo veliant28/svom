@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.urls import reverse
 from django.utils import timezone
@@ -9,7 +10,7 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 
-from apps.catalog.models import Brand, Category, Product
+from apps.catalog.models import Brand, Category, Product, ProductImage
 from apps.pricing.models import Supplier, SupplierOffer
 from apps.supplier_imports.models import ImportRun, ImportSource, SupplierRawOffer
 from apps.users.models import User
@@ -84,6 +85,7 @@ class SupplierPublishMappedProductsAPISmokeTests(APITestCase):
             stock_qty=3,
             mapped_category=self.category,
             category_mapping_status=SupplierRawOffer.CATEGORY_MAPPING_STATUS_MANUAL_MAPPED,
+            raw_payload={"Зображення товару": "https://example.com/gpl/a001.webp"},
         )
         latest_offer.updated_at = timezone.now() - timedelta(hours=1)
         latest_offer.save(update_fields=("updated_at",))
@@ -104,6 +106,7 @@ class SupplierPublishMappedProductsAPISmokeTests(APITestCase):
             matched_product=self.existing_product,
             mapped_category=self.category,
             category_mapping_status=SupplierRawOffer.CATEGORY_MAPPING_STATUS_MANUAL_MAPPED,
+            raw_payload={"Зображення товару": "https://example.com/gpl/b001.webp"},
         )
 
         SupplierRawOffer.objects.create(
@@ -158,12 +161,16 @@ class SupplierPublishMappedProductsAPISmokeTests(APITestCase):
         )
 
     def test_publish_mapped_products_is_idempotent_and_skips_non_publishable(self):
-        response = self.client.post(
-            reverse("backoffice_api:supplier-publish-mapped-products", kwargs={"code": "gpl"}),
-            {"reprice_after_publish": False},
-            format="json",
-            **self.auth,
-        )
+        with patch(
+            "apps.supplier_imports.services.mapped_offer_publish.images._download_image",
+            return_value=(b"fake-image-bytes", "image/webp"),
+        ):
+            response = self.client.post(
+                reverse("backoffice_api:supplier-publish-mapped-products", kwargs={"code": "gpl"}),
+                {"reprice_after_publish": False},
+                format="json",
+                **self.auth,
+            )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         result = response.data["result"]
@@ -178,13 +185,19 @@ class SupplierPublishMappedProductsAPISmokeTests(APITestCase):
         self.assertEqual(Product.objects.filter(sku="A-001").count(), 1)
         self.assertEqual(Product.objects.filter(sku="B-001").count(), 1)
         self.assertEqual(SupplierOffer.objects.filter(supplier=self.supplier).count(), 2)
+        self.assertEqual(ProductImage.objects.filter(product__sku="A-001").count(), 1)
+        self.assertEqual(ProductImage.objects.filter(product__sku="B-001").count(), 1)
 
-        second_response = self.client.post(
-            reverse("backoffice_api:supplier-publish-mapped-products", kwargs={"code": "gpl"}),
-            {"reprice_after_publish": False},
-            format="json",
-            **self.auth,
-        )
+        with patch(
+            "apps.supplier_imports.services.mapped_offer_publish.images._download_image",
+            return_value=(b"fake-image-bytes", "image/webp"),
+        ):
+            second_response = self.client.post(
+                reverse("backoffice_api:supplier-publish-mapped-products", kwargs={"code": "gpl"}),
+                {"reprice_after_publish": False},
+                format="json",
+                **self.auth,
+            )
         self.assertEqual(second_response.status_code, status.HTTP_200_OK)
         second_result = second_response.data["result"]
         self.assertEqual(second_result["eligible_rows"], 2)

@@ -18,6 +18,7 @@ class CartItemSerializer(serializers.ModelSerializer):
     estimated_delivery_days = serializers.SerializerMethodField()
     procurement_source_summary = serializers.SerializerMethodField()
     is_sellable = serializers.SerializerMethodField()
+    max_order_quantity = serializers.SerializerMethodField()
     warning = serializers.SerializerMethodField()
 
     class Meta:
@@ -33,6 +34,7 @@ class CartItemSerializer(serializers.ModelSerializer):
             "estimated_delivery_days",
             "procurement_source_summary",
             "is_sellable",
+            "max_order_quantity",
             "warning",
         )
 
@@ -59,6 +61,9 @@ class CartItemSerializer(serializers.ModelSerializer):
 
     def get_is_sellable(self, obj: CartItem):
         return self._snapshot(obj).is_sellable
+
+    def get_max_order_quantity(self, obj: CartItem):
+        return self._snapshot(obj).max_order_quantity
 
     def get_warning(self, obj: CartItem):
         snapshot = self._snapshot(obj)

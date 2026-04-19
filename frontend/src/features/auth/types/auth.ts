@@ -4,6 +4,7 @@ export type AuthUser = {
   username: string;
   first_name: string;
   last_name: string;
+  phone: string;
   preferred_language: "uk" | "ru" | "en";
   is_staff: boolean;
   is_superuser: boolean;

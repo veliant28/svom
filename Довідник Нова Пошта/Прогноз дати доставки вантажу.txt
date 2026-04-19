@@ -1,0 +1,65 @@
+Прогноз дати доставки вантажу
+Метод getDocumentDeliveryDate працює в моделі InternetDocument. Метод повертає орієнтовну дату доставки у відповіді.
+
+Послуги в експрес-накладній (ЕН), такі як зворотна доставка, щоденна доставка та інші, вказуються у запиті як обов’язкові елементи для розрахунку орієнтовної дати доставки.
+
+Текст запиту
+Параметр	Тип	Опис
+DateTime	string[36]	Дата створення ЕН
+ServiceType*	string[36]	Тип послуги
+CitySender*	string[36]	Ідентифікатор міста відправника
+CityRecipient*	string[36]	Ідентифікатор міста отримувача
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "InternetDocumentGeneral",
+   "calledMethod": "getDocumentDeliveryDate",
+   "methodProperties": {
+"DateTime" : "2024-05-31 15:00:00",
+"ServiceType" : "WarehouseWarehouse",
+"CitySender" : "00000000-0000-0000-0000-000000000000",
+"CityRecipient" : "00000000-0000-0000-0000-000000000000"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+DeliveryDate	object	Орієнтовна дата доставки
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"DeliveryDate" : {
+"date":"2024-07-10 18:00:00.000000",
+"timezone_type":3",
+"timezone":"Europe\/Kiev"
+}
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

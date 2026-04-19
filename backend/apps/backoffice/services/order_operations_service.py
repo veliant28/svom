@@ -154,6 +154,20 @@ class OrderOperationsService:
         return OrderActionResult(order_id=str(order.id), status=order.status)
 
     @transaction.atomic
+    def delete_order(self, *, order: Order, operator_note: str = "") -> dict:
+        if order.status in {Order.STATUS_SHIPPED, Order.STATUS_COMPLETED}:
+            raise ValidationError({"order": _("Нельзя удалить заказ в статусе отправлен/завершен.")})
+
+        if operator_note:
+            order.operator_notes = self._merge_note(order.operator_notes, operator_note)
+            order.save(update_fields=("operator_notes", "updated_at"))
+
+        order_id = str(order.id)
+        order_number = order.order_number
+        order.delete()
+        return {"order_id": order_id, "order_number": order_number}
+
+    @transaction.atomic
     def bulk_confirm(self, *, order_ids: list[str], operator_note: str = "") -> dict:
         orders = Order.objects.filter(id__in=order_ids)
         updated = 0
@@ -170,6 +184,25 @@ class OrderOperationsService:
             self.mark_awaiting_procurement(order=order, operator_note=operator_note)
             updated += 1
         return {"updated": updated}
+
+    def bulk_delete(self, *, order_ids: list[str], operator_note: str = "") -> dict:
+        orders = Order.objects.filter(id__in=order_ids)
+        deleted = 0
+        skipped: list[dict[str, str]] = []
+
+        for order in orders:
+            try:
+                self.delete_order(order=order, operator_note=operator_note)
+                deleted += 1
+            except ValidationError as exc:
+                skipped.append(
+                    {
+                        "order_id": str(order.id),
+                        "reason": self._extract_validation_reason(exc),
+                    }
+                )
+
+        return {"deleted": deleted, "skipped": skipped}
 
     @transaction.atomic
     def supplier_recommendation_for_item(self, *, item: OrderItem) -> dict:
@@ -196,3 +229,12 @@ class OrderOperationsService:
         if not existing:
             return note
         return f"{existing}\n{note}"
+
+    def _extract_validation_reason(self, error: ValidationError) -> str:
+        if hasattr(error, "message_dict"):
+            values = list(error.message_dict.values())
+            if values and isinstance(values[0], list) and values[0]:
+                return str(values[0][0])
+        if hasattr(error, "messages") and error.messages:
+            return str(error.messages[0])
+        return str(error)

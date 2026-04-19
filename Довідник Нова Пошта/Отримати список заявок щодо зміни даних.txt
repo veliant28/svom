@@ -1,0 +1,81 @@
+Отримати список заявок щодо зміни даних
+Метод getChangeEWOrdersList працює в моделі AdditionalService і дозволяє отримати список заявок щодо зміни даних.
+
+Текст запиту
+Параметр	Тип	Опис
+Number	string[36]	Номер заявки
+Ref	string[36]	Ідентифікатор заявки
+BeginDate*	string[36]	Дата створення «з»
+EndDate*	string[36]	Дата створення «до»
+Page*	string[36]	Номер сторінки
+Limit*	string[36]	Кількість записів на сторінці
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AdditionalServiceGeneral",
+   "calledMethod": "getChangeEWOrdersList",
+   "methodProperties": {
+"Number" : "102-00006096",
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"BeginDate" : "дд.мм.рррр",
+"EndDate" : "дд.мм.рррр",
+"Page" : "1",
+"Limit" : "50"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+OrderRef	string[36]	Ідентифікатор замовлення
+OrderNumber	string[36]	Номер замовлення
+OrderStatus	string[36]	Статус замовлення
+DocumentNumber	string[36]	Номер документа
+DateTime	string[36]	Дата створення замовлення
+BeforeChangeSenderCounterparty	string[36]	Дані до зміни
+AfterChangeChangeSenderCounterparty	string[36]	Дані після зміни
+Cost	string[36]	Вартість
+BeforeChangeSenderPhone	string[36]	Телефон до зміни
+AfterChangeSenderPhone	string[36]	Телефон після зміни
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"OrderRef" : "00000000-0000-0000-0000-000000000000",
+"OrderNumber" : "102-00010160",
+"OrderStatus" : "Дані в ЕН змінено",
+"DocumentNumber" : "20600000066986",
+"DateTime" : "дд.мм.рррр",
+"BeforeChangeSenderCounterparty" : "ТОВ Яблуневий сад",
+"AfterChangeChangeSenderCounterparty" : "ФОП Іванов І.І.",
+"Cost" : "40",
+"BeforeChangeSenderPhone" : "380675559879",
+"AfterChangeSenderPhone" : "380664561237"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

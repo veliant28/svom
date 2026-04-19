@@ -1,0 +1,128 @@
+Перевірити можливість редагування вже створеної переадресації
+Метод checkPossibilityForRedirecting працює в моделі AdditionalServiceGeneral. Цей метод дозволяє перевірити можливість створення заявки на переадресування відправлення та можливість редагування вже створеної заявки залежно від запиту. У цьому описі йдеться саме про перевірку можливості редагування вже створеної заявки на переадресування.
+
+Метод доступний як відправнику, так і отримувачу, проте отримувач може редагувати не всі параметри. Існують такі особливості редагування:
+
+Якщо замовник перевірки є відправником, він може:
+Змінити отримувача
+Змінити адресу доставки
+Вказати платника за переадресацію (себе, якщо вибрано безготівкову форму розрахунку, або отримувача, якщо йому доступна ця форма оплати)
+Якщо замовник перевірки є отримувачем, він може редагувати лише адресу доставки.
+У запиті передається ідентифікатор створеного замовлення (Ref) та параметри, які необхідно відредагувати.
+
+Текст запиту
+Параметр	Тип	Опис
+OrderRef*	string[36]	Ідентифікатор (REF) створеного замовлення
+AddressDescription	string[36]	Текстовий опис адреси (якщо переадресування на адресу)
+RecipientName	string[36]	ПІБ контактної особи отримувача. Цей параметр може редагувати лише відправник
+PhoneSender	string[36]	Телефон відправника
+StreetDescription	string[36]	Текстовий опис вулиці (якщо переадресування на адресу)
+PhoneRecipient	string[36]	Телефон отримувача. Цей параметр може редагувати лише відправник
+BuildingNumber	string[36]	Номер будинку (за умови створення переадресування на адресу)
+CityRecipient	string[36]	Ідентифікатор (REF) міста отримувача
+DocumentWeight	string[36]	Загальна вага відправлення
+SettlementRecipient	string[36]	Ідентифікатор (REF) населеного пункту отримувача
+SettlementType	string[36]	Ідентифікатор (REF) типу населеного пункту отримувача
+PayerType	string[36]	Тип платника. Цей параметр може редагувати лише відправник
+PaymentMethod	string[36]	Форма розрахунку (Cash/NonCash). Цей параметр може редагувати лише відправник
+CounterpartyRecipientRef	string[36]	Ідентифікатор (REF) інтернет-контрагента отримувача
+WarehouseRef	string[36]	Ідентифікатор (REF) відділення
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AdditionalServiceGeneral",
+   "calledMethod": "checkPossibilityForRedirecting",
+   "methodProperties": {
+"OrderRef" : "00000000-0000-0000-0000-000000000000",
+"AddressDescription" : "просп. М. Бажана, 24/1 (м. Позняки)",
+"RecipientName" : "Іванов Іван Іванович",
+"PhoneSender" : "380675387254",
+"StreetDescription" : "просп. М. Бажана",
+"PhoneRecipient" : "380991234567",
+"BuildingNumber" : "24",
+"CityRecipient" : "00000000-0000-0000-0000-000000000000",
+"DocumentWeight" : "1",
+"SettlementRecipient" : "00000000-0000-0000-0000-000000000000",
+"SettlementType" : "00000000-0000-0000-0000-000000000000",
+"PayerType" : "Sender",
+"PaymentMethod" : "Cash",
+"CounterpartyRecipientRef" : "00000000-0000-0000-0000-000000000000",
+"WarehouseRef" : "00000000-0000-0000-0000-000000000000"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+PhoneSender	string[36]	Телефон відправника
+BuildingNumber	string[36]	Номер будинку (за умови створення переадресування на адресу)
+PhoneRecipient	string[36]	Телефон отримувача
+CityRecipient	string[36]	Ідентифікатор (REF) міста отримувача
+DocumentWeight	string[36]	Загальна вага відправлення
+Ref	string[36]	Ідентифікатор (REF) документа
+CityRecipientDescription	string[36]	Назва міста отримувача
+Number	string[36]	Номер документа
+SettlementRecipient	string[36]	Ідентифікатор (REF) населеного пункту отримувача
+SettlementRecipientDescription	string[36]	Назва населеного пункту отримувача
+PayerType	string[36]	Тип платника
+SettlementType	string[36]	Ідентифікатор (REF) типу населеного пункту отримувача
+PaymentMethod	string[36]	Форма розрахунку (Cash/NonCash)
+CounterpartyRecipientRef	string[36]	Ідентифікатор (REF) інтернет-контрагента отримувача
+WarehouseRef	string[36]	Ідентифікатор (REF) відділення
+CounterpartyRecipientDescription	string[36]	Назва інтернет-контрагента отримувача
+WarehouseDescription	string[36]	Опис відділення
+AddressDescription	string[36]	Текстовий опис адреси (за умови створення переадресування на адресу)
+RecipientName	string[36]	ПІБ контактної особи отримувача
+StreetDescription	string[36]	Текстовий опис вулиці (за умови створення переадресування на адресу)
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"PhoneSender" : "380675387254",
+"BuildingNumber" : "24/1",
+"PhoneRecipient" : "380991234567",
+"CityRecipient" : "00000000-0000-0000-0000-000000000000",
+"DocumentWeight" : "1",
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"CityRecipientDescription" : "Київ",
+"Number" : "20600000065609",
+"SettlementRecipient" : "00000000-0000-0000-0000-000000000000",
+"SettlementRecipientDescription" : "Київ",
+"PayerType" : "Sender",
+"SettlementType" : "00000000-0000-0000-0000-000000000000",
+"PaymentMethod" : "Cash",
+"CounterpartyRecipientRef" : "00000000-0000-0000-0000-000000000000",
+"WarehouseRef" : "00000000-0000-0000-0000-000000000000",
+"CounterpartyRecipientDescription" : "101-10378782",
+"WarehouseDescription" : "Відділення №23 (до 30 кг): просп. М. Бажана, 24/1 (м. Позняки)",
+"AddressDescription" : "просп. М. Бажана, 24/1 (м. Позняки)",
+"RecipientName" : "Іванов Іван Іванович",
+"StreetDescription" : "просп. М. Бажана"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

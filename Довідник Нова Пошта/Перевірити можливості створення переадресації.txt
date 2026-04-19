@@ -1,0 +1,95 @@
+Перевірити можливості створення переадресації
+Метод checkPossibilityForRedirecting працює в моделі AdditionalServiceGeneral і дозволяє перевірити можливість створення заявки на переадресацію відправлення.
+
+Метод доступний лише клієнтам відправників.
+
+У разі успіху повертаються необхідні параметри створення заявки.
+
+Текст запиту
+Параметр	Тип	Опис
+Number*	string[36]	Номер документа
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AdditionalServiceGeneral",
+   "calledMethod": "checkPossibilityForRedirecting",
+   "methodProperties": {
+"Number" : "00000000-0000-0000-0000-000000000000"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+Ref	string[36]	Ідентифікатор (REF) документа
+Number	string[36]	Номер документа
+PayerType	string[36]	Тип платника
+PaymentMethod	string[36]	Форма розрахунку (Cash/NonCash)
+WarehouseRef	string[36]	Ідентифікатор (REF) відділення
+WarehouseDescription	string[36]	Опис відділення
+AddressDescription	string[36]	Текстовий опис адреси (якщо переадресування на адресу)
+StreetDescription	string[36]	Текстовий опис вулиці (якщо переадресування на адресу)
+BuildingNumber	string[36]	Номер будинку (за умови створення переадресування на адресу)
+CityRecipient	string[36]	Ідентифікатор (REF) міста отримувача
+CityRecipientDescription	string[36]	Назва міста отримувача
+SettlementRecipient	string[36]	Ідентифікатор (REF) населеного пункту отримувача
+SettlementRecipientDescription	string[36]	Назва населеного пункту отримувача
+SettlementType	string[36]	Ідентифікатор (REF) типу населеного пункту отримувача
+CounterpartyRecipientRef	string[36]	Ідентифікатор (REF) контрагента отримувача
+CounterpartyRecipientDescription	string[36]	Назва інтернет-контрагента отримувача
+RecipientName	string[36]	ПІБ контактної особи отримувача
+PhoneSender	string[36]	Телефон відправника
+PhoneRecipient	string[36]	Телефон отримувача
+DocumentWeight	string[36]	Загальна вага документа
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"Number" : "20600000065609",
+"PayerType" : "Sender",
+"PaymentMethod" : "Cash",
+"WarehouseRef" : "00000000-0000-0000-0000-000000000000",
+"WarehouseDescription" : "Відділення №23 (до 30 кг): просп. М. Бажана, 24/1 (м. Позняки)",
+"AddressDescription" : "просп. М. Бажана, 24/1 (м. Позняки)",
+"StreetDescription" : "просп. М. Бажана",
+"BuildingNumber" : "24/1",
+"CityRecipient" : "00000000-0000-0000-0000-000000000000",
+"CityRecipientDescription" : "Київ",
+"SettlementRecipient" : "00000000-0000-0000-0000-000000000000",
+"SettlementRecipientDescription" : "Київ",
+"SettlementType" : "00000000-0000-0000-0000-000000000000",
+"CounterpartyRecipientRef" : "00000000-0000-0000-0000-000000000000",
+"CounterpartyRecipientDescription" : "101-10378782",
+"RecipientName" : "Іванов Іван Іванович",
+"PhoneSender" : "380675387254",
+"PhoneRecipient" : "380991234567",
+"DocumentWeight" : "1"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

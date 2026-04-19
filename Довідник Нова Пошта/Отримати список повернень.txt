@@ -1,0 +1,83 @@
+Отримати список повернень
+Метод getReturnOrdersList працює в моделі AdditionalService і дозволяє отримати список заявок на повернення.
+
+Текст запиту
+Параметр	Тип	Опис
+Number	string[36]	Номер заявки на повернення
+Ref	string[36]	Ідентифікатор (REF) заявки на повернення
+BeginDate	string[36]	Дата створення заявки «З» у форматі дд.мм.рррр
+EndDate	string[36]	Дата створення заявки «ДО» у форматі дд.мм.рррр
+Page	string[36]	Номер сторінки
+Limit	string[36]	Ліміт на сторінці
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AdditionalServiceGeneral",
+   "calledMethod": "getReturnOrdersList",
+   "methodProperties": {
+"Number" : "102-00003168",
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"BeginDate" : "12/10/15 10:33",
+"EndDate" : "12/10/15 10:33",
+"Page" : "1",
+"Limit" : "50"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+OrderRef	string[36]	Ідентифікатор (REF) заявки на повернення
+OrderNumber	string[36]	Номер заявки на повернення
+OrderStatus	string[36]	Статус заявки
+DocumentNumber	string[36]	Номер документа, на основі якого створено заявку
+CounterpartyRecipient	string[36]	Контрагент, що буде отримувачем в експрес-накладній (ЕН) повернення
+ContactPersonRecipient	string[36]	Контактна особа, що буде отримувачем в експрес-накладній (ЕН) повернення
+AddressRecipient	string[36]	Адреса, на яку буде оформлено експрес-накладну (ЕН) повернення
+DeliveryCost	string[36]	Вартість експрес-накладної (ЕН) повернення (якщо створено ЕН)
+EstimatedDeliveryDate	string[36]	Розрахункова дата доставки повернення (якщо створено ЕН)
+ExpressWaybillNumber	string[36]	Номер експрес-накладної (ЕН) повернення (якщо створено ЕН)
+ExpressWaybillStatus	string[36]	Статус експрес-накладної (ЕН) повернення (якщо створено ЕН)
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"OrderRef" : "00000000-0000-0000-0000-000000000000",
+"OrderNumber" : "102-00003168",
+"OrderStatus" : "Прийняте",
+"DocumentNumber" : "20600000043015",
+"CounterpartyRecipient" : "Комунальник",
+"ContactPersonRecipient" : "Іванов Іван Іванович",
+"AddressRecipient" : "Ангеліної Паші вул. 45 кв. 12",
+"DeliveryCost" : "20",
+"EstimatedDeliveryDate" : "12/10/15 10:33",
+"ExpressWaybillNumber" : "59000042651620",
+"ExpressWaybillStatus" : "Відправлення у місті Київ"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

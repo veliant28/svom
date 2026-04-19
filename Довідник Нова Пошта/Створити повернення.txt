@@ -1,0 +1,150 @@
+Створити повернення
+Метод save працює в моделі AdditionalService і дозволяє створити заявку на повернення (метод доступний тільки для клієнтів відправників). Цей метод підтримує декілька варіантів повернення: на адресу відправника, на нову адресу та на нове відділення. Основна частина методу однакова для всіх випадків, але відрізняються параметри адреси у запиті.
+
+Повернення на адресу відправлення
+
+Необхідно вказати ідентифікатор адреси відправлення. Адреса повертається у відповіді методу  CheckPossibilityCreateReturn.
+
+Приклад:
+
+{
+  "apiKey": "[ВАШ КЛЮЧ]",
+  "modelName": "AdditionalServiceGeneral",
+  "calledMethod": "save",
+  "methodProperties": 
+    {
+    "IntDocNumber": "206004560074695",
+    "PaymentMethod": "Cash",
+    "Reason": "00000000-0000-0000-0000-000000000000",
+    "SubtypeReason": "00000000-0000-0000-0000-000000000000",
+    "Note": "Additional information",
+    "OrderType": "orderCargoReturn",
+    "ReturnAddressRef": "00000000-0000-0000-0000-000000000000"
+   
+    }
+}
+
+Повернення на нову адресу
+
+Необхідно вказати параметри нової адреси.
+Приклад:
+
+{
+  "apiKey": "[ВАШ КЛЮЧ]",
+  "modelName": "AdditionalServiceGeneral",
+  "calledMethod": "save",
+  "methodProperties": 
+    {
+    "IntDocNumber": "206004560074695",
+    "PaymentMethod": "Cash",
+    "Reason": "00000000-0000-0000-0000-000000000000",
+    "SubtypeReason": "00000000-0000-0000-0000-000000000000",
+    "Note": "Additional information",
+    "OrderType": "orderCargoReturn",
+    "RecipientSettlement": "00000000-0000-0000-0000-000000000000",
+    "RecipientSettlementStreet": "00000000-0000-0000-0000-000000000000",
+    "BuildingNumber": "4",
+    "NoteAddressRecipient": "2"
+   
+    }
+}
+Повернення на нове відділення
+
+Необхідно вказати ідентифікатор відділення для повернення. Ідентифікатор повертається у відповіді методу CheckPossibilityCreateReturn.
+
+Приклад:
+
+{
+  "apiKey": "[ВАШ КЛЮЧ]",
+  "modelName": "AdditionalServiceGeneral",
+  "calledMethod": "save",
+  "methodProperties": 
+    {
+    "IntDocNumber": "206004560074695",
+    "PaymentMethod": "Cash",
+    "Reason": "00000000-0000-0000-0000-000000000000",
+    "SubtypeReason": "00000000-0000-0000-0000-000000000000",
+    "Note": "Additional information",
+    "OrderType": "orderCargoReturn",
+    "RecipientWarehouse": "00000000-0000-0000-0000-000000000000"
+   
+    }
+}
+Відповідь однакова у всіх випадках.
+
+ 
+
+Текст запиту
+Параметр	Тип	Опис
+BuildingNumber*	string[36]	Номер будинку. Параметр використовується для повернення на нову адресу
+NoteAddressRecipient	string[36]	Коментар до адреси  (квартира, поверх, під'їзд тощо). Параметр використовується для повернення на нову адресу
+RecipientSettlement*	string[36]	Ідентифікатор населеного пункту отримувача. Параметр використовується для повернення на нову адресу
+RecipientWarehouse*	string[36]	Ідентифікатор (REF) відділення для повернення (дані з відповіді методу CheckPossibilityCreateReturn). Параметр використовується для повернення на нове відділення
+IntDocNumber*	string[36]	Номер інтернет-документа
+PaymentMethod*	string[36]	Форма розрахунку (Cash/NonCash)
+Reason*	string[36]	Ідентифікатор (REF) причини повернення
+SubtypeReason*	string[36]	Ідентифікатор (REF) підтипу причини повернення
+Note	string[100]	Опис клієнта (необов'язково)
+OrderType*	string[36]	Константа — orderCargoReturn
+ReturnAddressRef*	string[36]	Адреса для повернення (дані з відповіді методу CheckPossibilityCreateReturn). Параметр використовується для повернення на адресу відправника
+RecipientSettlementStreet*	string[36]	Вулиця отримувача. Параметр використовується для повернення на нову адресу
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AdditionalServiceGeneral",
+   "calledMethod": "save",
+   "methodProperties": {
+"BuildingNumber" : "4",
+"NoteAddressRecipient" : "2",
+"RecipientSettlement" : "00000000-0000-0000-0000-000000000000",
+"RecipientWarehouse" : "00000000-0000-0000-0000-000000000000",
+"IntDocNumber" : "206004560074695",
+"PaymentMethod" : "Cash",
+"Reason" : "00000000-0000-0000-0000-000000000000",
+"SubtypeReason" : "00000000-0000-0000-0000-000000000000",
+"Note" : "Довільний опис",
+"OrderType" : "orderCargoReturn",
+"ReturnAddressRef" : "00000000-0000-0000-0000-000000000000",
+"RecipientSettlementStreet" : "00000000-0000-0000-0000-000000000000"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+Number	string[36]	Номер заявки на повернення
+Ref	string[36]	Ідентифікатор (REF) заявки на повернення
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"Number" : "102-00006096",
+"Ref" : "00000000-0000-0000-0000-000000000000"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

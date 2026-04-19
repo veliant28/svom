@@ -13,6 +13,13 @@
         "add": "В обране",
         "remove": "Видалити",
         "viewProduct": "Переглянути товар"
+      },
+      "messages": {
+        "authRequiredAction": "Щоб керувати обраним, увійдіть в акаунт.",
+        "added": "Товар додано в обране.",
+        "removed": "Товар видалено з обраного.",
+        "loadFailed": "Не вдалося завантажити обране.",
+        "actionFailed": "Не вдалося оновити обране."
       }
     },
     "cart": {
@@ -38,6 +45,14 @@
       },
       "warnings": {
         "availabilityOrPriceChanged": "Доступність або ціна змінилися для однієї чи кількох позицій. Перевірте замовлення перед оформленням."
+      },
+      "messages": {
+        "authRequiredAction": "Щоб керувати кошиком, увійдіть в акаунт.",
+        "added": "Товар додано в кошик.",
+        "removed": "Товар видалено з кошика.",
+        "quantityUpdated": "Кількість у кошику оновлено.",
+        "loadFailed": "Не вдалося завантажити кошик.",
+        "actionFailed": "Не вдалося оновити кошик."
       }
     },
     "checkout": {
@@ -54,18 +69,38 @@
         "orderReview": "Перегляд замовлення"
       },
       "fields": {
-        "fullName": "ПІБ",
+        "lastName": "Прізвище",
+        "firstName": "Імʼя",
+        "middleName": "По батькові",
         "phone": "Телефон",
-        "email": "Email",
-        "deliveryMethod": "Спосіб доставки",
-        "deliveryAddress": "Адреса доставки",
+        "npCity": "Місто",
+        "npDestination": "Відділення / поштомат",
+        "npStreet": "Вулиця",
+        "npHouse": "Будинок",
+        "npApartment": "Квартира / офіс",
         "paymentMethod": "Спосіб оплати",
         "comment": "Коментар"
+      },
+      "deliveryOptions": {
+        "pickup": "Самовивіз",
+        "novaPoshtaWarehouse": "Нова Пошта відділення/поштомат",
+        "novaPoshtaCourier": "Нова Пошта курʼєром"
       },
       "delivery": {
         "pickup": "Самовивіз",
         "courier": "Курʼєр",
         "novaPoshta": "Нова Пошта"
+      },
+      "placeholders": {
+        "npCity": "Почніть вводити місто",
+        "npDestination": "Почніть вводити відділення або поштомат",
+        "npStreet": "Почніть вводити вулицю",
+        "npHouse": "Наприклад 12А",
+        "npApartment": "Наприклад 45"
+      },
+      "lookup": {
+        "loading": "Завантаження...",
+        "noResults": "Нічого не знайдено"
       },
       "payment": {
         "cardPlaceholder": "Оплата карткою (placeholder)",
@@ -80,7 +115,47 @@
         "total": "Разом: {total} {currency}"
       },
       "success": "Замовлення створено: {orderNumber}",
+      "phoneFormatError": "Введіть телефон у форматі 38(0XX)XXX-XX-XX.",
+      "errors": {
+        "deliveryCityRequired": "Оберіть місто доставки Нової Пошти.",
+        "deliveryDestinationRequired": "Оберіть відділення або поштомат Нової Пошти.",
+        "deliveryStreetRequired": "Оберіть вулицю та вкажіть номер будинку для курʼєрської доставки."
+      },
       "submitError": "Не вдалося оформити замовлення. Перевірте обовʼязкові поля."
+    },
+    "orders": {
+      "title": "Мої замовлення",
+      "subtitle": "Історія та склад ваших замовлень.",
+      "authRequired": "Для перегляду замовлень потрібна авторизація.",
+      "goToLogin": "Перейти до входу",
+      "states": {
+        "loading": "Завантажуємо замовлення...",
+        "empty": "Замовлень поки немає.",
+        "error": "Не вдалося завантажити замовлення."
+      },
+      "labels": {
+        "items": "Позицій: {count}",
+        "client": "Клієнт: {fullName}"
+      },
+      "table": {
+        "sku": "Артикул",
+        "product": "Товар",
+        "qty": "К-сть",
+        "total": "Сума"
+      },
+      "status": {
+        "draft": "Чернетка",
+        "placed": "Створено",
+        "new": "Нове",
+        "confirmed": "Підтверджено",
+        "awaiting_procurement": "Очікує закупівлі",
+        "reserved": "Зарезервовано",
+        "partially_reserved": "Частково зарезервовано",
+        "ready_to_ship": "Готове до відправки",
+        "shipped": "Відправлено",
+        "completed": "Виконано",
+        "cancelled": "Скасовано"
+      }
     }
   }
 }

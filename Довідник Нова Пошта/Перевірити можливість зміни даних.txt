@@ -1,0 +1,91 @@
+Перевірити можливість зміни даних
+Метод CheckPossibilityChangeEW працює в моделі AdditionalService і дозволяє перевірити можливість створення заявки на зміну даних.
+
+У разі успіху повертаються необхідні параметри створення заявки.
+
+Текст запиту
+Параметр	Тип	Опис
+IntDocNumber*	string[36]	Номер документа, для якого буде створено заявку
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AdditionalServiceGeneral",
+   "calledMethod": "CheckPossibilityChangeEW",
+   "methodProperties": {
+"IntDocNumber" : "20450500000012"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+CanChangeSender	bool	Можливість зміни даних відправника
+CanChangeRecipient	bool	Можливість зміни даних отримувача
+CanChangePayerTypeOrPaymentMethod	bool	Можливість зміни даних платника або форми оплати
+CanChangeBackwardDeliveryDocuments	bool	Можливість зміни послуги «Зворотна доставка документів»
+CanChangeBackwardDeliveryMoney	bool	Можливість зміни грошового переказу
+CanChangeCash2Card	bool	Можливість зміни номера картки для виплати грошового переказу
+CanChangeBackwardDeliveryOther	bool	Можливість зміни зворотної доставки
+CanChangeAfterpaymentType	bool	Можливість зміни суми контролю оплати
+CanChangeLiftingOnFloor	bool	Можливість зміни підйому на поверх
+CanChangeLiftingOnFloorWithElevator	bool	Можливість зміни підйому на поверх за допомогою ліфта
+CanChangeFillingWarranty	bool	Можливість зміни послуги «Гарантія заповнення»
+SenderCounterparty	string[36]	Контрагент відправника
+ContactPersonSender	string[36]	Контактна особа відправника
+SenderPhone	string[36]	Номер телефону відправника
+RecipientCounterparty	string[36]	Контрагент отримувача
+ContactPersonRecipient	string[36]	Контактна особа отримувача
+RecipientPhone	string[36]	Номер телефону отримувача
+PayerType	string[36]	Тип платника
+PaymentMethod	string[36]	Форма розрахунку (Cash/NonCash)
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"CanChangeSender" : true,
+"CanChangeRecipient" : true,
+"CanChangePayerTypeOrPaymentMethod" : true,
+"CanChangeBackwardDeliveryDocuments" : true,
+"CanChangeBackwardDeliveryMoney" : true,
+"CanChangeCash2Card" : true,
+"CanChangeBackwardDeliveryOther" : true,
+"CanChangeAfterpaymentType" : true,
+"CanChangeLiftingOnFloor" : true,
+"CanChangeLiftingOnFloorWithElevator" : true,
+"CanChangeFillingWarranty" : true,
+"SenderCounterparty" : "ПП ВКФ "КАРАТ",
+"ContactPersonSender" : "Іванов Іван Іванович",
+"SenderPhone" : "380685024447",
+"RecipientCounterparty" : "Приватна особа",
+"ContactPersonRecipient" : "Іванов Іван Іванович",
+"RecipientPhone" : "380685024447",
+"PayerType" : "Recipient",
+"PaymentMethod" : "Cash"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

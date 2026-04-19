@@ -160,7 +160,11 @@ CELERY_BEAT_SCHEDULE = {
     "supplier-imports-scheduled-dispatch": {
         "task": "supplier_imports.run_scheduled_imports",
         "schedule": crontab(minute="*"),
-    }
+    },
+    "commerce-sync-nova-poshta-waybills": {
+        "task": "commerce.sync_nova_poshta_waybill_statuses",
+        "schedule": crontab(minute="*/20"),
+    },
 }
 
 ELASTICSEARCH = {

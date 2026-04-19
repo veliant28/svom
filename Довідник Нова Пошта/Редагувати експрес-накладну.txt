@@ -1,0 +1,101 @@
+Редагувати експрес-накладну
+Метод update працює в моделі InternetDocument. Цей метод дозволяє редагувати експрес-накладну (інтернет-документ). Обов'язково заповнювати всі параметри, але після оновлення замінюються лише ті, що були модифіковані.
+
+Текст запиту
+Параметр	Тип	Опис
+Ref*	string[36]	Ідентифікатор (REF) експрес-накладної
+PayerType*	string[36]	Тип платника (Sender, Recipient, ThirdPerson)
+PaymentMethod*	string[36]	Форма розрахунку (Cash/NonCash)
+DateTime*	string[36]	Дата відправки у форматі дд.мм.рррр
+CargoType*	string[36]	Тип вантажу
+VolumeGeneral	string[36]	Загальний об'єм, м.куб (min. 0.0004). Обов'язково зазначати, якщо не передається параметр OptionsSeat
+Weight*	string[36]	Фактична вага, кг (min. 0,1)
+ServiceType*	string[36]	Технологія доставки (DoorsDoors, DoorsWarehouse, WarehouseWarehouse, WarehouseDoors)
+SeatsAmount*	string[36]	Кількість місць відправлення, ціле число
+Description*	string[36]	Текстове поле, вводиться для додаткового опису відправлення
+Cost*	string[36]	Оціночна вартість, ціле число (якщо не зазначити вартість, то АРІ автоматично проставить мінімальну оціночну вартість 300.00)
+CitySender*	string[36]	Ідентифікатор (REF) міста відправника
+Sender*	string[36]	Ідентифікатор (REF) відправника
+SenderAddress*	string[36]	Ідентифікатор (REF) адреси відправника
+ContactSender*	string[36]	Ідентифікатор (REF) контактної особи відправника
+SendersPhone*	string[36]	Телефон відправника у форматі: +380660000000, 380660000000, 0660000001
+CityRecipient*	string[36]	Ідентифікатор (REF) міста отримувача
+Recipient*	string[36]	Ідентифікатор (REF) отримувача
+RecipientAddress*	string[36]	Ідентифікатор (REF) адреси отримувача / Ідентифікатор поштомата
+ContactRecipient*	string[36]	Ідентифікатор (REF) контактної особи
+RecipientsPhone*	string[36]	Телефон отримувача у форматі: +380660000000, 380660000000, 0660000001
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "InternetDocumentGeneral",
+   "calledMethod": "update",
+   "methodProperties": {
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"PayerType" : "ThirdPerson",
+"PaymentMethod" : "NonCash",
+"DateTime" : "дд.мм.рррр",
+"CargoType" : "Cargo",
+"VolumeGeneral" : "0.45",
+"Weight" : "0.5",
+"ServiceType" : "DoorsWarehouse",
+"SeatsAmount" : "2",
+"Description" : "Додатковий опис відправлення",
+"Cost" : "15000",
+"CitySender" : "00000000-0000-0000-0000-000000000000",
+"Sender" : "00000000-0000-0000-0000-000000000000",
+"SenderAddress" : "00000000-0000-0000-0000-000000000000",
+"ContactSender" : "00000000-0000-0000-0000-000000000000",
+"SendersPhone" : "380660000000",
+"CityRecipient" : "00000000-0000-0000-0000-000000000000",
+"Recipient" : "00000000-0000-0000-0000-000000000000",
+"RecipientAddress" : "00000000-0000-0000-0000-000000000000",
+"ContactRecipient" : "00000000-0000-0000-0000-000000000000",
+"RecipientsPhone" : "380660000000"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+Ref	string[36]	Ідентифікатор (REF) експрес-накладної
+CostOnSite	string[36]	Вартість доставки
+EstimatedDeliveryDate	string[36]	Прогнозована дата доставки
+IntDocNumber	string[36]	Номер експрес-накладної
+TypeDocument	string[36]	Тип експрес-накладної
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"CostOnSite" : "45",
+"EstimatedDeliveryDate" : "дд.мм.рррр",
+"IntDocNumber" : "20600000002545",
+"TypeDocument" : "InternetDocument"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

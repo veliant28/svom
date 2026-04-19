@@ -32,6 +32,7 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
 
         self.brand = Brand.objects.create(name="BOSCH", slug="bosch", is_active=True)
         self.category = Category.objects.create(name="Filters", slug="filters", is_active=True)
+        self.target_category = Category.objects.create(name="Brakes", slug="brakes", is_active=True)
         self.product = Product.objects.create(
             sku="BOS-001",
             article="BOS-001",
@@ -74,7 +75,7 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
             stock_qty=5,
             is_available=True,
         )
-        SupplierRawOffer.objects.create(
+        self.raw_offer = SupplierRawOffer.objects.create(
             run=self.import_run,
             source=self.import_source,
             supplier=self.supplier,
@@ -201,6 +202,28 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
         self.assertEqual(response.data["results"][0]["final_price"], "180.00")
         self.assertEqual(response.data["results"][0]["supplier_price"], "120.00")
 
+    def test_products_list_supports_page_size_query_param(self):
+        for index in range(30):
+            Product.objects.create(
+                sku=f"BOS-PG-{index:03d}",
+                article=f"BOS-PG-{index:03d}",
+                name=f"Bosch Test Product {index:03d}",
+                slug=f"bosch-test-product-{index:03d}",
+                brand=self.brand,
+                category=self.category,
+                is_active=True,
+            )
+
+        response = self.client.get(
+            reverse("backoffice_api:catalog-product-list-create"),
+            {"page_size": 15},
+            **self._auth(self.staff_token.key),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 31)
+        self.assertEqual(len(response.data["results"]), 15)
+
     @patch("apps.backoffice.api.views.pricing_actions_views.reindex_products_task")
     def test_staff_can_dispatch_product_reindex_action(self, reindex_task):
         reindex_task.delay.return_value = None
@@ -216,3 +239,37 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
         )
         self.assertEqual(reindex_response.status_code, status.HTTP_200_OK)
         reindex_task.delay.assert_called_once()
+
+    def test_staff_can_bulk_move_products_category_and_update_import_rules(self):
+        response = self.client.post(
+            reverse("backoffice_api:action-bulk-move-products-category"),
+            {
+                "product_ids": [str(self.product.id)],
+                "category_id": str(self.target_category.id),
+                "update_import_rules": True,
+            },
+            format="json",
+            **self._auth(self.staff_token.key),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["products_requested"], 1)
+        self.assertEqual(response.data["products_found"], 1)
+        self.assertEqual(response.data["products_updated"], 1)
+        self.assertEqual(response.data["raw_offers_total"], 1)
+        self.assertEqual(response.data["raw_offers_updated"], 1)
+
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.category_id, self.target_category.id)
+
+        self.raw_offer.refresh_from_db()
+        self.assertEqual(self.raw_offer.mapped_category_id, self.target_category.id)
+        self.assertEqual(
+            self.raw_offer.category_mapping_status,
+            SupplierRawOffer.CATEGORY_MAPPING_STATUS_MANUAL_MAPPED,
+        )
+        self.assertEqual(
+            self.raw_offer.category_mapping_reason,
+            SupplierRawOffer.CATEGORY_MAPPING_REASON_MANUAL,
+        )
+        self.assertEqual(self.raw_offer.category_mapped_by_id, self.staff_user.id)

@@ -328,6 +328,7 @@
           "delete": "Удалить",
           "save": "Сохранить",
           "cancel": "Отмена",
+          "bulkMoveCategory": "Перенести в категорию",
           "bulkReindex": "Переиндексировать",
           "bulkDelete": "Удалить выбранные"
         },
@@ -342,6 +343,11 @@
           "deleteFailed": "Не удалось удалить товар.",
           "reindexQueued": "Переиндексация поставлена в очередь для {count} товар(ов).",
           "reindexFailed": "Не удалось поставить переиндексацию в очередь.",
+          "bulkMoveCategoryConfirm": "Перенести выбранные товары ({count}) в другую категорию и обновить правила импорта по ним?",
+          "bulkMoveCategorySelect": "Выберите целевую категорию",
+          "bulkMoveCategoryRequired": "Выберите целевую категорию.",
+          "bulkMoveCategoryDone": "Категория обновлена для {products} товар(ов), правила импорта обновлены для {offers} оффер(ов).",
+          "bulkMoveCategoryFailed": "Не удалось массово перенести товары в категорию.",
           "bulkDeleteConfirm": "Удалить выбранные товары ({count})?",
           "bulkDeleted": "Удалено товаров: {count}.",
           "bulkDeletePartial": "Удалено: {deleted}. Не удалось удалить: {failed}.",
@@ -381,6 +387,7 @@
         },
         "pagination": {
           "total": "Всего товаров: {count}",
+          "perPage": "На странице",
           "prev": "Назад",
           "next": "Вперед",
           "page": "Страница {current} из {total}"
@@ -559,31 +566,385 @@
       },
       "orders": {
         "title": "Заказы",
-        "subtitle": "Операционная очередь заказов со статусами закупки и действиями.",
+        "subtitle": "Операционный контур заказов: быстрый список, действия через модальные окна.",
         "filters": {
           "search": "Поиск по заказу, клиенту или товару",
           "allStatuses": "Все статусы"
         },
         "actions": {
           "refresh": "Обновить",
-          "bulkConfirm": "Массово подтвердить",
-          "bulkAwaiting": "Массово перевести в ожидание закупки",
-          "open": "Открыть",
-          "confirm": "Подтвердить",
-          "awaiting": "В ожидание закупки"
+          "bulkActions": "Массовые действия",
+          "bulkDelete": "Удалить выбранные",
+          "delete": "Удалить заказ",
+          "close": "Закрыть",
+          "closeModal": "Закрыть окно",
+          "cancel": "Отмена"
+        },
+        "tooltips": {
+          "bulkActions": "Массовые действия",
+          "open": "Открыть заказ",
+          "supplierOrder": "Оформить заказ у поставщика",
+          "delete": "Удалить заказ",
+          "selectAll": "Выбрать все заказы на странице",
+          "selectOne": "Выбрать заказ {orderNumber}",
+          "waybill": "Открыть ТТН",
+          "refresh": "Обновить"
         },
         "table": {
           "columns": {
-            "select": "Выбор",
-            "order": "Заказ",
+            "order": "Номер заказа",
+            "client": "Клиент",
             "status": "Статус",
-            "issues": "Проблемы",
             "total": "Итого",
-            "actions": "Действия"
-          }
+            "created": "Создан",
+            "actions": "Действия",
+            "waybill": "ТТН",
+            "waybillStatus": "Статус ТТН"
+          },
+          "itemsCount": "Позиций: {count}",
+          "subtotal": "Подытог: {value}",
+          "waybillEmpty": "Нет ТТН",
+          "waybillStatusEmpty": "—",
+          "waybillStatusUnknown": "Без статуса"
+        },
+        "bulk": {
+          "selected": "Выбрано: {count}"
         },
         "states": {
-          "empty": "Заказы не найдены."
+          "empty": "Заказы не найдены.",
+          "notFound": "Заказ не найден."
+        },
+        "pagination": {
+          "total": "Всего заказов: {count}",
+          "prev": "Назад",
+          "next": "Вперед",
+          "page": "Страница {current} из {total}"
+        },
+        "messages": {
+          "detailFailed": "Не удалось загрузить заказ.",
+          "confirmed": "Заказ подтвержден.",
+          "awaiting": "Заказ переведен в ожидание закупки.",
+          "reserved": "Позиции заказа зарезервированы.",
+          "readyToShip": "Заказ отмечен как готовый к отправке.",
+          "cancelled": "Заказ отменен.",
+          "actionFailed": "Не удалось выполнить действие по заказу.",
+          "supplierPayloadFailed": "Не удалось подготовить данные для заказа поставщику.",
+          "supplierOrderCreated": "Заказ поставщику оформлен.",
+          "supplierOrderCreatedWithId": "Заказ поставщику оформлен (ID: {id}).",
+          "supplierCreateFailed": "Не удалось оформить заказ поставщику.",
+          "supplierOrderCancelled": "Заказ поставщику отменен.",
+          "supplierCancelFailed": "Не удалось отменить заказ поставщику.",
+          "deleted": "Заказ удален.",
+          "deleteFailed": "Не удалось удалить заказ.",
+          "bulkDeleted": "Удалено заказов: {count}.",
+          "bulkDeletePartial": "Удалено: {deleted}, не удалось удалить: {failed}.",
+          "bulkDeleteFailed": "Не удалось выполнить массовое удаление.",
+          "waybillLoadFailed": "Не удалось загрузить данные ТТН.",
+          "waybillCreated": "ТТН создана.",
+          "waybillUpdated": "ТТН обновлена.",
+          "waybillSaveFailed": "Не удалось сохранить ТТН.",
+          "waybillSynced": "Статус ТТН обновлен.",
+          "waybillSyncFailed": "Не удалось обновить статус ТТН.",
+          "waybillDeleted": "ТТН удалена.",
+          "waybillDeleteFailed": "Не удалось удалить ТТН.",
+          "waybillPrintFailed": "Не удалось получить печатную форму ТТН.",
+          "senderCreated": "Профиль отправителя создан.",
+          "senderUpdated": "Профиль отправителя обновлен.",
+          "senderDeleted": "Профиль отправителя удален.",
+          "senderSaveFailed": "Не удалось сохранить профиль отправителя.",
+          "senderValidated": "Профиль отправителя успешно проверен.",
+          "senderValidateFailed": "Не удалось проверить профиль отправителя.",
+          "senderDeleteFailed": "Не удалось удалить профиль отправителя."
+        },
+        "statusDescriptions": {
+          "new": "Новый заказ. Можно подтвердить и передать в обработку.",
+          "confirmed": "Заказ подтвержден оператором и готов к следующему этапу.",
+          "awaiting_procurement": "Заказ ожидает закупку у поставщиков.",
+          "reserved": "Все позиции зарезервированы.",
+          "partially_reserved": "Часть позиций зарезервирована, часть требует закупки.",
+          "ready_to_ship": "Заказ готов к отправке клиенту.",
+          "shipped": "Заказ отправлен клиенту.",
+          "completed": "Заказ завершен.",
+          "cancelled": "Заказ отменен.",
+          "default": "Статус заказа обновлен. Проверьте детали перед следующим шагом."
+        },
+        "modals": {
+          "view": {
+            "title": "Заказ",
+            "titleWithNumber": "Заказ {number}",
+            "summary": {
+              "customer": "Клиент",
+              "meta": "Служебная информация",
+              "created": "Дата создания: {value}",
+              "items": "Позиций: {count}",
+              "delivery": "Доставка: {value}",
+              "total": "Итог",
+              "subtotal": "Подытог: {value} {currency}",
+              "deliveryFee": "Доставка: {value} {currency}"
+            },
+            "items": {
+              "title": "Состав заказа",
+              "columns": {
+                "product": "Товар",
+                "qty": "Кол-во",
+                "price": "Цена",
+                "total": "Сумма",
+                "procurement": "Закупка"
+              },
+              "empty": "В заказе нет позиций."
+            },
+            "serviceInfo": {
+              "title": "Комментарии и служебная информация",
+              "customerComment": "Комментарий клиента: {value}",
+              "internalNotes": "Внутренняя заметка: {value}",
+              "operatorNotes": "Заметка оператора: {value}",
+              "empty": "Дополнительных комментариев нет."
+            },
+            "actions": {
+              "confirm": "Подтвердить",
+              "awaiting": "В ожидание закупки",
+              "reserve": "Зарезервировать",
+              "ready": "Готов к отправке",
+              "cancel": "Отменить",
+              "openSupplierOrder": "Заказ у поставщика"
+            },
+            "tooltips": {
+              "confirm": "Подтвердить заказ",
+              "awaiting": "Перевести заказ в ожидание закупки",
+              "reserve": "Попробовать зарезервировать позиции",
+              "ready": "Отметить заказ готовым к отправке",
+              "cancel": "Отменить заказ"
+            }
+          },
+          "supplier": {
+            "title": "Заказ у поставщика",
+            "subtitle": "Подготовка и отправка состава заказа поставщику GPL.",
+            "subtitleWithNumber": "Заказ у поставщика для {number}",
+            "explainTitle": "Что произойдет",
+            "explainBody": "Мы сформируем список товаров и отправим его поставщику GPL. Перед отправкой проверьте состав и итог.",
+            "itemsTitle": "Товары, которые будут отправлены поставщику",
+            "columns": {
+              "article": "Артикул",
+              "name": "Название",
+              "qty": "Кол-во",
+              "price": "Цена",
+              "total": "Сумма",
+              "mapping": "Связка"
+            },
+            "mapping": {
+              "tooltip": "Будет отправлен товар GPL ID: {id}",
+              "ok": "Готово",
+              "missing": "Нет связки"
+            },
+            "empty": "Нет доступных позиций для отправки поставщику.",
+            "payloadTitle": "Что будет отправлено поставщику",
+            "payloadSubtitle": "Фактический payload, который уйдет в GPL /api/orders/store",
+            "payloadEmpty": "Payload пока не сформирован.",
+            "cannotSubmit": "Невозможно отправить заказ: без связки осталось позиций {count}.",
+            "lastOrder": "Последний оформленный заказ у поставщика: #{id}",
+            "actions": {
+              "cancelSupplierOrder": "Отменить заказ у поставщика",
+              "submit": "Оформить заказ у поставщика"
+            }
+          },
+          "delete": {
+            "title": "Удалить заказ",
+            "bulkTitle": "Удалить выбранные заказы",
+            "singleMessage": "Вы действительно хотите удалить заказ {orderNumber}? Это действие нельзя отменить.",
+            "bulkMessage": "Вы действительно хотите удалить выбранные заказы ({count})? Это действие нельзя отменить."
+          },
+          "waybill": {
+            "title": "ТТН Новой Почты",
+            "subtitle": "Оформление ТТН для заказа {number}",
+            "subtitleEmpty": "Оформление ТТН",
+            "sectionShipment": "Отправление",
+            "sectionRecipient": "Получатель",
+            "sectionPaymentAdditional": "Оплата и дополнительные услуги",
+            "fields": {
+              "sender": "Отправитель НП",
+              "description": "Описание",
+              "counterparty": "Контрагент",
+              "counterpartyLookupLoading": "Ищем бизнес-контрагента...",
+              "counterpartyPrivateDefaultHint": "Частное лицо по умолчанию. Для бизнес-клиента введите ЕДРПОУ (8) или ИПН (10).",
+              "counterpartyBusinessCodeHint": "Введите код ЕДРПОУ (8) или ИПН (10).",
+              "deliveryType": "Тип доставки",
+              "city": "Город получателя",
+              "cityPlaceholder": "Введите город",
+              "warehouse": "Отделение / почтомат",
+              "warehousePlaceholder": "Введите отделение",
+              "street": "Улица",
+              "streetPlaceholder": "Введите улицу",
+              "house": "Дом",
+              "apartment": "Квартира",
+              "recipientName": "ФИО получателя",
+              "recipientPhone": "Телефон получателя",
+              "seats": "Количество мест",
+              "weight": "Вес (кг)",
+              "cost": "Оценочная стоимость",
+              "afterpayment": "Сумма контроля оплаты",
+              "widthCm": "Ширина, см",
+              "lengthCm": "Длина, см",
+              "heightCm": "Высота, см",
+              "volumetricWeight": "Объёмный вес",
+              "weightUnit": "кг",
+              "packagingType": "Тип упаковки",
+              "packRef": "REF упаковки",
+              "packRefHint": "Выберите упаковку из списка ниже",
+              "packRefLoading": "Загружаем варианты упаковки...",
+              "packRefEmpty": "Нет вариантов упаковки для текущих габаритов"
+            },
+            "delivery": {
+              "warehouse": "Отделение",
+              "postomat": "Почтомат",
+              "address": "Адрес"
+            },
+            "cargoTypes": {
+              "documents": "Документы",
+              "parcel": "Посылка",
+              "cargo": "Груз",
+              "pallet": "Паллета"
+            },
+            "actions": {
+              "create": "Создать ТТН",
+              "update": "Обновить ТТН",
+              "delete": "Удалить ТТН",
+              "checkReaddress": "Проверить переадресацию",
+              "checkReturn": "Проверить возврат",
+              "trackTtn": "Отследить ТТН",
+              "syncStatus": "Обновить статус",
+              "printHtml": "Печать ТТН",
+              "printPdf": "Печать маркировки",
+              "additionalServices": "Дополнительные услуги",
+              "addPackaging": "Добавить упаковку",
+              "packagingAdded": "Добавлена упаковка",
+              "backFromPackaging": "Назад",
+              "backFromAdditionalServices": "Назад"
+            },
+            "payment": {
+              "toPay": "К оплате",
+              "cashOnDelivery": "Наложенный платёж"
+            },
+            "additional": {
+              "title": "Параметры по документации Новой Почты",
+              "saturdayDelivery": "Субботняя доставка",
+              "localExpress": "Local Express",
+              "preferredDeliveryDate": "Желаемая дата доставки",
+              "datePlaceholder": "ДД.ММ.ГГГГ",
+              "timeInterval": "Интервал доставки",
+              "timeIntervalNone": "Без интервала",
+              "timeInterval1": "Интервал 1",
+              "timeInterval2": "Интервал 2",
+              "timeInterval3": "Интервал 3",
+              "timeInterval4": "Интервал 4",
+              "infoRegClientBarcodes": "Внутренний номер заказа клиента",
+              "accompanyingDocuments": "Сопроводительные документы",
+              "redBoxBarcode": "RedBox Barcode",
+              "numberOfFloorsLifting": "Подъём до двери (этаж)",
+              "numberOfFloorsDescent": "Спуск от двери (этаж)",
+              "forwardingCount": "Контроль поштучной передачи",
+              "deliveryByHand": "Доставка лично в руки",
+              "deliveryByHandRecipients": "Получатели для вручения",
+              "deliveryByHandRecipientsHint": "Каждого получателя указывайте с новой строки",
+              "specialCargo": "Ручная обработка",
+              "cashOnDeliveryAmount": "Наложенный платеж",
+              "cashOnDeliveryHint": "",
+              "controlPaymentAmount": "Контроль оплаты",
+              "controlPaymentHint": ""
+            },
+            "auto": {
+              "description": "Описание",
+              "descriptionValue": "Автозапчасти и аксессуары",
+              "additional": "Дополнительная информация",
+              "additionalValue": "Номер заказа {orderNumber}"
+            },
+            "current": {
+              "number": "Номер ТТН",
+              "status": "Статус"
+            },
+            "meta": {
+              "senderType": "Тип отправителя",
+              "payerType": "Тип плательщика",
+              "paymentMethod": "Метод оплаты",
+              "payerTypes": {
+                "sender": "Отправитель",
+                "recipient": "Получатель",
+                "thirdPerson": "Третье лицо"
+              },
+              "paymentMethods": {
+                "cash": "Наличные",
+                "nonCash": "Безналичные"
+              },
+              "validation": {
+                "thirdPersonRequiresNonCash": "Для плательщика «Третье лицо» доступен только безналичный метод оплаты.",
+                "thirdPersonUnavailable": "Для выбранного отправителя оплата третьим лицом недоступна.",
+                "nonCashUnavailable": "Для выбранного отправителя безналичная оплата недоступна.",
+                "nonCashUnavailableForPrivateRecipient": "Для получателя типа «Частное лицо» безналичная оплата недоступна."
+              },
+              "serviceType": "Тип сервиса",
+              "syncedAt": "Синхронизировано",
+              "editable": "Редактирование",
+              "yes": "Да",
+              "no": "Нет",
+              "unknown": "—",
+              "errorCodes": "Коды ошибок",
+              "warningCodes": "Коды предупреждений",
+              "infoCodes": "Инфо-коды",
+              "readonlyHint": "ТТН в финальном статусе и недоступна для редактирования.",
+              "senderTypes": {
+                "privatePerson": "Частное лицо",
+                "fop": "ФОП",
+                "business": "Бизнес"
+              }
+            },
+            "settings": {
+              "title": "Нова Пошта",
+              "subtitle": "Профили отправителей с отдельными токенами и refs.",
+              "columns": {
+                "name": "Профиль",
+                "type": "Тип",
+                "refs": "Refs",
+                "status": "Статус"
+              },
+              "default": "По умолчанию",
+              "valid": "Валиден",
+              "notValidated": "Не проверен",
+              "empty": "Профили отправителей не настроены.",
+              "form": {
+                "name": "Название профиля",
+                "apiToken": "API токен НП",
+                "counterpartyRef": "Counterparty Ref",
+                "contactRef": "Contact Ref",
+                "addressRef": "Адрес",
+                "cityRef": "Город отправителя",
+                "phone": "Телефон отправителя",
+                "contactName": "Контактное лицо",
+                "organizationName": "Организация",
+                "edrpou": "ЕДРПОУ",
+                "active": "Активен",
+                "default": "По умолчанию"
+              },
+              "actions": {
+                "create": "Создать профиль",
+                "update": "Обновить профиль",
+                "edit": "Редактировать",
+                "validate": "Проверить",
+                "delete": "Удалить"
+              },
+              "lookup": {
+                "title": "Онлайн-справочник НП",
+                "subtitle": "Быстрый поиск населенных пунктов, улиц и отделений по токену отправителя.",
+                "sender": "Профиль отправителя",
+                "selectSender": "Выберите отправителя",
+                "locale": "Локаль",
+                "settlements": "Населенные пункты",
+                "streets": "Улицы",
+                "warehouses": "Отделения / почтоматы",
+                "searchPlaceholder": "Введите запрос",
+                "search": "Поиск",
+                "empty": "Нет данных"
+              }
+            }
+          }
         }
       },
       "orderDetail": {

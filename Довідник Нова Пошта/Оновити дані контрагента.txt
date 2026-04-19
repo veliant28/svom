@@ -1,0 +1,89 @@
+Оновити дані контрагента
+Метод update працює в моделі Counterparty і використовується для оновлення/внесення змін у дані контрагента-отримувача.
+
+Текст запиту
+Параметр	Тип	Опис
+Ref*	string[36]	Ідентифікатор (REF) контактної особи контрагента
+CityRef*	string[36]	Ідентифікатор (REF) міста контрагента
+FirstName*	string[36]	Ім'я контактної особи
+MiddleName*	string[36]	По батькові контактної особи
+LastName*	string[36]	Прізвище контактної особи
+Phone	string[36]	Телефон контактної особи
+Email	string[36]	Електронна скринька
+CounterpartyType*	string[36]	Тип контрагента
+CounterpartyProperty*	string[36]	Властивості контрагента
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "CounterpartyGeneral",
+   "calledMethod": "update",
+   "methodProperties": {
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"CityRef" : "00000000-0000-0000-0000-000000000000",
+"FirstName" : "Іван",
+"MiddleName" : "Іванович",
+"LastName" : "Іванов",
+"Phone" : "380997979789",
+"Email" : "test@i.com",
+"CounterpartyType" : "PrivatePerson",
+"CounterpartyProperty" : "Recipient"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+Ref	string[36]	Ідентифікатор
+Description	string[36]	Опис українською мовою
+FirstName	string[36]	Ім'я
+MiddleName	string[36]	По батькові
+LastName	string[36]	Прізвище
+Counterparty	string[36]	Контрагент
+OwnershipForm	string[36]	Ідентифікатор форми власності
+OwnershipFormDescription	string[36]	Опис форми власності
+EDRPOU	string[36]	Код ЄДРПОУ
+CounterpartyType	string[36]	Тип контрагента
+ContactPerson	string[36]	Контакт контрагента
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"Description" : "Іванов Іван Іванович",
+"FirstName" : "Іван",
+"MiddleName" : "Іванович",
+"LastName" : "Іванов",
+"Counterparty" : "",
+"OwnershipForm" : "00000000-0000-0000-0000-000000000000",
+"OwnershipFormDescription" : "ФОП",
+"EDRPOU" : "12345678",
+"CounterpartyType" : "PrivatePerson",
+"ContactPerson" : "Іванов Іван Іванович"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

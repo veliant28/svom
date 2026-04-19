@@ -1,0 +1,53 @@
+Видалити експрес-накладну
+Метод delete працює в моделі InternetDocument. Цей метод використовується для видалення експрес-накладної (інтернет-документа).
+
+Текст запиту
+Параметр	Тип	Опис
+DocumentRefs*	string[36]	Ідентифікатор (REF) документа
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "InternetDocumentGeneral",
+   "calledMethod": "delete",
+   "methodProperties": {
+"DocumentRefs" : "00000000-0000-0000-0000-000000000000"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+Ref	string[36]	Ідентифікатор (REF) видаленого документа
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"Ref" : "00000000-0000-0000-0000-000000000000"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

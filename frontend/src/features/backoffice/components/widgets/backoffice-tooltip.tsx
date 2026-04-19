@@ -1,7 +1,8 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 type BackofficeTooltipProps = {
   children: ReactNode;
@@ -30,6 +31,7 @@ export function BackofficeTooltip({
 }: BackofficeTooltipProps) {
   const triggerRef = useRef<HTMLSpanElement | null>(null);
   const tooltipRef = useRef<HTMLSpanElement | null>(null);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState<TooltipPosition | null>(null);
 
@@ -68,6 +70,16 @@ export function BackofficeTooltip({
   }, [align, placement]);
 
   useEffect(() => {
+    setPortalTarget(document.body);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setPosition(null);
+    }
+  }, [isOpen]);
+
+  useLayoutEffect(() => {
     if (!isOpen) {
       return;
     }
@@ -96,23 +108,26 @@ export function BackofficeTooltip({
       onBlurCapture={() => setIsOpen(false)}
     >
       {children}
-      {isOpen ? (
-        <span
-          ref={tooltipRef}
-          role="tooltip"
-          className={`pointer-events-none fixed z-[260] rounded-md border px-2 py-1.5 text-xs shadow-md ${tooltipClassName}`}
-          style={{
-            left: `${position?.left ?? VIEWPORT_GAP}px`,
-            top: `${position?.top ?? VIEWPORT_GAP}px`,
-            visibility: position ? "visible" : "hidden",
-            borderColor: "color-mix(in srgb, var(--border) 82%, #0f172a 18%)",
-            backgroundColor: "var(--surface)",
-            color: "var(--text)",
-          } satisfies CSSProperties}
-        >
-          {content}
-        </span>
-      ) : null}
+      {isOpen && portalTarget
+        ? createPortal(
+          <span
+            ref={tooltipRef}
+            role="tooltip"
+            className={`pointer-events-none fixed z-[260] rounded-md border px-2 py-1.5 text-xs shadow-md ${tooltipClassName}`}
+            style={{
+              left: `${position?.left ?? VIEWPORT_GAP}px`,
+              top: `${position?.top ?? VIEWPORT_GAP}px`,
+              visibility: position ? "visible" : "hidden",
+              borderColor: "color-mix(in srgb, var(--border) 82%, #0f172a 18%)",
+              backgroundColor: "var(--surface)",
+              color: "var(--text)",
+            } satisfies CSSProperties}
+          >
+            {content}
+          </span>,
+          portalTarget,
+        )
+        : null}
     </span>
   );
 }

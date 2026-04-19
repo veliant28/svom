@@ -1,0 +1,136 @@
+Розрахувати вартість послуг
+Метод getDocumentPrice працює в моделі InternetDocument. Цей метод розраховує вартість доставки вантажу.
+
+Метод дозволяє прораховувати не тільки відправлення вантажів, але і шин та дисків, палет, а також документів.
+
+Приклад прорахунку вартості шин та дисків:
+
+"CargoType": "TiresWheels", // Тип відправлення «Шини та Диски»
+
+"CargoDetails": [{// Масив із даними
+
+"CargoDescription":"d7c456cf-aa8b-11e3-9fa0-0050568002cf", // Ідентифікатор типу відправлення (Шина R-13), із довідника «Види шин та дисків»
+
+"Amount": "2" //Кількість шин }]
+
+Приклад розрахунку вартості вантажів із передачею параметрів:
+
+"OptionsSeat": [{// Масив із даними
+
+"weight": 5, // Вага відправлення, кг
+
+"volumetricWidth": 80, // Ширина відправлення, см
+
+"volumetricLength": 25, // Довжина відправлення, см
+
+"volumetricHeight": 25, // Висота відправлення, см }]
+
+Також доступний прорахунок вартості з урахуванням пакування із відповідного довідника «Види пакування». Ідентифікатор пакування необхідно передавати в масиві OptionsSeat.
+
+Приклад розрахунку вартості з пакуванням:
+
+"OptionsSeat": [{// Масив із даними
+
+"weight": 5, // Вага відправлення, кг
+
+"volumetricWidth": 80, // Ширина відправлення, см
+
+"volumetricLength": 25, // Довжина відправлення, см
+
+"volumetricHeight": 25, // Висота відправлення, см
+
+"packRef": "1499fa4a-d26e-11e1-95e4-0026b97ed48a" }],
+
+Текст запиту
+Параметр	Тип	Опис
+CitySender*	string[36]	Ідентифікатор (REF) міста відправника
+CityRecipient*	string[36]	Ідентифікатор (REF) міста отримувача
+Weight*	string[36]	Фактична вага, min. 0,1
+ServiceType*	string[36]	Тип послуги
+Cost*	string[36]	Оціночна вартість, ціле число (якщо не зазначити вартість, то АРІ автоматично проставить мінімальну оціночну вартість — 300.00)
+CargoType*	string[36]	Тип вантажу: Cargo, Documents, TiresWheels, Pallet
+SeatsAmount*	string[36]	Кількість місць відправлення, ціле число
+RedeliveryCalculate	object	Зворотна доставка
+PackCount	string[36]	Кількість пакування
+PackRef	string[36]	Ідентифікатор (REF) пакування
+Amount	string[36]	Ціле число (сума зворотної доставки/кількість одиниць)
+CargoDetails	array	Масив із даними про деталі вантажу
+CargoDescription	string[36]	Ідентифікатор (REF) типу відправлення
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "InternetDocumentGeneral",
+   "calledMethod": "getDocumentPrice",
+   "methodProperties": {
+"CitySender" : "00000000-0000-0000-0000-000000000000",
+"CityRecipient" : "00000000-0000-0000-0000-000000000000",
+"Weight" : "0.1",
+"ServiceType" : "WarehouseWarehouse",
+"Cost" : "300",
+"CargoType" : "Cargo",
+"SeatsAmount" : "2",
+"RedeliveryCalculate" : {
+"CargoType":"Money",
+"Amount":"100"
+},
+"PackCount" : "1",
+"PackRef" : "00000000-0000-0000-0000-000000000000",
+"Amount" : "100",
+"CargoDetails" : [
+{
+"CargoDescription":"00000000-0000-0000-0000-000000000000",
+"Amount":"2"
+}
+],
+"CargoDescription" : "00000000-0000-0000-0000-000000000000"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+AssessedCost	string[36]	Оціночна вартість
+Cost	string[36]	Вартість
+CostRedelivery	string[36]	Вартість зворотної доставки
+TZoneInfo	object	Інформація про тарифну зону доставки
+CostPack	string[36]	Вартість пакування
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"AssessedCost" : "300",
+"Cost" : "45",
+"CostRedelivery" : "100",
+"TZoneInfo" : {
+"TzoneName":"Тарифназона:Тарифназона4",
+"TzoneID":"4"
+},
+"CostPack" : "4"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

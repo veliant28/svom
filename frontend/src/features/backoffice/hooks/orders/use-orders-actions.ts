@@ -1,0 +1,182 @@
+import { useCallback, useState } from "react";
+import { useTranslations } from "next-intl";
+
+import {
+  cancelBackofficeOrder,
+  confirmBackofficeOrder,
+  deleteBackofficeOrder,
+  getBackofficeOrderDetail,
+  markBackofficeOrderAwaitingProcurement,
+  markBackofficeOrderReadyToShip,
+  reserveBackofficeOrder,
+} from "@/features/backoffice/api/orders-api";
+import type { BackofficeOrderOperational } from "@/features/backoffice/types/orders.types";
+
+export type OrderViewAction = "confirm" | "awaiting" | "reserve" | "ready" | "cancel";
+
+type OrdersActionsFeedback = {
+  showApiError: (error: unknown, fallbackMessage?: string) => string;
+  showSuccess: (message: string) => void;
+};
+
+export function useOrdersActions({
+  token,
+  refetch,
+  feedback,
+  onAfterAction,
+  onSelectionDeleted,
+  onSupplierDeleted,
+}: {
+  token: string | null;
+  refetch: () => Promise<unknown>;
+  feedback: OrdersActionsFeedback;
+  onAfterAction?: (orderId: string) => Promise<void>;
+  onSelectionDeleted?: (deletedIds: string[]) => void;
+  onSupplierDeleted?: (deletedIds: string[]) => void;
+}) {
+  const t = useTranslations("backoffice.common");
+
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewOrderId, setViewOrderId] = useState<string | null>(null);
+  const [viewOrder, setViewOrder] = useState<BackofficeOrderOperational | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
+  const [openingId, setOpeningId] = useState<string | null>(null);
+  const [viewActionLoading, setViewActionLoading] = useState<OrderViewAction | null>(null);
+
+  const [deleteTarget, setDeleteTarget] = useState<BackofficeOrderOperational | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const loadOrderDetail = useCallback(async (orderId: string) => {
+    if (!token) {
+      return null;
+    }
+
+    setViewLoading(true);
+    try {
+      const detail = await getBackofficeOrderDetail(token, orderId);
+      setViewOrder(detail);
+      return detail;
+    } catch (actionError: unknown) {
+      feedback.showApiError(actionError, t("orders.messages.detailFailed"));
+      return null;
+    } finally {
+      setViewLoading(false);
+    }
+  }, [feedback, t, token]);
+
+  const openOrderView = useCallback(async (item: BackofficeOrderOperational) => {
+    setViewOpen(true);
+    setViewOrderId(item.id);
+    setOpeningId(item.id);
+    await loadOrderDetail(item.id);
+    setOpeningId(null);
+  }, [loadOrderDetail]);
+
+  const closeOrderView = useCallback(() => {
+    setViewOpen(false);
+    setViewOrderId(null);
+    setViewOrder(null);
+    setViewActionLoading(null);
+  }, []);
+
+  const runOrderAction = useCallback(async (action: OrderViewAction) => {
+    if (!token || !viewOrder || viewActionLoading) {
+      return;
+    }
+
+    setViewActionLoading(action);
+    try {
+      if (action === "confirm") {
+        await confirmBackofficeOrder(token, { order_id: viewOrder.id });
+        feedback.showSuccess(t("orders.messages.confirmed"));
+      } else if (action === "awaiting") {
+        await markBackofficeOrderAwaitingProcurement(token, { order_id: viewOrder.id });
+        feedback.showSuccess(t("orders.messages.awaiting"));
+      } else if (action === "reserve") {
+        await reserveBackofficeOrder(token, { order_id: viewOrder.id });
+        feedback.showSuccess(t("orders.messages.reserved"));
+      } else if (action === "ready") {
+        await markBackofficeOrderReadyToShip(token, { order_id: viewOrder.id });
+        feedback.showSuccess(t("orders.messages.readyToShip"));
+      } else if (action === "cancel") {
+        await cancelBackofficeOrder(token, { order_id: viewOrder.id, reason_code: "supplier_shortage" });
+        feedback.showSuccess(t("orders.messages.cancelled"));
+      }
+
+      await refetch();
+      await loadOrderDetail(viewOrder.id);
+      if (onAfterAction) {
+        await onAfterAction(viewOrder.id);
+      }
+    } catch (actionError: unknown) {
+      feedback.showApiError(actionError, t("orders.messages.actionFailed"));
+    } finally {
+      setViewActionLoading(null);
+    }
+  }, [feedback, loadOrderDetail, onAfterAction, refetch, t, token, viewActionLoading, viewOrder]);
+
+  const requestDelete = useCallback((item: BackofficeOrderOperational) => {
+    setDeleteTarget(item);
+  }, []);
+
+  const closeDelete = useCallback(() => {
+    if (!deletingId) {
+      setDeleteTarget(null);
+    }
+  }, [deletingId]);
+
+  const handleDeletedOrders = useCallback((deletedIds: string[]) => {
+    if (viewOrderId && deletedIds.includes(viewOrderId)) {
+      closeOrderView();
+    }
+
+    if (deleteTarget && deletedIds.includes(deleteTarget.id)) {
+      setDeleteTarget(null);
+    }
+  }, [closeOrderView, deleteTarget, viewOrderId]);
+
+  const runSingleDelete = useCallback(async () => {
+    if (!token || !deleteTarget || deletingId) {
+      return;
+    }
+
+    const deletedId = deleteTarget.id;
+    setDeletingId(deletedId);
+    try {
+      await deleteBackofficeOrder(token, { order_id: deletedId });
+      feedback.showSuccess(t("orders.messages.deleted"));
+      handleDeletedOrders([deletedId]);
+      if (onSelectionDeleted) {
+        onSelectionDeleted([deletedId]);
+      }
+      if (onSupplierDeleted) {
+        onSupplierDeleted([deletedId]);
+      }
+      setDeleteTarget(null);
+      await refetch();
+    } catch (actionError: unknown) {
+      feedback.showApiError(actionError, t("orders.messages.deleteFailed"));
+    } finally {
+      setDeletingId(null);
+    }
+  }, [deleteTarget, deletingId, feedback, handleDeletedOrders, onSelectionDeleted, onSupplierDeleted, refetch, t, token]);
+
+  return {
+    viewOpen,
+    viewOrderId,
+    viewOrder,
+    viewLoading,
+    openingId,
+    viewActionLoading,
+    deleteTarget,
+    deletingId,
+    loadOrderDetail,
+    openOrderView,
+    closeOrderView,
+    runOrderAction,
+    requestDelete,
+    closeDelete,
+    handleDeletedOrders,
+    runSingleDelete,
+  };
+}

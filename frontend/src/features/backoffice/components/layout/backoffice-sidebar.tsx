@@ -9,6 +9,7 @@ import {
   Package,
   Shapes,
   ShoppingBag,
+  PackageCheck,
   Tags,
   Truck,
 } from "lucide-react";
@@ -28,7 +29,8 @@ type SidebarNavItem = {
     | "categories"
     | "autocatalog"
     | "matching"
-    | "orders";
+    | "orders"
+    | "novaPoshtaSenders";
 };
 
 const NAV_ITEMS: SidebarNavItem[] = [
@@ -41,6 +43,7 @@ const NAV_ITEMS: SidebarNavItem[] = [
   { href: "/backoffice/autocatalog", icon: Car, key: "autocatalog" },
   { href: "/backoffice/matching", icon: Activity, key: "matching" },
   { href: "/backoffice/orders", icon: ShoppingBag, key: "orders" },
+  { href: "/backoffice/nova-poshta-senders", icon: PackageCheck, key: "novaPoshtaSenders" },
 ];
 
 function normalizePath(path: string): string {

@@ -1,0 +1,153 @@
+Створити запит на редагування вже створеної переадресації
+Метод update працює в моделі AdditionalServiceGeneral. Цей метод дозволяє редагувати вже створену заявку на переадресування відправлення. Редагувати замовлення можна, лише якщо статус замовлення OrderStatus = "Прийняте".
+
+Метод доступний як відправнику, так і отримувачу, проте отримувач може редагувати не всі параметри. Існують такі особливості:
+
+Відправник може:
+Змінити платника за переадресацію (PayerType)
+Змінити спосіб оплати (PaymentMethod)
+Змінити отримувача (Recipient)
+Змінити контактні дані отримувача:
+Ідентифікатор відділення отримувача (RecipientWarehouse) або адресні дані отримувача:
+Місто отримувача (CityRecipient)
+Населений пункт отримувача (SettlementRecipient)
+Вулицю отримувача (RecipientSettlementStreet)
+Примітку до адреси отримувача (NoteAddressRecipient)
+Примітку до замовлення (Note)
+Отримувач може:
+Редагувати ідентифікатор відділення отримувача (RecipientWarehouse)
+Змінювати адресні дані отримувача:
+Місто отримувача (CityRecipient)
+Населений пункт отримувача (SettlementRecipient)
+Вулицю отримувача (RecipientSettlementStreet)
+Примітку до адреси отримувача (NoteAddressRecipient)
+Текст запиту
+Параметр	Тип	Опис
+PaymentMethod*	string[36]	Форма розрахунку (Cash/NonCash)
+NoteAddressRecipient*	string[36]	Примітка до адреси отримувача. Використовується тільки у разі переадресування на адресу
+Recipient*	string[36]	Ідентифікатор (REF) отримувача
+CityRecipient*	string[36]	Ідентифікатор (REF) міста отримувача
+Note	string[50]	Примітка до замовлення
+Customer*	string[36]	Ініціатор редагування (Sender/Recipient)
+Ref*	string[36]	Ідентифікатор (REF) створеного замовлення
+RecipientContactName*	string[36]	ПІБ контактної особи отримувача
+IntDocNumber*	string[36]	Номер інтернет-документа
+RecipientWarehouse	string[36]	Ідентифікатор (REF) нового відділення отримувача (куди необхідно переадресувати вантаж). Використовується тільки у разі переадресування на відділення
+RecipientPhone*	string[36]	Телефон отримувача
+SettlementRecipient*	string[36]	Ідентифікатор (REF) населеного пункту отримувача
+BuildingNumber	string[36]	Номер будинку. Використовується тільки у разі переадресації на адресу
+RecipientSettlementStreet	string[36]	Ідентифікатор (REF) вулиці отримувача. Використовується тільки у разі переадресування на адресу
+ServiceType*	string[36]	Тип послуги. Для відділення — WarehouseWarehouse, для адреси — WarehouseDoors
+PayerType*	string[36]	Хто оплачує послугу (Sender/Recipient)
+OrderType*	string[36]	Тип замовлення.  Константа, що завжди має значення orderRedirecting
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AdditionalServiceGeneral",
+   "calledMethod": "update",
+   "methodProperties": {
+"PaymentMethod" : "Cash",
+"NoteAddressRecipient" : "Додаткова інформація про адресу отримувача",
+"Recipient" : "00000000-0000-0000-0000-000000000000",
+"CityRecipient" : "db5c8892-391c-11dd-90d9-001a92567626",
+"Note" : "Додаткова інформація про замовлення",
+"Customer" : "Sender",
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"RecipientContactName" : "Іванов Іван Іванович",
+"IntDocNumber" : "20450123456789",
+"RecipientWarehouse" : "aaada586-b04f-11e8-ad0d-005056b24375",
+"RecipientPhone" : "380991234567",
+"SettlementRecipient" : "e71d006d-4b33-11e4-ab6d-005056801329",
+"BuildingNumber" : "15",
+"RecipientSettlementStreet" : "09b447c0-6470-11ea-a970-b8830365ade4",
+"ServiceType" : "WarehouseWarehouse",
+"PayerType" : "Sender",
+"OrderType" : "orderRedirecting"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+SettlementType	string[36]	Тип поселення
+BuildingNumber	string[36]	Номер будинку. Повертається тільки у разі переадресування на адресу
+PhoneSender	string[36]	Телефон відправника (якщо доступно)
+WarehouseDescription	string[50]	Опис відділення, на яке створено переадресування. Повертається тільки у разі переадресування на відділення
+Number	string[36]	Номер замовлення
+PhoneRecipient	string[36]	Телефон отримувача
+PayerType	string[36]	Хто оплачує послугу (Sender/Recipient)
+DocumentWeight	string[36]	Вага документа (якщо доступно)
+SettlementRecipient	string[36]	Ідентифікатор (REF) населеного пункту отримувача
+NoteAddressRecipient	string[36]	Примітка до адреси отримувача
+PaymentMethod	string[36]	Форма розрахунку (Cash/NonCash)
+InternationalDeliveryType	string[36]	Тип міжнародної доставки (якщо доступно)
+CityRecipient	string[36]	Ідентифікатор (REF) міста отримувача
+ServiceType	string[36]	Тип послуги. Для відділення — WarehouseWarehouse, для адреси — WarehouseDoors
+SettlementRecipientDescription	string[36]	Опис населеного пункту отримувача
+EdrpouRecipient	string[36]	ЄДРПОУ отримувача (якщо доступно)
+AddressDescription	string[50]	Опис нової адреси, на яку створено переадресування. Повертається тільки у разі переадресування на адресу
+CounterpartyRecipientRef	string[36]	Ідентифікатор контрагента отримувача
+RecipientSettlementStreet	string[36]	Ідентифікатор (REF) вулиці отримувача. Повертається тільки у разі переадресування на адресу
+Ref	string[36]	Ідентифікатор (REF) створеного замовлення
+WarehouseRef	string[36]	Ідентифікатор (REF) нового відділення отримувача (куди необхідно переадресувати вантаж). Використовується тільки у разі переадресування на відділення
+CounterpartyRecipientDescription	string[36]	Опис контрагента отримувача
+CityRecipientDescription	string[36]	Опис міста отримувача
+StreetDescription	string[36]	Вулиця отримувача. Повертається тільки у разі переадресування на адресу
+RecipientName	string[36]	ПІБ контактної особи отримувача
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"SettlementType" : "",
+"BuildingNumber" : "15",
+"PhoneSender" : "",
+"WarehouseDescription" : "Відділення №1: вул. Ветеринарна, 22 (заїзд з вул. Європейська "Меблевий квартал")",
+"Number" : "102-12345678",
+"PhoneRecipient" : "380991234567",
+"PayerType" : "Sender",
+"DocumentWeight" : "",
+"SettlementRecipient" : "e71d006d-4b33-11e4-ab6d-005056801329",
+"NoteAddressRecipient" : "Додаткова інформація про адресу отримувача",
+"PaymentMethod" : "Cash",
+"InternationalDeliveryType" : "",
+"CityRecipient" : "db5c8892-391c-11dd-90d9-001a92567626",
+"ServiceType" : "WarehouseWarehouse",
+"SettlementRecipientDescription" : "Полтава",
+"EdrpouRecipient" : "",
+"AddressDescription" : "м. Полтава, вул. Половки, 15",
+"CounterpartyRecipientRef" : "00000000-0000-0000-0000-000000000000",
+"RecipientSettlementStreet" : "09b447c0-6470-11ea-a970-b8830365ade4",
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"WarehouseRef" : "aaada586-b04f-11e8-ad0d-005056b24375",
+"CounterpartyRecipientDescription" : "Приватна особа",
+"CityRecipientDescription" : "Полтава",
+"StreetDescription" : "Половки",
+"RecipientName" : "Іванов Іван Іванович"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

@@ -4,6 +4,9 @@ from apps.commerce.api.views import (
     CartItemCreateAPIView,
     CartItemUpdateDeleteAPIView,
     CartRetrieveAPIView,
+    CheckoutNovaPoshtaSettlementsLookupAPIView,
+    CheckoutNovaPoshtaStreetsLookupAPIView,
+    CheckoutNovaPoshtaWarehousesLookupAPIView,
     CheckoutPreviewAPIView,
     CheckoutSubmitAPIView,
     OrderListAPIView,
@@ -23,5 +26,20 @@ urlpatterns = [
     path("cart/items/<uuid:item_id>/", CartItemUpdateDeleteAPIView.as_view(), name="cart-item-update-delete"),
     path("checkout/preview/", CheckoutPreviewAPIView.as_view(), name="checkout-preview"),
     path("checkout/submit/", CheckoutSubmitAPIView.as_view(), name="checkout-submit"),
+    path(
+        "checkout/lookups/nova-poshta/settlements/",
+        CheckoutNovaPoshtaSettlementsLookupAPIView.as_view(),
+        name="checkout-lookup-nova-poshta-settlements",
+    ),
+    path(
+        "checkout/lookups/nova-poshta/warehouses/",
+        CheckoutNovaPoshtaWarehousesLookupAPIView.as_view(),
+        name="checkout-lookup-nova-poshta-warehouses",
+    ),
+    path(
+        "checkout/lookups/nova-poshta/streets/",
+        CheckoutNovaPoshtaStreetsLookupAPIView.as_view(),
+        name="checkout-lookup-nova-poshta-streets",
+    ),
     path("orders/", OrderListAPIView.as_view(), name="order-list"),
 ]

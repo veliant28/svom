@@ -1,76 +1,118 @@
 "use client";
 
-import { CarFront, Heart, LogIn, LogOut, Search, Shield, ShoppingCart } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 
-import { useAuth } from "@/features/auth/hooks/use-auth";
-import { useCart } from "@/features/cart/hooks/use-cart";
 import { Link } from "@/i18n/navigation";
+import { HeaderParentCategoryButtons } from "@/shared/components/layout/header/categories/header-parent-category-buttons";
+import { StorefrontNav } from "@/shared/components/layout/header/storefront-nav";
+import { HeaderUserMenu } from "@/shared/components/layout/header/user-menu";
 import { LocaleSwitcher } from "@/shared/components/layout/locale-switcher";
 import { ThemeToggle } from "@/shared/components/layout/theme-toggle";
 
 export function Header() {
   const t = useTranslations("common.header");
-  const { user, isAuthenticated, logout } = useAuth();
-  const { itemsCount } = useCart();
+  const brand = t("brand");
+  const brandTooltipTitle = t("brandTooltip.title");
+  const brandTooltipSlogan = t("brandTooltip.slogan");
+  const [isBrandTooltipVisible, setIsBrandTooltipVisible] = useState(false);
+  const tooltipHideTimerRef = useRef<number | null>(null);
+  const vIndex = brand.indexOf("V");
+  const brandPrefix = vIndex >= 0 ? brand.slice(0, vIndex) : brand;
+  const brandSuffix = vIndex >= 0 ? brand.slice(vIndex + 1) : "";
+
+  const clearTooltipTimer = () => {
+    if (tooltipHideTimerRef.current !== null) {
+      window.clearTimeout(tooltipHideTimerRef.current);
+      tooltipHideTimerRef.current = null;
+    }
+  };
+
+  const scheduleTooltipHide = (delayMs = 1800) => {
+    clearTooltipTimer();
+    tooltipHideTimerRef.current = window.setTimeout(() => {
+      setIsBrandTooltipVisible(false);
+      tooltipHideTimerRef.current = null;
+    }, delayMs);
+  };
+
+  const hideTooltip = () => {
+    clearTooltipTimer();
+    setIsBrandTooltipVisible(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      clearTooltipTimer();
+    };
+  }, []);
 
   return (
-    <header className="sticky top-0 z-30 border-b backdrop-blur" style={{ borderColor: "var(--border)", backgroundColor: "color-mix(in srgb, var(--surface) 88%, transparent)" }}>
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <Link href="/" className="inline-flex items-center gap-2 text-lg font-semibold">
-          <CarFront size={20} />
-          <span>{t("brand")}</span>
-        </Link>
-
-        <nav className="hidden items-center gap-4 text-sm md:flex">
-          <Link href="/catalog">{t("catalog")}</Link>
-          <Link href="/garage">{t("garage")}</Link>
-          <Link href="/wishlist" className="inline-flex items-center gap-1">
-            <Heart size={14} />
-            {t("wishlist")}
-          </Link>
-          <Link href="/cart" className="inline-flex items-center gap-1">
-            <ShoppingCart size={14} />
-            {t("cart", { count: itemsCount })}
-          </Link>
-          <Link href="/search" className="inline-flex items-center gap-1">
-            <Search size={14} />
-            {t("search")}
-          </Link>
-          {user?.is_staff || user?.is_superuser ? (
-            <Link href="/backoffice" className="inline-flex items-center gap-1">
-              <Shield size={14} />
-              {t("backoffice")}
+    <header
+      className="sticky top-0 z-30 border-b backdrop-blur"
+      style={{
+        borderColor: "var(--border)",
+        backgroundColor: "color-mix(in srgb, var(--surface) 90%, transparent)",
+      }}
+    >
+      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
+        <div className="flex min-w-0 flex-1 items-center gap-6">
+          <span
+            className="relative inline-flex"
+            onMouseEnter={() => {
+              clearTooltipTimer();
+              setIsBrandTooltipVisible(true);
+            }}
+            onMouseLeave={hideTooltip}
+            onFocusCapture={() => {
+              setIsBrandTooltipVisible(true);
+              scheduleTooltipHide();
+            }}
+            onBlurCapture={(event) => {
+              const nextTarget = event.relatedTarget as Node | null;
+              if (!event.currentTarget.contains(nextTarget)) {
+                hideTooltip();
+              }
+            }}
+            onTouchStart={() => {
+              setIsBrandTooltipVisible(true);
+              scheduleTooltipHide();
+            }}
+          >
+            <Link
+              href="/"
+              aria-label={`${brandTooltipTitle}. ${brandTooltipSlogan}`}
+              className="inline-flex h-10 shrink-0 items-center gap-1 rounded-lg px-1 text-[2.5rem] font-semibold leading-none"
+            >
+              {vIndex >= 0 ? (
+                <>
+                  <span>{brandPrefix}</span>
+                  <Image
+                    src="/icons/logo-v.svg"
+                    alt="V"
+                    width={64}
+                    height={64}
+                    className="inline-block h-[64px] w-[64px] align-[-0.06em]"
+                    priority
+                  />
+                  <span>{brandSuffix}</span>
+                </>
+              ) : (
+                <span>{brand}</span>
+              )}
             </Link>
-          ) : null}
-        </nav>
+            <span role="tooltip" className={`header-brand-tooltip ${isBrandTooltipVisible ? "block" : "hidden"}`}>
+              <strong className="header-brand-tooltip-title">{brandTooltipTitle}</strong>
+              <span className="header-brand-tooltip-slogan">{brandTooltipSlogan}</span>
+            </span>
+          </span>
+          <HeaderParentCategoryButtons />
+        </div>
 
         <div className="flex items-center gap-2">
-          {isAuthenticated ? (
-            <>
-              <span className="hidden text-xs md:inline" style={{ color: "var(--muted)" }}>
-                {user?.email}
-              </span>
-              <button
-                type="button"
-                className="inline-flex h-8 items-center gap-1 rounded-md border px-2 text-xs"
-                style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
-                onClick={() => void logout()}
-              >
-                <LogOut size={13} />
-                {t("logout")}
-              </button>
-            </>
-          ) : (
-            <Link
-              href="/login"
-              className="inline-flex h-8 items-center gap-1 rounded-md border px-2 text-xs"
-              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
-            >
-              <LogIn size={13} />
-              {t("login")}
-            </Link>
-          )}
+          <StorefrontNav showCategories={false} />
+          <HeaderUserMenu />
           <LocaleSwitcher />
           <ThemeToggle />
         </div>

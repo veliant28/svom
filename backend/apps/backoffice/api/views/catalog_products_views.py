@@ -4,6 +4,7 @@ from django.db.models.deletion import ProtectedError
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -12,6 +13,12 @@ from apps.backoffice.permissions import IsStaffOrSuperuser
 from apps.catalog.models import Product
 from apps.pricing.models import SupplierOffer
 from apps.supplier_imports.models import SupplierRawOffer
+
+
+class BackofficeCatalogProductPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 500
 
 
 def _parse_bool_param(value: str) -> bool | None:
@@ -28,6 +35,7 @@ class BackofficeCatalogProductListCreateAPIView(ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsStaffOrSuperuser]
     serializer_class = BackofficeCatalogProductSerializer
     ordering = ("name",)
+    pagination_class = BackofficeCatalogProductPagination
 
     @staticmethod
     def _supplier_offers_prefetch() -> Prefetch:

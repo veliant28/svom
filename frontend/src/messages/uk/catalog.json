@@ -4,6 +4,12 @@
     "subtitle": "Перший шар storefront-каталогу",
     "showcaseSubtitle": "Вітрина каталогу працює через DRF endpoint.",
     "resultCount": "Знайдено: {count}",
+    "pagination": {
+      "prev": "Назад",
+      "next": "Вперед",
+      "page": "Сторінка {current} з {total}",
+      "perPage": "На сторінці: {count}"
+    },
     "empty": "За вибраними фільтрами товари не знайдено.",
     "taxonomy": {
       "brands": "Бренди",

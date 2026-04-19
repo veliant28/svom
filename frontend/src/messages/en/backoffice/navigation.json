@@ -17,7 +17,8 @@
       "importSchedules": "Import Schedules",
       "importQuality": "Import Quality",
       "orders": "Orders",
-      "autocatalog": "Autocatalog"
+      "autocatalog": "Autocatalog",
+      "novaPoshtaSenders": "NP Senders"
     }
   }
 }

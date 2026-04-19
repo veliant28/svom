@@ -8,7 +8,8 @@
         "notFits": "Не підходить до вибраного авто"
       },
       "labels": {
-        "eta": " · ETA {days} дн."
+        "eta": " · ETA {days} дн.",
+        "stockTotal": "Залишок {count}"
       }
     },
     "detail": {
@@ -16,7 +17,8 @@
       "backToCatalog": "Назад до каталогу",
       "skuLabel": "SKU",
       "labels": {
-        "eta": " · ETA {days} дн."
+        "eta": " · ETA {days} дн.",
+        "stockTotal": "Залишок {count}"
       },
       "attributesTitle": "Характеристики",
       "fitmentTitle": "Сумісність",

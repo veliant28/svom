@@ -4,8 +4,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
-  title: "SVOM Storefront",
-  description: "Autoparts storefront skeleton",
+  title: "SVOM",
+  description: "SVOM autoparts catalog",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

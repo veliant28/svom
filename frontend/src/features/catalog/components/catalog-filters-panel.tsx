@@ -10,12 +10,30 @@ export function CatalogFiltersPanel() {
   const t = useTranslations("catalog.filters");
   const { brands, categories } = useCatalogTaxonomy();
   const { filters, setFilters, clearFilters } = useCatalogFilters();
+  const selectedCategoryId =
+    filters.category_id ??
+    categories.find((category) => category.slug === (filters.category ?? ""))?.id ??
+    "";
 
   const [queryInput, setQueryInput] = useState(filters.q ?? "");
 
   useEffect(() => {
     setQueryInput(filters.q ?? "");
   }, [filters.q]);
+
+  useEffect(() => {
+    if (filters.category_id || !filters.category) {
+      return;
+    }
+    const matchedCategory = categories.find((category) => category.slug === filters.category);
+    if (!matchedCategory) {
+      return;
+    }
+    setFilters({
+      category_id: matchedCategory.id,
+      category: undefined,
+    });
+  }, [categories, filters.category, filters.category_id, setFilters]);
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-3">
@@ -59,14 +77,20 @@ export function CatalogFiltersPanel() {
         <label className="flex flex-col gap-1 text-xs">
           {t("category.label")}
           <select
-            value={filters.category ?? ""}
-            onChange={(event) => setFilters({ category: event.target.value || undefined })}
+            value={selectedCategoryId}
+            onChange={(event) =>
+              setFilters({
+                category_id: event.target.value || undefined,
+                // Keep old `category` query key only for backward-compatible read path.
+                category: undefined,
+              })
+            }
             className="h-10 rounded-md border px-3"
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
           >
             <option value="">{t("category.all")}</option>
             {categories.map((category) => (
-              <option key={category.id} value={category.slug}>
+              <option key={category.id} value={category.id}>
                 {category.name}
               </option>
             ))}

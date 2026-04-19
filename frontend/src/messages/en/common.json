@@ -2,6 +2,10 @@
   "common": {
     "header": {
       "brand": "SVOM",
+      "brandTooltip": {
+        "title": "SVOM",
+        "slogan": "Drive without compromise"
+      },
       "catalog": "Catalog",
       "garage": "My Garage",
       "search": "Search",
@@ -9,7 +13,104 @@
       "cart": "Cart ({count})",
       "login": "Login",
       "logout": "Logout",
-      "backoffice": "Backoffice"
+      "backoffice": "Backoffice",
+      "tooltips": {
+        "catalog": "Catalog",
+        "search": "Search",
+        "garage": "My Garage",
+        "cart": "Cart",
+        "account": "Account",
+        "login": "Login",
+        "language": "Language"
+      },
+      "languages": {
+        "uk": "Ukrainian",
+        "ru": "Russian",
+        "en": "English"
+      },
+      "menu": {
+        "profile": "Profile",
+        "orders": "Orders",
+        "favorites": "Favorites",
+        "garage": "Garage",
+        "logout": "Logout",
+        "backoffice": "Backoffice"
+      },
+      "searchModal": {
+        "title": "Product search",
+        "placeholder": "Type article, name, SKU or brand",
+        "actions": {
+          "close": "Close",
+          "showAll": "Show all results"
+        },
+        "states": {
+          "minQuery": "Enter at least 2 characters.",
+          "loading": "Searching products...",
+          "empty": "No matches found.",
+          "error": "Search request failed."
+        }
+      },
+      "categoryModal": {
+        "subtitle": "Choose a subcategory to open the exact catalog section.",
+        "states": {
+          "empty": "This category has no subcategories yet."
+        },
+        "actions": {
+          "close": "Close",
+          "openParent": "Open category"
+        }
+      },
+      "vehicleModal": {
+        "title": "Vehicle selector",
+        "subtitle": "Pick a saved vehicle or add a new one to filter the catalog.",
+        "tabs": {
+          "saved": "Saved vehicles",
+          "new": "New selection"
+        },
+        "actions": {
+          "close": "Close",
+          "refresh": "Refresh",
+          "openGarage": "Open garage"
+        },
+        "saved": {
+          "states": {
+            "loading": "Loading saved vehicles...",
+            "error": "Failed to load saved vehicles.",
+            "empty": "Your garage has no saved vehicles yet."
+          },
+          "actions": {
+            "useForFiltering": "Use for filtering",
+            "clearActive": "Clear active vehicle"
+          },
+          "messages": {
+            "usedForFiltering": "Vehicle selected for filtering.",
+            "cleared": "Vehicle filter cleared.",
+            "refreshed": "Vehicle list refreshed."
+          },
+          "primary": "Primary",
+          "active": "Active",
+          "noDetails": "No details"
+        },
+        "new": {
+          "actions": {
+            "useForFiltering": "Use for filtering",
+            "saveToGarage": "Save to garage",
+            "saveAndUse": "Save and use",
+            "saving": "Saving..."
+          },
+          "messages": {
+            "authRequiredForSave": "Sign in to save a vehicle to garage.",
+            "usedForFiltering": "Vehicle is used for current filtering.",
+            "savedToGarage": "Vehicle saved to garage.",
+            "savedAndUsed": "Vehicle saved and applied to filtering.",
+            "saveFailed": "Failed to save vehicle."
+          }
+        }
+      }
+    },
+    "meta": {
+      "title": "SVOM — Drive without compromise",
+      "description": "SVOM autoparts catalog"
     },
     "home": {
       "brand": "SVOM",

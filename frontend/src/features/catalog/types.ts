@@ -8,6 +8,11 @@ export type CategorySummary = {
   id: string;
   name: string;
   slug: string;
+  parent?: {
+    id: string;
+    name: string;
+    slug: string;
+  } | null;
 };
 
 export type CatalogProduct = {
@@ -27,6 +32,7 @@ export type CatalogProduct = {
   estimated_delivery_days: number | null;
   procurement_source_summary: string;
   is_sellable: boolean;
+  total_stock_qty: number;
   is_featured: boolean;
   is_new: boolean;
   is_bestseller: boolean;
@@ -38,12 +44,14 @@ export type CatalogFilters = {
   q?: string;
   brand?: string;
   category?: string;
+  category_id?: string;
   min_price?: string;
   max_price?: string;
   is_featured?: boolean;
   is_new?: boolean;
   is_bestseller?: boolean;
   modification?: string;
+  car_modification?: string;
   garage_vehicle?: string;
   fitment?: "all" | "only" | "unknown" | "with_data";
 };
@@ -93,6 +101,7 @@ export type ProductDetail = {
   estimated_delivery_days: number | null;
   procurement_source_summary: string;
   is_sellable: boolean;
+  total_stock_qty: number;
   is_featured: boolean;
   is_new: boolean;
   is_bestseller: boolean;

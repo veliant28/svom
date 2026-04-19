@@ -1,0 +1,85 @@
+Створити переадресацію
+Метод save працює в моделі AdditionalService і дозволяє створити заявку на переадресацію відправлення на відділення або на адресу.
+
+Метод доступний тільки для клієнтів відправників.
+
+Текст запиту
+Параметр	Тип	Опис
+IntDocNumber*	string[36]	Номер інтернет-документа
+PaymentMethod*	string[36]	Форма розрахунку (Cash/NonCash)
+Note*	string[100]	Опис клієнта (необов'язково)
+OrderType*	string[36]	Константа — orderRedirecting
+Recipient	string[36]	Ідентифікатор інтернет-контрагента отримувача (якщо замовлено отримувачем, ігнорується)
+RecipientContactName	string[39]	ПІБ контактної особи отримувача (якщо замовлено отримувачем, ігнорується)
+RecipientPhone	string[36]	Номер телефону отримувача (якщо замовлено отримувачем, ігнорується)
+PayerType	string[36]	Тип платника
+Customer*	string[36]	Замовник переадресування (отримувачу не дозволяється змінювати дані отримувача)
+ServiceType*	string[36]	Тип послуги (DoorsWarehouse, WarehouseWarehouse)
+RecipientSettlement*	string[36]	Ідентифікатор (REF) населеного пункту (за умови створення переадресування на адресу)
+RecipientSettlementStreet*	string[36]	Ідентифікатор (REF) вулиці в населеному пункті (за умови створення переадресування на адресу)
+BuildingNumber*	string[36]	Номер будинку (за умови створення переадресування на адресу)
+NoteAddressRecipient*	string[36]	Коментар до адреси (за умови створення переадресування на адресу)
+RecipientWarehouse*	string[36]	Ідентифікатор (REF) відділення отримувача (куди необхідно переадресувати вантаж)
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AdditionalServiceGeneral",
+   "calledMethod": "save",
+   "methodProperties": {
+"IntDocNumber" : "206004560074695",
+"PaymentMethod" : "Cash",
+"Note" : "Довільний опис",
+"OrderType" : "orderRedirecting",
+"Recipient" : "00000000-0000-0000-0000-000000000000",
+"RecipientContactName" : "Іванов Іван Іванович",
+"RecipientPhone" : "380685024447",
+"PayerType" : "Recipient",
+"Customer" : "Sender",
+"ServiceType" : "WarehouseWarehouse",
+"RecipientSettlement" : "00000000-0000-0000-0000-000000000000",
+"RecipientSettlementStreet" : "00000000-0000-0000-0000-000000000000",
+"BuildingNumber" : "15",
+"NoteAddressRecipient" : "Щось від свого імені",
+"RecipientWarehouse" : "00000000-0000-0000-0000-000000000000"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+Number	string[36]	Номер заявки на переадресацію
+Ref	string[36]	Ідентифікатор (REF) заявки на повернення
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"Number" : "102-00006096",
+"Ref" : "00000000-0000-0000-0000-000000000000"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

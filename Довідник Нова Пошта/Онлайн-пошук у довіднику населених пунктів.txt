@@ -1,0 +1,104 @@
+Онлайн-пошук у довіднику населених пунктів
+Метод searchSettlements працює в моделі Address. Цей метод необхідний для ОНЛАЙН-ПОШУКУ населених пунктів. Завдяки йому не потрібно зберігати довідники та здійснювати їхнє оновлення на стороні клієнта.
+
+Текст запиту
+Параметр	Тип	Опис
+CityName*	string[36]	Назва населеного пункту або індекс населеного пункту
+Limit*	string[36]	Кількість записів на сторінці. Працює разом із параметром Page
+Page*	string[36]	Сторінка, працює разом із параметром Limit
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AddressGeneral",
+   "calledMethod": "searchSettlements",
+   "methodProperties": {
+"CityName" : "київ",
+"Limit" : "50",
+"Page" : "2"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+StreetsAvailability	bool	Наявність довідника вулиць у населеному пункті
+RegionTypesCode	string[36]	Абревіатура типу району
+AddressDeliveryAllowed	bool	Ознака можливості адресної доставки
+TotalCount	string[36]	Кількість знайдених об'єктів
+Addresses	array	Адреса
+Warehouses	string[36]	Кількість відділень
+MainDescription	string[50]	Назва населених пунктів
+Area	string[50]	Ознака області
+Region	string[50]	Ознака району
+SettlementTypeCode	string[50]	Абревіатура типу населеного пункту
+Ref	string[50]	Ідентифікатор (REF) міста із довідника getSettlements
+DeliveryCity	string[50]	Ідентифікатор (REF) міста із довідника getCities, з якого виконується доставка
+Present	string[50]	Повна назва населеного пункту
+RegionTypes	string[36]	Тип району
+ParentRegionCode	string[36]	Абревіатура типу області
+ParentRegionTypes	string[36]	Тип області
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"StreetsAvailability" : true,
+"RegionTypesCode" : "",
+"AddressDeliveryAllowed" : true,
+"TotalCount" : "235",
+"Addresses" : [
+{
+"Present":"м. Київ, Київська обл.",
+"Warehouses":6382",
+"MainDescription":"Київ",
+"Area":"Київська",
+"Region":" ",
+"SettlementTypeCode":"м.",
+"Ref":"00000000-0000-0000-0000-000000000000",
+"DeliveryCity":"00000000-0000-0000-0000-000000000000",
+"AddressDeliveryAllowed":true",
+"StreetsAvailability":true",
+"ParentRegionTypes":"область",
+"ParentRegionCode":"обл.",
+"RegionTypes":" ",
+"RegionTypesCode":" "
+}
+],
+"Warehouses" : "568",
+"MainDescription" : "Київ",
+"Area" : "обл",
+"Region" : "Київська",
+"SettlementTypeCode" : "м.",
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"DeliveryCity" : "00000000-0000-0000-0000-000000000000",
+"Present" : "м. Київ, Київська обл.",
+"RegionTypes" : "",
+"ParentRegionCode" : "обл.",
+"ParentRegionTypes" : "область"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

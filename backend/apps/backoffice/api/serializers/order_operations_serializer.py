@@ -29,3 +29,21 @@ class OrderBulkActionSerializer(serializers.Serializer):
 class OrderItemSupplierOverrideSerializer(serializers.Serializer):
     supplier_offer_id = serializers.UUIDField()
     operator_note = serializers.CharField(required=False, allow_blank=True)
+
+
+class OrderSupplierProductSerializer(serializers.Serializer):
+    id = serializers.IntegerField(min_value=1)
+    count = serializers.IntegerField(min_value=1)
+
+
+class OrderSupplierPayloadSerializer(serializers.Serializer):
+    order_id = serializers.UUIDField()
+
+
+class OrderSupplierCreateSerializer(OrderSupplierPayloadSerializer):
+    products = OrderSupplierProductSerializer(many=True, required=False, allow_empty=False)
+    test = serializers.BooleanField(required=False, default=False)
+
+
+class OrderSupplierCancelSerializer(OrderSupplierPayloadSerializer):
+    supplier_order_id = serializers.IntegerField(min_value=1)

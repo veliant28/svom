@@ -79,7 +79,7 @@ class CommerceAPISmokeTests(APITestCase):
             reverse("commerce_api:checkout-submit"),
             {
                 "contact_full_name": "Commerce Demo",
-                "contact_phone": "+380001112233",
+                "contact_phone": "38(000)111-22-33",
                 "contact_email": "commerce@test.local",
                 "delivery_method": Order.DELIVERY_COURIER,
                 "delivery_address": "Kyiv, Demo street 1",
@@ -98,3 +98,13 @@ class CommerceAPISmokeTests(APITestCase):
 
         self.assertEqual(Cart.objects.filter(user=self.user).count(), 1)
         self.assertEqual(CartItem.objects.filter(cart__user=self.user).count(), 0)
+
+    def test_checkout_nova_poshta_lookup_requires_sender_profile(self):
+        response = self.client.post(
+            reverse("commerce_api:checkout-lookup-nova-poshta-settlements"),
+            {"query": "Ки", "locale": "uk"},
+            format="json",
+            **self.auth,
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("detail", response.data)

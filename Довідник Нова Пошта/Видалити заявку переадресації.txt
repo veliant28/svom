@@ -1,0 +1,56 @@
+Видалити заявку
+Метод delete працює в моделі AdditionalService і дозволяє видалити:
+
+заявку на повернення
+заявку на зміну даних (можна видалити заявку лише зі статусом «Прийнято»)
+заявку на переадресацію
+Текст запиту
+Параметр	Тип	Опис
+Ref*	string[36]	Ідентифікатор (REF) заявки
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AdditionalServiceGeneral",
+   "calledMethod": "delete",
+   "methodProperties": {
+"Ref" : "00000000-0000-0000-0000-000000000000"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+Number	string[36]	Номер заявки
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"Number" : "102-00003168"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

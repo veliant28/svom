@@ -17,7 +17,8 @@
       "importSchedules": "Расписания импорта",
       "importQuality": "Качество импорта",
       "orders": "Заказы",
-      "autocatalog": "Автокаталог"
+      "autocatalog": "Автокаталог",
+      "novaPoshtaSenders": "Нова Пошта"
     }
   }
 }

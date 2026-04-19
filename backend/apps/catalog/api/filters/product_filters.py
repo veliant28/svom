@@ -6,6 +6,7 @@ from apps.catalog.models import Product
 class ProductFilterSet(django_filters.FilterSet):
     brand = django_filters.CharFilter(field_name="brand__slug")
     category = django_filters.CharFilter(field_name="category__slug")
+    category_id = django_filters.UUIDFilter(field_name="category_id")
     is_featured = django_filters.BooleanFilter(field_name="is_featured")
     is_new = django_filters.BooleanFilter(field_name="is_new")
     is_bestseller = django_filters.BooleanFilter(field_name="is_bestseller")
@@ -18,6 +19,7 @@ class ProductFilterSet(django_filters.FilterSet):
         fields = (
             "brand",
             "category",
+            "category_id",
             "is_featured",
             "is_new",
             "is_bestseller",

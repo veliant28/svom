@@ -1,0 +1,83 @@
+Розрахувати повернення
+Метод save працює в моделі AdditionalServiceGeneral. Цей метод дозволяє здійснити розрахунок повернення.
+
+Запит майже ідентичний до створення заявки на повернення, відмінність тільки в тому, що використовується параметр OnlyGetPricing із значенням «1». Метод доступний лише для клієнтів-відправників.
+
+Текст запиту
+Параметр	Тип	Опис
+Note	string[100]	Опис клієнта (необов'язково)
+OrderType*	string[36]	Константа — orderCargoReturn
+ReturnAddressRef*	string[36]	Адреса для повернення (дані з відповіді методу CheckPossibilityCreateReturn)
+IntDocNumber*	string[36]	Номер інтернет-документа
+PaymentMethod*	string[36]	Форма розрахунку (Cash/NonCash)
+Reason*	string[36]	Ідентифікатор (REF) причини повернення
+OnlyGetPricing*	integer	Параметр, що визначає дію: розрахунок (1) або створення замовлення (0)
+SubtypeReason*	string[36]	Ідентифікатор (REF) підтипу причини
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AdditionalServiceGeneral",
+   "calledMethod": "save",
+   "methodProperties": {
+"Note" : "Довільний опис",
+"OrderType" : "orderCargoReturn",
+"ReturnAddressRef" : "00000000-0000-0000-0000-000000000000",
+"IntDocNumber" : "206004560074695",
+"PaymentMethod" : "Cash",
+"Reason" : "00000000-0000-0000-0000-000000000000",
+"OnlyGetPricing" : "1",
+"SubtypeReason" : "00000000-0000-0000-0000-000000000000"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+ScheduledDeliveryDate	string[36]	Запланована дата доставки повернення у форматі YYYY-MM-DD HH:MM:SS
+Pricing	object	Об'єкт, що містить інформацію про вартість послуг. Містить такі поля:
+Services: Масив з двох об'єктів, що містить перелік послуг та їхню вартість:
+Service: Назва послуги
+Cost: Вартість послуги
+Total: Загальна вартість усіх послуг
+FirstDayStorage: Інформація про перший день зберігання
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"ScheduledDeliveryDate" : "2024-05-18 12:00:00",
+"Pricing" : {
+"Services":[{
+"Service":"Повернення документи",
+"Cost":0
+}]",
+"Total":0",
+"FirstDayStorage":"0000-00-00 00:00:00"
+}
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

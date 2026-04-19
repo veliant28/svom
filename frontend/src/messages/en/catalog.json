@@ -4,6 +4,12 @@
     "subtitle": "First storefront catalog layer",
     "showcaseSubtitle": "Catalog slice powered by DRF endpoint.",
     "resultCount": "Found: {count}",
+    "pagination": {
+      "prev": "Prev",
+      "next": "Next",
+      "page": "Page {current} of {total}",
+      "perPage": "Per page: {count}"
+    },
     "empty": "No products found for selected filters.",
     "taxonomy": {
       "brands": "Brands",

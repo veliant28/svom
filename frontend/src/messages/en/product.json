@@ -8,7 +8,8 @@
         "notFits": "Not compatible with selected vehicle"
       },
       "labels": {
-        "eta": " · ETA {days}d"
+        "eta": " · ETA {days}d",
+        "stockTotal": "Stock {count}"
       }
     },
     "detail": {
@@ -16,7 +17,8 @@
       "backToCatalog": "Back to catalog",
       "skuLabel": "SKU",
       "labels": {
-        "eta": " · ETA {days}d"
+        "eta": " · ETA {days}d",
+        "stockTotal": "Stock {count}"
       },
       "attributesTitle": "Attributes",
       "fitmentTitle": "Fitment",

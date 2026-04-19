@@ -1,0 +1,113 @@
+Отримати список експрес-накладних
+Метод getDocumentList працює в моделі InternetDocument і повертає список усіх експрес-накладних (ЕН), доступних в особистому кабінеті, разом із їхніми ідентифікаторами (Ref) в API.
+
+У параметрі DateTime можна зазначити дату, за яку потрібно отримати інформацію. Пошук здійснюється за датою створення інтернет-документа (ІД). Також доступне отримання даних за період — для цього використовуються параметри DateTimeFrom і DateTimeTo. Крім того, передбачено пошук за конкретним номером ЕН: у параметрі IntDocNumber необхідно вказати відповідний номер.
+
+Якщо не зазначити дату або номер ЕН, система автоматично поверне інформацію за всіма ЕН поточного дня.
+
+Також реалізовано можливість завантаження посторінкового списку або всього переліку накладних. Це налаштовується параметром GetFullList: значення «0» вмикає посторінкове завантаження, а значення «1» повертає повний список. 
+
+Додатково впроваджено відображення всіх ЕН зі зворотною доставкою («Грошовий переказ» або «Каса форпост»). Для цього слід установити значення «1» для параметра RedeliveryMoney.
+
+Текст запиту
+Параметр	Тип	Опис
+DateTimeFrom*	string[36]	Дата від
+DateTimeTo*	string[36]	Дата до
+Page	string[36]	Посторінкове відображення, до 100 записів на одній сторінці
+GetFullList*	string[36]	Увімкнення/вимкнення посторінкового завантаження (0 — працює посторінкове завантаження, 1 — повний список)
+DateTime	string[36]	Дата створення інтернет-документа (ІД)
+IntDocNumber	string[36]	Номер інтернет-документа (ІД)
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "InternetDocumentGeneral",
+   "calledMethod": "getDocumentList",
+   "methodProperties": {
+"DateTimeFrom" : "дд.мм.рррр",
+"DateTimeTo" : "дд.мм.рррр",
+"Page" : "1",
+"GetFullList" : "1",
+"DateTime" : "дд.мм.рррр",
+"IntDocNumber" : "20400009196210"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+Ref	string[36]	Ідентифікатор (REF) ЕН
+DateTime	string[36]	Дата створення інтернет-документа (ІД)
+PreferredDeliveryDate	string[36]	Бажана дата доставки
+RecipientDateTime	string[36]	Дата отримання
+EWDateCreated	string[36]	Дата створення експрес-накладної (ЕН)
+Weight	string[36]	Фактична вага
+SeatsAmount	string[36]	Кількість місць відправлення, ціле число
+IntDocNumber	string[36]	Номер інтернет-документа (ІД)
+Cost	string[36]	Оціночна вартість
+CitySender	string[36]	Ідентифікатор (REF) міста відправника
+CityRecipient	string[36]	Ідентифікатор (REF) міста отримувача
+SenderAddress	string[36]	Ідентифікатор (REF) адреси відправника
+RecipientAddress	string[36]	Ідентифікатор (REF) адреси отримувача
+CostOnSite	string[36]	Вартість доставки
+PayerType	string[36]	Тип платника
+PaymentMethod	string[36]	Форма розрахунку (Cash/NonCash)
+AfterpaymentOnGoodsCost	string[36]	Зворотна доставка
+PackingNumber	string[36]	Номер пакування
+RejectionReason	string[36]	Опис причини нерозвозу
+StateId	string[36]	Код статусу ЕН (дорівнює статусу трекінга)
+StateName	string[50]	Опис статусу ЕН
+ScanSheetNumber	string[36]	Унікальний номер реєстру, до якого додано цю експрес-накладну (ЕН). Ідентифікує реєстр, що об’єднує кілька відправлень під одним номером
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"DateTime" : "дд.мм.рррр",
+"PreferredDeliveryDate" : "дд.мм.рррр",
+"RecipientDateTime" : "дд.мм.рррр",
+"EWDateCreated" : "дд.мм.рррр",
+"Weight" : "5",
+"SeatsAmount" : "2",
+"IntDocNumber" : "20400030200931",
+"Cost" : "15000",
+"CitySender" : "00000000-0000-0000-0000-000000000000",
+"CityRecipient" : "00000000-0000-0000-0000-000000000000",
+"SenderAddress" : "00000000-0000-0000-0000-000000000000",
+"RecipientAddress" : "00000000-0000-0000-0000-000000000000",
+"CostOnSite" : "45",
+"PayerType" : "Sender",
+"PaymentMethod" : "Cash",
+"AfterpaymentOnGoodsCost" : "500",
+"PackingNumber" : "123456",
+"RejectionReason" : "Опис причини переадресування",
+"StateId" : "41",
+"StateName" : "Відправлення в місті Києві",
+"ScanSheetNumber" : ""
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

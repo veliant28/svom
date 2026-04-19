@@ -1,0 +1,357 @@
+Трекінг
+Метод getStatusDocuments у моделі TrackingDocument надає можливість перегляду детальної інформації про статус відправлень. Цей метод дозволяє користувачам отримати актуальні дані щодо статусу їхніх відправлень, зокрема інформацію про відправника та одержувача.
+
+Основні можливості методу:
+
+Отримання даних за номером телефону. Під час введення номера телефону можна отримати інформацію про відправника та одержувача, включно з їхніми контактними даними.
+Масовий перегляд відправлень. Метод дозволяє переглядати інформацію одночасно до 100 відправлень.
+Актуальні статуси трекінгу. Метод відображає всі актуальні статуси трекінгу для кожного відправлення.
+Доступність. Метод доступний як для авторизованих, так і для неавторизованих запитів.
+Авторизований доступ має такі особливості:
+
+Для отримання повних даних про відправлення необхідно використовувати API-ключ.
+У разі успішної авторизації та валідації повертаються коректні дані відправника та одержувача.
+Неавторизований доступ (без використання API-ключа) має обмежений доступ до даних. Для запитів застосовується логіка підміни — дані відправника та одержувача замінюються на дані, що належать номеру телефону із запиту.
+
+Актуальні статуси трекінгу
+Актуальні статуси трекінгу описано в переліку.
+
+ Код
+ Статус
+ 1
+Відправник самостійно створив цю накладну, але ще не надав до відправки
+ 2
+Видалено
+ 3
+Номер не знайдено
+ 4
+Відправлення у місті ХХXХ (статус для міжобласних відправлень)
+ 41
+Відправлення у місті ХХXХ (статус для послуг «Локал стандарт» і «Локал експрес» — доставка в межах міста)
+ 5
+Відправлення прямує до міста YYYY
+ 6
+Відправлення у місті YYYY, орієнтовна доставка до ВІДДІЛЕННЯ-XXX dd-mm. Очікуйте додаткове повідомлення про прибуття
+ 7
+Прибув на відділення
+ 8 
+Прибув на відділення (завантажено в Поштомат)
+ 9
+Відправлення отримано
+ 10
+Відправлення отримано %DateReceived%. Протягом доби ви одержите SMS-повідомлення про надходження грошового переказу та зможете отримати його в касі відділення «Нова пошта»
+ 11
+Відправлення отримано %DateReceived%. Грошовий переказ видано одержувачу
+ 12
+«Нова пошта» комплектує ваше відправлення
+ 101
+На шляху до одержувача
+ 102
+Відмова від отримання (відправником створено замовлення на повернення)
+ 103
+Відмова від отримання
+
+ 104
+Змінено адресу
+ 105
+Припинено зберігання
+ 106
+Одержано і створено ЕН зворотної доставки
+ 111
+Невдала спроба доставки через відсутність одержувача на адресі або зв'язку з ним
+ 112
+Дата доставки перенесена одержувачем
+ 
+
+Текст запиту
+Параметр	Тип	Опис
+Documents*	array	Масив документів, який слід відстежити. У параметрі  DocumentNumber вказується номер документа, а в параметрі Phone номер телефону одержувача/відправника дозволяє отримати розширену інформацію   
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "TrackingDocumentGeneral",
+   "calledMethod": "getStatusDocuments",
+   "methodProperties": {
+"Documents" : [
+{
+"DocumentNumber":"20400048799000",
+"Phone":"380600000000"
+}
+,
+{
+"DocumentNumber":"20400048799001",
+"Phone":"380600000000"
+}
+]
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+PossibilityCreateReturn	bool	Доступність замовлення послуги повернення вантажу, допустимі значення true/false:
+true — послуга доступна до замовлення
+false — послуга недоступна до замовлення
+PossibilityCreateRefusal	bool	Доступність замовлення послуги відмови від вантажу, допустимі значення true/false:
+true — послуга доступна до замовлення
+false — послуга недоступна до замовлення
+PossibilityChangeEW	bool	Доступність замовлення послуги внесення змін в експрес-накладну (ЕН), допустимі значення true/false:
+true — послуга доступна до замовлення
+false — послуга недоступна до замовлення
+PossibilityCreateRedirecting	bool	Доступність замовлення послуги переадресування, допустимі значення true/false:
+true — послуга доступна до замовлення
+false — послуга недоступна до замовлення
+Number	string[36]	Номер документа
+Redelivery	string[36]	Ідентифікатор зворотної доставки (0 — відсутня, 1 — наявна)
+RedeliverySum	string[36]	Сума зворотної доставки
+RedeliveryNum	string[36]	Ідентифікатор номера експрес-накладної (ЕН) зворотної доставки (якщо таку ЕН створено)
+RedeliveryPayer	string[36]	Ідентифікатор платника зворотної доставки (якщо є зворотна доставка)
+OwnerDocumentType	string[36]	Тип експрес-накладної (ЕН) на підставі
+LastCreatedOnTheBasisDocumentType	string[36]	Останні зміни типу документа
+LastCreatedOnTheBasisPayerType	string[36]	Останні зміни, тип платника
+LastCreatedOnTheBasisDateTime	string[36]	Останні зміни, дата створення
+LastTransactionStatusGM	string[36]	Останній статус транзакції грошового переказу
+LastTransactionDateTimeGM	string[36]	Останній час та дата транзакції грошового переказу
+LastAmountTransferGM	string[36]	Поточне значення суми грошового переказу
+DateCreated	string[36]	Дата створення експрес-накладної (ЕН)
+DocumentWeight	string[36]	Вага
+FactualWeight	string[36]	Фактична вага з експрес-накладної (ЕН)
+VolumeWeight	string[36]	Об'ємна вага з експрес-накладної (ЕН)
+CheckWeight	string[36]	Інформація після контрольного зважування
+CheckWeightMethod	string[36]	Тип зважування, згідно з яким виконувалось контрольне зважування
+DocumentCost	string[36]	Вартість доставки
+CalculatedWeight	string[36]	Розрахункова вага
+SumBeforeCheckWeight	string[36]	Інформація до контрольного зважування
+PayerType	string[36]	Ідентифікатор платника
+RecipientFullName	string[36]	Дані ПІБ отримувача з накладної, за умови зазначення номера телефону
+RecipientDateTime	string[36]	Дата, коли отримувач забрав вантаж
+ScheduledDeliveryDate	string[36]	Очікувана дата доставки
+PaymentMethod	string[36]	Тип оплати
+CargoDescriptionString	string[36]	Опис вантажу
+CargoType	string[36]	Тип вантажу
+CitySender	string[36]	Місто відправника
+CityRecipient	string[36]	Місто отримувача
+WarehouseRecipient	string[36]	Склад отримувача
+CounterpartyType	string[36]	Тип контрагента
+AfterpaymentOnGoodsCost	string[36]	Контроль оплати
+ServiceType	string[36]	Тип доставки
+UndeliveryReasonsSubtypeDescription	string[36]	Опис причини нерозвезення
+WarehouseRecipientNumber	string[36]	Номер відділення отримувача
+LastCreatedOnTheBasisNumber	string[36]	Останні зміни, номер експрес-накладної (ЕН)
+PhoneRecipient	string[36]	Номер телефону отримувача
+RecipientFullNameEW	string[36]	Дані ПІБ отримувача з накладної, за умови зазначення в запиті номера телефону
+WarehouseRecipientInternetAddressRef	string[36]	Ідентифікатор (REF) складу отримувача
+MarketplacePartnerToken	string[36]	Токен торговельного майданчика
+ClientBarcode	string[36]	Внутрішній номер замовлення
+RecipientAddress	string[36]	Адреса отримувача
+CounterpartyRecipientDescription	string[36]	Опис контрагента отримувача
+CounterpartySenderType	string[36]	Тип контрагента відправника
+DateScan	string[36]	Дата сканування, що призвела до формування статусу
+PaymentStatus	string[36]	Статус для інтернет-еквайрингу
+PaymentStatusDate	string[36]	Дата оплати для інтернет-еквайрингу
+AmountToPay	string[36]	Сума до сплати для інтернет-еквайрингу
+AmountPaid	string[36]	Сплачено для інтернет-еквайрингу
+Status	string[36]	Статус
+StatusCode	string[36]	Ідентифікатор статусу
+RefEW	string[36]	Ідентифікатор накладної для інтернет-еквайрингу (використовується в робочих цілях)
+BackwardDeliverySubTypesActions	string[36]	Інформація за нестандартними підтипами зворотної доставки
+BackwardDeliverySubTypesServices	string[36]	Інформація за нестандартними підтипами зворотної доставки
+UndeliveryReasons	string[36]	Причина нерозвезення
+DatePayedKeeping	string[36]	Дата початку платного зберігання
+InternationalDeliveryType	string[36]	Тип міжнародної доставки
+SeatsAmount	string[36]	Кількість місць
+CardMaskedNumber	string[36]	Замаскований номер платіжної карти
+ExpressWaybillPaymentStatus	string[36]	Статус оплати експрес-накладної (ЕН)
+ExpressWaybillAmountToPay	string[36]	Сума оплати за експрес-накладною (ЕН)
+PhoneSender	string[36]	Телефон відправника
+TrackingUpdateDate	string[36]	Оновлена дата відстеження
+WarehouseSender	string[36]	Відділення відправника
+DateReturnCargo	string[36]	Дата повернення вантажу
+DateMoving	string[36]	Дата переміщення
+DateFirstDayStorage	string[36]	Дата початку зберігання
+RefCityRecipient	string[36]	Ідентифікатор міста одержувача
+RefCitySender	string[36]	Ідентифікатор міста відправника
+RefSettlementRecipient	string[36]	Ідентифікатор населеного пункту одержувача
+RefSettlementSender	string[36]	Ідентифікатор населеного пункту відправника
+SenderAddress	string[36]	Адреса відправника
+SenderFullNameEW	string[36]	Повне ім'я відправника
+AnnouncedPrice	string[36]	Оголошена вартість
+AdditionalInformationEW	string[36]	Додаткова інформація
+ActualDeliveryDate	string[36]	Фактична дата доставки
+PostomatV3CellReservationNumber	string[36]	Номер бронювання комірки поштомата, за умови доставки до поштомата
+OwnerDocumentNumber	string[36]	Номер експрес-накладної (ЕН) на основі
+LastAmountReceivedCommissionGM	string[36]	Сума комісії за грошовий переказ
+DeliveryTimeframe	string[36]	Часовий інтервал, якщо було замовлено (тільки для експрес-накладної (ЕН) до адреси)
+CreatedOnTheBasis	string[36]	Створено на основі
+UndeliveryReasonsDate	string[36]	Дата причини нерозвезення
+RecipientWarehouseTypeRef	string[36]	Ідентифікатор типу відділення одержувача
+WarehouseRecipientRef	string[36]	Ідентифікатор відділення одержувача
+CategoryOfWarehouse	string[36]	Категорія відділення
+WarehouseRecipientAddress	string[36]	Адреса відділення одержувача
+WarehouseSenderInternetAddressRef	string[36]	Інтернет-адреса відділення відправника
+WarehouseSenderAddress	string[36]	Адреса відділення відправника
+CounterpartySenderType	string[36]	Тип контрагента відправника
+AviaDelivery	string[36]	Авіадоставка
+BarcodeRedBox	string[36]	Штрихкод пакування типу RedBox
+CargoReturnRefusal	string[36]	Наявність послуги «Відмова від повернення», допустимі значення:
+true — послугу замовлено
+false — послугу не замовлено
+DaysStorageCargo	string[36]	День зберігання вантажу
+Packaging	array[36]	Пакування
+PartialReturnGoods	array[36]	Часткове повернення
+SecurePayment	string[36]	Ознака надійної покупки, допустимі значення true/false:
+true — послугу замовлено
+false — послугу не замовлено
+PossibilityChangeCash2Card	bool	Доступність можливості зміни виплати грошового переказу на картку, допустимі значення true/false:
+true — послуга доступна до замовлення
+false — послуга недоступна до замовлення
+PossibilityChangeDeliveryIntervals	bool	Доступність зміни інтервалу доставки, допустимі значення true/false:
+true — послуга доступна до замовлення
+false — послуга недоступна до замовлення
+PossibilityTermExtensio	bool	Доступність можливості подовження термінів зберігання, допустимі значення true/false:
+true — послуга доступна до замовлення
+false — послуга недоступна до замовлення
+StorageAmount	string[36]	Кількість днів зберігання вантажу
+StoragePrice	string[36]	Вартість зберігання
+FreeShipping	string[36]	Ознака безкоштовної доставки
+LoyaltyCardRecipient	string[36]	Номер картки лояльності отримувача, за наявності
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"PossibilityCreateReturn" : true,
+"PossibilityCreateRefusal" : true,
+"PossibilityChangeEW" : true,
+"PossibilityCreateRedirecting" : true,
+"Number" : "20400048799000",
+"Redelivery" : "0",
+"RedeliverySum" : "0",
+"RedeliveryNum" : "",
+"RedeliveryPayer" : "Sender/Recipient",
+"OwnerDocumentType" : "",
+"LastCreatedOnTheBasisDocumentType" : "",
+"LastCreatedOnTheBasisPayerType" : "",
+"LastCreatedOnTheBasisDateTime" : "",
+"LastTransactionStatusGM" : "",
+"LastTransactionDateTimeGM" : "",
+"LastAmountTransferGM" : "",
+"DateCreated" : "18-11-2021 11:52:42",
+"DocumentWeight" : "3",
+"FactualWeight" : "3",
+"VolumeWeight" : "0.1",
+"CheckWeight" : "",
+"CheckWeightMethod" : "",
+"DocumentCost" : "51",
+"CalculatedWeight" : "3",
+"SumBeforeCheckWeight" : "",
+"PayerType" : "Sender",
+"RecipientFullName" : "ПІБ",
+"RecipientDateTime" : "21.11.2021 13:53:47",
+"ScheduledDeliveryDate" : "19.11.2021 13:53:47",
+"PaymentMethod" : "Cash",
+"CargoDescriptionString" : "Одяг",
+"CargoType" : "Cargo",
+"CitySender" : "Київ",
+"CityRecipient" : "Київ",
+"WarehouseRecipient" : "Відділення №101 (до 15 кг), Міні-відділення: вул. Велика Васильківська, 143/2, (маг. "Фора")",
+"CounterpartyType" : "PrivatePerson",
+"AfterpaymentOnGoodsCost" : "0",
+"ServiceType" : "WarehouseWarehouse",
+"UndeliveryReasonsSubtypeDescription" : "",
+"WarehouseRecipientNumber" : "101",
+"LastCreatedOnTheBasisNumber" : "",
+"PhoneRecipient" : "380600000000",
+"RecipientFullNameEW" : "",
+"WarehouseRecipientInternetAddressRef" : "00000000-0000-0000-0000-000000000000",
+"MarketplacePartnerToken" : "",
+"ClientBarcode" : "",
+"RecipientAddress" : "м. Київ, Відділення №101 (до 15 кг), Міні-відділення, вул. Велика Васильківська, 143/2",
+"CounterpartyRecipientDescription" : "Приватна особа",
+"CounterpartySenderType" : "PrivatePerson",
+"DateScan" : "0001-01-01 00:00:00",
+"PaymentStatus" : "",
+"PaymentStatusDate" : "",
+"AmountToPay" : "",
+"AmountPaid" : "",
+"Status" : "",
+"StatusCode" : "",
+"RefEW" : "00000000-0000-0000-0000-000000000000",
+"BackwardDeliverySubTypesActions" : "",
+"BackwardDeliverySubTypesServices" : "",
+"UndeliveryReasons" : "",
+"DatePayedKeeping" : "",
+"InternationalDeliveryType" : "",
+"SeatsAmount" : "1",
+"CardMaskedNumber" : "",
+"ExpressWaybillPaymentStatus" : "PaymentNotAvailable",
+"ExpressWaybillAmountToPay" : "",
+"PhoneSender" : "",
+"TrackingUpdateDate" : "2022-06-07 13:42:56",
+"WarehouseSender" : "Отделение №178 (до 30 кг): просп. Оболонский, 35",
+"DateReturnCargo" : "",
+"DateMoving" : "",
+"DateFirstDayStorage" : "",
+"RefCityRecipient" : "00000000-0000-0000-0000-000000000000",
+"RefCitySender" : "00000000-0000-0000-0000-000000000000",
+"RefSettlementRecipient" : "00000000-0000-0000-0000-000000000000",
+"RefSettlementSender" : "00000000-0000-0000-0000-000000000000",
+"SenderAddress" : "м. Київ, Відділення №178 (до 30 кг): просп. Оболонський, 35",
+"SenderFullNameEW" : "Іванов Петро Миколайович",
+"AnnouncedPrice" : "50000",
+"AdditionalInformationEW" : "",
+"ActualDeliveryDate" : "",
+"PostomatV3CellReservationNumber" : "00000000-0000-0000-0000-000000000000",
+"OwnerDocumentNumber" : "",
+"LastAmountReceivedCommissionGM" : "",
+"DeliveryTimeframe" : "",
+"CreatedOnTheBasis" : "",
+"UndeliveryReasonsDate" : "",
+"RecipientWarehouseTypeRef" : "00000000-0000-0000-0000-000000000000",
+"WarehouseRecipientRef" : "00000000-0000-0000-0000-000000000000",
+"CategoryOfWarehouse" : "Branch",
+"WarehouseRecipientAddress" : "Киев, Героев Днепра, 53",
+"WarehouseSenderInternetAddressRef" : "00000000-0000-0000-0000-000000000000",
+"WarehouseSenderAddress" : "Киев, Оболонский, 35",
+"CounterpartySenderType" : "PrivatePerson",
+"AviaDelivery" : "",
+"BarcodeRedBox" : "",
+"CargoReturnRefusal" : "false",
+"DaysStorageCargo" : "",
+"Packaging" : null,
+"PartialReturnGoods" : null,
+"SecurePayment" : "false",
+"PossibilityChangeCash2Card" : true,
+"PossibilityChangeDeliveryIntervals" : true,
+"PossibilityTermExtensio" : true,
+"StorageAmount" : "",
+"StoragePrice" : "",
+"FreeShipping" : "",
+"LoyaltyCardRecipient" : ""
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

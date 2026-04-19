@@ -1,0 +1,97 @@
+Створити запит на розрахування переадресації
+Метод save працює в моделі AdditionalServiceGeneral. Цей метод дозволяє розрахувати переадресування.
+
+Запит майже ідентичний до створення заявки на переадресування. Відмінність тільки в тому, що використовується параметр OnlyGetPricing із значенням «1». Метод доступний лише для клієнтів-відправників.
+
+Текст запиту
+Параметр	Тип	Опис
+RecipientSettlement*	string[36]	Ідентифікатор (REF) населеного пункту (за умови створення переадресування на адресу)
+Recipient*	string[36]	Ідентифікатор інтернет-контрагента отримувача
+RecipientSettlementStreet*	string[36]	Ідентифікатор (REF) вулиці в населеному пункті (за умови створення переадресування на адресу)
+RecipientWarehouse*	string[36]	Ідентифікатор (REF) відділення отримувача, куди необхідно переадресувати вантаж (за умови створення переадресування на відділення)
+BuildingNumber*	string[36]	Номер будинку (за умови створення переадресування на адресу)
+NoteAddressRecipient*	string[36]	Коментар до адреси (за умови створення переадресування на адресу)
+Customer*	string[36]	Замовник переадресування (отримувачу не дозволяється змінювати дані отримувача)
+RecipientContactName*	string[36]	ПІБ контактної особи отримувача
+RecipientPhone*	string[36]	Номер телефону отримувача
+IntDocNumber*	string[36]	Номер інтернет-документа
+PaymentMethod*	string[36]	Форма розрахунку (Cash/NonCash)
+PayerType*	string[36]	Тип платника
+Note	string[100]	Опис клієнта (необов'язково)
+OrderType*	string[36]	Константа — orderRedirecting
+ServiceType*	string[36]	Тип послуги (DoorsWarehouse, WarehouseWarehouse, WarehouseDoors, DoorsDoors)
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AdditionalServiceGeneral",
+   "calledMethod": "save",
+   "methodProperties": {
+"RecipientSettlement" : "00000000-0000-0000-0000-000000000000",
+"Recipient" : "00000000-0000-0000-0000-000000000000",
+"RecipientSettlementStreet" : "00000000-0000-0000-0000-000000000000",
+"RecipientWarehouse" : "00000000-0000-0000-0000-000000000000",
+"BuildingNumber" : "15",
+"NoteAddressRecipient" : "Щось від свого імені",
+"Customer" : "Sender",
+"RecipientContactName" : "Іванов Іван Іванович",
+"RecipientPhone" : "380685024447",
+"IntDocNumber" : "206004560074695",
+"PaymentMethod" : "Cash",
+"PayerType" : "Recipient",
+"Note" : "Довільний опис",
+"OrderType" : "orderRedirecting",
+"ServiceType" : "WarehouseWarehouse"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+Pricing	object	Об'єкт, що містить інформацію про вартість послуг. Містить такі поля:
+Services: Масив з двох об'єктів, що містить перелік послуг та їхню вартість
+Service: Назва послуги
+Cost: Вартість послуги
+Total: Загальна вартість усіх послуг
+FirstDayStorage: Інформація про перший день зберігання
+ScheduledDeliveryDate	string[36]	Запланована дата доставки переадресування у форматі yyyy-mm-dd hh:mm:ss
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"Pricing" : {
+"Services":[{
+"Service":"Переадресування в межах України",
+"Cost":0
+}]",
+"Total":0",
+"FirstDayStorage":"0000-00-00 00:00:00"
+},
+"ScheduledDeliveryDate" : "2024-05-18 12:00:00"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

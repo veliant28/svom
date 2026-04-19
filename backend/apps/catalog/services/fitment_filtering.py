@@ -34,6 +34,10 @@ class FitmentFilteringService:
         if explicit_modification:
             return explicit_modification, []
 
+        explicit_car_modification_id = self._parse_int(params.get("car_modification"))
+        if explicit_car_modification_id:
+            return None, self._resolve_utr_detail_ids(explicit_car_modification_id)
+
         garage_vehicle_id = self._parse_uuid(params.get("garage_vehicle"))
         if not garage_vehicle_id:
             return None, []
@@ -54,13 +58,16 @@ class FitmentFilteringService:
         if not selected_car_modification_id:
             return None, []
 
+        return None, self._resolve_utr_detail_ids(selected_car_modification_id)
+
+    def _resolve_utr_detail_ids(self, car_modification_id: int) -> list[str]:
         selected_utr_detail_ids = list(
-            UtrDetailCarMap.objects.filter(car_modification_id=selected_car_modification_id)
+            UtrDetailCarMap.objects.filter(car_modification_id=car_modification_id)
             .values_list("utr_detail_id", flat=True)
             .distinct()
             .order_by("utr_detail_id")
         )
-        return None, [detail_id for detail_id in selected_utr_detail_ids if detail_id]
+        return [detail_id for detail_id in selected_utr_detail_ids if detail_id]
 
     def _parse_uuid(self, value) -> str | None:
         if not value:

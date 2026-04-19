@@ -13,6 +13,13 @@
         "add": "Add to wishlist",
         "remove": "Remove",
         "viewProduct": "View product"
+      },
+      "messages": {
+        "authRequiredAction": "Sign in to manage wishlist.",
+        "added": "Product added to wishlist.",
+        "removed": "Product removed from wishlist.",
+        "loadFailed": "Failed to load wishlist.",
+        "actionFailed": "Failed to update wishlist."
       }
     },
     "cart": {
@@ -38,6 +45,14 @@
       },
       "warnings": {
         "availabilityOrPriceChanged": "Availability or price changed for one or more items. Review before checkout."
+      },
+      "messages": {
+        "authRequiredAction": "Sign in to manage cart.",
+        "added": "Product added to cart.",
+        "removed": "Product removed from cart.",
+        "quantityUpdated": "Cart quantity updated.",
+        "loadFailed": "Failed to load cart.",
+        "actionFailed": "Failed to update cart."
       }
     },
     "checkout": {
@@ -54,18 +69,38 @@
         "orderReview": "Order review"
       },
       "fields": {
-        "fullName": "Full name",
+        "lastName": "Last name",
+        "firstName": "First name",
+        "middleName": "Middle name",
         "phone": "Phone",
-        "email": "Email",
-        "deliveryMethod": "Delivery method",
-        "deliveryAddress": "Delivery address",
+        "npCity": "City",
+        "npDestination": "Branch / parcel locker",
+        "npStreet": "Street",
+        "npHouse": "House",
+        "npApartment": "Apartment / office",
         "paymentMethod": "Payment method",
         "comment": "Comment"
+      },
+      "deliveryOptions": {
+        "pickup": "Pickup",
+        "novaPoshtaWarehouse": "Nova Poshta branch/locker",
+        "novaPoshtaCourier": "Nova Poshta courier"
       },
       "delivery": {
         "pickup": "Pickup",
         "courier": "Courier",
         "novaPoshta": "Nova Poshta"
+      },
+      "placeholders": {
+        "npCity": "Start typing city",
+        "npDestination": "Start typing branch or locker",
+        "npStreet": "Start typing street",
+        "npHouse": "For example 12A",
+        "npApartment": "For example 45"
+      },
+      "lookup": {
+        "loading": "Loading...",
+        "noResults": "No results found"
       },
       "payment": {
         "cardPlaceholder": "Card payment (placeholder)",
@@ -80,7 +115,47 @@
         "total": "Total: {total} {currency}"
       },
       "success": "Order created: {orderNumber}",
+      "phoneFormatError": "Enter phone in format 38(0XX)XXX-XX-XX.",
+      "errors": {
+        "deliveryCityRequired": "Select Nova Poshta delivery city.",
+        "deliveryDestinationRequired": "Select Nova Poshta branch or parcel locker.",
+        "deliveryStreetRequired": "Select street and enter house number for courier delivery."
+      },
       "submitError": "Failed to place order. Check required fields."
+    },
+    "orders": {
+      "title": "My orders",
+      "subtitle": "Review your order history and line items.",
+      "authRequired": "Login is required to view orders.",
+      "goToLogin": "Go to login",
+      "states": {
+        "loading": "Loading orders...",
+        "empty": "No orders yet.",
+        "error": "Failed to load orders."
+      },
+      "labels": {
+        "items": "Items: {count}",
+        "client": "Customer: {fullName}"
+      },
+      "table": {
+        "sku": "SKU",
+        "product": "Product",
+        "qty": "Qty",
+        "total": "Total"
+      },
+      "status": {
+        "draft": "Draft",
+        "placed": "Placed",
+        "new": "New",
+        "confirmed": "Confirmed",
+        "awaiting_procurement": "Awaiting procurement",
+        "reserved": "Reserved",
+        "partially_reserved": "Partially reserved",
+        "ready_to_ship": "Ready to ship",
+        "shipped": "Shipped",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      }
     }
   }
 }

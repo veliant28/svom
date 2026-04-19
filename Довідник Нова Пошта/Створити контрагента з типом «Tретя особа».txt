@@ -1,0 +1,91 @@
+Створити контрагента з типом «Tретя особа»
+Метод save працює в моделі Counterparty і використовується для створення контрагента-отримувача.
+
+Метод дозволяє створювати контрагентів-отримувачів із типом «Третя особа». Контрагента-отримувача з типом «Приватна особа» можуть створювати клієнти, які підписали угоду з компанією «Нова пошта».
+
+Дані щодо отримувача вносяться лише українською мовою.
+
+Рекомендовано проводити оновлення довідника один раз на місяць.
+
+Текст запиту
+Параметр	Тип	Опис
+FirstName	string[36]	Це поле має залишатися пустим, інакше повернеться помилка
+MiddleName	string[36]	Це поле має залишатися пустим, інакше повернеться помилка
+LastName	string[36]	Це поле має залишатися пустим, інакше повернеться помилка
+Phone	string[36]	Телефон контактної особи, поле може бути порожнім для організацій
+Email	string[36]	Електронна скринька контактної особи, поле може бути порожнім для організацій
+CounterpartyType*	string[36]	Тип контрагента
+EDRPOU*	string[36]	Код ЄДРПОУ організації
+CounterpartyProperty*	string[36]	Властивості контрагента
+CityRef	string[36]	Ідентифікатор (REF) міста, може бути порожнім
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "CounterpartyGeneral",
+   "calledMethod": "save",
+   "methodProperties": {
+"FirstName" : "",
+"MiddleName" : "",
+"LastName" : "",
+"Phone" : "380997979789",
+"Email" : "test@i.com",
+"CounterpartyType" : "Organization",
+"EDRPOU" : "12345678",
+"CounterpartyProperty" : "ThirdPerson",
+"CityRef" : "00000000-0000-0000-0000-000000000000"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+FirstName	string[36]	Поле повертається пустим
+Ref	string[36]	Унікальний ідентифікатор контрагента
+Description	string[50]	Назва організації, отримана за кодом ЄДРПОУ
+OwnershipForm	string[36]	Ідентифікатор форми власності
+OwnershipFormDescription	string[36]	Опис форми власності
+EDRPOU	string[36]	Код ЄДРПОУ
+CounterpartyType	string[36]	Тип контрагента
+LastName	string[36]	Поле повертається пустим
+MiddleName	string[36]	Поле повертається пустим
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"FirstName" : "",
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"Description" : "Назва організації",
+"OwnershipForm" : "00000000-0000-0000-0000-000000000001",
+"OwnershipFormDescription" : "ТОВ",
+"EDRPOU" : "12345678",
+"CounterpartyType" : "Organization",
+"LastName" : "",
+"MiddleName" : ""
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

@@ -1,0 +1,59 @@
+Довідник районів областей населених пунктів
+Метод getSettlementCountryRegion працює в моделі AddressGeneral.  За допомогою цього методу можна завантажити довідник районів областей населених пунктів, аналогічний даним методу getSettlements.
+
+Текст запиту
+Параметр	Тип	Опис
+AreaRef*	string[36]	Ідентифікатор (REF) області
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AddressGeneral",
+   "calledMethod": "getSettlementCountryRegion",
+   "methodProperties": {
+"AreaRef" : "00000000-0000-0000-0000-000000000000"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+Ref	string[36]	Ідентифікатор (REF) району
+AreasCenter	string[36]	Адміністративний центр області. Одночасно ідентифікатор населеного пункту (REF)
+Description	string[50]	Назва району
+RegionType	string[50]	Назва типу районного об'єкта
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"AreasCenter" : "00000000-0000-0000-0000-000000000000",
+"Description" : "Барський",
+"RegionType" : "район"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

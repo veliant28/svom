@@ -1,42 +1,42 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { deleteGarageVehicle } from "@/features/garage/api/delete-garage-vehicle";
 import { getGarageVehicles } from "@/features/garage/api/get-garage-vehicles";
 import { updateGarageVehicle } from "@/features/garage/api/update-garage-vehicle";
 import type { GarageVehicle } from "@/features/garage/types/garage";
-
-type GarageVehiclesErrorCode = "load_failed" | "action_failed" | null;
+import { useStorefrontFeedback } from "@/shared/hooks/use-storefront-feedback";
 
 export function useGarageVehicles() {
   const { token, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const tPage = useTranslations("garage.page");
+  const tCard = useTranslations("garage.card");
+  const { showApiError, showSuccess } = useStorefrontFeedback();
   const [garageVehicles, setGarageVehicles] = useState<GarageVehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
-  const [error, setError] = useState<GarageVehiclesErrorCode>(null);
 
   const refreshGarageVehicles = useCallback(async () => {
     if (!token || !isAuthenticated) {
       setGarageVehicles([]);
       setIsLoading(false);
-      setError(null);
       return;
     }
 
     setIsLoading(true);
-    setError(null);
     try {
       const data = await getGarageVehicles(token);
       setGarageVehicles(data);
-    } catch {
+    } catch (error) {
       setGarageVehicles([]);
-      setError("load_failed");
+      showApiError(error, tPage("states.error"));
     } finally {
       setIsLoading(false);
     }
-  }, [token, isAuthenticated]);
+  }, [isAuthenticated, showApiError, tPage, token]);
 
   const setPrimaryGarageVehicle = useCallback(
     async (vehicleId: string) => {
@@ -45,17 +45,17 @@ export function useGarageVehicles() {
       }
 
       setIsActionLoading(true);
-      setError(null);
       try {
         await updateGarageVehicle(token, vehicleId, { is_primary: true });
         await refreshGarageVehicles();
-      } catch {
-        setError("action_failed");
+        showSuccess(tCard("messages.makePrimarySuccess"));
+      } catch (error) {
+        showApiError(error, tCard("messages.makePrimaryFailed"));
       } finally {
         setIsActionLoading(false);
       }
     },
-    [token, isAuthenticated, refreshGarageVehicles],
+    [isAuthenticated, refreshGarageVehicles, showApiError, showSuccess, tCard, token],
   );
 
   const removeGarageVehicle = useCallback(
@@ -65,17 +65,17 @@ export function useGarageVehicles() {
       }
 
       setIsActionLoading(true);
-      setError(null);
       try {
         await deleteGarageVehicle(token, vehicleId);
         await refreshGarageVehicles();
-      } catch {
-        setError("action_failed");
+        showSuccess(tCard("messages.deleteSuccess"));
+      } catch (error) {
+        showApiError(error, tCard("messages.deleteFailed"));
       } finally {
         setIsActionLoading(false);
       }
     },
-    [token, isAuthenticated, refreshGarageVehicles],
+    [isAuthenticated, refreshGarageVehicles, showApiError, showSuccess, tCard, token],
   );
 
   useEffect(() => {
@@ -89,7 +89,6 @@ export function useGarageVehicles() {
     garageVehicles,
     isLoading: isLoading || isAuthLoading,
     isActionLoading,
-    error,
     refreshGarageVehicles,
     setPrimaryGarageVehicle,
     removeGarageVehicle,

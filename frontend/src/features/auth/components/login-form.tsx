@@ -6,17 +6,18 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { resolveLoginError } from "@/features/auth/lib/login-error";
+import { useStorefrontFeedback } from "@/shared/hooks/use-storefront-feedback";
 
 export function LoginForm() {
   const t = useTranslations("auth");
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, isAuthenticated } = useAuth();
+  const { showError } = useStorefrontFeedback();
 
   const [email, setEmail] = useState("demo@svom.local");
   const [password, setPassword] = useState("demo12345");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   if (isAuthenticated) {
     return (
@@ -31,7 +32,6 @@ export function LoginForm() {
       className="grid gap-3"
       onSubmit={async (event) => {
         event.preventDefault();
-        setError(null);
         setIsSubmitting(true);
 
         try {
@@ -44,7 +44,7 @@ export function LoginForm() {
           }
         } catch (error: unknown) {
           const resolved = resolveLoginError(error);
-          setError(t(resolved.translationKey, resolved.values));
+          showError(t(resolved.translationKey, resolved.values));
         } finally {
           setIsSubmitting(false);
         }
@@ -83,11 +83,6 @@ export function LoginForm() {
         {isSubmitting ? t("actions.loggingIn") : t("actions.login")}
       </button>
 
-      {error ? (
-        <p className="text-xs" style={{ color: "var(--danger, #b42318)" }}>
-          {error}
-        </p>
-      ) : null}
     </form>
   );
 }

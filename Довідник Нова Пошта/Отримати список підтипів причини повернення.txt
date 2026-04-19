@@ -1,0 +1,57 @@
+Отримати список підтипів причини повернення
+Метод getReturnReasonsSubtypes працює в моделі AdditionalService і дозволяє отримати список підтипів доступних причин повернення.
+
+Текст запиту
+Параметр	Тип	Опис
+ReasonRef*	string[36]	Ідентифікатор (REF) причини зі списку причин повернення
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AdditionalServiceGeneral",
+   "calledMethod": "getReturnReasonsSubtypes",
+   "methodProperties": {
+"ReasonRef" : "00000000-0000-0000-0000-000000000000"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+Ref	string[36]	Ідентифікатор (REF) причини
+Description	string[100]	Опис причини українською мовою
+ReasonRef	string[36]	Ідентифікатор (REF) причини зі списку причин повернення
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"Description" : "Відправник відмінив доставку відправлення",
+"ReasonRef" : "00000000-0000-0000-0000-000000000000"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

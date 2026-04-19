@@ -50,7 +50,9 @@ export function BackofficeTopbar({ onToggleSidebar, user }: { onToggleSidebar: (
           <p className="hidden text-xs lg:block" style={{ color: "var(--muted)" }}>
             {displayName}
           </p>
-          <LocaleSwitcher />
+          <div className="backoffice-topbar-locale-switcher">
+            <LocaleSwitcher />
+          </div>
           <span className="group relative inline-flex">
             <button
               type="button"

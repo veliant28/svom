@@ -1,12 +1,14 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import type { WishlistItem } from "@/features/commerce/types";
 import { addWishlistItem } from "@/features/wishlist/api/add-wishlist-item";
 import { getWishlist } from "@/features/wishlist/api/get-wishlist";
 import { removeWishlistItem } from "@/features/wishlist/api/remove-wishlist-item";
+import { useStorefrontFeedback } from "@/shared/hooks/use-storefront-feedback";
 
 type WishlistContextValue = {
   items: WishlistItem[];
@@ -20,6 +22,8 @@ const WishlistContext = createContext<WishlistContextValue | null>(null);
 
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const { token, isAuthenticated } = useAuth();
+  const t = useTranslations("commerce.wishlist.messages");
+  const { showApiError, showSuccess } = useStorefrontFeedback();
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -33,12 +37,13 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     try {
       const data = await getWishlist(token);
       setItems(Array.isArray(data) ? data : []);
-    } catch {
+    } catch (error) {
       setItems([]);
+      showApiError(error, t("loadFailed"));
     } finally {
       setIsLoading(false);
     }
-  }, [token, isAuthenticated]);
+  }, [isAuthenticated, showApiError, t, token]);
 
   useEffect(() => {
     void refresh();
@@ -56,16 +61,22 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       }
 
       const existingItem = items.find((item) => item.product.id === productId);
-      if (existingItem) {
-        await removeWishlistItem(token, existingItem.id);
-        setItems((prev) => prev.filter((item) => item.id !== existingItem.id));
-        return;
-      }
+      try {
+        if (existingItem) {
+          await removeWishlistItem(token, existingItem.id);
+          setItems((prev) => prev.filter((item) => item.id !== existingItem.id));
+          showSuccess(t("removed"));
+          return;
+        }
 
-      const created = await addWishlistItem(token, productId);
-      setItems((prev) => [created, ...prev.filter((item) => item.product.id !== productId)]);
+        const created = await addWishlistItem(token, productId);
+        setItems((prev) => [created, ...prev.filter((item) => item.product.id !== productId)]);
+        showSuccess(t("added"));
+      } catch (error) {
+        showApiError(error, t("actionFailed"));
+      }
     },
-    [items, token, isAuthenticated],
+    [isAuthenticated, items, showApiError, showSuccess, t, token],
   );
 
   const value = useMemo(

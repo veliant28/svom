@@ -65,6 +65,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     estimated_delivery_days = serializers.SerializerMethodField()
     procurement_source_summary = serializers.SerializerMethodField()
     is_sellable = serializers.SerializerMethodField()
+    total_stock_qty = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -88,6 +89,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "estimated_delivery_days",
             "procurement_source_summary",
             "is_sellable",
+            "total_stock_qty",
             "is_featured",
             "is_new",
             "is_bestseller",
@@ -115,3 +117,12 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_is_sellable(self, obj: Product) -> bool:
         return self._snapshot(obj).is_sellable
+
+    def get_total_stock_qty(self, obj: Product) -> int:
+        offers = obj.supplier_offers.all()
+        total = 0
+        for offer in offers:
+            if not offer.is_available:
+                continue
+            total += max(int(offer.stock_qty or 0), 0)
+        return total

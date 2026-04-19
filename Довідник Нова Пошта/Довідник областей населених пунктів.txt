@@ -1,0 +1,59 @@
+Довідник областей населених пунктів
+Метод getSettlementAreas працює в моделі AdressGeneral. Метод надає довідник областей населених пунктів, відповідний інформації, яку повертає метод getSettlements.
+
+Текст запиту
+Параметр	Тип	Опис
+Ref	string[36]	Ідентифікатор (REF) області
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AddressGeneral",
+   "calledMethod": "getSettlementAreas",
+   "methodProperties": {
+"Ref" : ""
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+Description	string[50]	Назва області
+Ref	string[36]	Ідентифікатор (REF) області
+AreasCenter	string[36]	Адміністративний центр області. Одночасно  ідентифікатор населеного пункту (REF)
+RegionType	string[50]	Назва типу обласного об'єкта
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"Description" : "Вінницька",
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"AreasCenter" : "00000000-0000-0000-0000-000000000000",
+"RegionType" : "область"
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

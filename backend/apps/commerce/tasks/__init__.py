@@ -1,0 +1,3 @@
+from .sync_nova_poshta_waybill_statuses import sync_nova_poshta_waybill_statuses_task
+
+__all__ = ["sync_nova_poshta_waybill_statuses_task"]

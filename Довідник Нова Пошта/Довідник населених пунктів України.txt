@@ -1,0 +1,140 @@
+Довідник населених пунктів України
+Метод getSettlements працює в моделі AddressGeneral. Цей метод надає можливість завантажити довідник міст України, до яких здійснюється доставка вантажів компанією «Нова пошта».
+
+Відповідь містить область та район для кожного населеного пункту. Метод повертає не більше 150 записів на сторінку. Для перегляду більш ніж 150 записів необхідно використовувати параметр Page разом із параметром Limit.
+
+Також підтримується пошук за рядком. Для нього потрібно зазначити параметр FindByString.
+
+Важливо! Пошук можливий лише українською мовою.
+
+Параметр Warehouse із значенням «1» або «0» дозволить відобразити лише ті населені пункти, в яких є відділення компанії «Нова пошта».
+
+Приклад:
+
+"methodProperties": {
+
+"FindByString": "Бровари",
+
+"Page": "1",
+
+"Warehouse": "1"
+
+}
+
+Необхідно зберігати копію довідника на стороні клієнта та підтримувати його в актуальному стані. Рекомендовано проводити оновлення довідників раз на місяць. 
+
+Текст запиту
+Параметр	Тип	Опис
+AreaRef	string[36]	Ідентифікатор (REF) області
+Ref	string[36]	Ідентифікатор (REF) населеного пункту
+RegionRef	string[36]	Фільтр за ідентифікатором (REF) району
+Page	string[36]	Номер сторінки
+Warehouse	string[36]	Фільтр наявності відділення
+FindByString	string[36]	Пошук за рядками, тільки українською мовою
+Limit	string[36]	Кількість відповідей
+* Позначення обов’язкового параметру
+APPLICATION/JSON
+TEXT/XML
+                        
+
+ 
+{
+   "apiKey": "[ВАШ КЛЮЧ]",
+   "modelName": "AddressGeneral",
+   "calledMethod": "getSettlements",
+   "methodProperties": {
+"AreaRef" : "00000000-0000-0000-0000-000000000000",
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"RegionRef" : "00000000-0000-0000-0000-000000000000",
+"Page" : "1",
+"Warehouse" : "1",
+"FindByString" : "Київ",
+"Limit" : "20"
+   }
+}
+
+                                
+                                  
+
+
+
+
+
+                                
+Відповідь 200
+Завжди повертає код 200 навіть при логічних помилках.
+
+Тіло відповіді на запит
+Параметр	Тип	Опис
+Ref	string[36]	Ідентифікатор (REF) населеного пункту
+SettlementType	string[36]	Тип населеного пункту
+Latitude	string[36]	Довгота
+Longitude	string[36]	Широта
+Description	string[50]	Адреса українською мовою
+DescriptionRu	string[50]	Адреса російською мовою
+SettlementTypeDescription	string[36]	Тип населеного пункту українською мовою
+SettlementTypeDescriptionRu	string[36]	Тип населеного пункту російською мовою
+Region	string[36]	Код населеного пункту
+RegionsDescription	string[50]	Область українською мовою
+RegionsDescriptionRu	string[50]	Область російською мовою
+Area	string[36]	Позначення області
+AreaDescription	string[50]	Опис області українською мовою
+AreaDescriptionRu	string[50]	Опис області російською мовою
+Index1	string[10]	Індекс
+Index2	string[10]	Індекс
+IndexCOATSU1	string[36]	Діапазон індексів КОАТУУ
+Delivery1	string[36]	Наявність доставки відправлення в днях тижня
+Delivery2	string[36]	Наявність доставки відправлення в днях тижня
+Delivery3	string[36]	Наявність доставки відправлення в днях тижня
+Delivery4	string[36]	Наявність доставки відправлення в днях тижня
+Delivery5	string[36]	Наявність доставки відправлення в днях тижня
+Delivery6	string[36]	Наявність доставки відправлення в днях тижня
+Delivery7	string[36]	Наявність доставки відправлення в днях тижня
+Warehouse	string[36]	Наявність відділень
+Conglomerates	array	Конгломерати
+APPLICATION/JSON
+TEXT/XML
+                                  
+
+
+{
+    "success": true,
+    "data": [{
+"Ref" : "00000000-0000-0000-0000-000000000000",
+"SettlementType" : "00000000-0000-0000-0000-000000000000",
+"Latitude" : "50.450418000000000",
+"Longitude" : "30.523541000000000",
+"Description" : "Київ",
+"DescriptionRu" : "Киев",
+"SettlementTypeDescription" : "місто",
+"SettlementTypeDescriptionRu" : "город",
+"Region" : "",
+"RegionsDescription" : "Київська",
+"RegionsDescriptionRu" : "Киевская",
+"Area" : "00000000-0000-0000-0000-000000000000",
+"AreaDescription" : "Київська область",
+"AreaDescriptionRu" : "Киевская область",
+"Index1" : "001001",
+"Index2" : "004655",
+"IndexCOATSU1" : "3200000000",
+"Delivery1" : "1",
+"Delivery2" : "1",
+"Delivery3" : "1",
+"Delivery4" : "1",
+"Delivery5" : "1",
+"Delivery6" : "1",
+"Delivery7" : "0",
+"Warehouse" : "1",
+"Conglomerates" : [
+"00000000-0000-0000-0000-000000000000",
+"00000000-0000-0000-0000-000000000000"
+]
+}]
+    "errors": [],
+    "warnings": [],
+    "info": [],
+    "messageCodes": [],
+    "errorCodes": [],
+    "warningCodes": [],
+    "infoCodes": []
+}

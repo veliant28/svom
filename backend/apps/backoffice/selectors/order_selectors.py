@@ -2,8 +2,15 @@ from __future__ import annotations
 
 from django.db.models import Prefetch, Q, QuerySet
 
-from apps.commerce.models import Order, OrderItem
+from apps.commerce.models import Order, OrderItem, OrderNovaPoshtaWaybill
 from apps.pricing.models import SupplierOffer
+
+
+WAYBILL_PREFETCH = Prefetch(
+    "nova_poshta_waybills",
+    queryset=OrderNovaPoshtaWaybill.objects.select_related("sender_profile").filter(is_deleted=False).order_by("-created_at"),
+    to_attr="backoffice_active_waybills",
+)
 
 
 ITEM_PREFETCH = Prefetch(
@@ -23,7 +30,7 @@ ITEM_PREFETCH = Prefetch(
 def get_operational_orders_queryset() -> QuerySet[Order]:
     return (
         Order.objects.select_related("user")
-        .prefetch_related(ITEM_PREFETCH)
+         .prefetch_related(ITEM_PREFETCH, WAYBILL_PREFETCH)
         .order_by("-placed_at", "-created_at")
     )
 

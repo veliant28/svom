@@ -2,11 +2,16 @@
 
 import { useTranslations } from "next-intl";
 
-import { useCatalogTaxonomy } from "@/features/catalog/hooks/use-catalog-taxonomy";
+import type { BrandSummary, CategorySummary } from "@/features/catalog/types";
 
-export function CatalogTaxonomyPanel() {
+export function CatalogTaxonomyPanel({
+  brands,
+  categories,
+}: {
+  brands: BrandSummary[];
+  categories: CategorySummary[];
+}) {
   const t = useTranslations("catalog");
-  const { brands, categories } = useCatalogTaxonomy();
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-3">
