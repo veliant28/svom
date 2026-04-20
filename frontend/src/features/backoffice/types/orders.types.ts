@@ -22,6 +22,53 @@ export type BackofficeOrderOperationalItem = {
   snapshot_sell_price: string;
 };
 
+export type BackofficeOrderPayment = {
+  provider: string;
+  method: string;
+  status: string;
+  amount: string;
+  currency: string;
+  invoice_id: string;
+  reference: string;
+  page_url: string;
+  failure_reason: string;
+  provider_created_at: string | null;
+  provider_modified_at: string | null;
+  last_webhook_received_at: string | null;
+  last_sync_at: string | null;
+};
+
+export type BackofficeMonobankPaymentAction = "refresh" | "cancel" | "remove" | "finalize" | "fiscal_checks";
+
+export type BackofficeMonobankFiscalCheck = {
+  id: string;
+  status: string;
+  type: string;
+  statusDescription: string;
+  taxUrl: string;
+  file: string;
+  fiscalizationSource: string;
+};
+
+export type BackofficeMonobankPaymentActionResult = {
+  action: BackofficeMonobankPaymentAction;
+  payment: BackofficeOrderPayment;
+  provider_result: Record<string, unknown>;
+  fiscal_checks: BackofficeMonobankFiscalCheck[];
+};
+
+export type BackofficeOrderDeliveryWaybillSeed = {
+  delivery_type: "warehouse" | "postomat" | "address";
+  recipient_city_ref: string;
+  recipient_city_label: string;
+  recipient_address_ref: string;
+  recipient_address_label: string;
+  recipient_street_ref: string;
+  recipient_street_label: string;
+  recipient_house: string;
+  recipient_apartment: string;
+};
+
 export type BackofficeOrderOperational = {
   id: string;
   order_number: string;
@@ -32,7 +79,13 @@ export type BackofficeOrderOperational = {
   contact_phone: string;
   contact_email: string;
   delivery_method: string;
+  delivery_address: string;
+  delivery_snapshot: Record<string, unknown>;
+  delivery_city_label: string;
+  delivery_destination_label: string;
+  delivery_waybill_seed: BackofficeOrderDeliveryWaybillSeed;
   payment_method: string;
+  payment: BackofficeOrderPayment;
   subtotal: string;
   delivery_fee: string;
   total: string;

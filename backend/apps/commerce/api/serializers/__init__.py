@@ -7,6 +7,7 @@ from .checkout_serializer import (
     CheckoutSubmitSerializer,
 )
 from .order_serializer import OrderSerializer
+from .order_payment_serializer import OrderPaymentSerializer
 from .wishlist_serializer import WishlistAddSerializer, WishlistItemSerializer
 
 __all__ = [
@@ -21,4 +22,5 @@ __all__ = [
     "CheckoutNovaPoshtaWarehouseLookupQuerySerializer",
     "CheckoutSubmitSerializer",
     "OrderSerializer",
+    "OrderPaymentSerializer",
 ]

@@ -57,7 +57,7 @@
     },
     "checkout": {
       "title": "Оформление",
-      "subtitle": "Базовый flow: контакты, доставка, платежный placeholder.",
+      "subtitle": "Контакты, доставка и оплата для оформления заказа.",
       "authRequired": "Для checkout нужна авторизация.",
       "goToLogin": "Перейти ко входу",
       "emptyCart": "Ваша корзина пуста.",
@@ -103,8 +103,20 @@
         "noResults": "Ничего не найдено"
       },
       "payment": {
-        "cardPlaceholder": "Оплата картой (placeholder)",
-        "cashOnDelivery": "Наложенный платеж"
+        "monobank": "Monobank",
+        "novapay": "NovaPay",
+        "cashOnDelivery": "Наложенный платеж",
+        "monobankHint": "Онлайн-оплата через официальный виджет или страницу Monobank.",
+        "novapayHint": "Скоро будет доступна оплата через NovaPay.",
+        "cashOnDeliveryHint": "Оплата при получении заказа.",
+        "openMonobankPage": "Открыть страницу оплаты Monobank",
+        "payWithMonobank": "Оплатить через Monobank",
+        "widgetLoading": "Загрузка виджета Monobank...",
+        "widgetFailedFallback": "Виджет Monobank недоступен. Используйте страницу оплаты.",
+        "novapayComingSoon": "NovaPay скоро будет доступен.",
+        "liqpay": "LiqPay",
+        "liqpayHint": "Оплата через LiqPay скоро будет доступна.",
+        "liqpayComingSoon": "LiqPay скоро будет доступен."
       },
       "actions": {
         "submit": "Оформить заказ",
@@ -135,7 +147,10 @@
       },
       "labels": {
         "items": "Позиций: {count}",
-        "client": "Клиент: {fullName}"
+        "client": "Клиент: {fullName}",
+        "delivery": "Доставка: {city} · {destination}",
+        "deliveryCity": "Город доставки: {value}",
+        "deliveryDestination": "Отделение / почтомат / адрес: {value}"
       },
       "table": {
         "sku": "Артикул",

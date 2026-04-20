@@ -71,6 +71,14 @@ from .order_actions_view import (
     ReadyToShipOrderActionAPIView,
     ReserveOrderItemsActionAPIView,
 )
+from .payment_views import (
+    BackofficeMonobankConnectionTestAPIView,
+    BackofficeMonobankCurrencyAPIView,
+    BackofficeMonobankSettingsAPIView,
+    BackofficeNovaPaySettingsAPIView,
+    BackofficeOrderPaymentMonobankActionAPIView,
+    BackofficeOrderPaymentRefreshAPIView,
+)
 from .orders_detail_view import OrderOperationalDetailAPIView
 from .orders_list_view import OrderOperationalListAPIView
 from .pricing_actions_views import ReindexProductsActionAPIView
@@ -180,6 +188,12 @@ __all__ = [
     "ReserveOrderItemsActionAPIView",
     "OrderItemSupplierRecommendationAPIView",
     "OrderItemSupplierOverrideAPIView",
+    "BackofficeMonobankSettingsAPIView",
+    "BackofficeMonobankConnectionTestAPIView",
+    "BackofficeMonobankCurrencyAPIView",
+    "BackofficeNovaPaySettingsAPIView",
+    "BackofficeOrderPaymentMonobankActionAPIView",
+    "BackofficeOrderPaymentRefreshAPIView",
     "ReadyToShipOrderActionAPIView",
     "CancelOrderActionAPIView",
     "DeleteOrderActionAPIView",

@@ -27,7 +27,7 @@ export function MatchingReviewPage({ reviewId }: { reviewId: string }) {
   const review = useBackofficeQuery(reviewQueryFn, [reviewId]);
   const candidates = useBackofficeQuery(candidatesQueryFn, [reviewId]);
 
-  const candidateRows = candidates.data?.results ?? [];
+  const candidateRows = useMemo(() => candidates.data?.results ?? [], [candidates.data?.results]);
 
   const preselectedProduct = useMemo(() => {
     if (selectedProductId) {

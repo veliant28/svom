@@ -8,6 +8,7 @@ export type CheckoutSubmitPayload = {
   contact_email: string;
   delivery_method: Order["delivery_method"];
   delivery_address?: string;
+  delivery_snapshot?: Record<string, unknown>;
   payment_method: Order["payment_method"];
   customer_comment?: string;
 };

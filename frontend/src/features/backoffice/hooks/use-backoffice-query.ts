@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { useAuth } from "@/features/auth/hooks/use-auth";
@@ -34,13 +34,21 @@ export function useBackofficeQuery<T>(queryFn: (token: string) => Promise<T>, de
     }
   }, [token, queryFn, showApiError, t]);
 
+  const depsSignature = useMemo(() => {
+    try {
+      return JSON.stringify(deps);
+    } catch {
+      return String(deps.length);
+    }
+  }, [deps]);
+
   useEffect(() => {
     if (isAuthLoading) {
       return;
     }
 
     void execute();
-  }, [execute, isAuthLoading, ...deps]);
+  }, [depsSignature, execute, isAuthLoading]);
 
   return {
     token,

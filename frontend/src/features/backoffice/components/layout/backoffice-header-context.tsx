@@ -100,7 +100,7 @@ export function useBackofficeHeader(config: BackofficeHeaderConfig) {
 
   useEffect(() => {
     setConfig(config);
-  }, [config.actions, config.actionsBeforeLogout, config.subtitle, config.switcher, config.title, setConfig]);
+  }, [config, setConfig]);
 
   useEffect(
     () => () => {

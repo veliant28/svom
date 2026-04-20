@@ -11,8 +11,10 @@ import {
   markBackofficeOrderAwaitingProcurement,
   markBackofficeOrderReadyToShip,
   overrideBackofficeOrderItemSupplier,
+  refreshBackofficeOrderPayment,
   reserveBackofficeOrder,
 } from "@/features/backoffice/api/backoffice-api";
+import { OrderPaymentSection } from "@/features/backoffice/components/orders/payment/order-payment-section";
 import { BackofficeTable } from "@/features/backoffice/components/table/backoffice-table";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
@@ -25,6 +27,7 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
   const t = useTranslations("backoffice.common");
   const [itemRecommendations, setItemRecommendations] = useState<Record<string, BackofficeProcurementRecommendation>>({});
   const [cancelReason, setCancelReason] = useState("supplier_shortage");
+  const [paymentRefreshing, setPaymentRefreshing] = useState(false);
 
   const queryFn = useCallback((token: string) => getBackofficeOrderDetail(token, orderId), [orderId]);
   const { token, data, isLoading, error, refetch } = useBackofficeQuery<BackofficeOrderOperational>(queryFn, [orderId]);
@@ -97,6 +100,19 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
     }
     await overrideBackofficeOrderItemSupplier(token, itemId, { supplier_offer_id: offerId });
     await refetch();
+  }
+
+  async function refreshPaymentStatus() {
+    if (!token || !data || paymentRefreshing) {
+      return;
+    }
+    setPaymentRefreshing(true);
+    try {
+      await refreshBackofficeOrderPayment(token, data.id);
+      await refetch();
+    } finally {
+      setPaymentRefreshing(false);
+    }
   }
 
   return (
@@ -213,6 +229,15 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
                 </div>
               </div>
             </div>
+
+            <OrderPaymentSection
+              payment={data.payment}
+              t={t}
+              onRefresh={() => {
+                void refreshPaymentStatus();
+              }}
+              isRefreshing={paymentRefreshing}
+            />
 
             <BackofficeTable
               emptyLabel={t("orderDetail.states.emptyItems")}

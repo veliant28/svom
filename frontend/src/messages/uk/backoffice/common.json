@@ -654,7 +654,15 @@
           "senderSaveFailed": "Не вдалося зберегти профіль відправника.",
           "senderValidated": "Профіль відправника успішно перевірено.",
           "senderValidateFailed": "Не вдалося перевірити профіль відправника.",
-          "senderDeleteFailed": "Не вдалося видалити профіль відправника."
+          "senderDeleteFailed": "Не вдалося видалити профіль відправника.",
+          "paymentRefreshed": "Статус оплати оновлено.",
+          "paymentRefreshFailed": "Не вдалося оновити статус оплати.",
+          "paymentCancelled": "Оплату Monobank скасовано.",
+          "paymentFinalized": "Холд Monobank фіналізовано.",
+          "paymentInvoiceRemoved": "Інвойс Monobank інвалідовано.",
+          "paymentFiscalChecksLoaded": "Фіскальні чеки завантажено: {count}.",
+          "monobankActionFailed": "Не вдалося виконати дію Monobank.",
+          "monobankActionNotAvailable": "Дія доступна лише для оплати Monobank."
         },
         "statusDescriptions": {
           "new": "Нове замовлення. Можна підтвердити та передати в обробку.",
@@ -674,13 +682,26 @@
             "titleWithNumber": "Замовлення {number}",
             "summary": {
               "customer": "Клієнт",
+              "fullName": "ПІБ",
+              "phone": "Телефон",
               "meta": "Службова інформація",
               "created": "Дата створення: {value}",
               "items": "Позицій: {count}",
               "delivery": "Доставка: {value}",
+              "deliveryMethod": "Спосіб доставки",
+              "paymentMethod": "Спосіб оплати",
+              "deliveryCity": "Місто доставки",
+              "deliveryDestination": "Відділення / поштомат / адреса",
               "total": "Підсумок",
               "subtotal": "Проміжний підсумок: {value} {currency}",
-              "deliveryFee": "Доставка: {value} {currency}"
+              "deliveryFee": "Доставка: {value} {currency}",
+              "values": {
+                "deliveryMethods": {
+                  "pickup": "Самовивіз",
+                  "courier": "Кур'єр",
+                  "nova_poshta": "Нова Пошта"
+                }
+              }
             },
             "items": {
               "title": "Склад замовлення",
@@ -817,7 +838,12 @@
               "additionalServices": "Додаткові послуги",
               "addPackaging": "Додати пакування",
               "packagingAdded": "Пакування додано",
+              "addSeat": "Додати місце",
+              "removeSeat": "Прибрати місце",
+              "seatList": "Список місць",
+              "seatCardTitle": "Місце {index}",
               "backFromPackaging": "Назад",
+              "backFromSeatList": "Назад",
               "backFromAdditionalServices": "Назад"
             },
             "payment": {
@@ -945,6 +971,65 @@
               }
             }
           }
+        },
+        "payment": {
+          "title": "Оплата",
+          "provider": "Провайдер",
+          "method": "Метод",
+          "status": "Статус",
+          "amount": "Сума",
+          "invoiceId": "Invoice ID",
+          "reference": "Reference",
+          "failureReason": "Причина помилки",
+          "pageUrl": "Page URL",
+          "open": "Відкрити",
+          "openPaymentPage": "Відкрити сторінку оплати",
+          "lastWebhookAt": "Останній webhook",
+          "lastSyncAt": "Остання синхронізація",
+          "refreshStatus": "Оновити статус оплати",
+          "monobank": {
+            "controlsTitle": "Дії Monobank",
+            "amountMinor": "Сума (мін. одиниці, опційно)",
+            "amountMinorHint": "наприклад 4200",
+            "amountMinorInvalid": "Вкажіть ціле число більше нуля.",
+            "actions": {
+              "finalize": "Фіналізувати холд",
+              "cancel": "Скасувати оплату",
+              "remove": "Інвалідовати інвойс",
+              "fiscalChecks": "Фіскальні чеки"
+            },
+            "tooltips": {
+              "finalize": "Списати холд і завершити оплату",
+              "cancel": "Скасувати оплату повністю або на суму з поля вище",
+              "remove": "Вимкнути посилання на оплату, щоб за цим інвойсом більше не можна було оплатити",
+              "fiscalChecks": "Показати фіскальні чеки за цим інвойсом"
+            },
+            "fiscalChecksTitle": "Фіскальні чеки",
+            "fiscalType": "Тип чека",
+            "fiscalSource": "Джерело фіскалізації",
+            "taxUrl": "Відкрити tax URL"
+          },
+          "values": {
+            "providers": {
+              "cash_on_delivery": "Післяплата",
+              "monobank": "Monobank"
+            },
+            "methods": {
+              "cash_on_delivery": "Післяплата",
+              "monobank": "Monobank",
+              "card_placeholder": "Оплата карткою"
+            },
+            "statuses": {
+              "pending": "Очікує",
+              "processing": "В обробці",
+              "created": "Створено",
+              "success": "Успішно",
+              "paid": "Оплачено",
+              "failed": "Помилка",
+              "expired": "Термін дії минув",
+              "cancelled": "Скасовано"
+            }
+          }
         }
       },
       "orderDetail": {
@@ -1039,6 +1124,63 @@
         },
         "states": {
           "empty": "Рекомендації із закупівлі відсутні."
+        }
+      },
+      "payments": {
+        "title": "Оплата",
+        "subtitle": "Операційні налаштування Monobank, перевірка з’єднання та курси валют.",
+        "providers": {
+          "mono": "Mono",
+          "nova": "Nova",
+          "novaPlaceholder": "Інтеграція Nova Pay у розробці."
+        },
+        "monobank": {
+          "title": "Налаштування Monobank",
+          "helper": "Токен мерчанта та дані підпису віджета зберігаються на backend.",
+          "enabled": "Увімкнено",
+          "token": "X-Token / merchant token",
+          "tokenMasked": "Збережений токен",
+          "widgetKeyId": "Widget keyId",
+          "widgetPrivateKey": "Widget private key (PEM)",
+          "widgetPrivateKeyMasked": "Збережений приватний ключ",
+          "webhookUrl": "Webhook URL",
+          "redirectUrl": "Redirect URL",
+          "testConnection": "Перевірити з’єднання",
+          "testing": "Перевіряємо...",
+          "save": "Зберегти налаштування",
+          "saving": "Зберігаємо...",
+          "status": "Статус",
+          "lastConnection": "Остання перевірка",
+          "lastConnectionState": "Стан з’єднання",
+          "lastConnectionMessage": "Повідомлення перевірки",
+          "currencyRates": "Курси валют Monobank",
+          "refreshRates": "Оновити курси",
+          "rateLabels": {
+            "buy": "купівля",
+            "sell": "продаж",
+            "cross": "крос-курс"
+          }
+        },
+        "novapay": {
+          "title": "Налаштування Nova Pay",
+          "helper": "Merchant ID та API токен (X-Sign) зберігаються на backend у БД.",
+          "enabled": "Увімкнено",
+          "merchantId": "Merchant ID",
+          "apiToken": "API token (X-Sign)",
+          "apiTokenMasked": "Збережений токен",
+          "save": "Зберегти налаштування",
+          "saving": "Зберігаємо..."
+        },
+        "messages": {
+          "loadSettingsFailed": "Не вдалося завантажити налаштування Monobank.",
+          "saveSettingsFailed": "Не вдалося зберегти налаштування Monobank.",
+          "settingsSaved": "Налаштування Monobank збережено.",
+          "connectionFailed": "Не вдалося перевірити з’єднання Monobank.",
+          "connectionOk": "З’єднання Monobank успішне.",
+          "currencyFailed": "Не вдалося завантажити курси валют Monobank.",
+          "loadNovaSettingsFailed": "Не вдалося завантажити налаштування Nova Pay.",
+          "saveNovaSettingsFailed": "Не вдалося зберегти налаштування Nova Pay.",
+          "novaSettingsSaved": "Налаштування Nova Pay збережено."
         }
       }
     }

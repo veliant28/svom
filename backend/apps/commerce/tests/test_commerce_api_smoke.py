@@ -95,6 +95,11 @@ class CommerceAPISmokeTests(APITestCase):
         orders_response = self.client.get(reverse("commerce_api:order-list"), **self.auth)
         self.assertEqual(orders_response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(orders_response.data), 1)
+        order_id = orders_response.data[0]["id"]
+
+        order_detail_response = self.client.get(reverse("commerce_api:order-detail", kwargs={"pk": order_id}), **self.auth)
+        self.assertEqual(order_detail_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(order_detail_response.data["id"], order_id)
 
         self.assertEqual(Cart.objects.filter(user=self.user).count(), 1)
         self.assertEqual(CartItem.objects.filter(cart__user=self.user).count(), 0)

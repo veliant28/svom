@@ -654,7 +654,15 @@
           "senderSaveFailed": "Unable to save sender profile.",
           "senderValidated": "Sender profile validated.",
           "senderValidateFailed": "Unable to validate sender profile.",
-          "senderDeleteFailed": "Unable to delete sender profile."
+          "senderDeleteFailed": "Unable to delete sender profile.",
+          "paymentRefreshed": "Payment status refreshed.",
+          "paymentRefreshFailed": "Failed to refresh payment status.",
+          "paymentCancelled": "Monobank payment cancelled.",
+          "paymentFinalized": "Monobank hold finalized.",
+          "paymentInvoiceRemoved": "Monobank invoice invalidated.",
+          "paymentFiscalChecksLoaded": "Fiscal checks loaded: {count}.",
+          "monobankActionFailed": "Unable to run Monobank action.",
+          "monobankActionNotAvailable": "This action is available only for Monobank payments."
         },
         "statusDescriptions": {
           "new": "New order. Confirm it to continue processing.",
@@ -674,13 +682,26 @@
             "titleWithNumber": "Order {number}",
             "summary": {
               "customer": "Customer",
+              "fullName": "Full name",
+              "phone": "Phone",
               "meta": "Meta",
               "created": "Created: {value}",
               "items": "Items: {count}",
               "delivery": "Delivery: {value}",
+              "deliveryMethod": "Delivery method",
+              "paymentMethod": "Payment method",
+              "deliveryCity": "Delivery city",
+              "deliveryDestination": "Warehouse / postomat / address",
               "total": "Total",
               "subtotal": "Subtotal: {value} {currency}",
-              "deliveryFee": "Delivery fee: {value} {currency}"
+              "deliveryFee": "Delivery fee: {value} {currency}",
+              "values": {
+                "deliveryMethods": {
+                  "pickup": "Pickup",
+                  "courier": "Courier",
+                  "nova_poshta": "Nova Poshta"
+                }
+              }
             },
             "items": {
               "title": "Order items",
@@ -817,7 +838,12 @@
               "additionalServices": "Additional services",
               "addPackaging": "Add packaging",
               "packagingAdded": "Packaging added",
+              "addSeat": "Add place",
+              "removeSeat": "Remove place",
+              "seatList": "Places list",
+              "seatCardTitle": "Place {index}",
               "backFromPackaging": "Back",
+              "backFromSeatList": "Back",
               "backFromAdditionalServices": "Back"
             },
             "payment": {
@@ -945,6 +971,65 @@
               }
             }
           }
+        },
+        "payment": {
+          "title": "Payment",
+          "provider": "Provider",
+          "method": "Method",
+          "status": "Status",
+          "amount": "Amount",
+          "invoiceId": "Invoice ID",
+          "reference": "Reference",
+          "failureReason": "Failure reason",
+          "pageUrl": "Page URL",
+          "open": "Open",
+          "openPaymentPage": "Open payment page",
+          "lastWebhookAt": "Last webhook",
+          "lastSyncAt": "Last sync",
+          "refreshStatus": "Refresh payment status",
+          "monobank": {
+            "controlsTitle": "Monobank actions",
+            "amountMinor": "Amount (minor units, optional)",
+            "amountMinorHint": "e.g. 4200",
+            "amountMinorInvalid": "Enter an integer value greater than zero.",
+            "actions": {
+              "finalize": "Finalize hold",
+              "cancel": "Cancel payment",
+              "remove": "Invalidate invoice",
+              "fiscalChecks": "Fiscal checks"
+            },
+            "tooltips": {
+              "finalize": "Capture the hold and complete the payment",
+              "cancel": "Cancel the payment fully or for the amount from the field above",
+              "remove": "Disable the payment link so this invoice can no longer be paid",
+              "fiscalChecks": "Show fiscal checks for this invoice"
+            },
+            "fiscalChecksTitle": "Fiscal checks",
+            "fiscalType": "Check type",
+            "fiscalSource": "Fiscalization source",
+            "taxUrl": "Open tax URL"
+          },
+          "values": {
+            "providers": {
+              "cash_on_delivery": "Cash on delivery",
+              "monobank": "Monobank"
+            },
+            "methods": {
+              "cash_on_delivery": "Cash on delivery",
+              "monobank": "Monobank",
+              "card_placeholder": "Card payment"
+            },
+            "statuses": {
+              "pending": "Pending",
+              "processing": "Processing",
+              "created": "Created",
+              "success": "Successful",
+              "paid": "Paid",
+              "failed": "Failed",
+              "expired": "Expired",
+              "cancelled": "Cancelled"
+            }
+          }
         }
       },
       "orderDetail": {
@@ -1039,6 +1124,63 @@
         },
         "states": {
           "empty": "No procurement suggestions."
+        }
+      },
+      "payments": {
+        "title": "Payments",
+        "subtitle": "Monobank operational settings, health checks and currency rates.",
+        "providers": {
+          "mono": "Mono",
+          "nova": "Nova",
+          "novaPlaceholder": "Nova Pay integration is in development."
+        },
+        "monobank": {
+          "title": "Monobank settings",
+          "helper": "Store merchant token and widget signing data on backend.",
+          "enabled": "Enabled",
+          "token": "X-Token / merchant token",
+          "tokenMasked": "Stored token",
+          "widgetKeyId": "Widget keyId",
+          "widgetPrivateKey": "Widget private key (PEM)",
+          "widgetPrivateKeyMasked": "Stored private key",
+          "webhookUrl": "Webhook URL",
+          "redirectUrl": "Redirect URL",
+          "testConnection": "Test connection",
+          "testing": "Testing...",
+          "save": "Save settings",
+          "saving": "Saving...",
+          "status": "Status",
+          "lastConnection": "Last connection check",
+          "lastConnectionState": "Connection state",
+          "lastConnectionMessage": "Connection message",
+          "currencyRates": "Monobank currency rates",
+          "refreshRates": "Refresh rates",
+          "rateLabels": {
+            "buy": "buy",
+            "sell": "sell",
+            "cross": "cross"
+          }
+        },
+        "novapay": {
+          "title": "Nova Pay settings",
+          "helper": "Merchant ID and API token (X-Sign) are stored on backend in DB.",
+          "enabled": "Enabled",
+          "merchantId": "Merchant ID",
+          "apiToken": "API token (X-Sign)",
+          "apiTokenMasked": "Stored token",
+          "save": "Save settings",
+          "saving": "Saving..."
+        },
+        "messages": {
+          "loadSettingsFailed": "Failed to load Monobank settings.",
+          "saveSettingsFailed": "Failed to save Monobank settings.",
+          "settingsSaved": "Monobank settings saved.",
+          "connectionFailed": "Failed to test Monobank connection.",
+          "connectionOk": "Monobank connection successful.",
+          "currencyFailed": "Failed to load Monobank currency rates.",
+          "loadNovaSettingsFailed": "Failed to load Nova Pay settings.",
+          "saveNovaSettingsFailed": "Failed to save Nova Pay settings.",
+          "novaSettingsSaved": "Nova Pay settings saved."
         }
       }
     }

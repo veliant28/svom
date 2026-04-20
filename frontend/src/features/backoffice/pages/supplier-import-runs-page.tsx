@@ -40,7 +40,7 @@ export function SupplierImportRunsPage() {
 
   const queryFn = useCallback((token: string) => getBackofficeSupplierRuns(token, activeCode), [activeCode]);
   const { token, data, isLoading, error, refetch } = useBackofficeQuery<{ count: number; results: BackofficeImportRun[] }>(queryFn, [activeCode]);
-  const baseRuns = data?.results ?? [];
+  const baseRuns = useMemo(() => data?.results ?? [], [data?.results]);
 
   const runs = useMemo(() => {
     const query = q.trim().toLowerCase();

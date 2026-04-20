@@ -40,6 +40,16 @@ from .order_operations_serializer import (
     OrderSupplierPayloadSerializer,
     OrderSupplierProductSerializer,
 )
+from .payment_serializer import (
+    BackofficeMonobankFiscalCheckSerializer,
+    BackofficeMonobankPaymentActionResponseSerializer,
+    BackofficeMonobankPaymentActionSerializer,
+    BackofficeOrderPaymentSerializer,
+    MonobankConnectionCheckSerializer,
+    MonobankCurrencyResponseSerializer,
+    MonobankSettingsSerializer,
+    NovaPaySettingsSerializer,
+)
 from .product_price_operational_serializer import ProductPriceOperationalSerializer
 from .procurement_suggestion_serializer import (
     ProcurementItemRecommendationSerializer,
@@ -108,6 +118,14 @@ __all__ = [
     "OrderSupplierPayloadSerializer",
     "OrderSupplierCreateSerializer",
     "OrderSupplierCancelSerializer",
+    "MonobankSettingsSerializer",
+    "MonobankConnectionCheckSerializer",
+    "MonobankCurrencyResponseSerializer",
+    "BackofficeMonobankPaymentActionSerializer",
+    "BackofficeMonobankFiscalCheckSerializer",
+    "BackofficeMonobankPaymentActionResponseSerializer",
+    "BackofficeOrderPaymentSerializer",
+    "NovaPaySettingsSerializer",
     "ProcurementOfferBriefSerializer",
     "ProcurementItemRecommendationSerializer",
     "ProcurementSupplierGroupSerializer",

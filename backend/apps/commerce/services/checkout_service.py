@@ -12,6 +12,9 @@ from django.utils.translation import gettext_lazy as _
 from apps.commerce.models import Order, OrderItem
 from apps.commerce.services.cart_calculations import calculate_cart_totals, get_line_total, quantize_money
 from apps.commerce.services.cart_service import get_or_create_user_cart
+from apps.commerce.services.delivery_snapshot import build_delivery_snapshot_from_checkout
+from apps.commerce.services.monobank.client import MonobankApiError
+from apps.commerce.services.monobank.invoice_service import create_invoice_for_order, get_order_payment
 from apps.commerce.services.sellable_state import build_cart_item_warning, get_cart_item_sellable_snapshot
 from apps.commerce.services.order_number import generate_order_number
 from apps.pricing.models import SupplierOffer
@@ -75,7 +78,7 @@ def build_checkout_preview(*, user: User, delivery_method: str | None = None) ->
 
 
 @transaction.atomic
-def submit_checkout(*, user: User, payload: dict) -> Order:
+def submit_checkout(*, user: User, payload: dict, monobank_webhook_url: str = "", monobank_redirect_url: str = "") -> Order:
     cart = get_or_create_user_cart(user)
     # Lock cart rows first without joined nullable tables; fetch relations in a separate query.
     locked_item_ids = list(cart.items.select_for_update().values_list("id", flat=True))
@@ -96,6 +99,11 @@ def submit_checkout(*, user: User, payload: dict) -> Order:
     delivery_method = payload["delivery_method"]
     payment_method = payload["payment_method"]
     delivery_address = payload.get("delivery_address", "")
+    delivery_snapshot = build_delivery_snapshot_from_checkout(
+        delivery_method=delivery_method,
+        delivery_address=delivery_address,
+        delivery_snapshot=payload.get("delivery_snapshot"),
+    )
 
     if delivery_method in (Order.DELIVERY_COURIER, Order.DELIVERY_NOVA_POSHTA) and not delivery_address:
         raise ValidationError({"delivery_address": _("Delivery address is required for selected delivery method.")})
@@ -179,6 +187,7 @@ def submit_checkout(*, user: User, payload: dict) -> Order:
         contact_email=payload["contact_email"],
         delivery_method=delivery_method,
         delivery_address=delivery_address,
+        delivery_snapshot=delivery_snapshot,
         payment_method=payment_method,
         subtotal=totals.subtotal,
         delivery_fee=delivery_fee,
@@ -215,6 +224,42 @@ def submit_checkout(*, user: User, payload: dict) -> Order:
         )
 
     OrderItem.objects.bulk_create(order_items)
+
+    payment = get_order_payment(order)
+    payment.amount = order.total
+    payment.currency = order.currency
+    if payment_method == Order.PAYMENT_MONOBANK:
+        payment.provider = payment.PROVIDER_MONOBANK
+        payment.method = payment.METHOD_MONOBANK
+        payment.save(update_fields=("provider", "method", "amount", "currency", "updated_at"))
+        try:
+            create_invoice_for_order(
+                order=order,
+                webhook_url=monobank_webhook_url,
+                redirect_url=monobank_redirect_url,
+            )
+        except MonobankApiError as exc:
+            raise ValidationError({"payment_method": str(exc)}) from exc
+    else:
+        payment.provider = payment.PROVIDER_COD
+        payment.method = payment.METHOD_CASH_ON_DELIVERY
+        payment.status = payment.STATUS_PENDING
+        payment.monobank_invoice_id = ""
+        payment.monobank_page_url = ""
+        payment.failure_reason = ""
+        payment.save(
+            update_fields=(
+                "provider",
+                "method",
+                "status",
+                "amount",
+                "currency",
+                "monobank_invoice_id",
+                "monobank_page_url",
+                "failure_reason",
+                "updated_at",
+            )
+        )
 
     cart.items.all().delete()
 

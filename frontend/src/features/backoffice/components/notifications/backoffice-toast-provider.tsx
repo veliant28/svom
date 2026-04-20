@@ -183,16 +183,17 @@ export function BackofficeToastProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
+    const timers = timersRef.current;
     return () => {
-      timersRef.current.forEach((timers) => {
-        if (timers.autoHide) {
-          clearTimeout(timers.autoHide);
+      timers.forEach((entry) => {
+        if (entry.autoHide) {
+          clearTimeout(entry.autoHide);
         }
-        if (timers.remove) {
-          clearTimeout(timers.remove);
+        if (entry.remove) {
+          clearTimeout(entry.remove);
         }
       });
-      timersRef.current.clear();
+      timers.clear();
     };
   }, []);
 

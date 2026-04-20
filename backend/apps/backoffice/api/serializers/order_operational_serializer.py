@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+from functools import lru_cache
+
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import connection
+from django.db.utils import DatabaseError, OperationalError, ProgrammingError
 from rest_framework import serializers
 
 from apps.commerce.models import Order, OrderItem
+from apps.commerce.services.delivery_snapshot import resolve_delivery_display, resolve_waybill_seed
 from apps.commerce.services.nova_poshta.tracking_status_catalog import resolve_tracking_status_text
 
 
@@ -50,6 +56,11 @@ class BackofficeOrderOperationalListSerializer(serializers.ModelSerializer):
     nova_poshta_waybill_status_text = serializers.SerializerMethodField()
     nova_poshta_waybill_has_error = serializers.SerializerMethodField()
     nova_poshta_waybill_exists = serializers.SerializerMethodField()
+    delivery_snapshot = serializers.JSONField(read_only=True)
+    delivery_city_label = serializers.SerializerMethodField()
+    delivery_destination_label = serializers.SerializerMethodField()
+    delivery_waybill_seed = serializers.SerializerMethodField()
+    payment = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -63,7 +74,13 @@ class BackofficeOrderOperationalListSerializer(serializers.ModelSerializer):
             "contact_phone",
             "contact_email",
             "delivery_method",
+            "delivery_address",
+            "delivery_snapshot",
+            "delivery_city_label",
+            "delivery_destination_label",
+            "delivery_waybill_seed",
             "payment_method",
+            "payment",
             "subtotal",
             "delivery_fee",
             "total",
@@ -129,6 +146,134 @@ class BackofficeOrderOperationalListSerializer(serializers.ModelSerializer):
             return False
         return bool(waybill.last_sync_error)
 
+    @staticmethod
+    def _normalize_waybill_destination_label(waybill) -> str:
+        recipient_address_label = (waybill.recipient_address_label or "").strip()
+        if recipient_address_label:
+            return recipient_address_label
+
+        street = (waybill.recipient_street_label or "").strip()
+        house = (waybill.recipient_house or "").strip()
+        apartment = (waybill.recipient_apartment or "").strip()
+        if street and house and apartment:
+            return f"{street}, {house}, {apartment}"
+        if street and house:
+            return f"{street}, {house}"
+        if street:
+            return street
+        return ""
+
+    def get_delivery_city_label(self, obj: Order) -> str:
+        city_label, _ = resolve_delivery_display(
+            delivery_method=obj.delivery_method,
+            delivery_address=obj.delivery_address,
+            delivery_snapshot=obj.delivery_snapshot,
+        )
+        if city_label:
+            return city_label
+
+        waybill = self._active_waybill(obj)
+        if waybill:
+            return (waybill.recipient_city_label or "").strip()
+        return ""
+
+    def get_delivery_destination_label(self, obj: Order) -> str:
+        _, destination_label = resolve_delivery_display(
+            delivery_method=obj.delivery_method,
+            delivery_address=obj.delivery_address,
+            delivery_snapshot=obj.delivery_snapshot,
+        )
+        if destination_label:
+            return destination_label
+
+        waybill = self._active_waybill(obj)
+        if waybill:
+            return self._normalize_waybill_destination_label(waybill)
+        return ""
+
+    def get_delivery_waybill_seed(self, obj: Order) -> dict:
+        seed = resolve_waybill_seed(
+            delivery_method=obj.delivery_method,
+            delivery_address=obj.delivery_address,
+            delivery_snapshot=obj.delivery_snapshot,
+        )
+        if obj.delivery_snapshot:
+            return seed
+
+        waybill = self._active_waybill(obj)
+        if not waybill:
+            return seed
+
+        return {
+            "delivery_type": "address" if waybill.service_type == "WarehouseDoors" else "warehouse",
+            "recipient_city_ref": (waybill.recipient_city_ref or "").strip(),
+            "recipient_city_label": (waybill.recipient_city_label or "").strip(),
+            "recipient_address_ref": (waybill.recipient_address_ref or "").strip(),
+            "recipient_address_label": self._normalize_waybill_destination_label(waybill),
+            "recipient_street_ref": (waybill.recipient_street_ref or "").strip(),
+            "recipient_street_label": (waybill.recipient_street_label or "").strip(),
+            "recipient_house": (waybill.recipient_house or "").strip(),
+            "recipient_apartment": (waybill.recipient_apartment or "").strip(),
+        }
+
+    def get_payment(self, obj: Order) -> dict:
+        default_provider = "monobank" if obj.payment_method == Order.PAYMENT_MONOBANK else "cash_on_delivery"
+        default_method = "monobank" if obj.payment_method == Order.PAYMENT_MONOBANK else "cash_on_delivery"
+
+        if not _order_payment_table_exists():
+            return {
+                "provider": default_provider,
+                "method": default_method,
+                "status": "pending",
+                "amount": obj.total,
+                "currency": obj.currency,
+                "invoice_id": "",
+                "reference": "",
+                "page_url": "",
+                "failure_reason": "",
+                "provider_created_at": None,
+                "provider_modified_at": None,
+                "last_webhook_received_at": None,
+                "last_sync_at": None,
+            }
+
+        try:
+            payment = obj.payment
+        except (ObjectDoesNotExist, DatabaseError, OperationalError, ProgrammingError):
+            payment = None
+        if not payment:
+            return {
+                "provider": default_provider,
+                "method": default_method,
+                "status": "pending",
+                "amount": obj.total,
+                "currency": obj.currency,
+                "invoice_id": "",
+                "reference": "",
+                "page_url": "",
+                "failure_reason": "",
+                "provider_created_at": None,
+                "provider_modified_at": None,
+                "last_webhook_received_at": None,
+                "last_sync_at": None,
+            }
+
+        return {
+            "provider": payment.provider,
+            "method": payment.method,
+            "status": payment.status,
+            "amount": payment.amount,
+            "currency": payment.currency,
+            "invoice_id": payment.monobank_invoice_id,
+            "reference": payment.monobank_reference,
+            "page_url": payment.monobank_page_url,
+            "failure_reason": payment.failure_reason,
+            "provider_created_at": payment.provider_created_at,
+            "provider_modified_at": payment.provider_modified_at,
+            "last_webhook_received_at": payment.last_webhook_received_at,
+            "last_sync_at": payment.last_sync_at,
+        }
+
 
 class BackofficeOrderOperationalDetailSerializer(BackofficeOrderOperationalListSerializer):
     items = BackofficeOrderItemOperationalSerializer(many=True, read_only=True)
@@ -142,3 +287,11 @@ class BackofficeOrderOperationalDetailSerializer(BackofficeOrderOperationalListS
             "cancellation_reason_note",
             "items",
         )
+
+
+@lru_cache(maxsize=1)
+def _order_payment_table_exists() -> bool:
+    try:
+        return "commerce_orderpayment" in set(connection.introspection.table_names())
+    except (DatabaseError, OperationalError, ProgrammingError):
+        return False

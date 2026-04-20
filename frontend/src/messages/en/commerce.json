@@ -57,7 +57,7 @@
     },
     "checkout": {
       "title": "Checkout",
-      "subtitle": "Contact, delivery and payment placeholder flow.",
+      "subtitle": "Contact, delivery and payment for order placement.",
       "authRequired": "Login is required to checkout.",
       "goToLogin": "Go to login",
       "emptyCart": "Your cart is empty.",
@@ -103,8 +103,20 @@
         "noResults": "No results found"
       },
       "payment": {
-        "cardPlaceholder": "Card payment (placeholder)",
-        "cashOnDelivery": "Cash on delivery"
+        "monobank": "Monobank",
+        "novapay": "NovaPay",
+        "cashOnDelivery": "Cash on delivery",
+        "monobankHint": "Pay online via official Monobank payment page or widget.",
+        "novapayHint": "NovaPay payment will be available soon.",
+        "cashOnDeliveryHint": "Pay when receiving your order.",
+        "openMonobankPage": "Open Monobank payment page",
+        "payWithMonobank": "Pay with Monobank",
+        "widgetLoading": "Loading Monobank widget...",
+        "widgetFailedFallback": "Monobank widget is unavailable. Use payment page fallback.",
+        "novapayComingSoon": "NovaPay will be available soon.",
+        "liqpay": "LiqPay",
+        "liqpayHint": "LiqPay payment will be available soon.",
+        "liqpayComingSoon": "LiqPay will be available soon."
       },
       "actions": {
         "submit": "Place order",
@@ -135,7 +147,10 @@
       },
       "labels": {
         "items": "Items: {count}",
-        "client": "Customer: {fullName}"
+        "client": "Customer: {fullName}",
+        "delivery": "Delivery: {city} · {destination}",
+        "deliveryCity": "Delivery city: {value}",
+        "deliveryDestination": "Branch / parcel locker / address: {value}"
       },
       "table": {
         "sku": "SKU",

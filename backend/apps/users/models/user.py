@@ -17,6 +17,7 @@ class User(TimestampedMixin, AbstractUser):
     )
 
     email = models.EmailField(_("Email"), unique=True)
+    middle_name = models.CharField(_("Отчество"), max_length=150, blank=True)
     phone = models.CharField(_("Телефон"), max_length=32, blank=True)
     preferred_language = models.CharField(
         _("Предпочитаемый язык"),

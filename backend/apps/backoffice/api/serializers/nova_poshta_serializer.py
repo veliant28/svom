@@ -123,6 +123,29 @@ class NovaPoshtaDeliveryDateLookupQuerySerializer(NovaPoshtaLookupQuerySerialize
     date_time = serializers.CharField(required=False, allow_blank=True, default="")
 
 
+class OrderNovaPoshtaWaybillSeatOptionSerializer(serializers.Serializer):
+    description = serializers.CharField(required=False, allow_blank=True, default="")
+    cost = serializers.DecimalField(required=False, max_digits=12, decimal_places=2, min_value=0, allow_null=True)
+    weight = serializers.DecimalField(required=False, max_digits=10, decimal_places=3, min_value=Decimal("0.001"), allow_null=True)
+    pack_ref = serializers.CharField(required=False, allow_blank=True, default="")
+    pack_refs = serializers.ListField(
+        child=serializers.CharField(allow_blank=False),
+        required=False,
+        allow_empty=True,
+        default=list,
+    )
+    volumetric_width = serializers.DecimalField(required=False, max_digits=10, decimal_places=3, min_value=Decimal("0.001"), allow_null=True)
+    volumetric_length = serializers.DecimalField(required=False, max_digits=10, decimal_places=3, min_value=Decimal("0.001"), allow_null=True)
+    volumetric_height = serializers.DecimalField(required=False, max_digits=10, decimal_places=3, min_value=Decimal("0.001"), allow_null=True)
+    volumetric_volume = serializers.DecimalField(required=False, max_digits=10, decimal_places=4, min_value=Decimal("0.0001"), allow_null=True)
+    cargo_type = serializers.ChoiceField(
+        choices=["Cargo", "Parcel", "Documents", "Pallet", "TiresWheels"],
+        required=False,
+        default="Parcel",
+    )
+    special_cargo = serializers.BooleanField(required=False, default=False)
+
+
 class OrderNovaPoshtaWaybillUpsertSerializer(serializers.Serializer):
     sender_profile_id = serializers.UUIDField()
     delivery_type = serializers.ChoiceField(choices=["warehouse", "postomat", "address"], default="warehouse")
@@ -189,6 +212,7 @@ class OrderNovaPoshtaWaybillUpsertSerializer(serializers.Serializer):
     delivery_by_hand = serializers.BooleanField(required=False, default=False)
     delivery_by_hand_recipients = serializers.CharField(required=False, allow_blank=True, default="")
     special_cargo = serializers.BooleanField(required=False, default=False)
+    options_seat = OrderNovaPoshtaWaybillSeatOptionSerializer(many=True, required=False, allow_empty=True, default=list)
 
 
 class OrderNovaPoshtaWaybillSerializer(serializers.ModelSerializer):
@@ -196,6 +220,7 @@ class OrderNovaPoshtaWaybillSerializer(serializers.ModelSerializer):
     sender_profile_type = serializers.CharField(source="sender_profile.sender_type", read_only=True)
     events_count = serializers.SerializerMethodField(read_only=True)
     status_text = serializers.SerializerMethodField(read_only=True)
+    options_seat = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = OrderNovaPoshtaWaybill
@@ -244,6 +269,7 @@ class OrderNovaPoshtaWaybillSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "events_count",
+            "options_seat",
         )
         read_only_fields = fields
 
@@ -255,6 +281,35 @@ class OrderNovaPoshtaWaybillSerializer(serializers.ModelSerializer):
             status_code=obj.status_code,
             status_text=obj.status_text,
         )
+
+    def get_options_seat(self, obj: OrderNovaPoshtaWaybill) -> list[dict]:
+        raw = obj.raw_request_json if isinstance(obj.raw_request_json, dict) else {}
+        options = raw.get("OptionsSeat")
+        if not isinstance(options, list):
+            return []
+
+        normalized: list[dict] = []
+        for item in options:
+            if not isinstance(item, dict):
+                continue
+            pack_ref = str(item.get("packRef") or "").strip()
+            pack_refs = [pack_ref] if pack_ref else []
+            normalized.append(
+                {
+                    "description": str(item.get("description") or "").strip(),
+                    "cost": str(item.get("cost") or "").strip(),
+                    "weight": str(item.get("weight") or "").strip(),
+                    "pack_ref": pack_ref,
+                    "pack_refs": pack_refs,
+                    "volumetric_width": str(item.get("volumetricWidth") or "").strip(),
+                    "volumetric_length": str(item.get("volumetricLength") or "").strip(),
+                    "volumetric_height": str(item.get("volumetricHeight") or "").strip(),
+                    "volumetric_volume": str(item.get("volumetricVolume") or "").strip(),
+                    "cargo_type": str(item.get("cargoType") or "").strip() or "Parcel",
+                    "special_cargo": str(item.get("specialCargo") or "").strip() in {"1", "true", "True"},
+                }
+            )
+        return normalized
 
 
 class NovaPoshtaWaybillSummarySerializer(serializers.Serializer):

@@ -59,11 +59,13 @@ class Order(UUIDPrimaryKeyMixin, TimestampedMixin):
     )
 
     PAYMENT_CASH_ON_DELIVERY = "cash_on_delivery"
+    PAYMENT_MONOBANK = "monobank"
     PAYMENT_CARD_PLACEHOLDER = "card_placeholder"
 
     PAYMENT_METHOD_CHOICES = (
+        (PAYMENT_MONOBANK, _("Monobank")),
         (PAYMENT_CASH_ON_DELIVERY, _("Наложенный платеж")),
-        (PAYMENT_CARD_PLACEHOLDER, _("Оплата картой (placeholder)")),
+        (PAYMENT_CARD_PLACEHOLDER, _("Оплата картой (legacy)")),
     )
 
     user = models.ForeignKey(
@@ -81,6 +83,7 @@ class Order(UUIDPrimaryKeyMixin, TimestampedMixin):
 
     delivery_method = models.CharField(_("Способ доставки"), max_length=32, choices=DELIVERY_METHOD_CHOICES)
     delivery_address = models.CharField(_("Адрес доставки"), max_length=500, blank=True)
+    delivery_snapshot = models.JSONField(_("Снимок доставки"), default=dict, blank=True)
     payment_method = models.CharField(_("Способ оплаты"), max_length=32, choices=PAYMENT_METHOD_CHOICES)
 
     subtotal = models.DecimalField(_("Промежуточная сумма"), max_digits=12, decimal_places=2, default=0)

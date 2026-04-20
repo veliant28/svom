@@ -156,6 +156,21 @@ export type BackofficeOrderNovaPoshtaWaybill = {
   created_at: string;
   updated_at: string;
   events_count: number;
+  options_seat: BackofficeNovaPoshtaWaybillSeatOption[];
+};
+
+export type BackofficeNovaPoshtaWaybillSeatOption = {
+  description: string;
+  cost: string;
+  weight: string;
+  pack_ref: string;
+  pack_refs: string[];
+  volumetric_width: string;
+  volumetric_length: string;
+  volumetric_height: string;
+  volumetric_volume: string;
+  cargo_type: "Cargo" | "Parcel" | "Documents" | "Pallet" | "TiresWheels";
+  special_cargo: boolean;
 };
 
 export type BackofficeOrderNovaPoshtaWaybillSummary = {

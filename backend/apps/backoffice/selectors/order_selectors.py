@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+from functools import lru_cache
+
+from django.db import connection
 from django.db.models import Prefetch, Q, QuerySet
+from django.db.utils import DatabaseError, OperationalError, ProgrammingError
 
 from apps.commerce.models import Order, OrderItem, OrderNovaPoshtaWaybill
 from apps.pricing.models import SupplierOffer
@@ -28,9 +32,13 @@ ITEM_PREFETCH = Prefetch(
 
 
 def get_operational_orders_queryset() -> QuerySet[Order]:
+    queryset = Order.objects.select_related("user")
+    if _order_payment_table_exists():
+        queryset = queryset.select_related("payment")
+
     return (
-        Order.objects.select_related("user")
-         .prefetch_related(ITEM_PREFETCH, WAYBILL_PREFETCH)
+        queryset
+        .prefetch_related(ITEM_PREFETCH, WAYBILL_PREFETCH)
         .order_by("-placed_at", "-created_at")
     )
 
@@ -70,3 +78,11 @@ def get_procurement_supplier_offers_queryset() -> QuerySet[SupplierOffer]:
         "supplier__name",
         "id",
     )
+
+
+@lru_cache(maxsize=1)
+def _order_payment_table_exists() -> bool:
+    try:
+        return "commerce_orderpayment" in set(connection.introspection.table_names())
+    except (DatabaseError, OperationalError, ProgrammingError):
+        return False

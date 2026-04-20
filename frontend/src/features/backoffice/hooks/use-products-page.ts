@@ -34,7 +34,7 @@ export function useProductsPage() {
   const handleAfterBulkDelete = useCallback((deletedIds: string[]) => {
     removeSelectedIds(deletedIds);
     actions.handleDeletedProducts(deletedIds);
-  }, [actions.handleDeletedProducts, removeSelectedIds]);
+  }, [actions, removeSelectedIds]);
 
   const bulkActions = useProductsBulkActions({
     token: data.token,

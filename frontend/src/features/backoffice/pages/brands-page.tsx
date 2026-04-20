@@ -139,7 +139,7 @@ export function BrandsPage() {
     page,
   ]);
 
-  const rows = data?.results ?? [];
+  const rows = useMemo(() => data?.results ?? [], [data?.results]);
   const pagesCount = useMemo(() => {
     const total = data?.count ?? 0;
     return Math.max(1, Math.ceil(total / 20));

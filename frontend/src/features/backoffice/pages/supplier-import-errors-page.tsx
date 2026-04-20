@@ -32,7 +32,7 @@ export function SupplierImportErrorsPage() {
 
   const queryFn = useCallback((token: string) => getBackofficeSupplierErrors(token, activeCode), [activeCode]);
   const { data, isLoading, error, refetch } = useBackofficeQuery<{ count: number; results: BackofficeImportError[] }>(queryFn, [activeCode]);
-  const baseErrors = data?.results ?? [];
+  const baseErrors = useMemo(() => data?.results ?? [], [data?.results]);
 
   const errors = useMemo(() => {
     const query = q.trim().toLowerCase();

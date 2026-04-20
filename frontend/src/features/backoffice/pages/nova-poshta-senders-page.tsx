@@ -234,7 +234,7 @@ export function NovaPoshtaSendersPage() {
   const queryFn = useCallback((token: string) => listBackofficeNovaPoshtaSenderProfiles(token), []);
   const { token, data, isLoading, error, refetch } = useBackofficeQuery<BackofficeNovaPoshtaSenderProfile[]>(queryFn);
 
-  const rows = data ?? [];
+  const rows = useMemo(() => data ?? [], [data]);
   const defaultLookupSenderId = useMemo(() => rows.find((row) => row.is_default)?.id ?? rows[0]?.id ?? "", [rows]);
   const activeLookupSenderId = lookupSenderId || defaultLookupSenderId;
   const canLookup = Boolean(token && activeLookupSenderId);
@@ -765,7 +765,6 @@ export function NovaPoshtaSendersPage() {
     modalAddressRequestRef.current = requestId;
     setModalAddressLoading(true);
     try {
-      const hasDigits = /\d/.test(lookupQuery);
       const hasLetters = /[A-Za-zА-Яа-яІіЇїЄєҐґ]/.test(lookupQuery);
       const shouldSearchWarehouses = true;
       const shouldSearchStreets = hasLetters && Boolean(selectedSettlementRef.trim());

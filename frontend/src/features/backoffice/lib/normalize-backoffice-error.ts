@@ -155,7 +155,7 @@ function isCooldownError(status: number | undefined, message: string, seconds: n
   if (status === 429) {
     return true;
   }
-  return /(cooldown|too many requests|rate limit|повтор|зачекайте|подождите|забагато запитів)/i.test(message);
+  return /(cooldown|too many requests|rate limit|забагато запитів|429)/i.test(message);
 }
 
 export function normalizeBackofficeApiError(
@@ -241,4 +241,3 @@ export function normalizeBackofficeApiError(
     message: fallbackMessage,
   };
 }
-

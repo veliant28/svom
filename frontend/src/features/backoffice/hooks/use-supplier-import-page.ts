@@ -61,7 +61,7 @@ export function useSupplierImportPage() {
 
   const tokenReady = filters.tokenReady && Boolean(scope.token);
 
-  const rows = priceListsData?.results ?? [];
+  const rows = useMemo(() => priceListsData?.results ?? [], [priceListsData?.results]);
   const lifecycle = useMemo(() => findLatestPriceListStats(rows), [rows]);
 
   const cooldownCanRun = scope.workspace?.cooldown.can_run ?? true;

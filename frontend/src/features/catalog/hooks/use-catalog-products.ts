@@ -91,7 +91,7 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
     return () => {
       isMounted = false;
     };
-  }, [isEnabled, paramsKey]);
+  }, [effectiveParams, isEnabled, locale, paramsKey]);
 
   return { products, totalCount, isLoading };
 }

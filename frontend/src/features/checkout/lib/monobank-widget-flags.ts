@@ -1,0 +1,1 @@
+export const MONOBANK_OFFICIAL_WIDGETS_ENABLED = true;

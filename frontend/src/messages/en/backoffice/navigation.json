@@ -18,7 +18,8 @@
       "importQuality": "Import Quality",
       "orders": "Orders",
       "autocatalog": "Autocatalog",
-      "novaPoshtaSenders": "NP Senders"
+      "novaPoshtaSenders": "NP Senders",
+      "payments": "Payments"
     }
   }
 }

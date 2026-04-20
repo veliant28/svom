@@ -29,6 +29,10 @@ export function OrdersPage() {
     viewOrder,
     viewLoading,
     viewActionLoading,
+    viewPaymentRefreshing,
+    viewPaymentCooldown,
+    viewMonobankActionLoading,
+    viewMonobankFiscalChecks,
     supplierOpen,
     supplierTarget,
     supplierPreview,
@@ -47,6 +51,8 @@ export function OrdersPage() {
     openOrderView,
     closeOrderView,
     runOrderAction,
+    refreshOrderPayment,
+    runMonobankPaymentAction,
     openSupplierModalFromRow,
     openWaybillModalFromRow,
     closeSupplierModal,
@@ -118,8 +124,18 @@ export function OrdersPage() {
         isLoading={viewLoading}
         order={viewOrder}
         actionLoading={viewActionLoading}
+        paymentRefreshing={viewPaymentRefreshing}
+        paymentRefreshDisabled={viewPaymentCooldown}
+        monobankActionLoading={viewMonobankActionLoading}
+        monobankFiscalChecks={viewMonobankFiscalChecks}
         onRunAction={(action) => {
           void runOrderAction(action);
+        }}
+        onRefreshPayment={() => {
+          void refreshOrderPayment();
+        }}
+        onRunMonobankAction={(action, options) => {
+          void runMonobankPaymentAction(action, options);
         }}
         onClose={closeOrderView}
         t={t}

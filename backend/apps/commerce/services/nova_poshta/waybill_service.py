@@ -81,6 +81,21 @@ class WaybillUpsertPayload:
     delivery_by_hand: bool = False
     delivery_by_hand_recipients: str = ""
     special_cargo: bool = False
+    options_seat: tuple["WaybillSeatOption", ...] = ()
+
+
+@dataclass(frozen=True)
+class WaybillSeatOption:
+    description: str = ""
+    cost: Decimal = Decimal("0")
+    weight: Decimal = Decimal("0.001")
+    pack_ref: str = ""
+    volumetric_width: Decimal | None = None
+    volumetric_length: Decimal | None = None
+    volumetric_height: Decimal | None = None
+    volumetric_volume: Decimal | None = None
+    cargo_type: str = "Parcel"
+    special_cargo: bool = False
 
 
 class NovaPoshtaWaybillService:
@@ -350,11 +365,70 @@ class NovaPoshtaWaybillService:
         return waybill
 
     def build_upsert_payload(self, *, sender_profile: NovaPoshtaSenderProfile, data: dict[str, Any]) -> WaybillUpsertPayload:
+        raw_options_seat = data.get("options_seat") or []
+        parsed_options_seat: list[WaybillSeatOption] = []
+        if isinstance(raw_options_seat, list):
+            for raw_item in raw_options_seat:
+                if not isinstance(raw_item, dict):
+                    continue
+                pack_ref = str(raw_item.get("pack_ref") or "").strip()
+                if not pack_ref:
+                    refs = raw_item.get("pack_refs") or []
+                    if isinstance(refs, list):
+                        pack_ref = next((str(item or "").strip() for item in refs if str(item or "").strip()), "")
+                parsed_options_seat.append(
+                    WaybillSeatOption(
+                        description=str(raw_item.get("description") or "").strip(),
+                        cost=Decimal(str(raw_item.get("cost") or "0")),
+                        weight=max(Decimal("0.001"), Decimal(str(raw_item.get("weight") or "0.001"))),
+                        pack_ref=pack_ref,
+                        volumetric_width=(
+                            Decimal(str(raw_item.get("volumetric_width")))
+                            if raw_item.get("volumetric_width") is not None else None
+                        ),
+                        volumetric_length=(
+                            Decimal(str(raw_item.get("volumetric_length")))
+                            if raw_item.get("volumetric_length") is not None else None
+                        ),
+                        volumetric_height=(
+                            Decimal(str(raw_item.get("volumetric_height")))
+                            if raw_item.get("volumetric_height") is not None else None
+                        ),
+                        volumetric_volume=(
+                            Decimal(str(raw_item.get("volumetric_volume")))
+                            if raw_item.get("volumetric_volume") is not None else None
+                        ),
+                        cargo_type=str(raw_item.get("cargo_type") or "Parcel").strip() or "Parcel",
+                        special_cargo=bool(raw_item.get("special_cargo")),
+                    )
+                )
+
+        seats_amount = int(data.get("seats_amount") or 1)
+        weight = Decimal(str(data.get("weight") or "0.1"))
+        cost = Decimal(str(data.get("cost") or "0"))
+        description = str(data.get("description") or "").strip() or WAYBILL_DESCRIPTION
+        pack_refs = tuple(
+            str(item or "").strip()
+            for item in (data.get("pack_refs") or [])
+            if str(item or "").strip()
+        )
+        if parsed_options_seat:
+            seats_amount = len(parsed_options_seat)
+            weight = sum((item.weight for item in parsed_options_seat), Decimal("0"))
+            if weight <= 0:
+                weight = Decimal("0.001")
+            cost = sum((item.cost for item in parsed_options_seat), Decimal("0"))
+            description = next(
+                (item.description for item in parsed_options_seat if item.description),
+                description,
+            )
+            pack_refs = tuple(item.pack_ref for item in parsed_options_seat if item.pack_ref)
+
         return WaybillUpsertPayload(
             sender_profile=sender_profile,
             delivery_type=str(data.get("delivery_type") or "warehouse").strip(),
             cargo_type=str(data.get("cargo_type") or "Parcel").strip() or "Parcel",
-            description=str(data.get("description") or "").strip() or WAYBILL_DESCRIPTION,
+            description=description,
             recipient_city_ref=str(data.get("recipient_city_ref") or "").strip(),
             recipient_city_label=str(data.get("recipient_city_label") or "").strip(),
             recipient_address_ref=str(data.get("recipient_address_ref") or "").strip(),
@@ -363,9 +437,9 @@ class NovaPoshtaWaybillService:
             recipient_contact_ref=str(data.get("recipient_contact_ref") or "").strip(),
             recipient_name=str(data.get("recipient_name") or "").strip(),
             recipient_phone=str(data.get("recipient_phone") or "").strip(),
-            seats_amount=int(data.get("seats_amount") or 1),
-            weight=Decimal(str(data.get("weight") or "0.1")),
-            cost=Decimal(str(data.get("cost") or "0")),
+            seats_amount=seats_amount,
+            weight=weight,
+            cost=cost,
             afterpayment_amount=Decimal(str(data.get("afterpayment_amount"))) if data.get("afterpayment_amount") is not None else None,
             payer_type=str(data.get("payer_type") or "").strip(),
             payment_method=str(data.get("payment_method") or "").strip(),
@@ -375,11 +449,7 @@ class NovaPoshtaWaybillService:
             recipient_apartment=str(data.get("recipient_apartment") or "").strip(),
             volume_general=Decimal(str(data.get("volume_general"))) if data.get("volume_general") is not None else None,
             pack_ref=str(data.get("pack_ref") or "").strip(),
-            pack_refs=tuple(
-                str(item or "").strip()
-                for item in (data.get("pack_refs") or [])
-                if str(item or "").strip()
-            ),
+            pack_refs=pack_refs,
             volumetric_width=Decimal(str(data.get("volumetric_width"))) if data.get("volumetric_width") is not None else None,
             volumetric_length=Decimal(str(data.get("volumetric_length"))) if data.get("volumetric_length") is not None else None,
             volumetric_height=Decimal(str(data.get("volumetric_height"))) if data.get("volumetric_height") is not None else None,
@@ -396,6 +466,7 @@ class NovaPoshtaWaybillService:
             delivery_by_hand=bool(data.get("delivery_by_hand")),
             delivery_by_hand_recipients=str(data.get("delivery_by_hand_recipients") or "").strip(),
             special_cargo=bool(data.get("special_cargo")),
+            options_seat=tuple(parsed_options_seat),
         )
 
     def _build_request_payload(
@@ -473,7 +544,52 @@ class NovaPoshtaWaybillService:
         resolved_pack_refs = [ref for ref in payload.pack_refs if ref]
         if not resolved_pack_refs and payload.pack_ref:
             resolved_pack_refs = [payload.pack_ref]
-        if resolved_pack_refs:
+        if payload.options_seat:
+            seats_payload: list[dict[str, Any]] = []
+            seat_cost_total = Decimal("0")
+            seat_weight_total = Decimal("0")
+            for index, seat in enumerate(payload.options_seat):
+                seat_weight = max(Decimal("0.001"), seat.weight)
+                seat_cost = max(Decimal("0"), seat.cost)
+                seat_weight_total += seat_weight
+                seat_cost_total += seat_cost
+
+                seat_item: dict[str, Any] = {
+                    "weight": self._format_decimal(seat_weight),
+                }
+                effective_width = seat.volumetric_width if seat.volumetric_width is not None else payload.volumetric_width
+                effective_length = seat.volumetric_length if seat.volumetric_length is not None else payload.volumetric_length
+                effective_height = seat.volumetric_height if seat.volumetric_height is not None else payload.volumetric_height
+                effective_volume = seat.volumetric_volume if seat.volumetric_volume is not None else payload.volume_general
+                if effective_width is not None and effective_width > 0:
+                    seat_item["volumetricWidth"] = self._format_decimal(effective_width)
+                if effective_length is not None and effective_length > 0:
+                    seat_item["volumetricLength"] = self._format_decimal(effective_length)
+                if effective_height is not None and effective_height > 0:
+                    seat_item["volumetricHeight"] = self._format_decimal(effective_height)
+                if effective_volume is not None and effective_volume > 0:
+                    seat_item["volumetricVolume"] = self._format_decimal(effective_volume)
+                if seat_cost > 0:
+                    seat_item["cost"] = str(max(1, int(seat_cost)))
+                if seat.description:
+                    seat_item["description"] = seat.description
+                if payload.special_cargo or seat.special_cargo:
+                    seat_item["specialCargo"] = "1"
+
+                pack_ref = seat.pack_ref
+                if not pack_ref and resolved_pack_refs:
+                    pack_ref = resolved_pack_refs[min(index, len(resolved_pack_refs) - 1)]
+                if pack_ref:
+                    seat_item["packRef"] = pack_ref
+                seats_payload.append(seat_item)
+
+            if seats_payload:
+                method_properties["OptionsSeat"] = seats_payload
+                method_properties["SeatsAmount"] = str(max(1, len(seats_payload)))
+                method_properties["Weight"] = self._format_decimal(max(Decimal("0.001"), seat_weight_total))
+                if seat_cost_total > 0:
+                    method_properties["Cost"] = str(max(1, int(seat_cost_total)))
+        elif resolved_pack_refs:
             seat_count = max(1, payload.seats_amount)
             seat_weight = payload.weight / Decimal(seat_count)
             seat_item: dict[str, Any] = {"weight": self._format_decimal(max(Decimal("0.001"), seat_weight))}

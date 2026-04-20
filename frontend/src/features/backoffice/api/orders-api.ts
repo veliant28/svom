@@ -375,6 +375,19 @@ type WaybillUpsertPayload = {
   delivery_by_hand?: boolean;
   delivery_by_hand_recipients?: string;
   special_cargo?: boolean;
+  options_seat?: Array<{
+    description?: string;
+    cost?: string;
+    weight?: string;
+    pack_ref?: string;
+    pack_refs?: string[];
+    volumetric_width?: string;
+    volumetric_length?: string;
+    volumetric_height?: string;
+    volumetric_volume?: string;
+    cargo_type?: "Cargo" | "Parcel" | "Documents" | "Pallet" | "TiresWheels";
+    special_cargo?: boolean;
+  }>;
 };
 
 export async function getBackofficeOrderWaybill(

@@ -6,14 +6,19 @@ import type { BackofficeUser } from "@/features/backoffice/types/backoffice";
 import { siteConfig } from "@/shared/config/site";
 
 async function fetchCurrentUser(token: string): Promise<BackofficeUser | null> {
-  const response = await fetch(`${siteConfig.apiBaseUrl}/users/auth/current-user/`, {
-    method: "GET",
-    headers: {
-      Authorization: `Token ${token}`,
-    },
-    cache: "no-store",
-    credentials: "omit",
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${siteConfig.apiBaseUrl}/users/auth/current-user/`, {
+      method: "GET",
+      headers: {
+        Authorization: `Token ${token}`,
+      },
+      cache: "no-store",
+      credentials: "omit",
+    });
+  } catch {
+    return null;
+  }
 
   if (!response.ok) {
     return null;

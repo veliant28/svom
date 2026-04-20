@@ -21,6 +21,20 @@ const ATTENTION_WAYBILL_STATUS_CODES = new Set([
   "112", // delivery date postponed by recipient
 ]);
 
+function compactPersonName(fullName: string): string {
+  const normalized = fullName.trim();
+  if (!normalized) {
+    return "-";
+  }
+
+  const parts = normalized.split(/\s+/).filter(Boolean);
+  if (parts.length <= 2) {
+    return normalized;
+  }
+
+  return `${parts[0]} ${parts[1]}`.trim();
+}
+
 function SelectAllPageCheckbox({
   checked,
   indeterminate,
@@ -104,7 +118,7 @@ export function createOrderColumns({
           onChange={onToggleSelectAllPage}
         />
       ),
-      className: "w-[5%]",
+      className: "w-[2%]",
       render: (item) => (
         <input
           type="checkbox"
@@ -117,10 +131,10 @@ export function createOrderColumns({
     {
       key: "order",
       label: t("orders.table.columns.order"),
-      className: "w-[13%]",
+      className: "w-[17%]",
       render: (item) => (
         <div className="min-w-0">
-          <p className="truncate font-semibold">{item.order_number}</p>
+          <p className="break-words font-semibold leading-tight">{item.order_number}</p>
           <p className="truncate text-xs" style={{ color: "var(--muted)" }}>
             {t("orders.table.itemsCount", { count: item.items_count })}
           </p>
@@ -130,10 +144,10 @@ export function createOrderColumns({
     {
       key: "client",
       label: t("orders.table.columns.client"),
-      className: "w-[17%]",
+      className: "w-[13%]",
       render: (item) => (
         <div className="min-w-0">
-          <p className="truncate font-medium">{item.contact_full_name || "-"}</p>
+          <p className="truncate font-medium">{compactPersonName(item.contact_full_name || "")}</p>
           <p className="truncate text-xs" style={{ color: "var(--muted)" }}>
             {item.contact_phone || "-"}
           </p>
@@ -146,7 +160,7 @@ export function createOrderColumns({
     {
       key: "status",
       label: t("orders.table.columns.status"),
-      className: "w-[10%]",
+      className: "w-[13%]",
       render: (item) => <StatusChip status={item.status} />,
     },
     {
@@ -162,7 +176,7 @@ export function createOrderColumns({
     {
       key: "created",
       label: t("orders.table.columns.created"),
-      className: "w-[10%]",
+      className: "w-[7%]",
       render: (item) => (
         <span className="text-xs" style={{ color: "var(--muted)" }}>
           {formatOrderDate(item.placed_at)}
@@ -172,7 +186,7 @@ export function createOrderColumns({
     {
       key: "waybill",
       label: t("orders.table.columns.waybill"),
-      className: "w-[10%]",
+      className: "w-[13%]",
       render: (item) => {
         if (!item.nova_poshta_waybill_exists || !item.nova_poshta_waybill_number) {
           return (
@@ -200,7 +214,7 @@ export function createOrderColumns({
     {
       key: "waybill_status",
       label: t("orders.table.columns.waybillStatus"),
-      className: "w-[11%]",
+      className: "w-[10%]",
       render: (item) => {
         if (!item.nova_poshta_waybill_exists) {
           return (
@@ -227,7 +241,7 @@ export function createOrderColumns({
     {
       key: "actions",
       label: t("orders.table.columns.actions"),
-      className: "w-[14%]",
+      className: "w-[15%] min-w-[156px]",
       render: (item) => (
         <OrderRowActions
           deleting={deletingId === item.id}

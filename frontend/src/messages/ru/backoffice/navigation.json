@@ -18,7 +18,8 @@
       "importQuality": "Качество импорта",
       "orders": "Заказы",
       "autocatalog": "Автокаталог",
-      "novaPoshtaSenders": "Нова Пошта"
+      "novaPoshtaSenders": "Нова Пошта",
+      "payments": "Оплата"
     }
   }
 }

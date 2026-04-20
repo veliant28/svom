@@ -18,7 +18,8 @@
       "importQuality": "Якість імпорту",
       "orders": "Замовлення",
       "autocatalog": "Автокаталог",
-      "novaPoshtaSenders": "Відправники НП"
+      "novaPoshtaSenders": "Відправники НП",
+      "payments": "Оплата"
     }
   }
 }

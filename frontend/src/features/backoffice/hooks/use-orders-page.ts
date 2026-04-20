@@ -13,7 +13,7 @@ import { useOrdersWaybillFlow } from "@/features/backoffice/hooks/orders/use-ord
 export function useOrdersPage() {
   const t = useTranslations("backoffice.common");
   const locale = useLocale();
-  const { showApiError, showSuccess, showWarning } = useBackofficeFeedback();
+  const { showApiError, showSuccess, showWarning, showInfo } = useBackofficeFeedback();
 
   const filters = useOrdersFilters();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -38,7 +38,7 @@ export function useOrdersPage() {
   const orderActions = useOrdersActions({
     token,
     refetch,
-    feedback: { showApiError, showSuccess },
+    feedback: { showApiError, showSuccess, showWarning, showInfo },
     onAfterAction: supplierFlow.syncSupplierTarget,
     onSelectionDeleted: removeSelectedIds,
     onSupplierDeleted: (deletedIds) => {
@@ -52,7 +52,7 @@ export function useOrdersPage() {
     orderActions.handleDeletedOrders(deletedIds);
     supplierFlow.handleDeletedOrders(deletedIds);
     waybillFlow.handleDeletedOrders(deletedIds);
-  }, [orderActions.handleDeletedOrders, removeSelectedIds, supplierFlow.handleDeletedOrders, waybillFlow.handleDeletedOrders]);
+  }, [orderActions, removeSelectedIds, supplierFlow, waybillFlow]);
 
   const bulkActions = useOrdersBulkActions({
     token,
@@ -69,14 +69,14 @@ export function useOrdersPage() {
     if (changedOrderId && orderActions.viewOrderId === changedOrderId) {
       await orderActions.loadOrderDetail(changedOrderId);
     }
-  }, [orderActions.loadOrderDetail, orderActions.viewOrderId, supplierFlow.submitSupplierOrder]);
+  }, [orderActions, supplierFlow]);
 
   const cancelSupplierOrder = useCallback(async () => {
     const changedOrderId = await supplierFlow.cancelSupplierOrder();
     if (changedOrderId && orderActions.viewOrderId === changedOrderId) {
       await orderActions.loadOrderDetail(changedOrderId);
     }
-  }, [orderActions.loadOrderDetail, orderActions.viewOrderId, supplierFlow.cancelSupplierOrder]);
+  }, [orderActions, supplierFlow]);
 
   const { refreshAll } = useOrdersDerivedState({
     refetch,
@@ -109,6 +109,10 @@ export function useOrdersPage() {
     viewOrder: orderActions.viewOrder,
     viewLoading: orderActions.viewLoading,
     viewActionLoading: orderActions.viewActionLoading,
+    viewPaymentRefreshing: orderActions.viewPaymentRefreshing,
+    viewPaymentCooldown: orderActions.viewPaymentCooldown,
+    viewMonobankActionLoading: orderActions.viewMonobankActionLoading,
+    viewMonobankFiscalChecks: orderActions.viewMonobankFiscalChecks,
     supplierOpen: supplierFlow.supplierOpen,
     supplierTarget: supplierFlow.supplierTarget,
     supplierPreview: supplierFlow.supplierPreview,
@@ -128,6 +132,8 @@ export function useOrdersPage() {
     openOrderView: orderActions.openOrderView,
     closeOrderView: orderActions.closeOrderView,
     runOrderAction: orderActions.runOrderAction,
+    refreshOrderPayment: orderActions.refreshOrderPayment,
+    runMonobankPaymentAction: orderActions.runMonobankPaymentAction,
     openSupplierModalFromRow: supplierFlow.openSupplierModalFromRow,
     openWaybillModalFromRow: waybillFlow.openWaybillModalFromRow,
     closeSupplierModal: supplierFlow.closeSupplierModal,

@@ -35,7 +35,7 @@ export function MatchingConflictsPage() {
   );
 
   const { token, data, isLoading, error, refetch } = useBackofficeQuery(queryFn, [q, supplier]);
-  const rows = data?.results ?? [];
+  const rows = useMemo(() => data?.results ?? [], [data?.results]);
   const supplierOptions = useMemo(() => Array.from(new Set(rows.map((item) => item.supplier_code))).sort(), [rows]);
 
   function toggleSelection(rawOfferId: string) {

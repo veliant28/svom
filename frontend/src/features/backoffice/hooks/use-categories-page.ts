@@ -55,8 +55,8 @@ export function useCategoriesPage() {
     [],
   );
 
-  const rows = data?.results ?? [];
-  const parentOptions = parentOptionsData?.results ?? [];
+  const rows = useMemo(() => data?.results ?? [], [data?.results]);
+  const parentOptions = useMemo(() => parentOptionsData?.results ?? [], [parentOptionsData?.results]);
 
   const parentById = useMemo(
     () =>

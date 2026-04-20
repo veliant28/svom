@@ -15,7 +15,7 @@ import {
 
 export type AccountProfileFormValues = Pick<
   AuthUser,
-  "email" | "username" | "first_name" | "last_name" | "phone" | "preferred_language"
+  "email" | "username" | "first_name" | "last_name" | "middle_name" | "phone" | "preferred_language"
 >;
 
 type AccountProfileFormProps = {
@@ -32,6 +32,7 @@ function mapUserToForm(user: AuthUser): AccountProfileFormValues {
     username: user.username,
     first_name: user.first_name || "",
     last_name: user.last_name || "",
+    middle_name: user.middle_name || "",
     phone: formatPhoneInput(user.phone || ""),
     preferred_language: user.preferred_language,
   };
@@ -45,13 +46,12 @@ export function AccountProfileForm({
   const t = useTranslations("auth.profile");
   const tHeader = useTranslations("common.header");
   const [values, setValues] = useState<AccountProfileFormValues>(() => mapUserToForm(user));
-  const [middleName, setMiddleName] = useState("");
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const languageWrapperRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setValues(mapUserToForm(user));
-  }, [user.email, user.first_name, user.last_name, user.phone, user.preferred_language, user.username]);
+  }, [user]);
 
   useEffect(() => {
     if (!isLanguageOpen) {
@@ -156,8 +156,8 @@ export function AccountProfileForm({
         <label className="flex flex-col gap-1 text-xs">
           {t("fields.middleName")}
           <input
-            value={middleName}
-            onChange={(event) => setMiddleName(event.target.value)}
+            value={values.middle_name}
+            onChange={(event) => setValues((current) => ({ ...current, middle_name: event.target.value }))}
             className="h-10 rounded-md border px-3"
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
           />

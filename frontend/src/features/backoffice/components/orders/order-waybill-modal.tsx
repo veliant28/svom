@@ -30,6 +30,7 @@ import {
   buildWaybillInitialPayload,
   canSaveWaybill,
   normalizeWaybillPhone,
+  type WaybillSeatOptionPayload,
   type WaybillFormPayload,
 } from "@/features/backoffice/lib/orders/waybill-form";
 import type { BackofficeOrderOperational } from "@/features/backoffice/types/orders.types";
@@ -56,6 +57,7 @@ type WaybillAddressSuggestion = {
 
 const LETTER_QUERY_WAREHOUSE_LIMIT = 8;
 const DRAFT_SENDER_NAME = "Черновик отправителя";
+const WAYBILL_CARGO_TYPES = new Set(["Cargo", "Parcel", "Documents", "Pallet", "TiresWheels"]);
 
 function formatKgDisplay(value: number | string | null | undefined): string {
   if (value === null || value === undefined) {
@@ -90,6 +92,57 @@ function formatDimensionCmFromMm(value: string): string {
     return "";
   }
   return (numeric / 10).toFixed(1).replace(/\.?0+$/, "");
+}
+
+function resolveSeatOptionFromPayload(payload: WaybillFormPayload): WaybillSeatOptionPayload {
+  const explicitRefs = Array.isArray(payload.pack_refs)
+    ? payload.pack_refs.map((ref) => String(ref || "").trim()).filter(Boolean)
+    : [];
+  const fallbackRef = (payload.pack_ref || "").trim();
+  const packRefs = explicitRefs.length ? explicitRefs : (fallbackRef ? [fallbackRef] : []);
+  const cargoType = String(payload.cargo_type || "").trim();
+  return {
+    description: (payload.description || "").trim(),
+    cost: String(payload.cost || "").trim() || "0",
+    weight: String(payload.weight || "").trim() || "0.001",
+    pack_ref: packRefs[0] || "",
+    pack_refs: packRefs,
+    volumetric_width: String(payload.volumetric_width || "").trim(),
+    volumetric_length: String(payload.volumetric_length || "").trim(),
+    volumetric_height: String(payload.volumetric_height || "").trim(),
+    volumetric_volume: String(payload.volume_general || "").trim(),
+    cargo_type: (WAYBILL_CARGO_TYPES.has(cargoType) ? cargoType : "Parcel") as WaybillSeatOptionPayload["cargo_type"],
+    special_cargo: Boolean(payload.special_cargo),
+  };
+}
+
+function normalizeSeatOptionPayload(
+  seat: WaybillSeatOptionPayload | null | undefined,
+  fallback: WaybillSeatOptionPayload,
+): WaybillSeatOptionPayload {
+  const refs = Array.isArray(seat?.pack_refs)
+    ? seat?.pack_refs?.map((ref) => String(ref || "").trim()).filter(Boolean)
+    : [];
+  const seatPackRef = String(seat?.pack_ref || "").trim();
+  const packRefs = refs.length ? refs : (seatPackRef ? [seatPackRef] : []);
+  const cargoType = String(seat?.cargo_type || "").trim();
+  return {
+    description: String(seat?.description || "").trim() || fallback.description || "",
+    cost: String(seat?.cost || "").trim() || fallback.cost || "0",
+    weight: String(seat?.weight || "").trim() || fallback.weight || "0.001",
+    pack_ref: packRefs[0] || "",
+    pack_refs: packRefs,
+    volumetric_width: String(seat?.volumetric_width || "").trim(),
+    volumetric_length: String(seat?.volumetric_length || "").trim(),
+    volumetric_height: String(seat?.volumetric_height || "").trim(),
+    volumetric_volume: String(seat?.volumetric_volume || "").trim(),
+    cargo_type: (
+      WAYBILL_CARGO_TYPES.has(cargoType)
+        ? cargoType
+        : (fallback.cargo_type || "Parcel")
+    ) as WaybillSeatOptionPayload["cargo_type"],
+    special_cargo: seat?.special_cargo ?? fallback.special_cargo ?? false,
+  };
 }
 
 function formatPreferredDeliveryDateInput(value: string): string {
@@ -368,23 +421,6 @@ function resolveSenderPaymentCapabilities(
   };
 }
 
-function resolveSenderTypeLabel(sender: BackofficeNovaPoshtaSenderProfile | undefined, t: Translator): string {
-  if (!sender) {
-    return t("orders.modals.waybill.meta.unknown");
-  }
-  const normalizedSenderType = resolveEffectiveSenderType(sender);
-  if (normalizedSenderType === "private_person") {
-    return t("orders.modals.waybill.meta.senderTypes.privatePerson");
-  }
-  if (normalizedSenderType === "fop") {
-    return t("orders.modals.waybill.meta.senderTypes.fop");
-  }
-  if (normalizedSenderType === "business") {
-    return t("orders.modals.waybill.meta.senderTypes.business");
-  }
-  return t("orders.modals.waybill.meta.unknown");
-}
-
 function resolveSenderDisplayName(sender: BackofficeNovaPoshtaSenderProfile | undefined): string {
   if (!sender) {
     return "—";
@@ -588,6 +624,8 @@ export function OrderWaybillModal({
   const [deliveryDateLookupLoading, setDeliveryDateLookupLoading] = useState(false);
   const [senderMenuOpen, setSenderMenuOpen] = useState(false);
   const [seatMenuOpen, setSeatMenuOpen] = useState(false);
+  const [isSeatListMode, setIsSeatListMode] = useState(false);
+  const [selectedSeatIndex, setSelectedSeatIndex] = useState(0);
   const [packagingWidth, setPackagingWidth] = useState("20");
   const [packagingLength, setPackagingLength] = useState("20");
   const [packagingHeight, setPackagingHeight] = useState("10");
@@ -614,6 +652,7 @@ export function OrderWaybillModal({
   const streetInputRef = useRef<HTMLInputElement | null>(null);
   const warehouseInputRef = useRef<HTMLInputElement | null>(null);
   const packingsInputRef = useRef<HTMLInputElement | null>(null);
+  const seatListButtonsRef = useRef<Array<HTMLButtonElement | null>>([]);
   const recipientCounterpartyDropdownRef = useRef<HTMLDivElement | null>(null);
   const cityDropdownRef = useRef<HTMLDivElement | null>(null);
   const streetDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -643,10 +682,17 @@ export function OrderWaybillModal({
       return;
     }
     const initialPayload = buildWaybillInitialPayload(order, waybill, defaultSenderId);
+    const fallbackSeat = resolveSeatOptionFromPayload(initialPayload);
+    const initialSeats = Array.isArray(initialPayload.options_seat) && initialPayload.options_seat.length > 0
+      ? initialPayload.options_seat.map((seat) => normalizeSeatOptionPayload(seat, fallbackSeat))
+      : [fallbackSeat];
+    const firstSeat = initialSeats[0] || fallbackSeat;
     setPayload({
       ...initialPayload,
       description: (initialPayload.description || "").trim() || t("orders.modals.waybill.auto.descriptionValue"),
       weight: formatKgDisplay(initialPayload.weight),
+      seats_amount: initialSeats.length,
+      options_seat: initialSeats,
     });
     const hasRecipientCounterpartyRef = Boolean((waybill?.recipient_counterparty_ref || "").trim());
     const nextCounterpartyQuery = hasRecipientCounterpartyRef
@@ -663,10 +709,10 @@ export function OrderWaybillModal({
     }
     setRecipientCounterparties([]);
     setActiveRecipientCounterpartyIndex(-1);
-    setCityQuery(waybill?.recipient_city_label ?? "");
-    setSelectedSettlementRef(waybill?.recipient_city_ref ?? "");
-    setWarehouseQuery(waybill?.recipient_address_label ?? "");
-    setStreetQuery(waybill?.recipient_street_label ?? "");
+    setCityQuery(initialPayload.recipient_city_label || "");
+    setSelectedSettlementRef(initialPayload.recipient_city_ref || "");
+    setWarehouseQuery(initialPayload.recipient_address_label || "");
+    setStreetQuery(initialPayload.recipient_street_label || "");
     setSettlements([]);
     setWarehouses([]);
     setStreets([]);
@@ -681,14 +727,20 @@ export function OrderWaybillModal({
     setActiveWarehouseIndex(-1);
     setSenderMenuOpen(false);
     setSeatMenuOpen(false);
-    setPackagingWidth("20");
-    setPackagingLength("20");
-    setPackagingHeight("10");
+    setSelectedSeatIndex(0);
+    setIsSeatListMode(false);
+    setPackagingWidth(firstSeat.volumetric_width || "20");
+    setPackagingLength(firstSeat.volumetric_length || "20");
+    setPackagingHeight(firstSeat.volumetric_height || "10");
     setIsPackagingMode(false);
     setIsAdditionalServicesMode(false);
     setPackingsDropdownOpen(false);
-    setIsPackagingEnabled(false);
-  }, [defaultSenderId, isOpen, order, privateCounterpartyLabel, waybill]);
+    setIsPackagingEnabled(
+      parsePositiveNumber(firstSeat.volumetric_width || "") > 0
+      || parsePositiveNumber(firstSeat.volumetric_length || "") > 0
+      || parsePositiveNumber(firstSeat.volumetric_height || "") > 0,
+    );
+  }, [defaultSenderId, isOpen, order, privateCounterpartyLabel, t, waybill]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -1242,17 +1294,59 @@ export function OrderWaybillModal({
     scrollDropdownOptionIntoView(warehouseDropdownRef.current, "waybill-warehouse", activeWarehouseIndex);
   }, [activeWarehouseIndex, warehouses.length]);
 
+  const seatOptions = useMemo(() => {
+    const fallback = resolveSeatOptionFromPayload(payload);
+    const sourceSeats = Array.isArray(payload.options_seat) && payload.options_seat.length > 0
+      ? payload.options_seat
+      : [fallback];
+    return sourceSeats.map((seat) => normalizeSeatOptionPayload(seat, fallback));
+  }, [payload]);
+
+  useEffect(() => {
+    if (!isOpen || seatOptions.length === 0) {
+      return;
+    }
+    if (selectedSeatIndex > seatOptions.length - 1) {
+      setSelectedSeatIndex(seatOptions.length - 1);
+      return;
+    }
+    const activeSeat = seatOptions[selectedSeatIndex] || seatOptions[0];
+    if (!activeSeat) {
+      return;
+    }
+    setPackagingWidth(activeSeat.volumetric_width || "20");
+    setPackagingLength(activeSeat.volumetric_length || "20");
+    setPackagingHeight(activeSeat.volumetric_height || "10");
+    setIsPackagingEnabled(
+      parsePositiveNumber(activeSeat.volumetric_width || "") > 0
+      || parsePositiveNumber(activeSeat.volumetric_length || "") > 0
+      || parsePositiveNumber(activeSeat.volumetric_height || "") > 0,
+    );
+  }, [isOpen, seatOptions, selectedSeatIndex]);
+
+  useEffect(() => {
+    if (!isOpen || !isSeatListMode) {
+      return;
+    }
+    const target = seatListButtonsRef.current[selectedSeatIndex] || seatListButtonsRef.current[0];
+    target?.focus();
+  }, [isOpen, isSeatListMode, seatOptions.length, selectedSeatIndex]);
+
   const visiblePackings = useMemo(() => packings, [packings]);
   const selectedPackRefs = useMemo(() => {
-    const explicitRefs = Array.isArray(payload.pack_refs)
-      ? payload.pack_refs.map((ref) => String(ref || "").trim()).filter(Boolean)
+    const activeSeat = seatOptions[selectedSeatIndex] || seatOptions[0];
+    if (!activeSeat) {
+      return [];
+    }
+    const explicitRefs = Array.isArray(activeSeat.pack_refs)
+      ? activeSeat.pack_refs.map((ref) => String(ref || "").trim()).filter(Boolean)
       : [];
     if (explicitRefs.length > 0) {
       return explicitRefs;
     }
-    const legacyRef = (payload.pack_ref || "").trim();
+    const legacyRef = (activeSeat.pack_ref || "").trim();
     return legacyRef ? [legacyRef] : [];
-  }, [payload.pack_ref, payload.pack_refs]);
+  }, [seatOptions, selectedSeatIndex]);
   const selectedPackingsDisplay = useMemo(() => {
     if (!selectedPackRefs.length) {
       return "";
@@ -1286,9 +1380,10 @@ export function OrderWaybillModal({
   const senderCityDisplay = getSenderMetaLabel(sender, "city_label");
   const senderAddressDisplay = getSenderMetaLabel(sender, "address_label");
   const senderPreview = resolveSenderPreview();
+  const activeSeat = seatOptions[selectedSeatIndex] || seatOptions[0] || resolveSeatOptionFromPayload(payload);
   const payerTypeUi = (payload.payer_type || waybill?.payer_type || senderPreview.payer || "Recipient") as "Sender" | "Recipient" | "ThirdPerson";
   const paymentMethodUi = (payload.payment_method || waybill?.payment_method || senderPreview.payment || "Cash") as "Cash" | "NonCash";
-  const cargoTypeUi = (payload.cargo_type || waybill?.cargo_type || "Parcel") as "Cargo" | "Parcel" | "Documents" | "Pallet" | "TiresWheels";
+  const cargoTypeUi = (activeSeat.cargo_type || payload.cargo_type || waybill?.cargo_type || "Parcel") as "Cargo" | "Parcel" | "Documents" | "Pallet" | "TiresWheels";
   const usesControlPayment = senderRequiresControlPayment;
   const paymentAmountFieldLabel = usesControlPayment
     ? t("orders.modals.waybill.additional.controlPaymentAmount")
@@ -1304,14 +1399,34 @@ export function OrderWaybillModal({
     paymentValidationMessage = t("orders.modals.waybill.meta.validation.thirdPersonRequiresNonCash");
   }
   const canSubmit = canSaveWaybill(payload) && !formDisabled && !paymentValidationMessage && !preferredDeliveryDateInvalid;
-  const normalizedSeatsAmount = Math.max(1, payload.seats_amount ?? 1);
+  const normalizedSeatsAmount = Math.max(1, seatOptions.length || payload.seats_amount || 1);
   const width = parsePositiveNumber(packagingWidth);
   const length = parsePositiveNumber(packagingLength);
   const height = parsePositiveNumber(packagingHeight);
   const volumetricWeight =
     width <= 0 || length <= 0 || height <= 0
-      ? formatKgDisplay(payload.weight || "0")
+      ? formatKgDisplay(activeSeat.weight || payload.weight || "0")
       : formatKgDisplay((width * length * height) / 4000);
+  const updateSeatOptions = (
+    updater: (seats: WaybillSeatOptionPayload[], activeIndex: number) => WaybillSeatOptionPayload[],
+  ) => {
+    setPayload((prev) => {
+      const fallback = resolveSeatOptionFromPayload(prev);
+      const currentSeats = Array.isArray(prev.options_seat) && prev.options_seat.length > 0
+        ? prev.options_seat.map((seat) => normalizeSeatOptionPayload(seat, fallback))
+        : [fallback];
+      const activeIndex = Math.min(Math.max(0, selectedSeatIndex), Math.max(0, currentSeats.length - 1));
+      const nextSeatsRaw = updater(currentSeats, activeIndex);
+      const nextSeats = nextSeatsRaw.length > 0
+        ? nextSeatsRaw.map((seat) => normalizeSeatOptionPayload(seat, fallback))
+        : [fallback];
+      return {
+        ...prev,
+        seats_amount: nextSeats.length,
+        options_seat: nextSeats,
+      };
+    });
+  };
   const recipientCounterpartyDropdownStyle = (recipientCounterpartyLoading || recipientCounterparties.length > 0)
     ? computeFloatingDropdownStyle(recipientCounterpartyInputRef.current)
     : null;
@@ -1373,12 +1488,12 @@ export function OrderWaybillModal({
     }));
   };
   const applyCargoTypeSelection = (nextType: "Cargo" | "Parcel" | "Documents" | "Pallet") => {
-    setPayload((prev) => {
-      return {
-        ...prev,
-        cargo_type: nextType,
-      };
-    });
+    updateSeatOptions((seats, activeIndex) => seats.map((seat, index) => (
+      index === activeIndex
+        ? { ...seat, cargo_type: nextType }
+        : seat
+    )));
+    setPayload((prev) => ({ ...prev, cargo_type: nextType }));
   };
   const applyPayerTypeSelection = (nextType: "Sender" | "Recipient" | "ThirdPerson") => {
     if (nextType === "ThirdPerson" && !thirdPersonSupported) {
@@ -1409,6 +1524,7 @@ export function OrderWaybillModal({
     });
   };
   const enterPackagingMode = () => {
+    setIsSeatListMode(false);
     setIsPackagingMode(true);
     setPackingsDropdownOpen(true);
     setSeatMenuOpen(false);
@@ -1424,25 +1540,75 @@ export function OrderWaybillModal({
   const leaveAdditionalServicesMode = () => {
     setIsAdditionalServicesMode(false);
   };
+  const enterSeatListMode = () => {
+    if (normalizedSeatsAmount <= 1) {
+      return;
+    }
+    setIsPackagingMode(false);
+    setPackingsDropdownOpen(false);
+    setIsSeatListMode(true);
+    setSeatMenuOpen(false);
+  };
+  const openSeatForEditing = (index: number) => {
+    setSelectedSeatIndex(Math.max(0, Math.min(index, Math.max(0, seatOptions.length - 1))));
+    setIsSeatListMode(false);
+    setIsPackagingMode(false);
+    setPackingsDropdownOpen(false);
+    setSeatMenuOpen(false);
+  };
+  const addSeat = () => {
+    let nextIndex = selectedSeatIndex;
+    updateSeatOptions((seats, activeIndex) => {
+      const baseSeat = seats[activeIndex] || seats[0] || resolveSeatOptionFromPayload(payload);
+      const nextSeat: WaybillSeatOptionPayload = {
+        ...baseSeat,
+      };
+      const nextSeats = [
+        ...seats.slice(0, activeIndex + 1),
+        nextSeat,
+        ...seats.slice(activeIndex + 1),
+      ];
+      nextIndex = activeIndex + 1;
+      return nextSeats;
+    });
+    setSelectedSeatIndex(nextIndex);
+    setSeatMenuOpen(false);
+  };
+  const removeSeat = () => {
+    if (normalizedSeatsAmount <= 1) {
+      return;
+    }
+    let nextIndex = selectedSeatIndex;
+    updateSeatOptions((seats, activeIndex) => {
+      if (seats.length <= 1) {
+        return seats;
+      }
+      const nextSeats = seats.filter((_, index) => index !== activeIndex);
+      nextIndex = Math.max(0, Math.min(activeIndex, nextSeats.length - 1));
+      return nextSeats;
+    });
+    setSelectedSeatIndex(nextIndex);
+    setIsSeatListMode(false);
+    setSeatMenuOpen(false);
+  };
   const togglePackagingSelection = (packing: BackofficeNovaPoshtaLookupPackaging) => {
     const normalizedRef = (packing.ref || "").trim();
     if (!normalizedRef) {
       return;
     }
-    setPayload((prev) => {
-      const currentRefs = Array.isArray(prev.pack_refs)
-        ? prev.pack_refs.map((ref) => String(ref || "").trim()).filter(Boolean)
-        : ((prev.pack_ref || "").trim() ? [(prev.pack_ref || "").trim()] : []);
-      const hasRef = currentRefs.includes(normalizedRef);
-      const nextRefs = hasRef
-        ? currentRefs.filter((ref) => ref !== normalizedRef)
-        : [...currentRefs, normalizedRef];
-      return {
-        ...prev,
-        pack_refs: nextRefs,
-        pack_ref: nextRefs[0] || "",
-      };
-    });
+    const hasRef = selectedPackRefs.includes(normalizedRef);
+    const nextRefs = hasRef
+      ? selectedPackRefs.filter((ref) => ref !== normalizedRef)
+      : [...selectedPackRefs, normalizedRef];
+    updateSeatOptions((seats, activeIndex) => seats.map((seat, index) => (
+      index === activeIndex
+        ? {
+          ...seat,
+          pack_refs: nextRefs,
+          pack_ref: nextRefs[0] || "",
+        }
+        : seat
+    )));
     const nextWidth = formatDimensionCmFromMm(packing.width_mm);
     const nextLength = formatDimensionCmFromMm(packing.length_mm);
     const nextHeight = formatDimensionCmFromMm(packing.height_mm);
@@ -1457,15 +1623,99 @@ export function OrderWaybillModal({
     }
     if (nextWidth || nextLength || nextHeight) {
       setIsPackagingEnabled(true);
+      updateSeatOptions((seats, activeIndex) => seats.map((seat, index) => (
+        index === activeIndex
+          ? {
+            ...seat,
+            volumetric_width: nextWidth || seat.volumetric_width || "",
+            volumetric_length: nextLength || seat.volumetric_length || "",
+            volumetric_height: nextHeight || seat.volumetric_height || "",
+          }
+          : seat
+      )));
     }
     setPackingsDropdownOpen(false);
   };
+  const normalizedSeatPayloads = seatOptions.map((seat) => {
+    const refs = Array.isArray(seat.pack_refs)
+      ? seat.pack_refs.map((ref) => String(ref || "").trim()).filter(Boolean)
+      : [];
+    const packRef = refs[0] || String(seat.pack_ref || "").trim();
+    return {
+      ...seat,
+      description: String(seat.description || "").trim(),
+      cost: String(seat.cost || "").trim() || "0",
+      weight: String(seat.weight || "").trim() || "0.001",
+      pack_ref: packRef,
+      pack_refs: refs.length ? refs : (packRef ? [packRef] : []),
+      volumetric_width: String(seat.volumetric_width || "").trim(),
+      volumetric_length: String(seat.volumetric_length || "").trim(),
+      volumetric_height: String(seat.volumetric_height || "").trim(),
+      volumetric_volume: String(seat.volumetric_volume || "").trim(),
+      cargo_type: (seat.cargo_type || "Parcel") as WaybillSeatOptionPayload["cargo_type"],
+      special_cargo: Boolean(seat.special_cargo || payload.special_cargo),
+    } as WaybillSeatOptionPayload;
+  });
+  const activeSeatForSave = normalizedSeatPayloads[selectedSeatIndex] || normalizedSeatPayloads[0] || activeSeat;
+  const aggregatedSeatWeight = normalizedSeatPayloads.reduce(
+    (sum, seat) => sum + parsePositiveNumber(seat.weight || "0"),
+    0,
+  );
+  const aggregatedSeatCost = normalizedSeatPayloads.reduce(
+    (sum, seat) => sum + parsePositiveNumber(seat.cost || "0"),
+    0,
+  );
+  const aggregatedSeatDescription = normalizedSeatPayloads.find((seat) => seat.description)?.description
+    || (payload.description || "");
+  const aggregatedSeatRefs = Array.from(new Set(
+    normalizedSeatPayloads.flatMap((seat) => (
+      Array.isArray(seat.pack_refs) && seat.pack_refs.length
+        ? seat.pack_refs
+        : (seat.pack_ref ? [seat.pack_ref] : [])
+    )),
+  ));
   const payloadForSave: WaybillFormPayload = {
     ...payload,
+    seats_amount: normalizedSeatPayloads.length,
+    cargo_type: (activeSeatForSave?.cargo_type || payload.cargo_type || "Parcel") as WaybillFormPayload["cargo_type"],
+    description: aggregatedSeatDescription,
+    weight: aggregatedSeatWeight > 0 ? formatKgDisplay(aggregatedSeatWeight) : formatKgDisplay(payload.weight),
+    cost: aggregatedSeatCost > 0 ? String(aggregatedSeatCost.toFixed(2)).replace(/\.?0+$/, "") : payload.cost,
+    pack_refs: aggregatedSeatRefs,
+    pack_ref: aggregatedSeatRefs[0] || "",
     preferred_delivery_date: normalizedPreferredDeliveryDate,
-    volumetric_width: packagingWidth,
-    volumetric_length: packagingLength,
-    volumetric_height: packagingHeight,
+    volumetric_width: activeSeatForSave?.volumetric_width || packagingWidth,
+    volumetric_length: activeSeatForSave?.volumetric_length || packagingLength,
+    volumetric_height: activeSeatForSave?.volumetric_height || packagingHeight,
+    volume_general: activeSeatForSave?.volumetric_volume || payload.volume_general,
+    options_seat: normalizedSeatPayloads.map((seat) => {
+      const seatPayload: WaybillSeatOptionPayload = {
+        description: seat.description || "",
+        cost: seat.cost || "0",
+        weight: seat.weight || "0.001",
+        cargo_type: seat.cargo_type || "Parcel",
+        special_cargo: Boolean(seat.special_cargo),
+      };
+      if (seat.pack_ref) {
+        seatPayload.pack_ref = seat.pack_ref;
+      }
+      if (Array.isArray(seat.pack_refs) && seat.pack_refs.length) {
+        seatPayload.pack_refs = seat.pack_refs;
+      }
+      if ((seat.volumetric_width || "").trim()) {
+        seatPayload.volumetric_width = seat.volumetric_width;
+      }
+      if ((seat.volumetric_length || "").trim()) {
+        seatPayload.volumetric_length = seat.volumetric_length;
+      }
+      if ((seat.volumetric_height || "").trim()) {
+        seatPayload.volumetric_height = seat.volumetric_height;
+      }
+      if ((seat.volumetric_volume || "").trim()) {
+        seatPayload.volumetric_volume = seat.volumetric_volume;
+      }
+      return seatPayload;
+    }),
   };
   const applySettlementSelection = (settlement: BackofficeNovaPoshtaLookupSettlement) => {
     skipNextSettlementLookupRef.current = true;
@@ -2016,17 +2266,25 @@ export function OrderWaybillModal({
               style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
             >
               <div className="flex h-8 items-center justify-between gap-2">
-                <h3 className="text-foreground whitespace-nowrap text-sm font-semibold">{t("orders.modals.waybill.sectionShipment")}</h3>
-                {isPackagingMode ? (
+                <div className="flex min-w-0 items-baseline gap-2">
+                  <h3 className="text-foreground whitespace-nowrap text-sm font-semibold">{t("orders.modals.waybill.sectionShipment")}</h3>
+                  <span className="truncate whitespace-nowrap text-xs" style={{ color: "var(--muted)" }}>
+                    {t("orders.modals.waybill.fields.seats")}: {selectedSeatIndex + 1}/{normalizedSeatsAmount}
+                  </span>
+                </div>
+                {isPackagingMode || isSeatListMode ? (
                   <button
                     type="button"
                     className="inline-flex h-8 items-center justify-center gap-1 rounded-md border px-2.5 text-xs font-semibold"
                     style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)", color: "var(--text)" }}
-                    onClick={leavePackagingMode}
+                    onClick={() => {
+                      setIsSeatListMode(false);
+                      leavePackagingMode();
+                    }}
                     disabled={formDisabled}
                   >
                     <ArrowLeft className="h-3.5 w-3.5" />
-                    <span>{t("orders.modals.waybill.actions.backFromPackaging")}</span>
+                    <span>{isSeatListMode ? t("orders.modals.waybill.actions.backFromSeatList") : t("orders.modals.waybill.actions.backFromPackaging")}</span>
                   </button>
                 ) : (
                   <div ref={seatMenuRef} className="relative">
@@ -2048,23 +2306,31 @@ export function OrderWaybillModal({
                         <button
                           type="button"
                           className="w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-100/70 dark:hover:bg-slate-700/40"
-                          onClick={() => {
-                            setPayload((prev) => ({ ...prev, seats_amount: normalizedSeatsAmount + 1 }));
-                            setSeatMenuOpen(false);
-                          }}
+                          onClick={addSeat}
                         >
-                          +1 {t("orders.modals.waybill.fields.seats")}
+                          {t("orders.modals.waybill.actions.addSeat")}
                         </button>
-                        <button
-                          type="button"
-                          className="w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-100/70 dark:hover:bg-slate-700/40"
-                          onClick={() => {
-                            setPayload((prev) => ({ ...prev, seats_amount: Math.max(1, normalizedSeatsAmount - 1) }));
-                            setSeatMenuOpen(false);
-                          }}
-                        >
-                          -1 {t("orders.modals.waybill.fields.seats")}
-                        </button>
+                        {normalizedSeatsAmount > 1 ? (
+                          <button
+                            type="button"
+                            className="w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-100/70 dark:hover:bg-slate-700/40"
+                            onClick={removeSeat}
+                          >
+                            {t("orders.modals.waybill.actions.removeSeat")}
+                          </button>
+                        ) : null}
+                        {normalizedSeatsAmount > 1 ? (
+                          <>
+                            <div className="my-1 border-t" style={{ borderColor: "var(--border)" }} />
+                            <button
+                              type="button"
+                              className="w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-100/70 dark:hover:bg-slate-700/40"
+                              onClick={enterSeatListMode}
+                            >
+                              {t("orders.modals.waybill.actions.seatList")}
+                            </button>
+                          </>
+                        ) : null}
                         <div className="my-1 border-t" style={{ borderColor: "var(--border)" }} />
                         <p className="px-2 py-1 text-xs" style={{ color: "var(--muted)" }}>
                           {t("orders.modals.waybill.fields.seats")}: {normalizedSeatsAmount}
@@ -2074,7 +2340,66 @@ export function OrderWaybillModal({
                   </div>
                 )}
               </div>
-              {isPackagingMode ? (
+              {isSeatListMode ? (
+                <div className="grid gap-2 pt-0.5">
+                  <p className="text-xs" style={{ color: "var(--muted)" }}>
+                    {t("orders.modals.waybill.actions.seatList")}
+                  </p>
+                  <div
+                    className="grid gap-2"
+                    role="listbox"
+                    aria-label={t("orders.modals.waybill.actions.seatList")}
+                    onKeyDown={(event) => {
+                      if (!seatOptions.length) {
+                        return;
+                      }
+                      if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
+                        return;
+                      }
+                      event.preventDefault();
+                      const direction = event.key === "ArrowDown" ? 1 : -1;
+                      const current = selectedSeatIndex;
+                      const next = Math.max(0, Math.min(current + direction, seatOptions.length - 1));
+                      setSelectedSeatIndex(next);
+                      seatListButtonsRef.current[next]?.focus();
+                    }}
+                  >
+                    {seatOptions.map((seat, index) => (
+                      <button
+                        key={`seat-list-${index}`}
+                        ref={(node) => {
+                          seatListButtonsRef.current[index] = node;
+                        }}
+                        type="button"
+                        className="rounded-md border px-3 py-2 text-left text-sm"
+                        style={{
+                          borderColor: selectedSeatIndex === index ? "#2563eb" : "var(--border)",
+                          backgroundColor: selectedSeatIndex === index ? "rgba(37,99,235,0.08)" : "var(--surface-2)",
+                        }}
+                        role="option"
+                        aria-selected={selectedSeatIndex === index}
+                        onClick={() => openSeatForEditing(index)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            openSeatForEditing(index);
+                          }
+                        }}
+                      >
+                        <p className="font-semibold">
+                          {t("orders.modals.waybill.actions.seatCardTitle", { index: index + 1 })}
+                        </p>
+                        <p className="mt-0.5 text-xs" style={{ color: "var(--muted)" }}>
+                          {t("orders.modals.waybill.fields.weight")}: {seat.weight || "-"}
+                        </p>
+                        <p className="text-xs" style={{ color: "var(--muted)" }}>
+                          {t("orders.modals.waybill.fields.cost")}: {seat.cost || "-"}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : isPackagingMode ? (
                 <div className="grid gap-1 pt-0.5">
                   <label ref={packingsLookupRootRef} className="grid min-w-0 gap-1 text-xs">
                     <span style={{ color: "var(--muted)" }}>{t("orders.modals.waybill.fields.packRef")}</span>
@@ -2116,9 +2441,13 @@ export function OrderWaybillModal({
                     <input
                       className="h-10 rounded-md border px-3 text-sm"
                       style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-                      value={payload.description || ""}
+                      value={activeSeat.description || ""}
                       disabled={formDisabled}
-                      onChange={(event) => setPayload((prev) => ({ ...prev, description: event.target.value }))}
+                      onChange={(event) => updateSeatOptions((seats, activeIndex) => seats.map((seat, index) => (
+                        index === activeIndex
+                          ? { ...seat, description: event.target.value }
+                          : seat
+                      )))}
                     />
                   </label>
 
@@ -2128,9 +2457,13 @@ export function OrderWaybillModal({
                       <input
                         className="h-10 w-full min-w-0 rounded-md border px-3 text-sm"
                         style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-                        value={payload.cost}
+                        value={activeSeat.cost || ""}
                         disabled={formDisabled}
-                        onChange={(event) => setPayload((prev) => ({ ...prev, cost: event.target.value }))}
+                        onChange={(event) => updateSeatOptions((seats, activeIndex) => seats.map((seat, index) => (
+                          index === activeIndex
+                            ? { ...seat, cost: event.target.value }
+                            : seat
+                        )))}
                       />
                     </label>
                     <label className="grid min-w-0 gap-1 text-xs">
@@ -2138,9 +2471,13 @@ export function OrderWaybillModal({
                       <input
                         className="h-10 w-full min-w-0 rounded-md border px-3 text-sm"
                         style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-                        value={payload.weight}
+                        value={activeSeat.weight || ""}
                         disabled={formDisabled}
-                        onChange={(event) => setPayload((prev) => ({ ...prev, weight: event.target.value }))}
+                        onChange={(event) => updateSeatOptions((seats, activeIndex) => seats.map((seat, index) => (
+                          index === activeIndex
+                            ? { ...seat, weight: event.target.value }
+                            : seat
+                        )))}
                       />
                     </label>
                   </div>
@@ -2173,8 +2510,14 @@ export function OrderWaybillModal({
                         value={packagingWidth}
                         disabled={formDisabled}
                         onChange={(event) => {
-                          setPackagingWidth(event.target.value);
+                          const nextValue = event.target.value;
+                          setPackagingWidth(nextValue);
                           setIsPackagingEnabled(true);
+                          updateSeatOptions((seats, activeIndex) => seats.map((seat, index) => (
+                            index === activeIndex
+                              ? { ...seat, volumetric_width: nextValue }
+                              : seat
+                          )));
                         }}
                       />
                     </label>
@@ -2186,8 +2529,14 @@ export function OrderWaybillModal({
                         value={packagingLength}
                         disabled={formDisabled}
                         onChange={(event) => {
-                          setPackagingLength(event.target.value);
+                          const nextValue = event.target.value;
+                          setPackagingLength(nextValue);
                           setIsPackagingEnabled(true);
+                          updateSeatOptions((seats, activeIndex) => seats.map((seat, index) => (
+                            index === activeIndex
+                              ? { ...seat, volumetric_length: nextValue }
+                              : seat
+                          )));
                         }}
                       />
                     </label>
@@ -2199,8 +2548,14 @@ export function OrderWaybillModal({
                         value={packagingHeight}
                         disabled={formDisabled}
                         onChange={(event) => {
-                          setPackagingHeight(event.target.value);
+                          const nextValue = event.target.value;
+                          setPackagingHeight(nextValue);
                           setIsPackagingEnabled(true);
+                          updateSeatOptions((seats, activeIndex) => seats.map((seat, index) => (
+                            index === activeIndex
+                              ? { ...seat, volumetric_height: nextValue }
+                              : seat
+                          )));
                         }}
                       />
                     </label>

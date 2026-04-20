@@ -6,5 +6,6 @@ export * from "./imports-api";
 export * from "./suppliers-api";
 export * from "./pricing-api";
 export * from "./orders-api";
+export * from "./payment-api";
 export * from "./matching-api";
 export * from "./vehicles-api";

@@ -57,6 +57,7 @@ def get_orders_queryset(*, user_id) -> QuerySet[Order]:
     supplier_offer_prefetch = _supplier_offer_prefetch()
     return (
         Order.objects.filter(user_id=user_id)
+        .select_related("payment")
         .prefetch_related(
             Prefetch(
                 "items",

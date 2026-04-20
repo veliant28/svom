@@ -37,3 +37,17 @@ export function resolveOrderStatusTone(status: string): "success" | "warning" | 
   }
   return "neutral";
 }
+
+export function resolveOrderStatusChipTone(status: string): "success" | "warning" | "error" | "info" {
+  const tone = resolveOrderStatusTone(status);
+  if (tone === "success") {
+    return "success";
+  }
+  if (tone === "warning") {
+    return "warning";
+  }
+  if (tone === "danger") {
+    return "error";
+  }
+  return "info";
+}

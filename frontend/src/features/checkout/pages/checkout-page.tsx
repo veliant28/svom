@@ -17,7 +17,11 @@ import {
   type CheckoutNovaPoshtaStreet,
   type CheckoutNovaPoshtaWarehouse,
 } from "@/features/checkout/api/lookup-nova-poshta";
+import { getCheckoutMonobankWidget } from "@/features/checkout/api/monobank-payment";
 import { submitCheckout } from "@/features/checkout/api/submit-checkout";
+import { MonoPayWidget } from "@/features/checkout/components/payment/monopay-widget";
+import { PaymentMethodToggle } from "@/features/checkout/components/payment/payment-method-toggle";
+import type { CheckoutPaymentMethod, MonobankWidgetResponse } from "@/features/checkout/types/payment";
 import type { CheckoutPreview, Order } from "@/features/commerce/types";
 import { Link } from "@/i18n/navigation";
 import { useStorefrontFeedback } from "@/shared/hooks/use-storefront-feedback";
@@ -71,6 +75,22 @@ function resolveWarehouseTypeLabel(locale: string, isPostomat: boolean): string 
   return localeIsRu ? "Отделение" : "Відділення";
 }
 
+function isPostomatWarehouse(item: CheckoutNovaPoshtaWarehouse): boolean {
+  const normalizedCategory = String(item.category || "").toLowerCase();
+  const normalizedType = String(item.type || "").toLowerCase();
+  const normalizedText = `${item.description || ""} ${item.full_description || ""} ${item.label || ""}`.toLowerCase();
+  return (
+    normalizedCategory.includes("postomat")
+    || normalizedType.includes("postomat")
+    || normalizedType.includes("поштомат")
+    || normalizedType.includes("постомат")
+    || normalizedType.includes("почтомат")
+    || normalizedText.includes("поштомат")
+    || normalizedText.includes("постомат")
+    || normalizedText.includes("почтомат")
+  );
+}
+
 function formatWarehouseLookupDisplay(item: CheckoutNovaPoshtaWarehouse, locale: string): { label: string; subtitle: string } {
   const normalizedNumber = String(item.number || "").trim();
   const normalizedDescription = String(item.description || item.full_description || "").trim();
@@ -82,18 +102,7 @@ function formatWarehouseLookupDisplay(item: CheckoutNovaPoshtaWarehouse, locale:
     : "";
   const shortWithoutCity = String(item.label || "").split(",").slice(1).join(",").trim();
   const fallbackStreet = shortWithoutCity || descriptionTail || item.ref;
-  const normalizedCategory = String(item.category || "").toLowerCase();
-  const normalizedType = String(item.type || "").toLowerCase();
-  const normalizedText = `${normalizedDescription} ${shortWithoutCity}`.toLowerCase();
-  const isPostomat =
-    normalizedCategory.includes("postomat")
-    || normalizedType.includes("postomat")
-    || normalizedType.includes("поштомат")
-    || normalizedType.includes("постомат")
-    || normalizedType.includes("почтомат")
-    || normalizedText.includes("поштомат")
-    || normalizedText.includes("постомат")
-    || normalizedText.includes("почтомат");
+  const isPostomat = isPostomatWarehouse(item);
   const typeLabel = resolveWarehouseTypeLabel(locale, isPostomat);
   const fallbackLabel = normalizedNumber ? `${typeLabel} №${normalizedNumber}` : typeLabel;
   const normalizedPrefix = descriptionPrefix.replace(/\s+/g, " ").trim();
@@ -132,10 +141,11 @@ export function CheckoutPage() {
 
   const [lastName, setLastName] = useState(user?.last_name ?? "");
   const [firstName, setFirstName] = useState(user?.first_name ?? "");
-  const [middleName, setMiddleName] = useState("");
+  const [middleName, setMiddleName] = useState(user?.middle_name ?? "");
   const [phone, setPhone] = useState(formatPhoneInput(user?.phone ?? ""));
   const [isLastNameDirty, setIsLastNameDirty] = useState(false);
   const [isFirstNameDirty, setIsFirstNameDirty] = useState(false);
+  const [isMiddleNameDirty, setIsMiddleNameDirty] = useState(false);
   const [isPhoneDirty, setIsPhoneDirty] = useState(false);
 
   const [deliveryOption, setDeliveryOption] = useState<CheckoutDeliveryOption>("pickup");
@@ -160,8 +170,10 @@ export function CheckoutPage() {
   const [house, setHouse] = useState("");
   const [apartment, setApartment] = useState("");
 
-  const [paymentMethod, setPaymentMethod] = useState<Order["payment_method"]>("card_placeholder");
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("monobank");
   const [comment, setComment] = useState("");
+  const [monobankWidgetState, setMonobankWidgetState] = useState<MonobankWidgetResponse | null>(null);
+  const [monobankWidgetLoading, setMonobankWidgetLoading] = useState(false);
   const [preview, setPreview] = useState<CheckoutPreview | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const cityLookupRootRef = useRef<HTMLLabelElement | null>(null);
@@ -175,10 +187,19 @@ export function CheckoutPage() {
     if (!isFirstNameDirty) {
       setFirstName(user?.first_name ?? "");
     }
+    if (!isMiddleNameDirty) {
+      setMiddleName(user?.middle_name ?? "");
+    }
     if (!isPhoneDirty) {
       setPhone(formatPhoneInput(user?.phone ?? ""));
     }
-  }, [isFirstNameDirty, isLastNameDirty, isPhoneDirty, user?.first_name, user?.last_name, user?.phone]);
+  }, [isFirstNameDirty, isLastNameDirty, isMiddleNameDirty, isPhoneDirty, user?.first_name, user?.last_name, user?.middle_name, user?.phone]);
+
+  useEffect(() => {
+    if (paymentMethod !== "monobank") {
+      setMonobankWidgetState(null);
+    }
+  }, [paymentMethod]);
 
   const npLocale = useMemo(() => {
     const normalized = locale.toLowerCase();
@@ -205,7 +226,9 @@ export function CheckoutPage() {
 
     if (deliveryOption === "nova_poshta_warehouse") {
       const cityLabel = selectedCity?.label || cityQuery.trim();
-      const destinationLabel = selectedWarehouse?.label || warehouseQuery.trim();
+      const destinationLabel = selectedWarehouse
+        ? formatWarehouseInputValue(selectedWarehouse, npLocale)
+        : warehouseQuery.trim();
       return [cityLabel, destinationLabel].filter(Boolean).join(", ");
     }
 
@@ -221,7 +244,90 @@ export function CheckoutPage() {
     const streetWithHouse = houseLabel ? `${streetLabel}, ${houseLabel}` : streetLabel;
     const line = apartmentLabel ? `${streetWithHouse}, ${apartmentLabel}` : streetWithHouse;
     return [cityLabel, line].filter(Boolean).join(", ");
-  }, [apartment, cityQuery, deliveryOption, house, selectedCity, selectedStreet, selectedWarehouse, streetQuery, warehouseQuery]);
+  }, [apartment, cityQuery, deliveryOption, house, npLocale, selectedCity, selectedStreet, selectedWarehouse, streetQuery, warehouseQuery]);
+
+  const resolvedDeliverySnapshot = useMemo<Record<string, unknown>>(() => {
+    const cityLabel = selectedCity?.label || cityQuery.trim();
+    const cityRef = selectedCity?.delivery_city_ref || selectedCity?.ref || "";
+    const settlementRef = selectedCity?.settlement_ref || selectedCity?.ref || "";
+    const regionLabel = selectedCity?.area || "";
+    const areaLabel = selectedCity?.region || "";
+
+    if (deliveryOption === "pickup") {
+      return {
+        method: "pickup",
+      };
+    }
+
+    if (deliveryOption === "nova_poshta_warehouse") {
+      const destinationLabel = selectedWarehouse
+        ? formatWarehouseInputValue(selectedWarehouse, npLocale)
+        : warehouseQuery.trim();
+      const warehouse = selectedWarehouse ? {
+        ref: selectedWarehouse.ref || "",
+        number: selectedWarehouse.number || "",
+        type: selectedWarehouse.type || "",
+        category: selectedWarehouse.category || "",
+        label: destinationLabel,
+      } : {
+        ref: "",
+        number: "",
+        type: "",
+        category: "",
+        label: destinationLabel,
+      };
+
+      return {
+        method: "nova_poshta",
+        nova_poshta: {
+          delivery_type: selectedWarehouse && isPostomatWarehouse(selectedWarehouse) ? "postomat" : "warehouse",
+          city_ref: cityRef,
+          city_label: cityLabel,
+          settlement_ref: settlementRef,
+          region_label: regionLabel,
+          area_label: areaLabel,
+          destination_ref: selectedWarehouse?.ref || "",
+          destination_label: destinationLabel,
+          warehouse,
+          street: {
+            street_ref: "",
+            street_label: "",
+            house: "",
+            apartment: "",
+          },
+        },
+      };
+    }
+
+    const streetLabel = selectedStreet?.label || streetQuery.trim();
+    const houseLabel = house.trim();
+    const apartmentLabel = apartment.trim();
+    const streetWithHouse = houseLabel ? `${streetLabel}, ${houseLabel}` : streetLabel;
+    const destinationLabel = apartmentLabel ? `${streetWithHouse}, ${apartmentLabel}` : streetWithHouse;
+    return {
+      method: "courier",
+      courier: {
+        city_label: cityLabel,
+        region_label: regionLabel,
+        destination_label: destinationLabel,
+        street_ref: selectedStreet?.street_ref || "",
+        street_label: streetLabel,
+        house: houseLabel,
+        apartment: apartmentLabel,
+      },
+    };
+  }, [
+    apartment,
+    cityQuery,
+    deliveryOption,
+    house,
+    npLocale,
+    selectedCity,
+    selectedStreet,
+    selectedWarehouse,
+    streetQuery,
+    warehouseQuery,
+  ]);
 
   const contactFullName = useMemo(
     () => [lastName.trim(), firstName.trim(), middleName.trim()].filter(Boolean).join(" "),
@@ -532,6 +638,14 @@ export function CheckoutPage() {
               showError(t("errors.deliveryStreetRequired"));
               return;
             }
+            if (paymentMethod === "novapay") {
+              showError(t("payment.novapayComingSoon"));
+              return;
+            }
+            if (paymentMethod === "liqpay") {
+              showError(t("payment.liqpayComingSoon"));
+              return;
+            }
 
             setIsSubmitting(true);
             try {
@@ -541,11 +655,42 @@ export function CheckoutPage() {
                 contact_email: contactEmail,
                 delivery_method: effectiveDeliveryMethod,
                 delivery_address: resolvedDeliveryAddress,
+                delivery_snapshot: resolvedDeliverySnapshot,
                 payment_method: paymentMethod,
                 customer_comment: comment,
               });
               showSuccess(t("success", { orderNumber: order.order_number }));
               await refresh();
+              if (paymentMethod === "monobank") {
+                const checkoutPageUrl = (order.payment?.page_url || "").trim();
+                if (checkoutPageUrl) {
+                  window.location.assign(checkoutPageUrl);
+                  return;
+                }
+
+                setMonobankWidgetLoading(true);
+                try {
+                  const widgetPayload = await getCheckoutMonobankWidget(token, order.id);
+                  setMonobankWidgetState(widgetPayload);
+                  const widgetPageUrl = (widgetPayload.page_url || "").trim();
+                  if (widgetPageUrl) {
+                    window.location.assign(widgetPageUrl);
+                    return;
+                  }
+                } catch (widgetError) {
+                  showApiError(widgetError, t("payment.widgetFailedFallback"));
+                  setMonobankWidgetState({
+                    order_id: order.id,
+                    invoice_id: order.payment?.invoice_id || "",
+                    page_url: order.payment?.page_url || "",
+                    widget: null,
+                  });
+                } finally {
+                  setMonobankWidgetLoading(false);
+                }
+              } else {
+                setMonobankWidgetState(null);
+              }
             } catch (submitError) {
               showApiError(submitError, t("submitError"));
             } finally {
@@ -588,7 +733,10 @@ export function CheckoutPage() {
                 {t("fields.middleName")}
                 <input
                   value={middleName}
-                  onChange={(event) => setMiddleName(event.target.value)}
+                  onChange={(event) => {
+                    setIsMiddleNameDirty(true);
+                    setMiddleName(event.target.value);
+                  }}
                   className="h-10 rounded-md border px-3"
                   style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
                 />
@@ -955,18 +1103,20 @@ export function CheckoutPage() {
 
           <h2 className="mt-5 text-lg font-semibold">{t("sections.payment")}</h2>
           <div className="mt-3 grid gap-3">
-            <label className="flex flex-col gap-1 text-xs">
-              {t("fields.paymentMethod")}
-              <select
-                value={paymentMethod}
-                onChange={(event) => setPaymentMethod(event.target.value as Order["payment_method"])}
-                className="h-10 rounded-md border px-3"
-                style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
-              >
-                <option value="card_placeholder">{t("payment.cardPlaceholder")}</option>
-                <option value="cash_on_delivery">{t("payment.cashOnDelivery")}</option>
-              </select>
-            </label>
+            <PaymentMethodToggle
+              value={paymentMethod}
+              onChange={setPaymentMethod}
+              labels={{
+                monobankTitle: t("payment.monobank"),
+                monobankHint: t("payment.monobankHint"),
+                codTitle: t("payment.cashOnDelivery"),
+                codHint: t("payment.cashOnDeliveryHint"),
+                novapayTitle: t("payment.novapay"),
+                novapayHint: t("payment.novapayHint"),
+                liqpayTitle: t("payment.liqpay"),
+                liqpayHint: t("payment.liqpayHint"),
+              }}
+            />
 
             <label className="flex flex-col gap-1 text-xs">
               {t("fields.comment")}
@@ -978,6 +1128,14 @@ export function CheckoutPage() {
                 style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
               />
             </label>
+
+            {monobankWidgetLoading ? (
+              <p className="text-xs" style={{ color: "var(--muted)" }}>{t("payment.widgetLoading")}</p>
+            ) : null}
+
+            {monobankWidgetState && paymentMethod === "monobank" ? (
+              <MonoPayWidget widget={monobankWidgetState.widget} pageUrl={monobankWidgetState.page_url} t={(key) => t(key)} />
+            ) : null}
           </div>
 
           <button

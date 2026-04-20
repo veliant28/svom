@@ -45,7 +45,7 @@ export function ImportQualityPage() {
   const runs = useBackofficeQuery<{ count: number; results: BackofficeImportQuality[] }>(runsQuery, [source, requiresAttention]);
   const compare = useBackofficeQuery<BackofficeImportQualityComparison | null>(compareQuery, [selectedRunId]);
 
-  const rows = runs.data?.results ?? [];
+  const rows = useMemo(() => runs.data?.results ?? [], [runs.data?.results]);
   const sourceOptions = useMemo(() => Array.from(new Set(rows.map((item) => item.source_code))).sort(), [rows]);
 
   return (

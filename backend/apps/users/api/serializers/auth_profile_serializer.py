@@ -18,6 +18,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             "username",
             "first_name",
             "last_name",
+            "middle_name",
             "phone",
             "preferred_language",
         )
@@ -26,20 +27,24 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             "username": {"required": False},
             "first_name": {"required": False},
             "last_name": {"required": False},
+            "middle_name": {"required": False},
             "phone": {"required": False},
             "preferred_language": {"required": False},
         }
 
     def validate_phone(self, value: str) -> str:
         normalized_value = value.strip()
-        if normalized_value and not PHONE_FORMAT_REGEX.fullmatch(normalized_value):
+        compact_value = re.sub(r"\s+", "", normalized_value)
+        if compact_value.startswith("+"):
+            compact_value = compact_value[1:]
+        if compact_value and not PHONE_FORMAT_REGEX.fullmatch(compact_value):
             raise serializers.ValidationError("Phone must match format 38(0XX)XXX-XX-XX.")
-        return normalized_value
+        return compact_value
 
 
 class PasswordChangeSerializer(serializers.Serializer):
     current_password = serializers.CharField(trim_whitespace=False, write_only=True)
-    new_password = serializers.CharField(trim_whitespace=False, min_length=8, max_length=8, write_only=True)
+    new_password = serializers.CharField(trim_whitespace=False, min_length=8, write_only=True)
 
     def validate_current_password(self, value: str) -> str:
         user: User = self.context["user"]

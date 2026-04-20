@@ -57,7 +57,7 @@
     },
     "checkout": {
       "title": "Оформлення",
-      "subtitle": "Базовий flow: контакти, доставка, платіжний placeholder.",
+      "subtitle": "Контакти, доставка та оплата для оформлення замовлення.",
       "authRequired": "Для checkout потрібна авторизація.",
       "goToLogin": "Перейти до входу",
       "emptyCart": "Ваш кошик порожній.",
@@ -103,8 +103,20 @@
         "noResults": "Нічого не знайдено"
       },
       "payment": {
-        "cardPlaceholder": "Оплата карткою (placeholder)",
-        "cashOnDelivery": "Післяплата"
+        "monobank": "Monobank",
+        "novapay": "NovaPay",
+        "cashOnDelivery": "Післяплата",
+        "monobankHint": "Онлайн-оплата через офіційний віджет або сторінку Monobank.",
+        "novapayHint": "Оплата через NovaPay незабаром буде доступна.",
+        "cashOnDeliveryHint": "Оплата під час отримання замовлення.",
+        "openMonobankPage": "Відкрити сторінку оплати Monobank",
+        "payWithMonobank": "Оплатити через Monobank",
+        "widgetLoading": "Завантаження віджета Monobank...",
+        "widgetFailedFallback": "Віджет Monobank недоступний. Скористайтесь сторінкою оплати.",
+        "novapayComingSoon": "NovaPay скоро буде доступний.",
+        "liqpay": "LiqPay",
+        "liqpayHint": "Оплата через LiqPay незабаром буде доступна.",
+        "liqpayComingSoon": "LiqPay скоро буде доступний."
       },
       "actions": {
         "submit": "Оформити замовлення",
@@ -135,7 +147,10 @@
       },
       "labels": {
         "items": "Позицій: {count}",
-        "client": "Клієнт: {fullName}"
+        "client": "Клієнт: {fullName}",
+        "delivery": "Доставка: {city} · {destination}",
+        "deliveryCity": "Місто доставки: {value}",
+        "deliveryDestination": "Відділення / поштомат / адреса: {value}"
       },
       "table": {
         "sku": "Артикул",

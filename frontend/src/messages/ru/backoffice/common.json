@@ -654,7 +654,15 @@
           "senderSaveFailed": "Не удалось сохранить профиль отправителя.",
           "senderValidated": "Профиль отправителя успешно проверен.",
           "senderValidateFailed": "Не удалось проверить профиль отправителя.",
-          "senderDeleteFailed": "Не удалось удалить профиль отправителя."
+          "senderDeleteFailed": "Не удалось удалить профиль отправителя.",
+          "paymentRefreshed": "Статус оплаты обновлен.",
+          "paymentRefreshFailed": "Не удалось обновить статус оплаты.",
+          "paymentCancelled": "Оплата Monobank отменена.",
+          "paymentFinalized": "Холд Monobank финализирован.",
+          "paymentInvoiceRemoved": "Инвойс Monobank деактивирован.",
+          "paymentFiscalChecksLoaded": "Фискальные чеки загружены: {count}.",
+          "monobankActionFailed": "Не удалось выполнить действие Monobank.",
+          "monobankActionNotAvailable": "Действие доступно только для оплаты Monobank."
         },
         "statusDescriptions": {
           "new": "Новый заказ. Можно подтвердить и передать в обработку.",
@@ -674,13 +682,26 @@
             "titleWithNumber": "Заказ {number}",
             "summary": {
               "customer": "Клиент",
+              "fullName": "ФИО",
+              "phone": "Телефон",
               "meta": "Служебная информация",
               "created": "Дата создания: {value}",
               "items": "Позиций: {count}",
               "delivery": "Доставка: {value}",
+              "deliveryMethod": "Способ доставки",
+              "paymentMethod": "Способ оплаты",
+              "deliveryCity": "Город доставки",
+              "deliveryDestination": "Отделение / почтомат / адрес",
               "total": "Итог",
               "subtotal": "Подытог: {value} {currency}",
-              "deliveryFee": "Доставка: {value} {currency}"
+              "deliveryFee": "Доставка: {value} {currency}",
+              "values": {
+                "deliveryMethods": {
+                  "pickup": "Самовывоз",
+                  "courier": "Курьер",
+                  "nova_poshta": "Новая Почта"
+                }
+              }
             },
             "items": {
               "title": "Состав заказа",
@@ -817,7 +838,12 @@
               "additionalServices": "Дополнительные услуги",
               "addPackaging": "Добавить упаковку",
               "packagingAdded": "Добавлена упаковка",
+              "addSeat": "Добавить место",
+              "removeSeat": "Убрать место",
+              "seatList": "Список мест",
+              "seatCardTitle": "Место {index}",
               "backFromPackaging": "Назад",
+              "backFromSeatList": "Назад",
               "backFromAdditionalServices": "Назад"
             },
             "payment": {
@@ -945,6 +971,65 @@
               }
             }
           }
+        },
+        "payment": {
+          "title": "Оплата",
+          "provider": "Провайдер",
+          "method": "Метод",
+          "status": "Статус",
+          "amount": "Сумма",
+          "invoiceId": "Invoice ID",
+          "reference": "Reference",
+          "failureReason": "Причина ошибки",
+          "pageUrl": "Page URL",
+          "open": "Открыть",
+          "openPaymentPage": "Открыть страницу оплаты",
+          "lastWebhookAt": "Последний webhook",
+          "lastSyncAt": "Последняя синхронизация",
+          "refreshStatus": "Обновить статус оплаты",
+          "monobank": {
+            "controlsTitle": "Действия Monobank",
+            "amountMinor": "Сумма (мин. единицы, опционально)",
+            "amountMinorHint": "например 4200",
+            "amountMinorInvalid": "Укажите целое число больше нуля.",
+            "actions": {
+              "finalize": "Финализировать холд",
+              "cancel": "Отменить оплату",
+              "remove": "Инвалидировать инвойс",
+              "fiscalChecks": "Фискальные чеки"
+            },
+            "tooltips": {
+              "finalize": "Списать холд и завершить оплату",
+              "cancel": "Отменить оплату полностью или на сумму из поля выше",
+              "remove": "Отключить ссылку оплаты, чтобы клиент больше не смог оплатить по этому инвойсу",
+              "fiscalChecks": "Показать фискальные чеки по этому инвойсу"
+            },
+            "fiscalChecksTitle": "Фискальные чеки",
+            "fiscalType": "Тип чека",
+            "fiscalSource": "Источник фискализации",
+            "taxUrl": "Открыть tax URL"
+          },
+          "values": {
+            "providers": {
+              "cash_on_delivery": "Наложенный платеж",
+              "monobank": "Monobank"
+            },
+            "methods": {
+              "cash_on_delivery": "Наложенный платеж",
+              "monobank": "Monobank",
+              "card_placeholder": "Оплата картой"
+            },
+            "statuses": {
+              "pending": "Ожидает",
+              "processing": "В обработке",
+              "created": "Создан",
+              "success": "Успешно",
+              "paid": "Оплачен",
+              "failed": "Ошибка",
+              "expired": "Истек",
+              "cancelled": "Отменен"
+            }
+          }
         }
       },
       "orderDetail": {
@@ -1039,6 +1124,63 @@
         },
         "states": {
           "empty": "Рекомендации по закупке отсутствуют."
+        }
+      },
+      "payments": {
+        "title": "Оплата",
+        "subtitle": "Операционные настройки Monobank, проверка соединения и курсы валют.",
+        "providers": {
+          "mono": "Mono",
+          "nova": "Nova",
+          "novaPlaceholder": "Интеграция Nova Pay в разработке."
+        },
+        "monobank": {
+          "title": "Настройки Monobank",
+          "helper": "Токен мерчанта и данные подписи виджета хранятся на backend.",
+          "enabled": "Включено",
+          "token": "X-Token / merchant token",
+          "tokenMasked": "Сохранённый токен",
+          "widgetKeyId": "Widget keyId",
+          "widgetPrivateKey": "Widget private key (PEM)",
+          "widgetPrivateKeyMasked": "Сохранённый приватный ключ",
+          "webhookUrl": "Webhook URL",
+          "redirectUrl": "Redirect URL",
+          "testConnection": "Проверить соединение",
+          "testing": "Проверяем...",
+          "save": "Сохранить настройки",
+          "saving": "Сохраняем...",
+          "status": "Статус",
+          "lastConnection": "Последняя проверка",
+          "lastConnectionState": "Состояние соединения",
+          "lastConnectionMessage": "Сообщение проверки",
+          "currencyRates": "Курсы валют Monobank",
+          "refreshRates": "Обновить курсы",
+          "rateLabels": {
+            "buy": "покупка",
+            "sell": "продажа",
+            "cross": "кросс-курс"
+          }
+        },
+        "novapay": {
+          "title": "Настройки Nova Pay",
+          "helper": "Merchant ID и API токен (X-Sign) хранятся на backend в БД.",
+          "enabled": "Включено",
+          "merchantId": "Merchant ID",
+          "apiToken": "API token (X-Sign)",
+          "apiTokenMasked": "Сохранённый токен",
+          "save": "Сохранить настройки",
+          "saving": "Сохраняем..."
+        },
+        "messages": {
+          "loadSettingsFailed": "Не удалось загрузить настройки Monobank.",
+          "saveSettingsFailed": "Не удалось сохранить настройки Monobank.",
+          "settingsSaved": "Настройки Monobank сохранены.",
+          "connectionFailed": "Не удалось проверить соединение Monobank.",
+          "connectionOk": "Соединение Monobank успешно.",
+          "currencyFailed": "Не удалось загрузить курсы валют Monobank.",
+          "loadNovaSettingsFailed": "Не удалось загрузить настройки Nova Pay.",
+          "saveNovaSettingsFailed": "Не удалось сохранить настройки Nova Pay.",
+          "novaSettingsSaved": "Настройки Nova Pay сохранены."
         }
       }
     }

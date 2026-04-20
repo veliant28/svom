@@ -1,7 +1,9 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,7 +17,16 @@ from apps.commerce.api.serializers import (
     OrderSerializer,
 )
 from apps.commerce.api.views.cart_views import _serialize_user_cart
-from apps.commerce.services import build_checkout_preview, submit_checkout
+from apps.commerce.models import Order
+from apps.commerce.services import (
+    MonobankWebhookService,
+    build_checkout_preview,
+    build_selector_widget_init_payload,
+    build_widget_init_payload,
+    get_monobank_settings,
+    get_order_payment,
+    submit_checkout,
+)
 from apps.commerce.services.nova_poshta import NovaPoshtaLookupService, NovaPoshtaSenderProfileService
 from apps.commerce.services.nova_poshta.errors import NovaPoshtaBusinessRuleError, NovaPoshtaIntegrationError
 
@@ -54,12 +65,118 @@ class CheckoutSubmitAPIView(APIView):
         serializer.is_valid(raise_exception=True)
 
         try:
-            order = submit_checkout(user=request.user, payload=serializer.validated_data)
+            order = submit_checkout(
+                user=request.user,
+                payload=serializer.validated_data,
+                monobank_webhook_url=request.build_absolute_uri("/api/commerce/payments/monobank/webhook/"),
+                monobank_redirect_url=request.build_absolute_uri("/checkout"),
+            )
         except DjangoValidationError as exc:
             raise ValidationError(detail=exc.message_dict)
 
         response_data = OrderSerializer(order, context={"request": request}).data
         return Response(response_data, status=status.HTTP_201_CREATED)
+
+
+class CheckoutOrderMonobankWidgetAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, order_id):
+        order = get_object_or_404(Order, id=order_id, user_id=request.user.id)
+        payment = get_order_payment(order)
+        if payment.provider != payment.PROVIDER_MONOBANK:
+            return Response({"detail": "This order does not use Monobank payment."}, status=status.HTTP_400_BAD_REQUEST)
+
+        widget = build_widget_init_payload(payment=payment)
+        widget_error = ""
+        if not widget:
+            settings = get_monobank_settings()
+            if not (settings.widget_key_id or "").strip():
+                widget_error = "Monobank widget keyId is not configured."
+            elif not (settings.widget_private_key or "").strip():
+                widget_error = "Monobank widget private key is not configured."
+            else:
+                widget_error = "Failed to initialize MonoPay widget. Check widget private key format (ECDSA P-256 PEM) and OpenSSL availability."
+
+        return Response(
+            {
+                "order_id": str(order.id),
+                "invoice_id": payment.monobank_invoice_id,
+                "page_url": payment.monobank_page_url,
+                "widget": (
+                    {
+                        "key_id": widget.key_id,
+                        "request_id": widget.request_id,
+                        "signature": widget.signature,
+                        "payload_base64": widget.payload_base64,
+                    }
+                    if widget
+                    else None
+                ),
+                "widget_error": widget_error,
+            }
+        )
+
+
+class CheckoutMonobankSelectorWidgetAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        widget = build_selector_widget_init_payload(user=request.user)
+        widget_error = ""
+        if not widget:
+            settings = get_monobank_settings()
+            if not (settings.widget_key_id or "").strip():
+                widget_error = "Monobank widget keyId is not configured."
+            elif not (settings.widget_private_key or "").strip():
+                widget_error = "Monobank widget private key is not configured."
+            else:
+                widget_error = "Failed to initialize MonoPay selector widget. Check widget private key format (ECDSA P-256 PEM) and OpenSSL availability."
+
+        return Response(
+            {
+                "widget": (
+                    {
+                        "key_id": widget.key_id,
+                        "request_id": widget.request_id,
+                        "signature": widget.signature,
+                        "payload_base64": widget.payload_base64,
+                    }
+                    if widget
+                    else None
+                ),
+                "widget_error": widget_error,
+            }
+        )
+
+
+class MonobankWebhookAPIView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({"ok": True})
+
+    def post(self, request):
+        body = request.body or b""
+        x_sign = request.headers.get("X-Sign", "")
+
+        service = MonobankWebhookService()
+        try:
+            payment, applied = service.handle(body=body, x_sign=x_sign)
+        except DjangoValidationError as exc:
+            detail = exc.message_dict if hasattr(exc, "message_dict") else getattr(exc, "messages", [str(exc)])
+            return Response({"detail": detail}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {
+                "ok": True,
+                "order_id": str(payment.order_id),
+                "invoice_id": payment.monobank_invoice_id,
+                "applied": applied,
+            }
+        )
 
 
 class CheckoutNovaPoshtaSettlementsLookupAPIView(APIView):

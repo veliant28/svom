@@ -1,20 +1,38 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
+import { useTranslations } from "next-intl";
 
 import { useBackofficeToast } from "@/features/backoffice/components/notifications/backoffice-toast-provider";
 import { resolveApiErrorMessage } from "@/shared/lib/resolve-api-error-message";
 
 export function useStorefrontFeedback() {
   const toast = useBackofficeToast();
+  const tApiErrors = useTranslations("common.apiErrors");
+  const knownApiErrorMessages = useMemo(
+    () => ({
+      phoneFormat: tApiErrors("phoneFormat"),
+      required: tApiErrors("required"),
+      notBlank: tApiErrors("notBlank"),
+      invalidEmail: tApiErrors("invalidEmail"),
+      invalidChoice: tApiErrors("invalidChoice"),
+      currentPasswordIncorrect: tApiErrors("currentPasswordIncorrect"),
+      maxLength: (max: number) => tApiErrors("maxLength", { max }),
+      minLength: (min: number) => tApiErrors("minLength", { min }),
+      exactLength: (count: number) => tApiErrors("exactLength", { count }),
+    }),
+    [tApiErrors],
+  );
 
   const showApiError = useCallback(
     (error: unknown, fallbackMessage: string) => {
-      const message = resolveApiErrorMessage(error, fallbackMessage);
+      const message = resolveApiErrorMessage(error, fallbackMessage, {
+        knownMessages: knownApiErrorMessages,
+      });
       toast.error(message);
       return message;
     },
-    [toast],
+    [knownApiErrorMessages, toast],
   );
 
   const showSuccess = useCallback(

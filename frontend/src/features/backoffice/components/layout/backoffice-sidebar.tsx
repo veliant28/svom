@@ -12,6 +12,7 @@ import {
   PackageCheck,
   Tags,
   Truck,
+  Wallet2,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -25,6 +26,7 @@ type SidebarNavItem = {
     | "suppliers"
     | "products"
     | "pricing"
+    | "payments"
     | "brands"
     | "categories"
     | "autocatalog"
@@ -38,6 +40,7 @@ const NAV_ITEMS: SidebarNavItem[] = [
   { href: "/backoffice/suppliers", icon: Truck, key: "suppliers" },
   { href: "/backoffice/products", icon: Package, key: "products" },
   { href: "/backoffice/pricing", icon: CircleDollarSign, key: "pricing" },
+  { href: "/backoffice/payments", icon: Wallet2, key: "payments" },
   { href: "/backoffice/brands", icon: Tags, key: "brands" },
   { href: "/backoffice/categories", icon: Shapes, key: "categories" },
   { href: "/backoffice/autocatalog", icon: Car, key: "autocatalog" },

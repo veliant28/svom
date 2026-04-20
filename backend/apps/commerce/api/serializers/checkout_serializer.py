@@ -29,15 +29,20 @@ class CheckoutNovaPoshtaWarehouseLookupQuerySerializer(CheckoutNovaPoshtaLookupQ
 
 class CheckoutSubmitSerializer(serializers.Serializer):
     contact_full_name = serializers.CharField(max_length=255)
-    contact_phone = serializers.CharField(max_length=16, min_length=16)
+    contact_phone = serializers.CharField(max_length=20, min_length=16)
     contact_email = serializers.EmailField()
     delivery_method = serializers.ChoiceField(choices=[choice[0] for choice in Order.DELIVERY_METHOD_CHOICES])
     delivery_address = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    delivery_snapshot = serializers.DictField(required=False)
     payment_method = serializers.ChoiceField(choices=[choice[0] for choice in Order.PAYMENT_METHOD_CHOICES])
     customer_comment = serializers.CharField(required=False, allow_blank=True)
 
     def validate_contact_phone(self, value: str) -> str:
+        # Accept compact and spaced variants from the storefront input, store in compact canonical form.
         normalized_value = value.strip()
-        if not PHONE_FORMAT_REGEX.fullmatch(normalized_value):
+        compact_value = re.sub(r"\s+", "", normalized_value)
+        if compact_value.startswith("+"):
+            compact_value = compact_value[1:]
+        if not PHONE_FORMAT_REGEX.fullmatch(compact_value):
             raise serializers.ValidationError("Phone must match format 38(0XX)XXX-XX-XX.")
-        return normalized_value
+        return compact_value

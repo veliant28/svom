@@ -1,5 +1,3 @@
-import type { ReactNode } from "react";
-
 export function PlaceholderPage({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <section className="mx-auto max-w-6xl px-4 py-10">

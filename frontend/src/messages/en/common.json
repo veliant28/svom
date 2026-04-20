@@ -127,6 +127,17 @@
         "dark": "Dark",
         "system": "System"
       }
+    },
+    "apiErrors": {
+      "phoneFormat": "Enter phone in format 38(0XX)XXX-XX-XX.",
+      "required": "Fill in the required field.",
+      "notBlank": "This field cannot be empty.",
+      "invalidEmail": "Enter a valid email address.",
+      "invalidChoice": "Selected value is invalid.",
+      "currentPasswordIncorrect": "Current password is incorrect.",
+      "maxLength": "Ensure this value has no more than {max} characters.",
+      "minLength": "Ensure this value has at least {min} characters.",
+      "exactLength": "Ensure this value has exactly {count} characters."
     }
   }
 }
