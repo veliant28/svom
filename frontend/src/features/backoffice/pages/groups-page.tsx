@@ -46,9 +46,17 @@ function hasUsersManagementCapability(codes: string[]): boolean {
 
 function collapseUsersManagementCapabilities(codes: string[]): string[] {
   const next = codes.filter((code) => !USERS_MANAGEMENT_CAPABILITY_CODES.includes(code as BackofficeCapabilityCode));
-  if (hasUsersManagementCapability(codes)) {
-    next.push(USERS_MANAGEMENT_BUNDLE_CODE);
+  if (!hasUsersManagementCapability(codes)) {
+    return Array.from(new Set(next));
   }
+
+  const usersViewIndex = next.findIndex((code) => code === "users.view");
+  if (usersViewIndex < 0) {
+    next.unshift(USERS_MANAGEMENT_BUNDLE_CODE);
+  } else {
+    next.splice(usersViewIndex + 1, 0, USERS_MANAGEMENT_BUNDLE_CODE);
+  }
+
   return Array.from(new Set(next));
 }
 
