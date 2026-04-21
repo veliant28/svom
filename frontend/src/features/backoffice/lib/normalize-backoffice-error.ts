@@ -152,10 +152,14 @@ function isCooldownError(status: number | undefined, message: string, seconds: n
   if (seconds && seconds > 0) {
     return true;
   }
-  if (status === 429) {
+  const hasCooldownMarker = /(cooldown|too many requests|rate limit|throttl|забагато запитів|занадто рано|слишком рано)/i.test(message);
+  if (hasCooldownMarker) {
     return true;
   }
-  return /(cooldown|too many requests|rate limit|забагато запитів|429)/i.test(message);
+  if (status === 429) {
+    return hasCooldownMarker;
+  }
+  return false;
 }
 
 export function normalizeBackofficeApiError(
