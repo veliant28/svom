@@ -277,8 +277,12 @@ export function UsersPage() {
               key: "status",
               label: t("rbac.users.columns.status"),
               render: (item) => (
-                <BackofficeStatusChip tone={item.is_active ? "success" : "gray"} icon={item.is_active ? CheckCircle2 : XCircle}>
-                  {item.is_active ? t("statuses.active") : t("statuses.inactive")}
+                <BackofficeStatusChip
+                  tone={item.is_active ? "success" : "gray"}
+                  icon={item.is_active ? CheckCircle2 : XCircle}
+                  className="size-6 justify-center gap-0 p-0"
+                >
+                  <span className="sr-only">{item.is_active ? t("statuses.active") : t("statuses.inactive")}</span>
                 </BackofficeStatusChip>
               ),
             },
