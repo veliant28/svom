@@ -28,7 +28,7 @@ function resolveRoleVisual(role: SystemRoleCode): {
   icon: LucideIcon;
 } {
   if (role === "administrator") {
-    return { tone: "black", icon: ShieldCheck };
+    return { tone: "red", icon: ShieldCheck };
   }
   if (role === "manager") {
     return { tone: "blue", icon: Briefcase };
