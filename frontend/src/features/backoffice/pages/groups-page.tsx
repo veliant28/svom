@@ -9,6 +9,7 @@ import {
   listBackofficeGroups,
   updateBackofficeGroup,
 } from "@/features/backoffice/api/rbac-api";
+import { RoleGroupBadge } from "@/features/backoffice/components/rbac/role-group-badge";
 import { BackofficeTable } from "@/features/backoffice/components/table/backoffice-table";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
@@ -150,7 +151,14 @@ export function GroupsPage() {
             {
               key: "name",
               label: t("rbac.groups.columns.name"),
-              render: (item) => <div><p className="font-semibold">{item.name}</p><p className="text-xs" style={{ color: "var(--muted)" }}>{item.is_system_role_group ? t("rbac.groups.columns.system") : t("rbac.groups.columns.custom")}</p></div>,
+              render: (item) => (
+                <div className="grid gap-1">
+                  <RoleGroupBadge groupName={item.name} />
+                  <p className="text-xs" style={{ color: "var(--muted)" }}>
+                    {item.is_system_role_group ? t("rbac.groups.columns.system") : t("rbac.groups.columns.custom")}
+                  </p>
+                </div>
+              ),
             },
             { key: "members", label: t("rbac.groups.columns.members"), render: (item) => String(item.members_count) },
             { key: "capabilities", label: t("rbac.groups.columns.capabilities"), render: (item) => item.capability_codes.join(", ") || "-" },

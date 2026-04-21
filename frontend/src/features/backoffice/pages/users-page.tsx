@@ -12,6 +12,7 @@ import {
   listBackofficeUsers,
   updateBackofficeUser,
 } from "@/features/backoffice/api/rbac-api";
+import { RoleGroupBadge } from "@/features/backoffice/components/rbac/role-group-badge";
 import { BackofficeTable } from "@/features/backoffice/components/table/backoffice-table";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
@@ -256,7 +257,20 @@ export function UsersPage() {
           columns={[
             { key: "email", label: t("rbac.users.columns.email"), render: (item) => <div><p className="font-semibold">{item.email}</p><p className="text-xs" style={{ color: "var(--muted)" }}>{item.full_name}</p></div> },
             { key: "role", label: t("rbac.users.columns.role"), render: (item) => item.system_role ? t(`rbac.roles.values.${item.system_role}`) : "-" },
-            { key: "groups", label: t("rbac.users.columns.groups"), render: (item) => item.groups.map((group) => group.name).join(", ") || "-" },
+            {
+              key: "groups",
+              label: t("rbac.users.columns.groups"),
+              render: (item) =>
+                item.groups.length ? (
+                  <div className="flex flex-wrap gap-1">
+                    {item.groups.map((group) => (
+                      <RoleGroupBadge key={`${item.id}-${group.id}`} groupName={group.name} />
+                    ))}
+                  </div>
+                ) : (
+                  "-"
+                ),
+            },
             { key: "status", label: t("rbac.users.columns.status"), render: (item) => item.is_active ? t("statuses.active") : t("statuses.inactive") },
             {
               key: "actions",
