@@ -36,10 +36,7 @@ export function BackofficeTopbar({ onToggleSidebar, user }: { onToggleSidebar: (
             <Menu size={18} />
           </button>
           <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.16em]" style={{ color: "var(--muted)" }}>
-              {t("topbar.role")}
-            </p>
-            <p className="mt-0.5 min-w-0 truncate text-sm font-semibold lg:text-base">{title}</p>
+            <p className="min-w-0 truncate text-sm font-semibold lg:text-base">{title}</p>
           </div>
           {config.switcher ? <div className="flex flex-wrap items-center gap-2">{config.switcher}</div> : null}
         </div>
@@ -47,9 +44,12 @@ export function BackofficeTopbar({ onToggleSidebar, user }: { onToggleSidebar: (
         <div className="flex flex-wrap items-center justify-end gap-2">
           {config.actions ? <div className="flex flex-wrap items-center gap-2">{config.actions}</div> : null}
           {config.actionsBeforeLogout ? <div className="flex flex-wrap items-center gap-2">{config.actionsBeforeLogout}</div> : null}
-          <p className="hidden text-xs lg:block" style={{ color: "var(--muted)" }}>
+          <span
+            className="hidden h-9 items-center rounded-md border px-3 text-xs font-semibold md:inline-flex"
+            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", color: "var(--text)" }}
+          >
             {displayName}
-          </p>
+          </span>
           <div className="backoffice-topbar-locale-switcher">
             <LocaleSwitcher />
           </div>
