@@ -34,5 +34,20 @@ class User(TimestampedMixin, AbstractUser):
         verbose_name = _("Пользователь")
         verbose_name_plural = _("Пользователи")
 
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+        if is_new:
+            self._assign_default_system_role_if_missing()
+
+    def _assign_default_system_role_if_missing(self) -> None:
+        if self.is_superuser:
+            return
+        if self.groups.exists():
+            return
+        from apps.users.rbac import set_user_system_role
+
+        set_user_system_role(user=self, role_code="user")
+
     def __str__(self) -> str:
         return self.get_full_name() or self.email

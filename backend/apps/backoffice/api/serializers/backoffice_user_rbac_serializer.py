@@ -131,6 +131,10 @@ class _BackofficeUserWriteSerializer(serializers.Serializer):
 
         if system_role is not serializers.empty:
             set_user_system_role(user=user, role_code=system_role)
+            return
+
+        if not user.groups.exists():
+            set_user_system_role(user=user, role_code="user")
 
 
 class BackofficeUserCreateSerializer(_BackofficeUserWriteSerializer):
