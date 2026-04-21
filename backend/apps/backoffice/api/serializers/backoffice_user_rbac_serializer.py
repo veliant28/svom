@@ -107,8 +107,12 @@ class _BackofficeUserWriteSerializer(serializers.Serializer):
         normalized = str(value or "").strip()
         if not normalized:
             raise serializers.ValidationError("Username cannot be blank.")
-        queryset = User.objects.filter(username=normalized)
         instance = getattr(self, "instance", None)
+        if instance is not None:
+            current_username = str(getattr(instance, "username", "") or "").strip()
+            if normalized == current_username:
+                return normalized
+        queryset = User.objects.filter(username=normalized)
         if instance is not None:
             queryset = queryset.exclude(id=instance.id)
         if queryset.exists():

@@ -180,15 +180,21 @@ export function UsersPage() {
 
     setIsSaving(true);
     try {
+      const normalizedUsername = (form.username || "").trim();
+      const currentUsername = (editingUser?.username || "").trim();
       const payload: BackofficeManagedUserWritePayload = {
         ...form,
         email: (form.email || "").trim(),
-        username: form.username || "",
         last_name: form.last_name || "",
         middle_name: form.middle_name || "",
         phone: form.phone || "",
         password: form.password || undefined,
       };
+      if (isCreateMode) {
+        payload.username = normalizedUsername;
+      } else if (editingUser && normalizedUsername && normalizedUsername !== currentUsername) {
+        payload.username = normalizedUsername;
+      }
 
       if (isCreateMode) {
         if (!payload.password) {
