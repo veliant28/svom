@@ -105,8 +105,9 @@ export function AccountProfileForm({
     >
       <h2 className="text-lg font-semibold">{t("sections.base")}</h2>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <div className="flex items-end justify-center">
-          <div className="inline-flex h-10 items-center">
+        <div className="flex flex-col gap-1 text-xs">
+          <span className="h-[14px]" aria-hidden />
+          <div className="inline-flex h-10 items-center justify-center">
             {profileGroupName ? <RoleGroupBadge groupName={profileGroupName} /> : <span style={{ color: "var(--muted)" }}>-</span>}
           </div>
         </div>
@@ -117,7 +118,7 @@ export function AccountProfileForm({
             value={values.email}
             onChange={(event) => setValues((current) => ({ ...current, email: event.target.value }))}
             required
-            className="h-10 min-w-0 flex-1 rounded-md border px-3"
+            className="h-10 w-full rounded-md border px-3"
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
           />
         </label>
