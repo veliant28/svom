@@ -206,6 +206,8 @@ export function GroupsPage() {
                       type="checkbox"
                       checked={checked}
                       disabled={!canManageGroups || Boolean(editingGroup?.is_system_role_group)}
+                      className="h-4 w-4"
+                      style={{ accentColor: "var(--accent)" }}
                       onChange={(event) => {
                         setForm((prev) => {
                           const next = new Set(prev.capability_codes || []);
