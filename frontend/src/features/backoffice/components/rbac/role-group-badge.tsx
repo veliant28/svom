@@ -50,12 +50,12 @@ export function RoleGroupBadge({
 }) {
   const t = useTranslations("backoffice.common");
   const darkToneByRole: Record<SystemRoleCode, string> = {
-    administrator: "border-red-300/70 bg-red-500/24 text-red-50",
-    manager: "border-blue-300/70 bg-blue-500/24 text-blue-50",
-    operator: "border-orange-300/70 bg-orange-500/24 text-orange-50",
-    user: "border-zinc-300/70 bg-zinc-500/22 text-zinc-50",
+    administrator: "!border-red-300/85 !bg-red-700/55 !text-red-50",
+    manager: "!border-blue-300/85 !bg-blue-700/55 !text-blue-50",
+    operator: "!border-orange-300/85 !bg-orange-700/55 !text-orange-50",
+    user: "!border-zinc-300/85 !bg-zinc-700/55 !text-zinc-50",
   };
-  const darkToneCustom = "border-slate-300/70 bg-slate-500/22 text-slate-50";
+  const darkToneCustom = "!border-slate-300/85 !bg-slate-700/55 !text-slate-50";
 
   const role = resolveSystemRole(groupName);
   if (role) {

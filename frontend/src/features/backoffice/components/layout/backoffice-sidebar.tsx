@@ -101,29 +101,19 @@ export function BackofficeSidebar({ open, onNavigate, user }: { open: boolean; o
       }}
     >
       <div className="mb-7 border-b pb-4" style={{ borderColor: "rgba(255,255,255,0.14)" }}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <Link
-              href="/"
-              onClick={onNavigate}
-              className="text-xs uppercase tracking-[0.22em] text-slate-300 transition hover:text-white"
-            >
-              {t("brand")}
-            </Link>
-            <h1 className="mt-1 text-lg font-semibold">{t("title")}</h1>
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] grid-rows-2 items-center gap-x-3 gap-y-1">
+          <Link
+            href="/"
+            onClick={onNavigate}
+            className="text-xs uppercase tracking-[0.22em] text-slate-300 transition hover:text-white"
+          >
+            {t("brand")}
+          </Link>
+          <div className="justify-self-end">
+            {roleGroupName ? <RoleGroupBadge groupName={roleGroupName} forceDark /> : null}
           </div>
-          <div className="min-w-0 text-right">
-            <p className="truncate text-sm font-semibold text-white">{displayName}</p>
-            {roleGroupName ? (
-              <div className="mt-1 flex justify-end">
-                <RoleGroupBadge
-                  groupName={roleGroupName}
-                  forceDark
-                  className="px-1.5 py-0.5 text-[11px]"
-                />
-              </div>
-            ) : null}
-          </div>
+          <h1 className="text-lg font-semibold">{t("title")}</h1>
+          <p className="max-w-[11rem] truncate text-sm font-semibold text-white justify-self-end">{displayName}</p>
         </div>
       </div>
 
