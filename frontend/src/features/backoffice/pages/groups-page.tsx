@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Pencil } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/features/backoffice/api/rbac-api";
 import { RoleGroupBadge } from "@/features/backoffice/components/rbac/role-group-badge";
 import { BackofficeTable } from "@/features/backoffice/components/table/backoffice-table";
+import { ActionIconButton } from "@/features/backoffice/components/widgets/action-icon-button";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
 import { useAuth } from "@/features/auth/hooks/use-auth";
@@ -167,14 +168,11 @@ export function GroupsPage() {
               key: "actions",
               label: t("rbac.groups.columns.actions"),
               render: (item) => (
-                <button
-                  type="button"
-                  className="h-8 rounded-md border px-2 text-xs"
-                  style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                <ActionIconButton
+                  label={t("rbac.groups.actions.edit")}
+                  icon={Pencil}
                   onClick={() => openEdit(item)}
-                >
-                  {t("rbac.groups.actions.edit")}
-                </button>
+                />
               ),
             },
           ]}

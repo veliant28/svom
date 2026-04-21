@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { CheckCircle2, XCircle, type LucideIcon } from "lucide-react";
+import { CheckCircle2, Pencil, UserCheck, UserX, XCircle, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import {
@@ -15,6 +15,7 @@ import {
 } from "@/features/backoffice/api/rbac-api";
 import { RoleGroupBadge } from "@/features/backoffice/components/rbac/role-group-badge";
 import { BackofficeTable } from "@/features/backoffice/components/table/backoffice-table";
+import { ActionIconButton } from "@/features/backoffice/components/widgets/action-icon-button";
 import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
@@ -318,25 +319,20 @@ export function UsersPage() {
               label: t("rbac.users.columns.actions"),
               render: (item) => (
                 <div className="flex gap-2">
-                  <button
-                    type="button"
-                    className="h-8 rounded-md border px-2 text-xs"
-                    style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                  <ActionIconButton
+                    label={t("rbac.users.actions.edit")}
+                    icon={Pencil}
                     onClick={() => openEdit(item)}
-                  >
-                    {t("rbac.users.actions.edit")}
-                  </button>
+                  />
                   {canManageUsers ? (
-                    <button
-                      type="button"
-                      className="h-8 rounded-md border px-2 text-xs"
-                      style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                    <ActionIconButton
+                      label={item.is_active ? t("rbac.users.actions.deactivate") : t("rbac.users.actions.activate")}
+                      icon={item.is_active ? UserX : UserCheck}
+                      tone={item.is_active ? "danger" : "default"}
                       onClick={() => {
                         void toggleActive(item);
                       }}
-                    >
-                      {item.is_active ? t("rbac.users.actions.deactivate") : t("rbac.users.actions.activate")}
-                    </button>
+                    />
                   ) : null}
                 </div>
               ),
