@@ -93,6 +93,20 @@ export function AccountProfileForm({
     }
     return user.groups[0]?.name || "";
   }, [user.groups, user.system_role]);
+  const groupFieldLabel = useMemo(() => {
+    try {
+      return t("fields.group");
+    } catch {
+      return "Group";
+    }
+  }, [t]);
+  const noGroupLabel = useMemo(() => {
+    try {
+      return t("fields.noGroup");
+    } catch {
+      return "-";
+    }
+  }, [t]);
 
   return (
     <form
@@ -162,13 +176,13 @@ export function AccountProfileForm({
       </div>
 
       <div className="mt-3 rounded-md border p-3" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}>
-        <p className="text-xs">{t("fields.group")}</p>
+        <p className="text-xs">{groupFieldLabel}</p>
         <div className="mt-2 flex justify-center">
           {profileGroupName ? (
             <RoleGroupBadge groupName={profileGroupName} />
           ) : (
             <span className="text-xs" style={{ color: "var(--muted)" }}>
-              {t("fields.noGroup")}
+              {noGroupLabel}
             </span>
           )}
         </div>
