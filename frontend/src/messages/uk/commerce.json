@@ -70,7 +70,7 @@
       },
       "fields": {
         "lastName": "Прізвище",
-        "firstName": "Імʼя",
+        "username": "Ім'я користувача",
         "middleName": "По батькові",
         "phone": "Телефон",
         "npCity": "Місто",

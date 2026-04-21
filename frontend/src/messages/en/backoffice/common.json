@@ -1250,6 +1250,12 @@
               "title": "Manage users",
               "description": "Allows creating, updating and deactivating users."
             },
+            "management": {
+              "bundle": {
+                "title": "Manage users",
+                "description": "Includes editing users and user cards."
+              }
+            },
             "card": {
               "edit": {
                 "administrator": {
@@ -1352,7 +1358,7 @@
           "empty": "No users found.",
           "pagination": "Page {page} of {pages}",
           "filters": {
-            "search": "Search by email or name",
+            "search": "Search by email, username, last name, phone",
             "allStatuses": "All statuses",
             "allRoles": "All roles"
           },
@@ -1376,7 +1382,7 @@
           },
           "fields": {
             "email": "Email",
-            "firstName": "First name",
+            "username": "Username",
             "lastName": "Last name",
             "phone": "Phone",
             "password": "Password",

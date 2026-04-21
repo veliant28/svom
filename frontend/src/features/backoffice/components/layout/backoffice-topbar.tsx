@@ -18,7 +18,7 @@ export function BackofficeTopbar({ onToggleSidebar, user }: { onToggleSidebar: (
   const { logout } = useAuth();
   const config = useBackofficeHeaderConfig();
 
-  const displayName = user.first_name || user.last_name ? `${user.first_name} ${user.last_name}`.trim() : user.email;
+  const displayName = user.username || user.email;
   const title = config.title || displayName;
   const themeTooltip = `${t("topbar.toggleTheme")}: ${t(`topbar.themeMode.${themeMode}`)}`;
 

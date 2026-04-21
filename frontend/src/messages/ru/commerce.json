@@ -70,7 +70,7 @@
       },
       "fields": {
         "lastName": "Фамилия",
-        "firstName": "Имя",
+        "username": "Имя пользователя",
         "middleName": "Отчество",
         "phone": "Телефон",
         "npCity": "Город",

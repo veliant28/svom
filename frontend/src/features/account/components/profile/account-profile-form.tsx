@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Globe } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { RoleGroupBadge } from "@/features/backoffice/components/rbac/role-group-badge";
 import type { AuthUser } from "@/features/auth/types/auth";
 import {
   PHONE_INPUT_MAX_LENGTH,
@@ -15,7 +16,7 @@ import {
 
 export type AccountProfileFormValues = Pick<
   AuthUser,
-  "email" | "first_name" | "last_name" | "middle_name" | "phone" | "preferred_language"
+  "email" | "username" | "last_name" | "middle_name" | "phone" | "preferred_language"
 >;
 
 type AccountProfileFormProps = {
@@ -29,7 +30,7 @@ const localeOptions: Array<AuthUser["preferred_language"]> = ["uk", "ru", "en"];
 function mapUserToForm(user: AuthUser): AccountProfileFormValues {
   return {
     email: user.email,
-    first_name: user.first_name || "",
+    username: user.username || "",
     last_name: user.last_name || "",
     middle_name: user.middle_name || "",
     phone: formatPhoneInput(user.phone || ""),
@@ -81,10 +82,17 @@ export function AccountProfileForm({
   const canSubmit = useMemo(() => {
     return (
       values.email.trim().length > 0 &&
+      values.username.trim().length > 0 &&
       isPhoneInputValid(values.phone) &&
       values.preferred_language.length > 0
     );
-  }, [values.email, values.phone, values.preferred_language]);
+  }, [values.email, values.phone, values.preferred_language, values.username]);
+  const profileGroupName = useMemo(() => {
+    if (user.system_role) {
+      return `Backoffice Role: ${user.system_role}`;
+    }
+    return user.groups[0]?.name || "";
+  }, [user.groups, user.system_role]);
 
   return (
     <form
@@ -98,18 +106,14 @@ export function AccountProfileForm({
       <h2 className="text-lg font-semibold">{t("sections.base")}</h2>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-xs">
-          {t("fields.group")}
-          <div
+          {t("fields.username")}
+          <input
+            value={values.username}
+            onChange={(event) => setValues((current) => ({ ...current, username: event.target.value }))}
+            required
             className="h-10 rounded-md border px-3"
-            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center" }}
-          >
-            <span
-              className="inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold"
-              style={{ backgroundColor: "color-mix(in srgb, var(--accent) 18%, transparent)", color: "var(--text)" }}
-            >
-              {(user.groups.find((group) => group.name.startsWith("Backoffice Role:"))?.name || user.groups[0]?.name || t("fields.noGroup")).replace("Backoffice Role: ", "")}
-            </span>
-          </div>
+            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+          />
         </label>
         <label className="flex flex-col gap-1 text-xs">
           {t("fields.email")}
@@ -118,15 +122,6 @@ export function AccountProfileForm({
             value={values.email}
             onChange={(event) => setValues((current) => ({ ...current, email: event.target.value }))}
             required
-            className="h-10 rounded-md border px-3"
-            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-xs">
-          {t("fields.firstName")}
-          <input
-            value={values.first_name}
-            onChange={(event) => setValues((current) => ({ ...current, first_name: event.target.value }))}
             className="h-10 rounded-md border px-3"
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
           />
@@ -164,6 +159,19 @@ export function AccountProfileForm({
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
           />
         </label>
+      </div>
+
+      <div className="mt-3 rounded-md border p-3" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}>
+        <p className="text-xs">{t("fields.group")}</p>
+        <div className="mt-2 flex justify-center">
+          {profileGroupName ? (
+            <RoleGroupBadge groupName={profileGroupName} />
+          ) : (
+            <span className="text-xs" style={{ color: "var(--muted)" }}>
+              {t("fields.noGroup")}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-3">

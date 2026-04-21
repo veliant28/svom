@@ -72,9 +72,10 @@ class BackofficeUserListCreateAPIView(ListCreateAPIView):
         if query:
             queryset = queryset.filter(
                 Q(email__icontains=query)
-                | Q(first_name__icontains=query)
-                | Q(last_name__icontains=query)
                 | Q(username__icontains=query)
+                | Q(last_name__icontains=query)
+                | Q(middle_name__icontains=query)
+                | Q(phone__icontains=query)
             )
 
         is_active = _parse_bool_param(self.request.query_params.get("is_active", ""))

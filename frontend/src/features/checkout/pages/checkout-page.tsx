@@ -140,11 +140,11 @@ export function CheckoutPage() {
   const npDestinationLine2 = npDestinationParts.length > 1 ? npDestinationParts[1] : "";
 
   const [lastName, setLastName] = useState(user?.last_name ?? "");
-  const [firstName, setFirstName] = useState(user?.first_name ?? "");
+  const [username, setUsername] = useState(user?.username ?? "");
   const [middleName, setMiddleName] = useState(user?.middle_name ?? "");
   const [phone, setPhone] = useState(formatPhoneInput(user?.phone ?? ""));
   const [isLastNameDirty, setIsLastNameDirty] = useState(false);
-  const [isFirstNameDirty, setIsFirstNameDirty] = useState(false);
+  const [isUsernameDirty, setIsUsernameDirty] = useState(false);
   const [isMiddleNameDirty, setIsMiddleNameDirty] = useState(false);
   const [isPhoneDirty, setIsPhoneDirty] = useState(false);
 
@@ -184,8 +184,8 @@ export function CheckoutPage() {
     if (!isLastNameDirty) {
       setLastName(user?.last_name ?? "");
     }
-    if (!isFirstNameDirty) {
-      setFirstName(user?.first_name ?? "");
+    if (!isUsernameDirty) {
+      setUsername(user?.username ?? "");
     }
     if (!isMiddleNameDirty) {
       setMiddleName(user?.middle_name ?? "");
@@ -193,7 +193,7 @@ export function CheckoutPage() {
     if (!isPhoneDirty) {
       setPhone(formatPhoneInput(user?.phone ?? ""));
     }
-  }, [isFirstNameDirty, isLastNameDirty, isMiddleNameDirty, isPhoneDirty, user?.first_name, user?.last_name, user?.middle_name, user?.phone]);
+  }, [isLastNameDirty, isMiddleNameDirty, isPhoneDirty, isUsernameDirty, user?.username, user?.last_name, user?.middle_name, user?.phone]);
 
   useEffect(() => {
     if (paymentMethod !== "monobank") {
@@ -330,8 +330,8 @@ export function CheckoutPage() {
   ]);
 
   const contactFullName = useMemo(
-    () => [lastName.trim(), firstName.trim(), middleName.trim()].filter(Boolean).join(" "),
-    [lastName, firstName, middleName],
+    () => [lastName.trim(), username.trim(), middleName.trim()].filter(Boolean).join(" "),
+    [lastName, middleName, username],
   );
   const contactEmail = user?.email ?? "";
 
@@ -719,12 +719,12 @@ export function CheckoutPage() {
                 />
               </label>
               <label className="flex flex-col gap-1 text-xs">
-                {t("fields.firstName")}
+                {t("fields.username")}
                 <input
-                  value={firstName}
+                  value={username}
                   onChange={(event) => {
-                    setIsFirstNameDirty(true);
-                    setFirstName(event.target.value);
+                    setIsUsernameDirty(true);
+                    setUsername(event.target.value);
                   }}
                   required
                   className="h-10 rounded-md border px-3"
