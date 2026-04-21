@@ -22,7 +22,6 @@ type LocaleModuleLoaders = {
   backofficeImportErrors: MessagesLoader;
   backofficeImportQuality: MessagesLoader;
   backofficeAutocatalog: MessagesLoader;
-  backofficeMatching: MessagesLoader;
   backofficeSuppliers: MessagesLoader;
   backofficeUtr: MessagesLoader;
   backofficeGpl: MessagesLoader;
@@ -30,6 +29,9 @@ type LocaleModuleLoaders = {
   backofficeAuth: MessagesLoader;
   backofficeErrors: MessagesLoader;
 };
+
+const messagesCache = new Map<AppLocale, Messages>();
+const messagesInflight = new Map<AppLocale, Promise<Messages>>();
 
 const localeModuleLoaders: Record<AppLocale, LocaleModuleLoaders> = {
   en: {
@@ -54,8 +56,6 @@ const localeModuleLoaders: Record<AppLocale, LocaleModuleLoaders> = {
       import("../messages/en/backoffice/import-quality.json").then((module) => module.default as Messages),
     backofficeAutocatalog: () =>
       import("../messages/en/backoffice/autocatalog.json").then((module) => module.default as Messages),
-    backofficeMatching: () =>
-      import("../messages/en/backoffice/matching.json").then((module) => module.default as Messages),
     backofficeSuppliers: () =>
       import("../messages/en/backoffice/suppliers.json").then((module) => module.default as Messages),
     backofficeUtr: () => import("../messages/en/backoffice/utr.json").then((module) => module.default as Messages),
@@ -89,8 +89,6 @@ const localeModuleLoaders: Record<AppLocale, LocaleModuleLoaders> = {
       import("../messages/ru/backoffice/import-quality.json").then((module) => module.default as Messages),
     backofficeAutocatalog: () =>
       import("../messages/ru/backoffice/autocatalog.json").then((module) => module.default as Messages),
-    backofficeMatching: () =>
-      import("../messages/ru/backoffice/matching.json").then((module) => module.default as Messages),
     backofficeSuppliers: () =>
       import("../messages/ru/backoffice/suppliers.json").then((module) => module.default as Messages),
     backofficeUtr: () => import("../messages/ru/backoffice/utr.json").then((module) => module.default as Messages),
@@ -124,8 +122,6 @@ const localeModuleLoaders: Record<AppLocale, LocaleModuleLoaders> = {
       import("../messages/uk/backoffice/import-quality.json").then((module) => module.default as Messages),
     backofficeAutocatalog: () =>
       import("../messages/uk/backoffice/autocatalog.json").then((module) => module.default as Messages),
-    backofficeMatching: () =>
-      import("../messages/uk/backoffice/matching.json").then((module) => module.default as Messages),
     backofficeSuppliers: () =>
       import("../messages/uk/backoffice/suppliers.json").then((module) => module.default as Messages),
     backofficeUtr: () => import("../messages/uk/backoffice/utr.json").then((module) => module.default as Messages),
@@ -157,78 +153,96 @@ async function loadModule(locale: AppLocale, name: string, loader: MessagesLoade
 }
 
 async function loadMessages(locale: AppLocale): Promise<Messages> {
-  const loaders = localeModuleLoaders[locale];
-  const [
-    common,
-    auth,
-    catalog,
-    garage,
-    search,
-    product,
-    commerce,
-    backofficeCommon,
-    backofficeNavigation,
-    backofficeDashboard,
-    backofficeImportRuns,
-    backofficeImportErrors,
-    backofficeImportQuality,
-    backofficeAutocatalog,
-    backofficeMatching,
-    backofficeSuppliers,
-    backofficeUtr,
-    backofficeGpl,
-    backofficeImports,
-    backofficeAuth,
-    backofficeErrors,
-  ] = await Promise.all([
-    loadModule(locale, "common", loaders.common),
-    loadModule(locale, "auth", loaders.auth),
-    loadModule(locale, "catalog", loaders.catalog),
-    loadModule(locale, "garage", loaders.garage),
-    loadModule(locale, "search", loaders.search),
-    loadModule(locale, "product", loaders.product),
-    loadModule(locale, "commerce", loaders.commerce),
-    loadModule(locale, "backoffice/common", loaders.backofficeCommon),
-    loadModule(locale, "backoffice/navigation", loaders.backofficeNavigation),
-    loadModule(locale, "backoffice/dashboard", loaders.backofficeDashboard),
-    loadModule(locale, "backoffice/import-runs", loaders.backofficeImportRuns),
-    loadModule(locale, "backoffice/import-errors", loaders.backofficeImportErrors),
-    loadModule(locale, "backoffice/import-quality", loaders.backofficeImportQuality),
-    loadModule(locale, "backoffice/autocatalog", loaders.backofficeAutocatalog),
-    loadModule(locale, "backoffice/matching", loaders.backofficeMatching),
-    loadModule(locale, "backoffice/suppliers", loaders.backofficeSuppliers),
-    loadModule(locale, "backoffice/utr", loaders.backofficeUtr),
-    loadModule(locale, "backoffice/gpl", loaders.backofficeGpl),
-    loadModule(locale, "backoffice/imports", loaders.backofficeImports),
-    loadModule(locale, "backoffice/auth", loaders.backofficeAuth),
-    loadModule(locale, "backoffice/errors", loaders.backofficeErrors),
-  ]);
+  const cached = messagesCache.get(locale);
+  if (cached) {
+    return cached;
+  }
 
-  return {
-    ...common,
-    ...auth,
-    ...catalog,
-    ...garage,
-    ...search,
-    ...product,
-    ...commerce,
-    backoffice: {
-      ...getBackofficeBlock(backofficeCommon),
-      ...getBackofficeBlock(backofficeNavigation),
-      ...getBackofficeBlock(backofficeDashboard),
-      ...getBackofficeBlock(backofficeImportRuns),
-      ...getBackofficeBlock(backofficeImportErrors),
-      ...getBackofficeBlock(backofficeImportQuality),
-      ...getBackofficeBlock(backofficeAutocatalog),
-      ...getBackofficeBlock(backofficeMatching),
-      ...getBackofficeBlock(backofficeSuppliers),
-      ...getBackofficeBlock(backofficeUtr),
-      ...getBackofficeBlock(backofficeGpl),
-      ...getBackofficeBlock(backofficeImports),
-      ...getBackofficeBlock(backofficeAuth),
-      ...getBackofficeBlock(backofficeErrors),
-    },
-  };
+  const inflight = messagesInflight.get(locale);
+  if (inflight) {
+    return inflight;
+  }
+
+  const loadPromise = (async () => {
+    const loaders = localeModuleLoaders[locale];
+    const [
+      common,
+      auth,
+      catalog,
+      garage,
+      search,
+      product,
+      commerce,
+      backofficeCommon,
+      backofficeNavigation,
+      backofficeDashboard,
+      backofficeImportRuns,
+      backofficeImportErrors,
+      backofficeImportQuality,
+      backofficeAutocatalog,
+      backofficeSuppliers,
+      backofficeUtr,
+      backofficeGpl,
+      backofficeImports,
+      backofficeAuth,
+      backofficeErrors,
+    ] = await Promise.all([
+      loadModule(locale, "common", loaders.common),
+      loadModule(locale, "auth", loaders.auth),
+      loadModule(locale, "catalog", loaders.catalog),
+      loadModule(locale, "garage", loaders.garage),
+      loadModule(locale, "search", loaders.search),
+      loadModule(locale, "product", loaders.product),
+      loadModule(locale, "commerce", loaders.commerce),
+      loadModule(locale, "backoffice/common", loaders.backofficeCommon),
+      loadModule(locale, "backoffice/navigation", loaders.backofficeNavigation),
+      loadModule(locale, "backoffice/dashboard", loaders.backofficeDashboard),
+      loadModule(locale, "backoffice/import-runs", loaders.backofficeImportRuns),
+      loadModule(locale, "backoffice/import-errors", loaders.backofficeImportErrors),
+      loadModule(locale, "backoffice/import-quality", loaders.backofficeImportQuality),
+      loadModule(locale, "backoffice/autocatalog", loaders.backofficeAutocatalog),
+      loadModule(locale, "backoffice/suppliers", loaders.backofficeSuppliers),
+      loadModule(locale, "backoffice/utr", loaders.backofficeUtr),
+      loadModule(locale, "backoffice/gpl", loaders.backofficeGpl),
+      loadModule(locale, "backoffice/imports", loaders.backofficeImports),
+      loadModule(locale, "backoffice/auth", loaders.backofficeAuth),
+      loadModule(locale, "backoffice/errors", loaders.backofficeErrors),
+    ]);
+
+    const merged = {
+      ...common,
+      ...auth,
+      ...catalog,
+      ...garage,
+      ...search,
+      ...product,
+      ...commerce,
+      backoffice: {
+        ...getBackofficeBlock(backofficeCommon),
+        ...getBackofficeBlock(backofficeNavigation),
+        ...getBackofficeBlock(backofficeDashboard),
+        ...getBackofficeBlock(backofficeImportRuns),
+        ...getBackofficeBlock(backofficeImportErrors),
+        ...getBackofficeBlock(backofficeImportQuality),
+        ...getBackofficeBlock(backofficeAutocatalog),
+        ...getBackofficeBlock(backofficeSuppliers),
+        ...getBackofficeBlock(backofficeUtr),
+        ...getBackofficeBlock(backofficeGpl),
+        ...getBackofficeBlock(backofficeImports),
+        ...getBackofficeBlock(backofficeAuth),
+        ...getBackofficeBlock(backofficeErrors),
+      },
+    };
+    messagesCache.set(locale, merged);
+    return merged;
+  })();
+
+  messagesInflight.set(locale, loadPromise);
+  try {
+    return await loadPromise;
+  } finally {
+    messagesInflight.delete(locale);
+  }
 }
 
 export default getRequestConfig(async ({ requestLocale }) => {

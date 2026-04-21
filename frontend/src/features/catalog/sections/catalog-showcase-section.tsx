@@ -28,6 +28,7 @@ export function CatalogShowcaseSection({
     { ...normalizedFilters, page, pageSize: CATALOG_PAGE_SIZE },
     { useActiveVehicle: Boolean(filters) },
   );
+  const showSkeleton = isLoading && products.length === 0;
   const pagesCount = useMemo(
     () => Math.max(1, Math.ceil(totalCount / CATALOG_PAGE_SIZE)),
     [totalCount],
@@ -70,7 +71,7 @@ export function CatalogShowcaseSection({
       ) : null}
 
       <div className={contentSpacingClass}>
-        {isLoading ? (
+        {showSkeleton ? (
           <CatalogGridSkeleton />
         ) : (
           <>

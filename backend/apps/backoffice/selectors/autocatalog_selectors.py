@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from django.db.models import Q, QuerySet
+from django.db.models import Exists, OuterRef, Q, QuerySet
 
-from apps.autocatalog.models import CarModification
+from apps.autocatalog.models import CarModification, UtrDetailCarMap
 from apps.autocatalog.selectors import get_autocatalog_modifications_queryset
 
 
@@ -32,8 +32,12 @@ def apply_autocatalog_filters(queryset: QuerySet[CarModification], *, params) ->
         except (TypeError, ValueError):
             pass
     if mapped in {"true", "1", "yes"}:
+        mapped_rows = UtrDetailCarMap.objects.filter(car_modification_id=OuterRef("pk"))
+        queryset = queryset.annotate(has_utr_map=Exists(mapped_rows))
         queryset = queryset.filter(has_utr_map=True)
     elif mapped in {"false", "0", "no"}:
+        mapped_rows = UtrDetailCarMap.objects.filter(car_modification_id=OuterRef("pk"))
+        queryset = queryset.annotate(has_utr_map=Exists(mapped_rows))
         queryset = queryset.filter(has_utr_map=False)
 
     if query:
@@ -60,15 +64,20 @@ def get_autocatalog_filter_options(*, queryset: QuerySet[CarModification], param
     modification_scoped = _filter_eq(model_scoped, modification=modification)
     capacity_scoped = _filter_eq(modification_scoped, capacity=capacity)
 
+    has_make = bool(make)
+    has_model = bool(model)
+    has_modification = bool(modification)
+    has_capacity = bool(capacity)
+
     return {
         "years": list(
             queryset.exclude(year__isnull=True).values_list("year", flat=True).distinct().order_by("-year")
         ),
         "makes": _list_distinct_strings(year_scoped, "make__name"),
-        "models": _list_distinct_strings(make_scoped, "model__name"),
-        "modifications": _list_distinct_strings(model_scoped, "modification"),
-        "capacities": _list_distinct_strings(modification_scoped, "capacity"),
-        "engines": _list_distinct_strings(capacity_scoped, "engine"),
+        "models": _list_distinct_strings(make_scoped, "model__name") if has_make else [],
+        "modifications": _list_distinct_strings(model_scoped, "modification") if has_make and has_model else [],
+        "capacities": _list_distinct_strings(modification_scoped, "capacity") if has_make and has_model and has_modification else [],
+        "engines": _list_distinct_strings(capacity_scoped, "engine") if has_make and has_model and has_modification and has_capacity else [],
     }
 
 

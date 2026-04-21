@@ -2,7 +2,6 @@
 
 import type { ComponentType } from "react";
 import {
-  Activity,
   Car,
   CircleDollarSign,
   LayoutDashboard,
@@ -30,7 +29,6 @@ type SidebarNavItem = {
     | "brands"
     | "categories"
     | "autocatalog"
-    | "matching"
     | "orders"
     | "novaPoshtaSenders";
 };
@@ -44,7 +42,6 @@ const NAV_ITEMS: SidebarNavItem[] = [
   { href: "/backoffice/brands", icon: Tags, key: "brands" },
   { href: "/backoffice/categories", icon: Shapes, key: "categories" },
   { href: "/backoffice/autocatalog", icon: Car, key: "autocatalog" },
-  { href: "/backoffice/matching", icon: Activity, key: "matching" },
   { href: "/backoffice/orders", icon: ShoppingBag, key: "orders" },
   { href: "/backoffice/nova-poshta-senders", icon: PackageCheck, key: "novaPoshtaSenders" },
 ];

@@ -47,10 +47,6 @@ export function BackofficeDashboardPage() {
               <StatCard title={t("cards.errors")} value={data.totals.errors_total} subtitle={t("cards.errors24h", { count: data.totals.errors_24h })} />
               <StatCard title={t("cards.repriced")} value={data.totals.repriced_products_total} />
               <StatCard title={t("cards.rawOffers")} value={data.totals.raw_offers} subtitle={t("cards.invalidRawOffers", { count: data.totals.raw_offers_invalid })} />
-              <StatCard title={t("cards.unmatched")} value={data.totals.unmatched_offers} />
-              <StatCard title={t("cards.conflicts")} value={data.totals.conflict_offers} />
-              <StatCard title={t("cards.autoMatched")} value={data.totals.auto_matched_offers} />
-              <StatCard title={t("cards.manuallyResolved")} value={data.totals.manually_resolved_offers} />
               <StatCard title={t("cards.supplierOffers")} value={data.totals.supplier_offers} />
               <StatCard title={t("cards.productPrices")} value={data.totals.product_prices} />
             </div>
@@ -123,13 +119,6 @@ export function BackofficeDashboardPage() {
                 </div>
               </section>
             </div>
-
-            {data.match_rate_by_supplier && data.match_rate_by_supplier.length > 0 ? (
-              <SimpleBarChart
-                title={t("charts.matchRateBySupplier")}
-                items={data.match_rate_by_supplier.map((item) => ({ label: item.source_code, value: item.match_rate }))}
-              />
-            ) : null}
 
             {data.requires_operator_attention && data.requires_operator_attention.length > 0 ? (
               <section className="rounded-2xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>

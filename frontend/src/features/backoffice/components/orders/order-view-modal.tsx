@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { formatOrderDate, resolveOrderStatusDescription } from "@/features/backoffice/lib/orders/order-formatters";
+import { formatBackofficeDate } from "@/features/backoffice/lib/supplier-workspace";
 import type {
   BackofficeMonobankFiscalCheck,
   BackofficeMonobankPaymentAction,
@@ -553,7 +554,7 @@ export function OrderViewModal({
                       value={order.payment ? `${order.payment.amount} ${order.payment.currency}` : "-"}
                       bold
                     />
-                    <ValueField label={t("orders.payment.lastSyncAt")} value={order.payment?.last_sync_at || "-"} />
+                    <ValueField label={t("orders.payment.lastSyncAt")} value={formatBackofficeDate(order.payment?.last_sync_at)} />
                     {isMonobankPayment ? (
                       <>
                         <ValueField label={t("orders.payment.invoiceId")} value={order.payment?.invoice_id || "-"} mono />

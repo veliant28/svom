@@ -69,7 +69,7 @@ export function ProductsFilters({
         onOpenDeleteModal={onBulkDelete}
         t={t}
       />
-      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pb-1">
+      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto px-1 py-1">
         <input
           value={q}
           onChange={(event) => onSearchChange(event.target.value)}

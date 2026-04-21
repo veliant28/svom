@@ -139,3 +139,52 @@ class BackofficeAutocatalogAPISmokeTests(APITestCase):
             **self._auth(self.regular_token.key),
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_staff_filter_options_are_cascaded(self):
+        response = self.client.get(
+            reverse("backoffice_api:autocatalog-filter-options"),
+            **self._auth(self.staff_token.key),
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("years", response.data)
+        self.assertIn("makes", response.data)
+        self.assertEqual(response.data["models"], [])
+        self.assertEqual(response.data["modifications"], [])
+        self.assertEqual(response.data["capacities"], [])
+        self.assertEqual(response.data["engines"], [])
+
+        make_scoped = self.client.get(
+            reverse("backoffice_api:autocatalog-filter-options"),
+            {"make": "Audi"},
+            **self._auth(self.staff_token.key),
+        )
+        self.assertEqual(make_scoped.status_code, status.HTTP_200_OK)
+        self.assertIn("A4", make_scoped.data["models"])
+        self.assertEqual(make_scoped.data["modifications"], [])
+
+        model_scoped = self.client.get(
+            reverse("backoffice_api:autocatalog-filter-options"),
+            {"make": "Audi", "model": "A4"},
+            **self._auth(self.staff_token.key),
+        )
+        self.assertEqual(model_scoped.status_code, status.HTTP_200_OK)
+        self.assertIn("2.0 TDI", model_scoped.data["modifications"])
+        self.assertEqual(model_scoped.data["capacities"], [])
+        self.assertEqual(model_scoped.data["engines"], [])
+
+        modification_scoped = self.client.get(
+            reverse("backoffice_api:autocatalog-filter-options"),
+            {"make": "Audi", "model": "A4", "modification": "2.0 TDI"},
+            **self._auth(self.staff_token.key),
+        )
+        self.assertEqual(modification_scoped.status_code, status.HTTP_200_OK)
+        self.assertIn("1968", modification_scoped.data["capacities"])
+        self.assertEqual(modification_scoped.data["engines"], [])
+
+        capacity_scoped = self.client.get(
+            reverse("backoffice_api:autocatalog-filter-options"),
+            {"make": "Audi", "model": "A4", "modification": "2.0 TDI", "capacity": "1968"},
+            **self._auth(self.staff_token.key),
+        )
+        self.assertEqual(capacity_scoped.status_code, status.HTTP_200_OK)
+        self.assertIn("TDI", capacity_scoped.data["engines"])

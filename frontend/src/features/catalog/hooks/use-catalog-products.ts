@@ -24,8 +24,22 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const baseParamsKey = useMemo(() => {
+    try {
+      return JSON.stringify(params ?? {});
+    } catch {
+      return "{}";
+    }
+  }, [params]);
+  const baseParams = useMemo<UseCatalogProductsParams>(() => {
+    try {
+      return JSON.parse(baseParamsKey) as UseCatalogProductsParams;
+    } catch {
+      return {};
+    }
+  }, [baseParamsKey]);
   const effectiveParams = useMemo(() => {
-    const result: UseCatalogProductsParams = { ...params };
+    const result: UseCatalogProductsParams = { ...baseParams };
     const hasSearchQuery = Boolean(result.q?.trim());
 
     // Global text search should not be silently narrowed by active-vehicle fitment.
@@ -51,7 +65,7 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
     activeTemporaryCarModificationId,
     activeVehicleSource,
     options.useActiveVehicle,
-    params,
+    baseParams,
   ]);
   const paramsKey = JSON.stringify({ ...effectiveParams, locale });
   const isEnabled = options.enabled ?? true;

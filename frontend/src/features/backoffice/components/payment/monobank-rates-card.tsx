@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { formatBackofficeDate } from "@/features/backoffice/lib/supplier-workspace";
 import type { BackofficeMonobankCurrencyResponse } from "@/features/backoffice/types/payment.types";
 
 export function MonobankRatesCard({
@@ -54,7 +55,7 @@ export function MonobankRatesCard({
               <p style={{ color: "var(--muted)" }}>
                 {t("payments.monobank.rateLabels.buy")}: {renderRateValue(row.rate_buy)} · {t("payments.monobank.rateLabels.sell")}: {renderRateValue(row.rate_sell)} · {t("payments.monobank.rateLabels.cross")}: {renderRateValue(row.rate_cross)}
               </p>
-              <p style={{ color: "var(--muted)" }}>{row.updated_at}</p>
+              <p style={{ color: "var(--muted)" }}>{formatBackofficeDate(row.updated_at)}</p>
             </div>
           ))}
         </div>

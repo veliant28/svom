@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-from django.db.models import Exists, OuterRef, QuerySet
+from django.db.models import QuerySet
 
 from apps.autocatalog.models import CarMake, CarModel, CarModification, UtrDetailCarMap
 
 
 def get_autocatalog_modifications_queryset() -> QuerySet[CarModification]:
-    mapped_rows = UtrDetailCarMap.objects.filter(car_modification_id=OuterRef("pk"))
     return (
         CarModification.objects.select_related("make", "model")
-        .annotate(has_utr_map=Exists(mapped_rows))
         .order_by("make__name", "model__name", "year", "modification", "engine")
     )
 

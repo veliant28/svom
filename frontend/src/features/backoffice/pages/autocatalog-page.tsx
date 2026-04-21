@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { getBackofficeAutocatalog, getBackofficeAutocatalogFilterOptions } from "@/features/backoffice/api/backoffice-api";
@@ -25,6 +25,7 @@ export function AutocatalogPage() {
   const t = useTranslations("backoffice.autocatalog");
 
   const [q, setQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
   const [make, setMake] = useState("");
   const [model, setModel] = useState("");
   const [year, setYear] = useState("");
@@ -34,10 +35,19 @@ export function AutocatalogPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(25);
 
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedQ(q);
+    }, 300);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [q]);
+
   const queryFn = useCallback(
     (token: string) =>
       getBackofficeAutocatalog(token, {
-        q,
+        q: debouncedQ,
         make,
         model,
         year,
@@ -47,11 +57,11 @@ export function AutocatalogPage() {
         page,
         page_size: pageSize,
       }),
-    [capacity, engine, make, model, modification, page, pageSize, q, year],
+    [capacity, debouncedQ, engine, make, model, modification, page, pageSize, year],
   );
 
   const { data, isLoading, error } = useBackofficeQuery<{ count: number; results: BackofficeAutocatalogCar[] }>(queryFn, [
-    q,
+    debouncedQ,
     make,
     model,
     year,

@@ -1,6 +1,7 @@
 import { RefreshCw } from "lucide-react";
 
 import { OrderMonobankServiceInfo } from "@/features/backoffice/components/orders/payment/order-monobank-service-info";
+import { formatBackofficeDate } from "@/features/backoffice/lib/supplier-workspace";
 import type { BackofficeOrderPayment } from "@/features/backoffice/types/orders.types";
 
 export function OrderPaymentSection({
@@ -43,8 +44,8 @@ export function OrderPaymentSection({
         <p><span style={{ color: "var(--muted)" }}>{t("orders.payment.method")}: </span>{payment.method || "-"}</p>
         <p><span style={{ color: "var(--muted)" }}>{t("orders.payment.status")}: </span>{payment.status || "-"}</p>
         <p><span style={{ color: "var(--muted)" }}>{t("orders.payment.amount")}: </span>{payment.amount} {payment.currency}</p>
-        <p><span style={{ color: "var(--muted)" }}>{t("orders.payment.lastWebhookAt")}: </span>{payment.last_webhook_received_at || "-"}</p>
-        <p><span style={{ color: "var(--muted)" }}>{t("orders.payment.lastSyncAt")}: </span>{payment.last_sync_at || "-"}</p>
+        <p><span style={{ color: "var(--muted)" }}>{t("orders.payment.lastWebhookAt")}: </span>{formatBackofficeDate(payment.last_webhook_received_at)}</p>
+        <p><span style={{ color: "var(--muted)" }}>{t("orders.payment.lastSyncAt")}: </span>{formatBackofficeDate(payment.last_sync_at)}</p>
       </div>
 
       {isMonobank ? (

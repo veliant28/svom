@@ -10,8 +10,6 @@ from .import_row_error_serializer import ImportRowErrorSerializer
 from .import_run_quality_serializer import ImportRunQualitySerializer
 from .import_run_serializer import ImportRunSerializer
 from .import_source_serializer import ImportSourceSerializer
-from .matching_candidate_product_serializer import MatchingCandidateProductSerializer
-from .matching_summary_serializer import MatchingSummarySerializer
 from .nova_poshta_serializer import (
     NovaPoshtaCounterpartyDetailsQuerySerializer,
     NovaPoshtaCounterpartyLookupQuerySerializer,
@@ -94,8 +92,6 @@ __all__ = [
     "ImportRunQualitySerializer",
     "ImportRunSerializer",
     "ImportSourceSerializer",
-    "MatchingCandidateProductSerializer",
-    "MatchingSummarySerializer",
     "NovaPoshtaCounterpartyDetailsQuerySerializer",
     "NovaPoshtaCounterpartyLookupQuerySerializer",
     "NovaPoshtaLookupQuerySerializer",
