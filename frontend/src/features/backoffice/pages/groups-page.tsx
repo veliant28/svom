@@ -20,11 +20,50 @@ import { BACKOFFICE_CAPABILITIES, hasBackofficeCapability } from "@/features/bac
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
 import { useBackofficeQuery } from "@/features/backoffice/hooks/use-backoffice-query";
 import type { BackofficeGroupItem, BackofficeGroupWritePayload } from "@/features/backoffice/types/rbac.types";
+import type { BackofficeCapabilityCode } from "@/features/backoffice/types/shared.types";
 
-const EMPTY_FORM: BackofficeGroupWritePayload = {
+const USERS_MANAGEMENT_BUNDLE_CODE = "users.management.bundle";
+const USERS_MANAGEMENT_CAPABILITY_CODES: BackofficeCapabilityCode[] = [
+  "users.manage",
+  "users.card.edit.administrator",
+  "users.card.edit.manager",
+  "users.card.edit.all",
+];
+
+type GroupEditorForm = {
+  name: string;
+  capability_codes: string[];
+};
+
+const EMPTY_FORM: GroupEditorForm = {
   name: "",
   capability_codes: [],
 };
+
+function hasUsersManagementCapability(codes: string[]): boolean {
+  return codes.some((code) => USERS_MANAGEMENT_CAPABILITY_CODES.includes(code as BackofficeCapabilityCode));
+}
+
+function collapseUsersManagementCapabilities(codes: string[]): string[] {
+  const next = codes.filter((code) => !USERS_MANAGEMENT_CAPABILITY_CODES.includes(code as BackofficeCapabilityCode));
+  if (hasUsersManagementCapability(codes)) {
+    next.push(USERS_MANAGEMENT_BUNDLE_CODE);
+  }
+  return Array.from(new Set(next));
+}
+
+function expandUsersManagementCapabilities(codes: string[]): BackofficeCapabilityCode[] {
+  const next = new Set<BackofficeCapabilityCode>();
+  for (const code of codes) {
+    if (code === USERS_MANAGEMENT_BUNDLE_CODE) {
+      next.add("users.manage");
+      next.add("users.card.edit.all");
+      continue;
+    }
+    next.add(code as BackofficeCapabilityCode);
+  }
+  return Array.from(next);
+}
 
 function normalizeListPayload<T>(payload: unknown): { count: number; results: T[] } {
   if (payload && typeof payload === "object" && "results" in payload) {
@@ -50,7 +89,7 @@ export function GroupsPage() {
   const [editingGroup, setEditingGroup] = useState<BackofficeGroupItem | null>(null);
   const [isCreateMode, setIsCreateMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [form, setForm] = useState<BackofficeGroupWritePayload>(EMPTY_FORM);
+  const [form, setForm] = useState<GroupEditorForm>(EMPTY_FORM);
 
   const groupsQuery = useCallback((token: string) => listBackofficeGroups(token, { q: query, page }), [page, query]);
   const groupsState = useBackofficeQuery(groupsQuery, [query, page]);
@@ -66,6 +105,17 @@ export function GroupsPage() {
     () => new Map(capabilities.map((capability) => [capability.code, capability])),
     [capabilities],
   );
+  const displayCapabilities = useMemo(() => {
+    const visible = capabilities.filter((capability) => !USERS_MANAGEMENT_CAPABILITY_CODES.includes(capability.code));
+    return [
+      ...visible,
+      {
+        code: USERS_MANAGEMENT_BUNDLE_CODE,
+        title: t("rbac.groups.capabilityBundles.usersManagement.title"),
+        description: t("rbac.groups.capabilityBundles.usersManagement.description"),
+      },
+    ];
+  }, [capabilities, t]);
 
   const getCapabilityTitle = useCallback((code: string, fallback?: string) => {
     try {
@@ -94,7 +144,7 @@ export function GroupsPage() {
     setEditingGroup(target);
     setForm({
       name: target.name,
-      capability_codes: [...target.capability_codes],
+      capability_codes: collapseUsersManagementCapabilities(target.capability_codes),
     });
   }, []);
 
@@ -113,7 +163,7 @@ export function GroupsPage() {
     try {
       const payload: BackofficeGroupWritePayload = {
         name: (form.name || "").trim(),
-        capability_codes: form.capability_codes || [],
+        capability_codes: expandUsersManagementCapabilities(form.capability_codes || []),
       };
 
       if (isCreateMode) {
@@ -188,12 +238,19 @@ export function GroupsPage() {
             {
               key: "capabilities",
               label: t("rbac.groups.columns.capabilities"),
-              render: (item) =>
-                item.capability_codes.length
-                  ? item.capability_codes
-                    .map((code) => getCapabilityTitle(code, capabilitiesByCode.get(code)?.title))
+              render: (item) => {
+                const collapsed = collapseUsersManagementCapabilities(item.capability_codes);
+                return collapsed.length
+                  ? collapsed
+                    .map((code) => {
+                      if (code === USERS_MANAGEMENT_BUNDLE_CODE) {
+                        return t("rbac.groups.capabilityBundles.usersManagement.title");
+                      }
+                      return getCapabilityTitle(code, capabilitiesByCode.get(code as BackofficeCapabilityCode)?.title);
+                    })
                     .join(", ")
-                  : "-",
+                  : "-";
+              },
             },
             {
               key: "actions",
@@ -228,7 +285,7 @@ export function GroupsPage() {
           <div className="rounded-md border p-2 text-xs" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}>
             <p className="font-semibold">{t("rbac.groups.fields.capabilities")}</p>
             <div className="mt-1 grid gap-1">
-              {capabilities.map((capability) => {
+              {displayCapabilities.map((capability) => {
                 const checked = (form.capability_codes || []).includes(capability.code);
                 const isReadOnly = !canManageGroups || isSystemRoleReadonly;
                 return (

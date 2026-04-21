@@ -1430,6 +1430,12 @@
             "name": "Назва групи",
             "capabilities": "Права доступу"
           },
+          "capabilityBundles": {
+            "usersManagement": {
+              "title": "Керування користувачами",
+              "description": "Включає редагування користувачів і карток користувачів."
+            }
+          },
           "editor": {
             "createTitle": "Нова група",
             "editTitle": "Картка групи",

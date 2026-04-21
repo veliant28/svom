@@ -1430,6 +1430,12 @@
             "name": "Group name",
             "capabilities": "Capabilities"
           },
+          "capabilityBundles": {
+            "usersManagement": {
+              "title": "Manage users",
+              "description": "Includes user editing and user-card editing permissions."
+            }
+          },
           "editor": {
             "createTitle": "New group",
             "editTitle": "Group card",
