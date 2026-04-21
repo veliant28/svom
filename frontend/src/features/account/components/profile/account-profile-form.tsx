@@ -93,20 +93,6 @@ export function AccountProfileForm({
     }
     return user.groups[0]?.name || "";
   }, [user.groups, user.system_role]);
-  const groupFieldLabel = useMemo(() => {
-    try {
-      return t("fields.group");
-    } catch {
-      return "Group";
-    }
-  }, [t]);
-  const noGroupLabel = useMemo(() => {
-    try {
-      return t("fields.noGroup");
-    } catch {
-      return "-";
-    }
-  }, [t]);
 
   return (
     <form
@@ -129,17 +115,24 @@ export function AccountProfileForm({
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs">
-          {t("fields.email")}
-          <input
-            type="email"
-            value={values.email}
-            onChange={(event) => setValues((current) => ({ ...current, email: event.target.value }))}
-            required
-            className="h-10 rounded-md border px-3"
-            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
-          />
-        </label>
+        <div className="sm:col-span-1">
+          <label className="flex flex-col gap-1 text-xs">
+            {t("fields.email")}
+            <div className="flex items-center gap-2">
+              <div className="inline-flex h-10 items-center">
+                {profileGroupName ? <RoleGroupBadge groupName={profileGroupName} /> : null}
+              </div>
+              <input
+                type="email"
+                value={values.email}
+                onChange={(event) => setValues((current) => ({ ...current, email: event.target.value }))}
+                required
+                className="h-10 min-w-0 flex-1 rounded-md border px-3"
+                style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+              />
+            </div>
+          </label>
+        </div>
         <label className="flex flex-col gap-1 text-xs">
           {t("fields.lastName")}
           <input
@@ -173,19 +166,6 @@ export function AccountProfileForm({
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
           />
         </label>
-      </div>
-
-      <div className="mt-3 rounded-md border p-3" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}>
-        <p className="text-xs">{groupFieldLabel}</p>
-        <div className="mt-2 flex justify-center">
-          {profileGroupName ? (
-            <RoleGroupBadge groupName={profileGroupName} />
-          ) : (
-            <span className="text-xs" style={{ color: "var(--muted)" }}>
-              {noGroupLabel}
-            </span>
-          )}
-        </div>
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-3">
