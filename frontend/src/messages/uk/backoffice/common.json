@@ -1358,7 +1358,7 @@
           "empty": "Користувачів не знайдено.",
           "pagination": "Сторінка {page} з {pages}",
           "filters": {
-            "search": "Пошук за email, логіном, прізвищем, телефоном",
+            "search": "Пошук за email, ім'ям, прізвищем, телефоном",
             "allStatuses": "Усі статуси",
             "allRoles": "Усі ролі"
           },
@@ -1382,7 +1382,7 @@
           },
           "fields": {
             "email": "Email",
-            "username": "Ім'я користувача",
+            "firstName": "Ім'я",
             "lastName": "Прізвище",
             "phone": "Телефон",
             "password": "Пароль",

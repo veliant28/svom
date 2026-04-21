@@ -14,7 +14,6 @@ def seed_commerce_demo(*, products: list[Product]) -> dict[str, int]:
     demo_user, _ = User.objects.get_or_create(
         email="demo@svom.local",
         defaults={
-            "username": "demo",
             "is_active": True,
             "first_name": "Demo",
             "last_name": "User",

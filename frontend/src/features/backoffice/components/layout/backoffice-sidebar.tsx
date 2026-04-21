@@ -86,7 +86,7 @@ export function BackofficeSidebar({ open, onNavigate, user }: { open: boolean; o
   const t = useTranslations("backoffice.navigation");
   const pathname = usePathname();
   const navItems = NAV_ITEMS.filter((item) => hasBackofficeCapabilities(user, item.requiredCapability));
-  const displayName = user.username || user.email;
+  const displayName = user.first_name || user.email;
   const roleGroupName = user.system_role ? `Backoffice Role: ${user.system_role}` : (user.groups[0]?.name || "");
 
   return (

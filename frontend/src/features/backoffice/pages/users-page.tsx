@@ -29,7 +29,7 @@ import { PHONE_INPUT_MAX_LENGTH, PHONE_INPUT_PLACEHOLDER, formatPhoneInput } fro
 
 const EMPTY_FORM: BackofficeManagedUserWritePayload = {
   email: "",
-  username: "",
+  first_name: "",
   last_name: "",
   middle_name: "",
   phone: "",
@@ -150,7 +150,7 @@ export function UsersPage() {
       setShowManagerPassword(false);
       setForm({
         email: target.email,
-        username: target.username,
+        first_name: target.first_name,
         last_name: target.last_name,
         middle_name: target.middle_name || "",
         phone: formatPhoneInput(target.phone || ""),
@@ -180,21 +180,15 @@ export function UsersPage() {
 
     setIsSaving(true);
     try {
-      const normalizedUsername = (form.username || "").trim();
-      const currentUsername = (editingUser?.username || "").trim();
       const payload: BackofficeManagedUserWritePayload = {
         ...form,
         email: (form.email || "").trim(),
+        first_name: (form.first_name || "").trim(),
         last_name: form.last_name || "",
         middle_name: form.middle_name || "",
         phone: form.phone || "",
         password: form.password || undefined,
       };
-      if (isCreateMode) {
-        payload.username = normalizedUsername;
-      } else if (editingUser && normalizedUsername && normalizedUsername !== currentUsername) {
-        payload.username = normalizedUsername;
-      }
 
       if (isCreateMode) {
         if (!payload.password) {
@@ -371,7 +365,7 @@ export function UsersPage() {
 
         <div className="mt-3 grid gap-2">
           <input value={form.email || ""} onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))} placeholder={t("rbac.users.fields.email")} className="h-9 rounded-md border px-3 text-sm" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} disabled={!canManageUsers} />
-          <input value={form.username || ""} onChange={(event) => setForm((prev) => ({ ...prev, username: event.target.value }))} placeholder={t("rbac.users.fields.username")} className="h-9 rounded-md border px-3 text-sm" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} disabled={!canManageUsers} />
+          <input value={form.first_name || ""} onChange={(event) => setForm((prev) => ({ ...prev, first_name: event.target.value }))} placeholder={t("rbac.users.fields.firstName")} className="h-9 rounded-md border px-3 text-sm" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} disabled={!canManageUsers} />
           <input value={form.last_name || ""} onChange={(event) => setForm((prev) => ({ ...prev, last_name: event.target.value }))} placeholder={t("rbac.users.fields.lastName")} className="h-9 rounded-md border px-3 text-sm" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} disabled={!canManageUsers} />
           <input
             value={form.phone || ""}

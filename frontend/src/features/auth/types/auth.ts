@@ -3,7 +3,6 @@ import type { BackofficeCapabilityCode } from "@/features/backoffice/types/share
 export type AuthUser = {
   id: string;
   email: string;
-  username: string;
   first_name: string;
   last_name: string;
   middle_name: string;

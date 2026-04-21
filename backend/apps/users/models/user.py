@@ -1,11 +1,46 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, UserManager as DjangoUserManager
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.db.mixins import TimestampedMixin
 
 
+class UserManager(DjangoUserManager):
+    use_in_migrations = True
+
+    def _create_user(self, email, password, **extra_fields):
+        if not email:
+            raise ValueError("The Email field must be set.")
+        email = self.normalize_email(email)
+
+        legacy_username = extra_fields.pop("username", None)
+        if legacy_username and not extra_fields.get("first_name"):
+            extra_fields["first_name"] = str(legacy_username).strip()
+
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_user(self, email, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", False)
+        extra_fields.setdefault("is_superuser", False)
+        return self._create_user(email, password, **extra_fields)
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True.")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True.")
+
+        return self._create_user(email, password, **extra_fields)
+
+
 class User(TimestampedMixin, AbstractUser):
+    username = None
     LANGUAGE_UK = "uk"
     LANGUAGE_RU = "ru"
     LANGUAGE_EN = "en"
@@ -26,8 +61,9 @@ class User(TimestampedMixin, AbstractUser):
         default=LANGUAGE_UK,
     )
 
+    objects = UserManager()
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["username"]
+    REQUIRED_FIELDS = []
 
     class Meta:
         ordering = ("-date_joined",)

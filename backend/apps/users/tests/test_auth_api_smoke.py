@@ -10,7 +10,6 @@ class AuthAPISmokeTests(APITestCase):
         self.password = "demo12345"
         self.user = User.objects.create_user(
             email="auth-demo@test.local",
-            username="auth-demo",
             password=self.password,
             first_name="Auth",
             last_name="Demo",

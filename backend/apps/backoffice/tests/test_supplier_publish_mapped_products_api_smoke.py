@@ -20,7 +20,7 @@ class SupplierPublishMappedProductsAPISmokeTests(APITestCase):
     def setUp(self):
         self.staff = User.objects.create_user(
             email="supplier-publish-ops@test.local",
-            username="supplier-publish-ops",
+            first_name="supplier-publish-ops",
             password="demo12345",
             is_staff=True,
         )

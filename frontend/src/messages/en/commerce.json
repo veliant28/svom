@@ -70,7 +70,7 @@
       },
       "fields": {
         "lastName": "Last name",
-        "username": "Username",
+        "firstName": "First name",
         "middleName": "Middle name",
         "phone": "Phone",
         "npCity": "City",

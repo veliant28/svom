@@ -11,7 +11,7 @@ from apps.users.models import User
 
 class CommerceAPISmokeTests(APITestCase):
     def setUp(self):
-        self.user = User.objects.create_user(email="commerce@test.local", username="commerce", password="pass12345")
+        self.user = User.objects.create_user(email="commerce@test.local", first_name="commerce", password="pass12345")
         self.token = Token.objects.create(user=self.user)
         self.auth = {"HTTP_AUTHORIZATION": f"Token {self.token.key}"}
 

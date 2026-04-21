@@ -18,14 +18,14 @@ class BackofficeAPISmokeTests(APITestCase):
     def setUp(self):
         self.staff_user = User.objects.create_user(
             email="ops@test.local",
-            username="ops",
+            first_name="ops",
             password="demo12345",
             is_staff=True,
             is_superuser=False,
         )
         self.regular_user = User.objects.create_user(
             email="customer@test.local",
-            username="customer",
+            first_name="customer",
             password="demo12345",
             is_staff=False,
             is_superuser=False,

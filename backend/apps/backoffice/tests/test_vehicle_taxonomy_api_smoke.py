@@ -19,13 +19,13 @@ class BackofficeVehicleTaxonomyAPISmokeTests(APITestCase):
     def setUp(self):
         self.staff_user = User.objects.create_user(
             email="vehicles-ops@test.local",
-            username="vehicles-ops",
+            first_name="vehicles-ops",
             password="demo12345",
             is_staff=True,
         )
         self.regular_user = User.objects.create_user(
             email="vehicles-customer@test.local",
-            username="vehicles-customer",
+            first_name="vehicles-customer",
             password="demo12345",
             is_staff=False,
         )

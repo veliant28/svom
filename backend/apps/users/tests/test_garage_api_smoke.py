@@ -8,7 +8,7 @@ from apps.users.models import GarageVehicle, User
 
 class GarageAPISmokeTests(APITestCase):
     def setUp(self):
-        self.user = User.objects.create_user(email="garage@test.local", username="garage", password="pass12345")
+        self.user = User.objects.create_user(email="garage@test.local", first_name="garage", password="pass12345")
         self.client.force_authenticate(user=self.user)
 
         self.make = CarMake.objects.create(name="BMW", slug="bmw")

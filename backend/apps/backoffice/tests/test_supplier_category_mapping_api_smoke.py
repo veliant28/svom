@@ -15,13 +15,13 @@ class SupplierCategoryMappingAPISmokeTests(APITestCase):
     def setUp(self):
         self.staff_user = User.objects.create_user(
             email="ops-category-map@test.local",
-            username="ops-category-map",
+            first_name="ops-category-map",
             password="demo12345",
             is_staff=True,
         )
         self.regular_user = User.objects.create_user(
             email="customer-category-map@test.local",
-            username="customer-category-map",
+            first_name="customer-category-map",
             password="demo12345",
             is_staff=False,
         )

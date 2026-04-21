@@ -17,7 +17,7 @@ class PricingControlAPISmokeTests(APITestCase):
     def setUp(self):
         self.staff = User.objects.create_user(
             email="pricing-control@test.local",
-            username="pricing-control-ops",
+            first_name="pricing-control-ops",
             password="demo12345",
             is_staff=True,
         )

@@ -13,13 +13,13 @@ class BackofficeAutocatalogAPISmokeTests(APITestCase):
     def setUp(self):
         self.staff_user = User.objects.create_user(
             email="autocatalog-ops@test.local",
-            username="autocatalog-ops",
+            first_name="autocatalog-ops",
             password="demo12345",
             is_staff=True,
         )
         self.regular_user = User.objects.create_user(
             email="autocatalog-customer@test.local",
-            username="autocatalog-customer",
+            first_name="autocatalog-customer",
             password="demo12345",
             is_staff=False,
         )

@@ -13,7 +13,7 @@ class BackofficeOrderOperationsAPISmokeTests(APITestCase):
     def setUp(self):
         self.staff = User.objects.create_user(
             email="ops-orders@test.local",
-            username="ops-orders",
+            first_name="ops-orders",
             password="demo12345",
             is_staff=True,
         )
@@ -22,7 +22,7 @@ class BackofficeOrderOperationsAPISmokeTests(APITestCase):
 
         self.customer = User.objects.create_user(
             email="orders-customer@test.local",
-            username="orders-customer",
+            first_name="orders-customer",
             password="demo12345",
         )
 

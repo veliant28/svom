@@ -31,7 +31,6 @@ export type BackofficeUserGroup = {
 export type BackofficeUser = {
   id: string;
   email: string;
-  username: string;
   first_name: string;
   last_name: string;
   preferred_language: "uk" | "ru" | "en";

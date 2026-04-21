@@ -33,7 +33,7 @@ class BackofficeUserListSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "email",
-            "username",
+            "first_name",
             "last_name",
             "middle_name",
             "phone",
@@ -46,7 +46,7 @@ class BackofficeUserListSerializer(serializers.ModelSerializer):
         )
 
     def get_full_name(self, obj: User) -> str:
-        return (obj.get_full_name() or "").strip() or obj.username or obj.email
+        return (obj.get_full_name() or "").strip() or obj.email
 
     def get_groups(self, obj: User):
         values = obj.groups.order_by("name").values("id", "name")
@@ -75,7 +75,7 @@ class BackofficeUserDetailSerializer(BackofficeUserListSerializer):
 
 class _BackofficeUserWriteSerializer(serializers.Serializer):
     email = serializers.EmailField(required=False)
-    username = serializers.CharField(required=False, max_length=150)
+    first_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
     last_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
     middle_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
     phone = serializers.CharField(required=False, allow_blank=True, max_length=32)
@@ -103,21 +103,8 @@ class _BackofficeUserWriteSerializer(serializers.Serializer):
             raise serializers.ValidationError(f"Unknown group ids: {missing}")
         return unique_ids
 
-    def validate_username(self, value: str) -> str:
-        normalized = str(value or "").strip()
-        if not normalized:
-            raise serializers.ValidationError("Username cannot be blank.")
-        instance = getattr(self, "instance", None)
-        if instance is not None:
-            current_username = str(getattr(instance, "username", "") or "").strip()
-            if normalized == current_username:
-                return normalized
-        queryset = User.objects.filter(username=normalized)
-        if instance is not None:
-            queryset = queryset.exclude(id=instance.id)
-        if queryset.exists():
-            raise serializers.ValidationError("User with this username already exists.")
-        return normalized
+    def validate_first_name(self, value: str) -> str:
+        return str(value or "").strip()
 
     def validate_password(self, value: str) -> str:
         validate_password(value)
@@ -157,12 +144,8 @@ class BackofficeUserCreateSerializer(_BackofficeUserWriteSerializer):
         password = validated_data.pop("password")
         normalized_email = validated_data.get("email", "").strip().lower()
         validated_data["email"] = normalized_email
-        if "username" in validated_data:
-            validated_data["username"] = str(validated_data["username"]).strip()
-        if not validated_data.get("username"):
-            validated_data["username"] = normalized_email
-        if User.objects.filter(username=validated_data["username"]).exists():
-            raise serializers.ValidationError({"username": "User with this username already exists."})
+        if "first_name" in validated_data:
+            validated_data["first_name"] = str(validated_data["first_name"]).strip()
 
         user = User(**validated_data)
         user.set_password(password)
@@ -178,7 +161,7 @@ class BackofficeUserUpdateSerializer(_BackofficeUserWriteSerializer):
 
         for field in (
             "email",
-            "username",
+            "first_name",
             "last_name",
             "middle_name",
             "phone",

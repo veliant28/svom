@@ -22,13 +22,13 @@ class BackofficeOrderWaybillAPISmokeTests(APITestCase):
     def setUp(self):
         self.staff = User.objects.create_user(
             email="waybill-staff@test.local",
-            username="waybill-staff",
+            first_name="waybill-staff",
             password="demo12345",
             is_staff=True,
         )
         self.regular = User.objects.create_user(
             email="waybill-user@test.local",
-            username="waybill-user",
+            first_name="waybill-user",
             password="demo12345",
             is_staff=False,
         )

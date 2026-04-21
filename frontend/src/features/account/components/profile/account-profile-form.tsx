@@ -16,7 +16,7 @@ import {
 
 export type AccountProfileFormValues = Pick<
   AuthUser,
-  "email" | "username" | "last_name" | "middle_name" | "phone" | "preferred_language"
+  "email" | "first_name" | "last_name" | "middle_name" | "phone" | "preferred_language"
 >;
 
 type AccountProfileFormProps = {
@@ -30,7 +30,7 @@ const localeOptions: Array<AuthUser["preferred_language"]> = ["uk", "ru", "en"];
 function mapUserToForm(user: AuthUser): AccountProfileFormValues {
   return {
     email: user.email,
-    username: user.username || "",
+    first_name: user.first_name || "",
     last_name: user.last_name || "",
     middle_name: user.middle_name || "",
     phone: formatPhoneInput(user.phone || ""),
@@ -82,11 +82,11 @@ export function AccountProfileForm({
   const canSubmit = useMemo(() => {
     return (
       values.email.trim().length > 0 &&
-      values.username.trim().length > 0 &&
+      values.first_name.trim().length > 0 &&
       isPhoneInputValid(values.phone) &&
       values.preferred_language.length > 0
     );
-  }, [values.email, values.phone, values.preferred_language, values.username]);
+  }, [values.email, values.phone, values.preferred_language, values.first_name]);
   const profileGroupName = useMemo(() => {
     if (user.system_role) {
       return `Backoffice Role: ${user.system_role}`;
@@ -123,10 +123,10 @@ export function AccountProfileForm({
           />
         </label>
         <label className="flex flex-col gap-1 text-xs">
-          {t("fields.username")}
+          {t("fields.firstName")}
           <input
-            value={values.username}
-            onChange={(event) => setValues((current) => ({ ...current, username: event.target.value }))}
+            value={values.first_name}
+            onChange={(event) => setValues((current) => ({ ...current, first_name: event.target.value }))}
             required
             className="h-10 rounded-md border px-3"
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}

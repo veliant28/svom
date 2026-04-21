@@ -87,7 +87,7 @@ class CatalogFitmentAPITests(APITestCase):
 
         self.user = User.objects.create_user(
             email="fitment@test.local",
-            username="fitment-user",
+            first_name="fitment-user",
             password="pass12345",
         )
         self.garage_vehicle = GarageVehicle.objects.create(

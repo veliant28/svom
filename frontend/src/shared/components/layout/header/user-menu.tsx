@@ -8,15 +8,15 @@ import { useAuth } from "@/features/auth/hooks/use-auth";
 import { Link, usePathname } from "@/i18n/navigation";
 import { HeaderIconLink } from "@/shared/components/layout/header/header-icon-control";
 
-function getUserInitials(input: { lastName?: string; username?: string; email?: string }): string {
-  const first = (input.username?.trim() || input.email?.trim() || "")[0] ?? "";
+function getUserInitials(input: { lastName?: string; firstName?: string; email?: string }): string {
+  const first = (input.firstName?.trim() || input.email?.trim() || "")[0] ?? "";
   const last = (input.lastName?.trim() || "")[0] ?? "";
   const full = `${first}${last}`.toUpperCase();
   if (full) {
     return full;
   }
 
-  const fallback = input.username?.trim() || input.email?.trim() || "U";
+  const fallback = input.firstName?.trim() || input.email?.trim() || "U";
   return fallback[0]?.toUpperCase() ?? "U";
 }
 
@@ -61,10 +61,10 @@ export function HeaderUserMenu() {
     () =>
       getUserInitials({
         lastName: user?.last_name,
-        username: user?.username,
+        firstName: user?.first_name,
         email: user?.email,
       }),
-    [user?.email, user?.last_name, user?.username],
+    [user?.email, user?.last_name, user?.first_name],
   );
 
   if (!isAuthenticated) {

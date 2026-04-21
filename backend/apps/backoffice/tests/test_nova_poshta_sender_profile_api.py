@@ -13,7 +13,7 @@ class BackofficeNovaPoshtaSenderProfileAPITests(APITestCase):
     def setUp(self):
         self.staff = User.objects.create_user(
             email="np-sender-staff@test.local",
-            username="np-sender-staff",
+            first_name="np-sender-staff",
             password="demo12345",
             is_staff=True,
         )

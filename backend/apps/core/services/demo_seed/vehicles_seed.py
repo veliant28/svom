@@ -128,7 +128,6 @@ def _seed_demo_user() -> User:
     demo_user, created = User.objects.get_or_create(
         email="demo@svom.local",
         defaults={
-            "username": "demo",
             "first_name": "Demo",
             "last_name": "Driver",
             "is_active": True,

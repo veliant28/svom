@@ -1358,7 +1358,7 @@
           "empty": "Пользователи не найдены.",
           "pagination": "Страница {page} из {pages}",
           "filters": {
-            "search": "Поиск по email, логину, фамилии, телефону",
+            "search": "Поиск по email, имени, фамилии, телефону",
             "allStatuses": "Все статусы",
             "allRoles": "Все роли"
           },
@@ -1382,7 +1382,7 @@
           },
           "fields": {
             "email": "Email",
-            "username": "Имя пользователя",
+            "firstName": "Имя",
             "lastName": "Фамилия",
             "phone": "Телефон",
             "password": "Пароль",

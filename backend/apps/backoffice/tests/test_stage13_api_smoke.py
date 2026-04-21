@@ -16,7 +16,7 @@ class Stage13BackofficeAPISmokeTests(APITestCase):
     def setUp(self):
         self.staff = User.objects.create_user(
             email="stage13@test.local",
-            username="stage13",
+            first_name="stage13",
             password="demo12345",
             is_staff=True,
         )

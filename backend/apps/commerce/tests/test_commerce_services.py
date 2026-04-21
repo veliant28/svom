@@ -12,7 +12,7 @@ from apps.users.models import User
 
 class CommerceServicesTests(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(email="service@test.local", username="service", password="pass12345")
+        self.user = User.objects.create_user(email="service@test.local", first_name="service", password="pass12345")
         self.brand = Brand.objects.create(name="Service Brand", slug="service-brand", is_active=True)
         self.category = Category.objects.create(name="Service Category", slug="service-category", is_active=True)
 

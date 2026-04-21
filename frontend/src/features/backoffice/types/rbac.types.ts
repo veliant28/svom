@@ -22,7 +22,7 @@ export type BackofficeRbacMeta = {
 export type BackofficeManagedUser = {
   id: number;
   email: string;
-  username: string;
+  first_name: string;
   last_name: string;
   middle_name: string;
   phone: string;
@@ -35,7 +35,7 @@ export type BackofficeManagedUser = {
 };
 
 export type BackofficeManagedUserDetail = BackofficeManagedUser & {
-  username: string;
+  first_name: string;
   is_staff: boolean;
   is_superuser: boolean;
   capabilities: BackofficeCapabilityCode[];
@@ -43,7 +43,7 @@ export type BackofficeManagedUserDetail = BackofficeManagedUser & {
 
 export type BackofficeManagedUserWritePayload = Partial<{
   email: string;
-  username: string;
+  first_name: string;
   last_name: string;
   middle_name: string;
   phone: string;

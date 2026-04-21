@@ -9,7 +9,7 @@ from apps.users.models import User
 
 class ProcurementServiceTests(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(email="procurement@test.local", username="procurement", password="pass12345")
+        self.user = User.objects.create_user(email="procurement@test.local", first_name="procurement", password="pass12345")
         self.brand = Brand.objects.create(name="Procurement Brand", slug="procurement-brand", is_active=True)
         self.category = Category.objects.create(name="Procurement Category", slug="procurement-category", is_active=True)
         self.product = Product.objects.create(

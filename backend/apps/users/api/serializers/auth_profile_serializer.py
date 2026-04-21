@@ -15,7 +15,6 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             "email",
-            "username",
             "first_name",
             "last_name",
             "middle_name",
@@ -24,7 +23,6 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         )
         extra_kwargs = {
             "email": {"required": False},
-            "username": {"required": False},
             "first_name": {"required": False},
             "last_name": {"required": False},
             "middle_name": {"required": False},

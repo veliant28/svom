@@ -1358,7 +1358,7 @@
           "empty": "No users found.",
           "pagination": "Page {page} of {pages}",
           "filters": {
-            "search": "Search by email, username, last name, phone",
+            "search": "Search by email, first name, last name, phone",
             "allStatuses": "All statuses",
             "allRoles": "All roles"
           },
@@ -1382,7 +1382,7 @@
           },
           "fields": {
             "email": "Email",
-            "username": "Username",
+            "firstName": "First name",
             "lastName": "Last name",
             "phone": "Phone",
             "password": "Password",

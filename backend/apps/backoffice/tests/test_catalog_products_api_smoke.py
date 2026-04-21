@@ -17,13 +17,13 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
     def setUp(self):
         self.staff_user = User.objects.create_user(
             email="products-ops@test.local",
-            username="products-ops",
+            first_name="products-ops",
             password="demo12345",
             is_staff=True,
         )
         self.regular_user = User.objects.create_user(
             email="products-customer@test.local",
-            username="products-customer",
+            first_name="products-customer",
             password="demo12345",
             is_staff=False,
         )
