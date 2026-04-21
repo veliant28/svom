@@ -256,7 +256,7 @@ export function UsersPage() {
         <BackofficeTable
           columns={[
             { key: "email", label: t("rbac.users.columns.email"), render: (item) => <div><p className="font-semibold">{item.email}</p><p className="text-xs" style={{ color: "var(--muted)" }}>{item.full_name}</p></div> },
-            { key: "role", label: t("rbac.users.columns.role"), render: (item) => item.system_role ? t(`rbac.roles.values.${item.system_role}`) : "-" },
+            { key: "role", label: t("rbac.users.columns.role"), render: (item) => (item.system_role ? t("yes") : t("no")) },
             {
               key: "groups",
               label: t("rbac.users.columns.groups"),
