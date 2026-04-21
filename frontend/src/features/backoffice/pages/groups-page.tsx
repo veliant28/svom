@@ -50,7 +50,8 @@ export function GroupsPage() {
 
   const groupsQuery = useCallback((token: string) => listBackofficeGroups(token, { q: query, page }), [page, query]);
   const groupsState = useBackofficeQuery(groupsQuery, [query, page]);
-  const metaState = useBackofficeQuery((token: string) => getBackofficeRbacMeta(token), []);
+  const metaQuery = useCallback((token: string) => getBackofficeRbacMeta(token), []);
+  const metaState = useBackofficeQuery(metaQuery, []);
 
   const groups = useMemo(() => normalizeListPayload<BackofficeGroupItem>(groupsState.data).results, [groupsState.data]);
   const groupsCount = useMemo(() => normalizeListPayload<BackofficeGroupItem>(groupsState.data).count, [groupsState.data]);

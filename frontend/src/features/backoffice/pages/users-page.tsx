@@ -74,8 +74,11 @@ export function UsersPage() {
 
   const usersState = useBackofficeQuery(usersQuery, [query, statusFilter, roleFilter, page]);
 
-  const groupsState = useBackofficeQuery((token: string) => listBackofficeGroups(token, { page: 1 }), []);
-  const metaState = useBackofficeQuery((token: string) => getBackofficeRbacMeta(token), []);
+  const groupsQuery = useCallback((token: string) => listBackofficeGroups(token, { page: 1 }), []);
+  const metaQuery = useCallback((token: string) => getBackofficeRbacMeta(token), []);
+
+  const groupsState = useBackofficeQuery(groupsQuery, []);
+  const metaState = useBackofficeQuery(metaQuery, []);
 
   const users = useMemo(() => normalizeListPayload<BackofficeManagedUser>(usersState.data).results, [usersState.data]);
   const usersCount = useMemo(() => normalizeListPayload<BackofficeManagedUser>(usersState.data).count, [usersState.data]);
