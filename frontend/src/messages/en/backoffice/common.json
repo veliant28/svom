@@ -1234,6 +1234,118 @@
             "operator": "Customer support role for order operations without system settings."
           }
         },
+        "capabilities": {
+          "backoffice": {
+            "access": {
+              "title": "Backoffice access",
+              "description": "Allows entering the backoffice area."
+            }
+          },
+          "users": {
+            "view": {
+              "title": "View users",
+              "description": "Allows reading users in backoffice."
+            },
+            "manage": {
+              "title": "Manage users",
+              "description": "Allows creating, updating and deactivating users."
+            },
+            "card": {
+              "edit": {
+                "administrator": {
+                  "title": "Edit user card (administrator)",
+                  "description": "Allows administrators to edit user cards."
+                },
+                "manager": {
+                  "title": "Edit user card (manager)",
+                  "description": "Allows managers to edit user cards."
+                },
+                "all": {
+                  "title": "Edit user card (all roles)",
+                  "description": "Allows any backoffice role to edit user cards."
+                }
+              }
+            }
+          },
+          "groups": {
+            "view": {
+              "title": "View groups",
+              "description": "Allows reading groups and assigned permissions."
+            },
+            "manage": {
+              "title": "Manage groups",
+              "description": "Allows creating and updating groups and their capabilities."
+            }
+          },
+          "catalog": {
+            "view": {
+              "title": "View catalog",
+              "description": "Allows reading catalog entities in backoffice."
+            },
+            "manage": {
+              "title": "Manage catalog",
+              "description": "Allows managing catalog entities in backoffice."
+            }
+          },
+          "orders": {
+            "view": {
+              "title": "View orders",
+              "description": "Allows reading orders and order details."
+            },
+            "manage": {
+              "title": "Manage orders",
+              "description": "Allows performing order operations in backoffice."
+            }
+          },
+          "customers": {
+            "support": {
+              "title": "Customer support actions",
+              "description": "Allows customer support actions in order flow."
+            }
+          },
+          "pricing": {
+            "view": {
+              "title": "View pricing",
+              "description": "Allows reading pricing dashboards and data."
+            },
+            "manage": {
+              "title": "Manage pricing",
+              "description": "Allows managing pricing settings and recalculation."
+            }
+          },
+          "suppliers": {
+            "view": {
+              "title": "View suppliers",
+              "description": "Allows reading suppliers and supplier data."
+            },
+            "manage": {
+              "title": "Manage suppliers",
+              "description": "Allows managing suppliers and supplier operations."
+            }
+          },
+          "imports": {
+            "view": {
+              "title": "View imports",
+              "description": "Allows reading import runs, quality and errors."
+            },
+            "manage": {
+              "title": "Manage imports",
+              "description": "Allows running import and import maintenance actions."
+            }
+          },
+          "settings": {
+            "manage": {
+              "title": "Manage settings",
+              "description": "Allows managing operational and system settings in backoffice."
+            }
+          },
+          "procurement": {
+            "manage": {
+              "title": "Manage procurement",
+              "description": "Allows working with procurement recommendations and supplier overrides."
+            }
+          }
+        },
         "users": {
           "title": "Users",
           "subtitle": "Manage accounts, roles, and access groups.",
@@ -1302,7 +1414,7 @@
           "columns": {
             "name": "Group",
             "members": "Users",
-            "capabilities": "Capabilities",
+            "capabilities": "Access rights",
             "actions": "Actions",
             "system": "System role",
             "custom": "Custom group"

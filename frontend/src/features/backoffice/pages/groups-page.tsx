@@ -62,6 +62,26 @@ export function GroupsPage() {
   const pagesCount = Math.max(1, Math.ceil(groupsCount / 20));
 
   const capabilities = metaState.data?.capabilities ?? [];
+  const capabilitiesByCode = useMemo(
+    () => new Map(capabilities.map((capability) => [capability.code, capability])),
+    [capabilities],
+  );
+
+  const getCapabilityTitle = useCallback((code: string, fallback?: string) => {
+    try {
+      return t(`rbac.capabilities.${code}.title` as never);
+    } catch {
+      return fallback || code;
+    }
+  }, [t]);
+
+  const getCapabilityDescription = useCallback((code: string, fallback?: string) => {
+    try {
+      return t(`rbac.capabilities.${code}.description` as never);
+    } catch {
+      return fallback || "";
+    }
+  }, [t]);
 
   const openCreate = useCallback(() => {
     setIsCreateMode(true);
@@ -165,7 +185,16 @@ export function GroupsPage() {
               ),
             },
             { key: "members", label: t("rbac.groups.columns.members"), render: (item) => String(item.members_count) },
-            { key: "capabilities", label: t("rbac.groups.columns.capabilities"), render: (item) => item.capability_codes.join(", ") || "-" },
+            {
+              key: "capabilities",
+              label: t("rbac.groups.columns.capabilities"),
+              render: (item) =>
+                item.capability_codes.length
+                  ? item.capability_codes
+                    .map((code) => getCapabilityTitle(code, capabilitiesByCode.get(code)?.title))
+                    .join(", ")
+                  : "-",
+            },
             {
               key: "actions",
               label: t("rbac.groups.columns.actions"),
@@ -233,8 +262,12 @@ export function GroupsPage() {
                       {checked ? <Check className="h-3 w-3" /> : null}
                     </span>
                     <span>
-                      <span className="font-semibold">{capability.code}</span>
-                      <span className="block" style={{ color: "var(--muted)" }}>{capability.description}</span>
+                      <span className="font-semibold">
+                        {getCapabilityTitle(capability.code, capability.title)}
+                      </span>
+                      <span className="block" style={{ color: "var(--muted)" }}>
+                        {getCapabilityDescription(capability.code, capability.description)}
+                      </span>
                     </span>
                   </label>
                 );
