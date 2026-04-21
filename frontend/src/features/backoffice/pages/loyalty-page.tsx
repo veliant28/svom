@@ -220,30 +220,32 @@ export function LoyaltyPage() {
               </select>
             </label>
 
-            <div className="grid gap-1">
-              <span>{t("loyalty.issue.fields.percent")}</span>
-              <PercentStepper
-                value={discountPercent}
-                onChange={setDiscountPercent}
-                min={0}
-                max={100}
-                step={1}
-                minusLabel={t("loyalty.issue.actions.percentMinus")}
-                plusLabel={t("loyalty.issue.actions.percentPlus")}
-                inputLabel={t("loyalty.issue.fields.percent")}
-              />
-            </div>
+            <div className="grid gap-2 sm:grid-cols-[max-content_minmax(0,1fr)] sm:items-end">
+              <div className="grid gap-1">
+                <span>{t("loyalty.issue.fields.percent")}</span>
+                <PercentStepper
+                  value={discountPercent}
+                  onChange={setDiscountPercent}
+                  min={0}
+                  max={100}
+                  step={1}
+                  minusLabel={t("loyalty.issue.actions.percentMinus")}
+                  plusLabel={t("loyalty.issue.actions.percentPlus")}
+                  inputLabel={t("loyalty.issue.fields.percent")}
+                />
+              </div>
 
-            <label className="grid gap-1">
-              <span>{t("loyalty.issue.fields.expiresAt")}</span>
-              <input
-                type="datetime-local"
-                value={expiresAt}
-                onChange={(event) => setExpiresAt(event.target.value)}
-                className="h-9 rounded-md border px-3"
-                style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-              />
-            </label>
+              <label className="grid gap-1 min-w-0">
+                <span>{t("loyalty.issue.fields.expiresAt")}</span>
+                <input
+                  type="datetime-local"
+                  value={expiresAt}
+                  onChange={(event) => setExpiresAt(event.target.value)}
+                  className="h-9 w-full rounded-md border px-3"
+                  style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                />
+              </label>
+            </div>
 
             <label className="grid gap-1">
               <span>{t("loyalty.issue.fields.usageLimit")}</span>
