@@ -10,6 +10,24 @@ from .import_row_error_serializer import ImportRowErrorSerializer
 from .import_run_quality_serializer import ImportRunQualitySerializer
 from .import_run_serializer import ImportRunSerializer
 from .import_source_serializer import ImportSourceSerializer
+from .rbac_meta_serializer import (
+    BackofficeCapabilityDefinitionSerializer,
+    BackofficeRbacMetaSerializer,
+    BackofficeSystemRoleSerializer,
+)
+from .backoffice_user_rbac_serializer import (
+    BackofficeUserCreateSerializer,
+    BackofficeUserDetailSerializer,
+    BackofficeUserGroupSerializer,
+    BackofficeUserListSerializer,
+    BackofficeUserUpdateSerializer,
+)
+from .backoffice_group_rbac_serializer import (
+    BackofficeGroupCreateSerializer,
+    BackofficeGroupDetailSerializer,
+    BackofficeGroupListSerializer,
+    BackofficeGroupUpdateSerializer,
+)
 from .nova_poshta_serializer import (
     NovaPoshtaCounterpartyDetailsQuerySerializer,
     NovaPoshtaCounterpartyLookupQuerySerializer,
@@ -94,6 +112,18 @@ __all__ = [
     "ImportRunQualitySerializer",
     "ImportRunSerializer",
     "ImportSourceSerializer",
+    "BackofficeCapabilityDefinitionSerializer",
+    "BackofficeSystemRoleSerializer",
+    "BackofficeRbacMetaSerializer",
+    "BackofficeUserGroupSerializer",
+    "BackofficeUserListSerializer",
+    "BackofficeUserDetailSerializer",
+    "BackofficeUserCreateSerializer",
+    "BackofficeUserUpdateSerializer",
+    "BackofficeGroupListSerializer",
+    "BackofficeGroupDetailSerializer",
+    "BackofficeGroupCreateSerializer",
+    "BackofficeGroupUpdateSerializer",
     "NovaPoshtaCounterpartyDetailsQuerySerializer",
     "NovaPoshtaCounterpartyLookupQuerySerializer",
     "NovaPoshtaLookupQuerySerializer",

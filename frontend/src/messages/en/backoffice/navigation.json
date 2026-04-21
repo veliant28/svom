@@ -16,7 +16,9 @@
       "orders": "Orders",
       "autocatalog": "Autocatalog",
       "novaPoshtaSenders": "NP Senders",
-      "payments": "Payments"
+      "payments": "Payments",
+      "users": "Users",
+      "groups": "Groups"
     }
   }
 }

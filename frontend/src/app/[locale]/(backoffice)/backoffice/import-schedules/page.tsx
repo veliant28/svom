@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation";
 
+import { BACKOFFICE_CAPABILITIES } from "@/features/backoffice/lib/capabilities";
+import { ensureBackofficeRouteCapability } from "@/features/backoffice/server/ensure-backoffice-route-capability";
+
 type ImportSchedulesRouteProps = {
   params: Promise<{
     locale: string;
@@ -11,6 +14,7 @@ type ImportSchedulesRouteProps = {
 
 export default async function ImportSchedulesRoute({ params, searchParams }: ImportSchedulesRouteProps) {
   const { locale } = await params;
+  await ensureBackofficeRouteCapability(locale, BACKOFFICE_CAPABILITIES.importsView);
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const supplierRaw = resolvedSearchParams?.supplier;
   const supplier = Array.isArray(supplierRaw) ? supplierRaw[0] : supplierRaw;

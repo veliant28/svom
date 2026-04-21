@@ -110,6 +110,15 @@ from .supplier_price_lists_views import (
     SupplierPriceListRequestAPIView,
 )
 from .supplier_workspace_views import SupplierWorkspaceDetailAPIView, SupplierWorkspaceListAPIView, SupplierWorkspaceSettingsAPIView
+from .rbac_management_views import (
+    BackofficeGroupListCreateAPIView,
+    BackofficeGroupRetrieveUpdateAPIView,
+    BackofficeRbacMetaAPIView,
+    BackofficeUserActivateAPIView,
+    BackofficeUserDeactivateAPIView,
+    BackofficeUserListCreateAPIView,
+    BackofficeUserRetrieveUpdateAPIView,
+)
 from .summary_view import BackofficeSummaryAPIView
 from .vehicle_taxonomy_views import (
     BackofficeVehicleEngineListCreateAPIView,
@@ -238,6 +247,13 @@ __all__ = [
     "BackofficeVehicleModificationRetrieveUpdateDestroyAPIView",
     "BackofficeProductFitmentListCreateAPIView",
     "BackofficeProductFitmentRetrieveUpdateDestroyAPIView",
+    "BackofficeRbacMetaAPIView",
+    "BackofficeUserListCreateAPIView",
+    "BackofficeUserRetrieveUpdateAPIView",
+    "BackofficeUserActivateAPIView",
+    "BackofficeUserDeactivateAPIView",
+    "BackofficeGroupListCreateAPIView",
+    "BackofficeGroupRetrieveUpdateAPIView",
     "RunImportSourceActionAPIView",
     "ImportAllActionAPIView",
     "RepriceAfterImportActionAPIView",

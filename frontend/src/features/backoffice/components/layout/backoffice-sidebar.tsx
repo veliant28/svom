@@ -4,8 +4,10 @@ import type { ComponentType } from "react";
 import {
   Car,
   CircleDollarSign,
+  ShieldCheck,
   LayoutDashboard,
   Package,
+  UsersRound,
   Shapes,
   ShoppingBag,
   PackageCheck,
@@ -15,6 +17,8 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { BACKOFFICE_CAPABILITIES, hasBackofficeCapabilities, type BackofficeCapabilityCode } from "@/features/backoffice/lib/capabilities";
+import type { BackofficeUser } from "@/features/backoffice/types/backoffice";
 import { Link, usePathname } from "@/i18n/navigation";
 
 type SidebarNavItem = {
@@ -30,20 +34,30 @@ type SidebarNavItem = {
     | "categories"
     | "autocatalog"
     | "orders"
-    | "novaPoshtaSenders";
+    | "novaPoshtaSenders"
+    | "users"
+    | "groups";
+  requiredCapability: BackofficeCapabilityCode | BackofficeCapabilityCode[];
 };
 
 const NAV_ITEMS: SidebarNavItem[] = [
-  { href: "/backoffice", icon: LayoutDashboard, key: "dashboard" },
-  { href: "/backoffice/suppliers", icon: Truck, key: "suppliers" },
-  { href: "/backoffice/products", icon: Package, key: "products" },
-  { href: "/backoffice/pricing", icon: CircleDollarSign, key: "pricing" },
-  { href: "/backoffice/payments", icon: Wallet2, key: "payments" },
-  { href: "/backoffice/brands", icon: Tags, key: "brands" },
-  { href: "/backoffice/categories", icon: Shapes, key: "categories" },
-  { href: "/backoffice/autocatalog", icon: Car, key: "autocatalog" },
-  { href: "/backoffice/orders", icon: ShoppingBag, key: "orders" },
-  { href: "/backoffice/nova-poshta-senders", icon: PackageCheck, key: "novaPoshtaSenders" },
+  { href: "/backoffice", icon: LayoutDashboard, key: "dashboard", requiredCapability: BACKOFFICE_CAPABILITIES.backofficeAccess },
+  { href: "/backoffice/users", icon: UsersRound, key: "users", requiredCapability: BACKOFFICE_CAPABILITIES.usersView },
+  { href: "/backoffice/groups", icon: ShieldCheck, key: "groups", requiredCapability: BACKOFFICE_CAPABILITIES.groupsView },
+  { href: "/backoffice/suppliers", icon: Truck, key: "suppliers", requiredCapability: BACKOFFICE_CAPABILITIES.suppliersView },
+  { href: "/backoffice/products", icon: Package, key: "products", requiredCapability: BACKOFFICE_CAPABILITIES.catalogView },
+  { href: "/backoffice/pricing", icon: CircleDollarSign, key: "pricing", requiredCapability: BACKOFFICE_CAPABILITIES.pricingView },
+  { href: "/backoffice/payments", icon: Wallet2, key: "payments", requiredCapability: BACKOFFICE_CAPABILITIES.settingsManage },
+  { href: "/backoffice/brands", icon: Tags, key: "brands", requiredCapability: BACKOFFICE_CAPABILITIES.catalogView },
+  { href: "/backoffice/categories", icon: Shapes, key: "categories", requiredCapability: BACKOFFICE_CAPABILITIES.catalogView },
+  { href: "/backoffice/autocatalog", icon: Car, key: "autocatalog", requiredCapability: BACKOFFICE_CAPABILITIES.catalogView },
+  { href: "/backoffice/orders", icon: ShoppingBag, key: "orders", requiredCapability: BACKOFFICE_CAPABILITIES.ordersView },
+  {
+    href: "/backoffice/nova-poshta-senders",
+    icon: PackageCheck,
+    key: "novaPoshtaSenders",
+    requiredCapability: [BACKOFFICE_CAPABILITIES.ordersManage, BACKOFFICE_CAPABILITIES.customersSupport],
+  },
 ];
 
 function normalizePath(path: string): string {
@@ -67,9 +81,10 @@ function isActiveNavItem(pathname: string, href: string): boolean {
   return current === target || current.startsWith(`${target}/`);
 }
 
-export function BackofficeSidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
+export function BackofficeSidebar({ open, onNavigate, user }: { open: boolean; onNavigate: () => void; user: BackofficeUser }) {
   const t = useTranslations("backoffice.navigation");
   const pathname = usePathname();
+  const navItems = NAV_ITEMS.filter((item) => hasBackofficeCapabilities(user, item.requiredCapability));
 
   return (
     <aside
@@ -94,7 +109,7 @@ export function BackofficeSidebar({ open, onNavigate }: { open: boolean; onNavig
       </div>
 
       <nav className="grid gap-1">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const isActive = isActiveNavItem(pathname, item.href);
           const Icon = item.icon;
           const itemClassName = `flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${isActive ? "font-semibold" : "font-medium"}`;

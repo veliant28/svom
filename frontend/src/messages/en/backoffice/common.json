@@ -1218,6 +1218,116 @@
           "liqpayConnectionFailed": "Failed to test LiqPay connection.",
           "liqpayConnectionOk": "LiqPay connection successful."
         }
+      },
+      "rbac": {
+        "roles": {
+          "values": {
+            "administrator": "Administrator",
+            "manager": "Manager",
+            "user": "User",
+            "operator": "Operator"
+          },
+          "descriptions": {
+            "administrator": "Full access to all backoffice areas, roles, users, and groups.",
+            "manager": "Operational access to catalog/orders without full system administration.",
+            "user": "Minimal access. Permissions come from role and extra groups.",
+            "operator": "Customer support role for order operations without system settings."
+          }
+        },
+        "users": {
+          "title": "Users",
+          "subtitle": "Manage accounts, roles, and access groups.",
+          "empty": "No users found.",
+          "pagination": "Page {page} of {pages}",
+          "filters": {
+            "search": "Search by email or name",
+            "allStatuses": "All statuses",
+            "allRoles": "All roles"
+          },
+          "columns": {
+            "email": "User",
+            "role": "System role",
+            "groups": "Groups",
+            "status": "Status",
+            "actions": "Actions"
+          },
+          "actions": {
+            "create": "Create user",
+            "edit": "Edit",
+            "activate": "Activate",
+            "deactivate": "Deactivate",
+            "save": "Save",
+            "saving": "Saving...",
+            "reset": "Reset"
+          },
+          "fields": {
+            "email": "Email",
+            "firstName": "First name",
+            "lastName": "Last name",
+            "phone": "Phone",
+            "password": "Password",
+            "active": "Active account",
+            "groups": "Groups",
+            "noRole": "No system role",
+            "backofficeAccess": "Backoffice access"
+          },
+          "editor": {
+            "createTitle": "New user",
+            "editTitle": "User card",
+            "helper": "Set system role, groups, and backoffice access state."
+          },
+          "rolePreview": {
+            "title": "Role description",
+            "none": "No system role selected. Access depends only on groups."
+          },
+          "messages": {
+            "created": "User created.",
+            "updated": "User updated.",
+            "activated": "User activated.",
+            "deactivated": "User deactivated.",
+            "saveFailed": "Failed to save user.",
+            "toggleFailed": "Failed to change user status."
+          }
+        },
+        "groups": {
+          "title": "Groups",
+          "subtitle": "Manage access groups and capability rights.",
+          "empty": "No groups found.",
+          "pagination": "Page {page} of {pages}",
+          "filters": {
+            "search": "Search by group name"
+          },
+          "columns": {
+            "name": "Group",
+            "members": "Users",
+            "capabilities": "Capabilities",
+            "actions": "Actions",
+            "system": "System role",
+            "custom": "Custom group"
+          },
+          "actions": {
+            "create": "Create group",
+            "edit": "Edit",
+            "save": "Save",
+            "saving": "Saving...",
+            "reset": "Reset"
+          },
+          "fields": {
+            "name": "Group name",
+            "capabilities": "Capabilities"
+          },
+          "editor": {
+            "createTitle": "New group",
+            "editTitle": "Group card",
+            "helper": "System role groups are read-only."
+          },
+          "messages": {
+            "created": "Group created.",
+            "updated": "Group updated.",
+            "saveFailed": "Failed to save group.",
+            "systemReadonly": "System role group cannot be edited manually."
+          }
+        }
       }
     }
   }

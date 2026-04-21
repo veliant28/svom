@@ -1,0 +1,239 @@
+"use client";
+
+import { useCallback, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
+
+import {
+  createBackofficeGroup,
+  getBackofficeRbacMeta,
+  listBackofficeGroups,
+  updateBackofficeGroup,
+} from "@/features/backoffice/api/rbac-api";
+import { BackofficeTable } from "@/features/backoffice/components/table/backoffice-table";
+import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
+import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
+import { useAuth } from "@/features/auth/hooks/use-auth";
+import { BACKOFFICE_CAPABILITIES, hasBackofficeCapability } from "@/features/backoffice/lib/capabilities";
+import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
+import { useBackofficeQuery } from "@/features/backoffice/hooks/use-backoffice-query";
+import type { BackofficeGroupItem, BackofficeGroupWritePayload } from "@/features/backoffice/types/rbac.types";
+
+const EMPTY_FORM: BackofficeGroupWritePayload = {
+  name: "",
+  capability_codes: [],
+};
+
+function normalizeListPayload<T>(payload: unknown): { count: number; results: T[] } {
+  if (payload && typeof payload === "object" && "results" in payload) {
+    const typed = payload as { count?: number; results?: T[] };
+    return {
+      count: Number(typed.count || 0),
+      results: Array.isArray(typed.results) ? typed.results : [],
+    };
+  }
+  return { count: 0, results: [] };
+}
+
+export function GroupsPage() {
+  const t = useTranslations("backoffice.common");
+  const { user } = useAuth();
+  const { showApiError, showSuccess } = useBackofficeFeedback();
+
+  const canManageGroups = hasBackofficeCapability(user, BACKOFFICE_CAPABILITIES.groupsManage);
+
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [editingGroup, setEditingGroup] = useState<BackofficeGroupItem | null>(null);
+  const [isCreateMode, setIsCreateMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [form, setForm] = useState<BackofficeGroupWritePayload>(EMPTY_FORM);
+
+  const groupsQuery = useCallback((token: string) => listBackofficeGroups(token, { q: query, page }), [page, query]);
+  const groupsState = useBackofficeQuery(groupsQuery, [query, page]);
+  const metaState = useBackofficeQuery((token: string) => getBackofficeRbacMeta(token), []);
+
+  const groups = useMemo(() => normalizeListPayload<BackofficeGroupItem>(groupsState.data).results, [groupsState.data]);
+  const groupsCount = useMemo(() => normalizeListPayload<BackofficeGroupItem>(groupsState.data).count, [groupsState.data]);
+  const pagesCount = Math.max(1, Math.ceil(groupsCount / 20));
+
+  const capabilities = metaState.data?.capabilities ?? [];
+
+  const openCreate = useCallback(() => {
+    setIsCreateMode(true);
+    setEditingGroup(null);
+    setForm({ ...EMPTY_FORM });
+  }, []);
+
+  const openEdit = useCallback((target: BackofficeGroupItem) => {
+    setIsCreateMode(false);
+    setEditingGroup(target);
+    setForm({
+      name: target.name,
+      capability_codes: [...target.capability_codes],
+    });
+  }, []);
+
+  const closeEditor = useCallback(() => {
+    setIsCreateMode(false);
+    setEditingGroup(null);
+    setForm({ ...EMPTY_FORM });
+  }, []);
+
+  const submit = useCallback(async () => {
+    if (!groupsState.token || isSaving || !canManageGroups) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const payload: BackofficeGroupWritePayload = {
+        name: (form.name || "").trim(),
+        capability_codes: form.capability_codes || [],
+      };
+
+      if (isCreateMode) {
+        await createBackofficeGroup(groupsState.token, payload);
+        showSuccess(t("rbac.groups.messages.created"));
+      } else if (editingGroup) {
+        await updateBackofficeGroup(groupsState.token, editingGroup.id, payload);
+        showSuccess(t("rbac.groups.messages.updated"));
+      }
+
+      closeEditor();
+      await groupsState.refetch();
+    } catch (error) {
+      showApiError(error, t("rbac.groups.messages.saveFailed"));
+    } finally {
+      setIsSaving(false);
+    }
+  }, [canManageGroups, closeEditor, editingGroup, form, groupsState, isCreateMode, isSaving, showApiError, showSuccess, t]);
+
+  const asyncError = groupsState.error || metaState.error;
+
+  return (
+    <AsyncState
+      isLoading={groupsState.isLoading || metaState.isLoading}
+      error={asyncError}
+      empty={false}
+      emptyLabel=""
+    >
+      <section className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+      <div>
+        <PageHeader title={t("rbac.groups.title")} description={t("rbac.groups.subtitle")} />
+
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <input
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setPage(1);
+            }}
+            placeholder={t("rbac.groups.filters.search")}
+            className="h-9 min-w-[240px] rounded-md border px-3 text-sm"
+            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+          />
+          {canManageGroups ? (
+            <button
+              type="button"
+              className="h-9 rounded-md border px-3 text-xs font-semibold"
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+              onClick={openCreate}
+            >
+              {t("rbac.groups.actions.create")}
+            </button>
+          ) : null}
+        </div>
+
+        <BackofficeTable
+          columns={[
+            {
+              key: "name",
+              label: t("rbac.groups.columns.name"),
+              render: (item) => <div><p className="font-semibold">{item.name}</p><p className="text-xs" style={{ color: "var(--muted)" }}>{item.is_system_role_group ? t("rbac.groups.columns.system") : t("rbac.groups.columns.custom")}</p></div>,
+            },
+            { key: "members", label: t("rbac.groups.columns.members"), render: (item) => String(item.members_count) },
+            { key: "capabilities", label: t("rbac.groups.columns.capabilities"), render: (item) => item.capability_codes.join(", ") || "-" },
+            {
+              key: "actions",
+              label: t("rbac.groups.columns.actions"),
+              render: (item) => (
+                <button
+                  type="button"
+                  className="h-8 rounded-md border px-2 text-xs"
+                  style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                  onClick={() => openEdit(item)}
+                >
+                  {t("rbac.groups.actions.edit")}
+                </button>
+              ),
+            },
+          ]}
+          rows={groups}
+          emptyLabel={t("rbac.groups.empty")}
+        />
+
+        <div className="mt-2 flex items-center gap-2 text-xs" style={{ color: "var(--muted)" }}>
+          <span>{t("rbac.groups.pagination", { page, pages: pagesCount })}</span>
+          <button type="button" className="h-8 rounded-md border px-2" style={{ borderColor: "var(--border)" }} disabled={page <= 1} onClick={() => setPage((prev) => Math.max(1, prev - 1))}>◀</button>
+          <button type="button" className="h-8 rounded-md border px-2" style={{ borderColor: "var(--border)" }} disabled={page >= pagesCount} onClick={() => setPage((prev) => Math.min(pagesCount, prev + 1))}>▶</button>
+        </div>
+      </div>
+
+      <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
+        <h2 className="text-sm font-semibold">{isCreateMode ? t("rbac.groups.editor.createTitle") : t("rbac.groups.editor.editTitle")}</h2>
+        <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>{t("rbac.groups.editor.helper")}</p>
+
+        <div className="mt-3 grid gap-2">
+          <input value={form.name || ""} onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))} placeholder={t("rbac.groups.fields.name")} className="h-9 rounded-md border px-3 text-sm" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} disabled={!canManageGroups || Boolean(editingGroup?.is_system_role_group)} />
+
+          <div className="rounded-md border p-2 text-xs" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}>
+            <p className="font-semibold">{t("rbac.groups.fields.capabilities")}</p>
+            <div className="mt-1 grid gap-1">
+              {capabilities.map((capability) => {
+                const checked = (form.capability_codes || []).includes(capability.code);
+                return (
+                  <label key={capability.code} className="inline-flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={!canManageGroups || Boolean(editingGroup?.is_system_role_group)}
+                      onChange={(event) => {
+                        setForm((prev) => {
+                          const next = new Set(prev.capability_codes || []);
+                          if (event.target.checked) {
+                            next.add(capability.code);
+                          } else {
+                            next.delete(capability.code);
+                          }
+                          return { ...prev, capability_codes: Array.from(next) };
+                        });
+                      }}
+                    />
+                    <span>
+                      <span className="font-semibold">{capability.code}</span>
+                      <span className="block" style={{ color: "var(--muted)" }}>{capability.description}</span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {editingGroup?.is_system_role_group ? (
+            <p className="text-xs" style={{ color: "#d97706" }}>{t("rbac.groups.messages.systemReadonly")}</p>
+          ) : null}
+
+          <div className="flex gap-2">
+            <button type="button" className="h-9 rounded-md border px-3 text-xs font-semibold" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} onClick={() => { void submit(); }} disabled={!canManageGroups || isSaving || Boolean(editingGroup?.is_system_role_group)}>
+              {isSaving ? t("rbac.groups.actions.saving") : t("rbac.groups.actions.save")}
+            </button>
+            <button type="button" className="h-9 rounded-md border px-3 text-xs font-semibold" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} onClick={closeEditor}>
+              {t("rbac.groups.actions.reset")}
+            </button>
+          </div>
+        </div>
+      </div>
+      </section>
+    </AsyncState>
+  );
+}

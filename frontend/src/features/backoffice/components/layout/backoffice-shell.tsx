@@ -12,6 +12,8 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 import type { BackofficeUser } from "@/features/backoffice/types/backoffice";
 
 const ROUTE_PREFETCH_LIST = [
+  "/backoffice/users",
+  "/backoffice/groups",
   "/backoffice/brands",
   "/backoffice/categories",
   "/backoffice/suppliers",
@@ -74,6 +76,7 @@ export function BackofficeShell({ children, user }: { children: ReactNode; user:
       <div className="min-h-screen lg:grid lg:grid-cols-[18rem_1fr]">
         <BackofficeSidebar
           open={sidebarOpen}
+          user={user}
           onNavigate={() => {
             setSidebarOpen(false);
           }}

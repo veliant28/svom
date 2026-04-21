@@ -1,3 +1,5 @@
+import type { BackofficeCapabilityCode } from "@/features/backoffice/types/shared.types";
+
 export type AuthUser = {
   id: string;
   email: string;
@@ -9,6 +11,11 @@ export type AuthUser = {
   preferred_language: "uk" | "ru" | "en";
   is_staff: boolean;
   is_superuser: boolean;
+  groups: Array<{ id: number; name: string }>;
+  system_role: "administrator" | "manager" | "user" | "operator" | null;
+  backoffice_capabilities: BackofficeCapabilityCode[];
+  backoffice_capabilities_map: Record<string, boolean>;
+  has_backoffice_access: boolean;
 };
 
 export type LoginResponse = {
