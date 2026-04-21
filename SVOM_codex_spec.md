@@ -1,718 +1,241 @@
-# ТЗ для Codex: проект SVOM — сайт автозапчастей и автоаксессуаров
+# SVOM Codex Spec (Actual Project State)
 
-## 1. Роль Codex
+Last updated: 2026-04-21
 
-Ты работаешь как lead full-stack engineer и solution architect по проекту **SVOM**.
-Твоя задача — **спроектировать и начать реализовывать с нуля** интернет-магазин автозапчастей и автоаксессуаров.
+## 1. Purpose
 
-Работа должна вестись **последовательно, поэтапно, без хаоса**, с упором на:
-- чистую архитектуру;
-- масштабируемость;
-- хорошую админку;
-- SEO;
-- мультиязычность;
-- удобство дальнейшей разработки;
-- строгий контроль размера файлов.
+This file is the working specification for Codex changes in `~/Django/svom`.
+It reflects the **current real project state** and replaces old planning assumptions.
 
-Не нужно придумывать альтернативный стек. Используй стек и ограничения из этого ТЗ.
+Primary objective:
+- develop and maintain SVOM as a modular e-commerce platform for auto parts,
+- keep backend and frontend aligned,
+- prefer safe, incremental changes over large rewrites.
 
----
+## 2. Source of Truth
 
-## 2. Корневая цель проекта
+When this file conflicts with code:
+- **code and migrations are the source of truth**,
+- this spec must be updated to match code.
 
-Нужно создать современный e-commerce проект автозапчастей и автоаксессуаров с такими возможностями:
-- большой каталог товаров;
-- фильтрация и поиск;
-- подбор товаров по автомобилю;
-- мультиязычность;
-- красивая клиентская часть;
-- продвинутая Django admin на базе Unfold;
-- гибкая ценовая политика и наценка;
-- фоновые задачи;
-- готовность к большому каталогу и supplier integration в будущем.
+Do not invent architecture from templates.
 
----
-
-## 3. Обязательный стек
-
-Использовать:
-- **PostgreSQL** как основную базу данных;
-- **Next.js** как frontend storefront;
-- **Django** как основной backend;
-- **Django REST Framework** как API слой;
-- **Django Admin + django-unfold** как backoffice/admin;
-- **Elasticsearch** для поиска;
-- **Redis** для кэша и очередей;
-- **Celery** для фоновых задач;
-- **lucide-react** для иконок;
-- **Tailwind CSS v4** на frontend;
-- **next-intl** для i18n на frontend.
-
-### Зафиксированные версии на старте
-- Django **6.0.4**
-- Django REST Framework **3.17.1**
-- django-unfold **0.89.0**
-- Next.js **16.2.3**
-- PostgreSQL **18.3**
-- Redis **8.0.6**
-- Elasticsearch **9.3.3**
-- Celery **5.6.x**
-- lucide-react **1.8.0**
-- next-intl **4.9.1**
-
-Если конкретный пакет еще не имеет стабильного финального патча в экосистеме, выбирать наиболее безопасный стабильный вариант в рамках указанной ветки.
-
----
-
-## 4. Что нельзя делать
-
-### Архитектурные запреты
-- Не использовать FastAPI как основной backend на старте.
-- Не строить микросервисную архитектуру на первом этапе.
-- Не делать giant files.
-- Не складывать все модели в один `models.py`.
-- Не складывать всю админку в один `admin.py`.
-- Не делать гигантские `views.py`, `serializers.py`, `services.py`, `page.tsx`.
-- Не держать цену как одно поле `price` в `Product`.
-- Не делать Elasticsearch источником истины.
-- Не хранить всю бизнес-логику в моделях.
-- Не плодить универсальные мусорные файлы типа `utils.py`, `helpers.py`, `common.py` на сотни строк.
-
-### Правило по размеру файлов
-Это критично.
-
-Нужно **жестко соблюдать ограничение на размер файлов**:
-- идеальный размер файла: **200–400 строк**;
-- нормальный размер: **до 500–600 строк**;
-- если файл дошел до **700–800 строк**, его нужно разбить;
-- **запрещено** создавать файлы **1000+ строк**, кроме редких auto-generated файлов.
-
-#### Правило:
-**Split early. Do not wait until the file becomes a mess.**
-
----
-
-## 5. Корневая папка проекта
-
-Проект создается в:
-
-```bash
-cd ~/Django/svom
-```
-
-Структура верхнего уровня:
+## 3. Monorepo Layout
 
 ```text
 ~/Django/svom/
-  backend/
-  frontend/
-  infra/
-  docs/
-  compose.yaml
-  .env
-  README.md
+  backend/      # Django + DRF
+  frontend/     # Next.js App Router storefront + backoffice UI
+  infra/        # Dockerfiles and infra helpers
+  docs/         # operational notes and audits
+  compose.yaml  # local environment
+  .env(.example)
+  SVOM_codex_spec.md
 ```
 
----
-
-## 6. Общая архитектура
-
-Проект должен быть реализован как **modular monolith**:
-- единый backend на Django;
-- отдельный frontend на Next.js;
-- PostgreSQL как source of truth;
-- Elasticsearch как поисковый индекс;
-- Redis как cache + queue broker;
-- Celery как background jobs.
-
-### Почему так реализовывать
-Потому что проект должен быть:
-- проще в поддержке, чем микросервисы;
-- масштабируемым;
-- удобным для разработки через Codex;
-- пригодным для большого каталога;
-- совместимым с мощной админкой на Django.
-
----
-
-## 7. Backend архитектура
-
-Использовать **feature/domain-based structure**, а не flat-структуру.
-
-### backend/apps
-
-```text
-backend/apps/
-  core/
-  users/
-  catalog/
-  vehicles/
-  compatibility/
-  marketing/
-  seo/
-  search/
-  pricing/
-```
-
-### Структура app
-Каждое приложение дробить по подпапкам:
-
-```text
-app_name/
-  models/
-  admin/
-  api/
-    serializers/
-    views/
-  selectors/
-  services/
-  tasks/
-```
-
-Если для конкретного app какая-то подпапка пока не нужна — не создавать ее заранее ради пустоты.
-
----
-
-## 8. Frontend архитектура
-
-Использовать **Next.js App Router**.
-
-Структура должна быть **feature-first**, а не “все компоненты в одной папке”.
-
-### Базовая структура frontend
-
-```text
-frontend/
-  src/
-    app/
-      [locale]/
-    features/
-      catalog/
-      product/
-      marketing/
-      search/
-      garage/
-    shared/
-      components/
-      api/
-      hooks/
-      lib/
-      config/
-      types/
-    i18n/
-  public/
-```
-
-### Жесткие правила для frontend
-- `page.tsx` должен быть тонким и только собирать страницу.
-- Бизнес-логика должна лежать в `hooks/` и `api/`.
-- Повторно используемые UI-компоненты — в `shared/components/ui`.
-- Нельзя делать один компонент на 700+ строк.
-
----
-
-## 9. Мультиязычность
-
-Сайт должен быть **мультиязычным**:
-- украинский (`uk`)
-- русский (`ru`)
-- английский (`en`)
-
-### Требования
-- язык должен сохраняться между визитами;
-- роутинг frontend должен быть локализован;
-- backend должен поддерживать i18n;
-- тексты storefront должны быть переводимыми;
-- в перспективе должна быть возможность локализации SEO-мета и контента.
-
-### По умолчанию
-Основной язык: **украинский**.
-
----
-
-## 10. UI/UX обязательные требования
-
-### 10.1. Тема день/ночь
-Сайт должен иметь **theme switcher**:
-- light theme;
-- dark theme;
-- выбор темы должен сохраняться;
-- использовать CSS variables + Tailwind v4 + нормальную архитектуру темы.
-
-### 10.2. Фоновые спорткары
-На главной странице на фоне должны быть **роскошные спорткары**.
-
-Требования:
-- фоновых изображений: **до 10 штук**;
-- они должны переключаться автоматически;
-- интервал переключения задается в админке;
-- фон должен поддерживать desktop/mobile изображения;
-- управление должно быть из Django admin;
-- должен существовать отдельный домен `HeroSlide` и `HeroSliderSettings`.
-
-### 10.3. Большой рекламный баннер после шапки
-После header должен идти большой рекламный баннер/слайдер.
-
-Требования:
-- возможность добавлять несколько баннеров;
-- возможность загружать изображения в админке;
-- возможность задавать число активных баннеров;
-- возможность задавать интервал и скорость анимации в админке;
-- должен быть визуально эффектный переход, похожий на смену рекламы на билбордах;
-- управление должно быть вынесено в `PromoBanner` и `PromoBannerSettings`.
-
-### 10.4. Кнопки и иконки
-- Все важные кнопки делать с иконками;
-- использовать **lucide-react**;
-- у icon-only кнопок обязательно должен быть tooltip;
-- tooltips должны быть единообразными и доступными;
-- в интерфейсе нужен единый компонентный набор кнопок.
-
----
-
-## 11. Каталог
-
-Нужно заложить архитектуру под большой каталог автозапчастей и автоаксессуаров.
-
-### Основные сущности каталога
-Обязательно спроектировать и реализовать базовые модели:
-- `Brand`
-- `Category`
-- `Product`
-- `ProductImage`
-- `Attribute`
-- `AttributeValue`
-- `ProductAttribute`
-- `Stock`
-
-### Product должен содержать только ядро
-В `Product` хранить только базовые данные:
-- sku
-- article
-- name
-- slug
-- brand
-- category
-- short_description
-- description
-- маркетинговые флаги (`is_featured`, `is_new`, `is_bestseller`)
-- технические минимально необходимые поля
-
-### Не хранить в Product
-- всю ценовую логику;
-- supplier pricing;
-- историю изменений цены;
-- тяжёлую совместимость по авто;
-- все возможные денормализованные поисковые поля.
-
----
-
-## 12. Подбор по автомобилю
-
-Это обязательная часть архитектуры.
-
-### Сущности
-- `VehicleMake`
-- `VehicleModel`
-- `VehicleGeneration`
-- `VehicleEngine`
-- `VehicleModification`
-- `ProductFitment`
-
-### Требования
-- должна быть возможность связывать товар с конкретными автомобилями;
-- архитектура должна поддерживать в будущем гараж пользователя;
-- должна быть возможность фильтрации товаров по автомобилю;
-- связь товара и авто не должна храниться внутри `Product` как хаотичный JSON.
-
----
-
-## 13. Пользовательский гараж
-
-Нужно заложить основу для “мой гараж”.
-
-### Сущности
-- кастомный `User`
-- `GarageVehicle`
-
-### Требования
-- пользователь сможет сохранять свои автомобили;
-- потом по этим данным можно будет фильтровать каталог “подходит к моему авто”.
-
----
-
-## 14. Ценообразование и наценка
-
-Это **обязательный отдельный домен**, не часть `Product`.
-
-Создать отдельное приложение:
-
-```text
-backend/apps/pricing/
-```
-
-### Основные сущности pricing
-- `Supplier`
-- `SupplierOffer`
-- `PricingPolicy`
-- `PricingRule`
-- `ProductPrice`
-- `PriceOverride`
-- `PriceHistory`
-- `CurrencyRate`
-
-### Логика цен
-Цена товара должна вычисляться из:
-- закупочной цены;
-- логистики;
-- дополнительных расходов;
-- политики наценки;
-- правил округления;
-- минимальной маржи;
-- ручного переопределения цены.
-
-### Иерархия применения политики
-Использовать такой порядок:
-1. `PriceOverride`
-2. policy `brand + category`
-3. policy `brand`
-4. policy `category`
-5. policy `supplier`
-6. global policy
-
-### Что должна поддерживать ценовая политика
-- процентная наценка;
-- ступенчатая наценка по диапазонам закупки;
-- фиксированная наценка;
-- минимальная маржа;
-- минимальная цена;
-- округление;
-- психологическое округление;
-- ручная блокировка автопересчета.
-
-### Формула базового расчета
-Базовая логика:
-
-```text
-landed_cost = purchase_price + logistics_cost + extra_cost
-raw_sale_price = landed_cost + markup
-final_price = rounding(raw_sale_price)
-```
-
-### ProductPrice
-`ProductPrice` — это итоговая цена, которую использует storefront.
-
-### История
-Любое изменение цены должно попадать в `PriceHistory`.
-
----
-
-## 15. Поиск
-
-Использовать **Elasticsearch** для поиска и фильтрации.
-
-### Правила
-- PostgreSQL остается источником истины;
-- Elasticsearch хранит поисковый индекс;
-- переиндексация должна выполняться через фоновые задачи;
-- поиск должен быть отдельно от основной бизнес-логики каталога.
-
-Создать отдельный app:
-
-```text
-backend/apps/search/
-```
-
----
-
-## 16. Кэш и фоновые задачи
-
-### Redis
-Использовать Redis для:
-- Django cache;
-- Celery broker;
-- Celery result backend;
-- короткоживущих служебных данных.
-
-### Celery
-Использовать Celery для:
-- импорта прайсов;
-- пересчета цен;
-- переиндексации товаров в Elasticsearch;
-- обработки изображений;
-- других тяжелых фоновых задач.
-
-### Правило
-Никаких тяжелых массовых операций внутри HTTP request-response цикла.
-
----
-
-## 17. API
-
-На старте использовать **Django REST Framework**.
-
-### Правила API
-- строить API вокруг DRF;
-- не использовать FastAPI как основной API слой на первом этапе;
-- делать тонкие view и serializer files;
-- бизнес-логика не должна жить в DRF views;
-- бизнес-логика должна быть в `services/`;
-- сложные запросы должны быть вынесены в `selectors/`.
-
----
-
-## 18. Django admin / Unfold
-
-Admin должен быть полноценным backoffice.
-
-### Требования
-- использовать **django-unfold**;
-- все admin classes наследовать от `unfold.admin.ModelAdmin`;
-- длинные формы разбивать на вкладки;
-- использовать `autocomplete_fields` для тяжелых связей;
-- использовать `list_select_related` там, где это помогает производительности;
-- использовать bulk actions для операционных задач;
-- админка должна быть организована по разделам.
-
-### Разделы admin
-Обязательно реализовать удобные разделы для:
-- каталог;
-- авто/совместимость;
-- маркетинг;
-- pricing;
-- users.
-
-### Что должно управляться из admin
-- товары;
-- категории;
-- бренды;
-- атрибуты;
-- спорткары на фоне;
-- рекламные баннеры;
-- поставщики;
-- supplier offers;
-- pricing policies;
-- итоговые цены;
-- ручные overrides;
-- история цен;
-- гараж пользователя.
-
----
-
-## 19. SEO
-
-Нужно с самого начала заложить хорошую SEO-архитектуру.
-
-Минимум предусмотреть:
-- SEO поля у брендов / категорий / товаров;
-- `MetaOverride`;
-- чистые slug;
-- future-ready структуру для sitemap/redirect/meta rules.
-
-Создать отдельный app:
-
-```text
-backend/apps/seo/
-```
-
----
-
-## 20. DevOps / локальный запуск
-
-Для локальной разработки использовать Docker Compose.
-
-Поднять сервисы:
-- PostgreSQL
-- Redis
-- Elasticsearch
-- Django backend
-- Celery worker
-
-Frontend можно подключить вторым шагом отдельным сервисом, но архитектура должна сразу учитывать, что frontend — это отдельное приложение.
-
----
-
-## 21. Структура backend settings
-
-Использовать:
-
-```text
-backend/config/settings/
-  base.py
-  dev.py
-  prod.py
-```
-
-### В `base.py`
-- общие apps;
-- middleware;
-- db;
-- cache;
-- celery;
-- rest framework;
-- i18n;
-- static/media;
-- unfold.
-
-### В `dev.py`
-- DEBUG=True;
-- локальный CORS;
-- console email;
-- dev-specific overrides.
-
-### В `prod.py`
-- secure cookies;
-- SSL settings;
-- production storage overrides;
-- static manifest storage.
-
----
-
-## 22. Стандарты кода
+## 4. Actual Stack (Pinned by Repo)
 
 ### Backend
-- type hints там, где это уместно;
-- маленькие focused services;
-- не складывать всё в модели;
-- selectors отдельно;
-- tasks отдельно;
-- admin отдельно;
-- serializers отдельно;
-- views отдельно.
+- Django `6.0.4`
+- Django REST Framework `3.17.1`
+- django-cors-headers `4.9.0`
+- django-filter `25.2`
+- psycopg[binary] `3.2.12`
+- Celery `5.6.0`
+- Redis `6.4.0`
+- Elasticsearch client `9.3.0`
+- Pillow `11.2.1`
+- gunicorn `23.0.0`
 
 ### Frontend
-- TypeScript;
-- feature-first;
-- shared/ui отдельно;
-- hooks отдельно;
-- api отдельно;
-- page.tsx тонкие.
+- Next.js `16.2.3`
+- React `19.1.0`
+- TypeScript `5.9.3`
+- Tailwind CSS `4.1.13`
+- next-intl `4.9.1`
+- lucide-react `1.8.0`
+- echarts `5.6.0`
 
-### Общее
-- один файл = одна ответственность;
-- один модуль = одна понятная зона;
-- без кодовой свалки;
-- разбивать заранее.
+### Infra / local runtime
+- PostgreSQL `18.3` (compose)
+- Redis `8.0.6` (compose)
+- Elasticsearch `9.3.3` (compose)
 
----
+## 5. Architecture
 
-## 23. Начальный план реализации
+SVOM is a **modular monolith**:
+- backend exposes REST APIs under `/api/*`,
+- frontend consumes backend APIs and renders storefront/backoffice,
+- background operations run via Celery.
 
-Codex должен начать работу по шагам, а не хаотично.
+### Important clarification
+- Current project does **not** use Django admin/Unfold as active backoffice UI.
+- Backoffice is implemented in Next.js (`frontend/src/features/backoffice`).
+- Do not reintroduce Unfold assumptions unless explicitly requested and implemented.
 
-### Этап 1 — foundation
-1. Создать структуру проекта.
-2. Поднять backend skeleton.
-3. Настроить settings.
-4. Настроить custom user.
-5. Подключить Unfold admin.
-6. Поднять Docker Compose для postgres/redis/elasticsearch/backend/celery.
+## 6. Backend Structure
 
-### Этап 2 — domain core
-1. Реализовать `catalog`.
-2. Реализовать `vehicles`.
-3. Реализовать `compatibility`.
-4. Реализовать `marketing`.
-5. Реализовать `pricing`.
-6. Реализовать `seo`.
+Django apps (from `INSTALLED_APPS`):
+- `core`
+- `users`
+- `catalog`
+- `vehicles`
+- `autocatalog`
+- `compatibility`
+- `marketing`
+- `seo`
+- `search`
+- `pricing`
+- `supplier_imports`
+- `backoffice`
+- `commerce`
 
-### Этап 3 — admin backoffice
-1. Реализовать удобную админку на Unfold.
-2. Добавить inline, filters, actions, list pages.
-3. Сделать удобные разделы navigation.
+Patterns used across apps:
+- `api/` for DRF serializers/views/urls
+- `models/` split by entity
+- `selectors/` for query/read composition
+- `services/` for business workflows
+- `tasks/` for async execution
+- `tests/` for smoke and domain tests
 
-### Этап 4 — API
-1. Реализовать DRF API для catalog/product/category/brand.
-2. Реализовать API для marketing blocks.
-3. Реализовать API для vehicles/garage.
-4. Реализовать API для search.
+## 7. Frontend Structure
 
-### Этап 5 — frontend
-1. Создать Next.js storefront.
-2. Настроить i18n.
-3. Реализовать тему day/night.
-4. Реализовать hero background slider.
-5. Реализовать promo banner slider.
-6. Реализовать каталог, карточку товара, поиск, подбор по авто.
+App Router entry points:
+- `frontend/src/app/[locale]/(storefront)/*`
+- `frontend/src/app/[locale]/(backoffice)/backoffice/*`
 
----
+Feature-based modules in `frontend/src/features/*`:
+- `auth`, `account`, `catalog`, `search`, `cart`, `checkout`, `commerce`, `garage`, `wishlist`, `marketing`, `storefront`, `backoffice`.
 
-## 24. Что Codex должен сделать прямо сейчас
+Shared layers:
+- `shared/api`, `shared/components`, `shared/lib`, `shared/hooks`
+- `i18n/*` and `messages/{uk,ru,en}/*`
 
-Начать с минимального, но правильного foundation.
+## 8. API and Routing Conventions
 
-### Первая практическая задача для Codex
-1. Создать каркас папок проекта в `~/Django/svom`.
-2. Создать backend skeleton.
-3. Создать `config/settings/base.py`, `dev.py`, `prod.py`.
-4. Подключить Django, DRF, Unfold, PostgreSQL, Redis, Celery, Elasticsearch config.
-5. Создать app-структуру:
-   - core
-   - users
-   - catalog
-   - vehicles
-   - compatibility
-   - marketing
-   - seo
-   - search
-   - pricing
-6. Создать кастомный `User`.
-7. Создать базовые mixins в `core/db/mixins.py`.
-8. Создать первые модели `Brand`, `Category`, `Product`, `ProductImage`, `VehicleMake`, `VehicleModel`, `VehicleGeneration`, `ProductFitment`, `HeroSlide`, `PromoBanner`, `Supplier`, `SupplierOffer`, `PricingPolicy`, `PricingRule`, `ProductPrice`, `PriceOverride`.
-9. Создать минимальную рабочую Unfold admin.
-10. Подготовить проект к миграциям и запуску.
+Backend root API routes (see `backend/config/urls.py`):
+- `/api/backoffice/`
+- `/api/autocatalog/`
+- `/api/core/`
+- `/api/catalog/`
+- `/api/marketing/`
+- `/api/vehicles/`
+- `/api/users/`
+- `/api/commerce/`
 
----
+No `/admin/` route is configured in current `config/urls.py`.
 
-## 25. Формат работы Codex
+## 9. Auth, Identity, Access
 
-### Обязательные правила работы
-- Не переписывать стек.
-- Не упрощать архитектуру до примитивного демо.
-- Не спорить с базовыми решениями из ТЗ.
-- Не делать giant files.
-- Работать маленькими осмысленными шагами.
-- После каждого заметного этапа кратко фиксировать: что сделано, что осталось.
-- При проектировании думать о будущем каталоге на сотни тысяч товаров.
-- Делать код пригодным для дальнейшего масштабирования.
+### Identity model
+- Custom user model: `AUTH_USER_MODEL = users.User`
+- Login identifier: **email** (`USERNAME_FIELD = "email"`)
+- `username` field has been removed from runtime model and migrated out.
 
-### Если где-то есть неоднозначность
-Выбирать решение, которое:
-- лучше масштабируется;
-- лучше читается;
-- лучше сочетается с Django admin;
-- не раздувает файлы;
-- не ломает архитектуру modular monolith.
+### API auth
+- Token auth via DRF `TokenAuthentication`
+- Frontend stores and reuses auth token for API calls.
 
----
+### Backoffice access
+- Protected by staff/superuser checks and RBAC capability mapping.
+- Manage permissions through users/groups/system roles logic in `users.rbac` and backoffice APIs.
 
-## 26. Acceptance criteria первого этапа
+## 10. i18n Rules
 
-Первый этап считается успешным, если:
-- проект поднимается локально;
-- Django backend стартует;
-- admin доступен;
-- PostgreSQL/Redis/Elasticsearch/Celery подключены;
-- есть кастомный user;
-- есть базовые apps;
-- есть базовые модели домена;
-- есть минимальная админка;
-- структура проекта чистая и не содержит giant files.
+Locales are fixed:
+- `uk` (default)
+- `ru`
+- `en`
 
----
+Frontend locale strategy:
+- next-intl routing with `localePrefix: "always"`
+- all user-facing feature changes require message updates for all supported locales.
 
-## 27. Итоговое решение
+Backend:
+- `LANGUAGE_CODE = "uk"`
+- `TIME_ZONE = "Europe/Kyiv"`
+- `USE_I18N = True`, locale files under app `locale/` + `backend/locale`.
 
-Нужно строить проект как:
-- **Django modular monolith backend**;
-- **Next.js storefront frontend**;
-- **PostgreSQL source of truth**;
-- **Elasticsearch search index**;
-- **Redis cache/queues**;
-- **Celery background jobs**;
-- **Unfold admin backoffice**;
-- **отдельный pricing domain**;
-- **мультиязычный storefront**;
-- **строгое ограничение на размер файлов**.
+## 11. Supplier Imports and Scheduling
 
-Это не временный прототип, а правильная foundation-архитектура под реальный большой проект.
+Supplier flows are first-class and safety-sensitive:
+- import sources and schedule settings live in `supplier_imports` domain,
+- operational controls are exposed in backoffice APIs/UI,
+- scheduled dispatch is configured via Celery beat,
+- UTR safety/rate-limit circuit-breaker settings are defined in Django settings.
+
+Any change touching supplier auth/import scheduling must preserve:
+- idempotency,
+- explicit status transitions,
+- conservative retry/backoff behavior,
+- clear operator-facing error states.
+
+## 12. Search and Data Boundaries
+
+- PostgreSQL remains source of truth.
+- Elasticsearch is read/search infrastructure, not authoritative data storage.
+- Keep domain logic in services/selectors, not in serializer/view shortcuts.
+
+## 13. Coding Constraints
+
+### File size discipline
+- target: 200-400 lines
+- acceptable: up to 500-600
+- split when approaching 700+
+- avoid 1000+ manually maintained files
+
+### Change style
+- prefer minimal safe diffs,
+- avoid broad refactors unless necessary,
+- preserve existing module boundaries and naming conventions,
+- never silently change API contracts used by frontend.
+
+### Data migrations
+- schema-breaking changes must include safe data migration/backfill when needed,
+- do not drop user-facing data without migration strategy.
+
+## 14. Quality Gates for Changes
+
+Before finalizing substantial changes, run what is applicable:
+
+Backend:
+- `python manage.py check`
+- focused tests for affected apps (when DB/runtime is available)
+
+Frontend:
+- `npx tsc --noEmit`
+- optionally lint/tests if touched scope requires it
+
+If some checks cannot run (env/network/db constraints), explicitly report that.
+
+## 15. Local Runbook
+
+Quick local setup:
+1. `cp .env.example .env`
+2. `docker compose up --build`
+
+Backend manual commands (local venv):
+- `cd backend && ../.venv/bin/python manage.py migrate`
+- `cd backend && ../.venv/bin/python manage.py runserver`
+
+Frontend:
+- `cd frontend && npm install`
+- `cd frontend && npm run dev`
+
+## 16. Out of Scope / Deprecated Assumptions
+
+Treat as deprecated unless explicitly reintroduced:
+- Unfold-based admin as primary backoffice runtime,
+- assumptions that `username` is login credential,
+- architecture decisions that contradict current code and migrations.
+
+## 17. How to Update This Spec
+
+Update this file whenever one of these changes:
+- stack version pinning,
+- auth model/contract,
+- API surface roots,
+- i18n locale policy,
+- core architectural decisions.
+
+Keep updates concrete and verifiable against repository files.
