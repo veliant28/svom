@@ -91,6 +91,7 @@ export function GroupsPage() {
 
   const canManageGroups = hasBackofficeCapability(user, BACKOFFICE_CAPABILITIES.groupsManage);
   const isAdministratorRole = user?.system_role === "administrator";
+  const canCreateGroups = canManageGroups && isAdministratorRole;
 
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -158,10 +159,13 @@ export function GroupsPage() {
   }, [t]);
 
   const openCreate = useCallback(() => {
+    if (!canCreateGroups) {
+      return;
+    }
     setIsCreateMode(true);
     setEditingGroup(null);
     setForm({ ...EMPTY_FORM });
-  }, []);
+  }, [canCreateGroups]);
 
   const openEdit = useCallback((target: BackofficeGroupItem) => {
     setIsCreateMode(false);
@@ -180,6 +184,9 @@ export function GroupsPage() {
 
   const submit = useCallback(async () => {
     if (!groupsState.token || isSaving || !canManageGroups) {
+      return;
+    }
+    if (isCreateMode && !canCreateGroups) {
       return;
     }
 
@@ -205,7 +212,7 @@ export function GroupsPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [canManageGroups, closeEditor, editingGroup, form, groupsState, isCreateMode, isSaving, showApiError, showSuccess, t]);
+  }, [canCreateGroups, canManageGroups, closeEditor, editingGroup, form, groupsState, isCreateMode, isSaving, showApiError, showSuccess, t]);
 
   const asyncError = groupsState.error || metaState.error;
   const isSystemRoleReadonly = Boolean(editingGroup?.is_system_role_group) && !isAdministratorRole;
@@ -232,7 +239,7 @@ export function GroupsPage() {
             className="h-9 min-w-[240px] rounded-md border px-3 text-sm"
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
           />
-          {canManageGroups ? (
+          {canCreateGroups ? (
             <button
               type="button"
               className="h-9 rounded-md border px-3 text-xs font-semibold"
@@ -361,7 +368,7 @@ export function GroupsPage() {
           ) : null}
 
           <div className="flex gap-2">
-            <button type="button" className="h-9 rounded-md border px-3 text-xs font-semibold" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} onClick={() => { void submit(); }} disabled={!canManageGroups || isSaving || isSystemRoleReadonly}>
+            <button type="button" className="h-9 rounded-md border px-3 text-xs font-semibold" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} onClick={() => { void submit(); }} disabled={!canManageGroups || isSaving || isSystemRoleReadonly || (isCreateMode && !canCreateGroups)}>
               {isSaving ? t("rbac.groups.actions.saving") : t("rbac.groups.actions.save")}
             </button>
             <button type="button" className="h-9 rounded-md border px-3 text-xs font-semibold" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} onClick={closeEditor}>

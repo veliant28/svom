@@ -25,7 +25,12 @@ from apps.backoffice.api.serializers.backoffice_user_rbac_serializer import (
 )
 from apps.backoffice.api.serializers.rbac_meta_serializer import BackofficeRbacMetaSerializer
 from apps.backoffice.permissions import IsStaffOrSuperuser
-from apps.users.rbac import ensure_system_groups_exist, list_backoffice_capability_payloads, list_system_role_payloads
+from apps.users.rbac import (
+    ensure_system_groups_exist,
+    get_user_system_role,
+    list_backoffice_capability_payloads,
+    list_system_role_payloads,
+)
 
 
 User = get_user_model()
@@ -163,6 +168,9 @@ class BackofficeGroupListCreateAPIView(ListCreateAPIView):
         return queryset
 
     def create(self, request, *args, **kwargs):
+        if get_user_system_role(request.user) != "administrator":
+            return Response({"detail": "Only administrator can create groups."}, status=status.HTTP_403_FORBIDDEN)
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         group = serializer.save()
