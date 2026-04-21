@@ -49,6 +49,7 @@ SYSTEM_ROLE_DEFINITIONS: dict[str, BackofficeSystemRoleDefinition] = {
         capability_codes=(
             "backoffice.access",
             "users.view",
+            "users.card.edit.manager",
             "groups.view",
             "catalog.view",
             "catalog.manage",

@@ -31,6 +31,24 @@ BACKOFFICE_CAPABILITIES: tuple[BackofficeCapabilityDefinition, ...] = (
         description="Create/update/deactivate users in backoffice.",
     ),
     BackofficeCapabilityDefinition(
+        code="users.card.edit.administrator",
+        permission_codename="bo_cap_users_card_edit_administrator",
+        title="Users card edit (administrator)",
+        description="Allow administrators to edit user cards.",
+    ),
+    BackofficeCapabilityDefinition(
+        code="users.card.edit.manager",
+        permission_codename="bo_cap_users_card_edit_manager",
+        title="Users card edit (manager)",
+        description="Allow managers to edit user cards.",
+    ),
+    BackofficeCapabilityDefinition(
+        code="users.card.edit.all",
+        permission_codename="bo_cap_users_card_edit_all",
+        title="Users card edit (all roles)",
+        description="Allow any backoffice role to edit user cards.",
+    ),
+    BackofficeCapabilityDefinition(
         code="groups.view",
         permission_codename="bo_cap_groups_view",
         title="Groups view",

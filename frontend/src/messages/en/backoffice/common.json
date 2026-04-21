@@ -1256,6 +1256,8 @@
             "edit": "Edit",
             "activate": "Activate",
             "deactivate": "Deactivate",
+            "showPassword": "Show password",
+            "hidePassword": "Hide password",
             "save": "Save",
             "saving": "Saving...",
             "reset": "Reset"

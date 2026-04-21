@@ -120,6 +120,22 @@ def get_backoffice_capabilities_for_user(user) -> set[str]:
         # keep backoffice access until migrated to explicit role groups.
         return set(BACKOFFICE_CAPABILITY_CODES)
 
+    granted = _apply_user_card_edit_aliases(role=role, granted=granted)
+    return granted
+
+
+def _apply_user_card_edit_aliases(*, role: str | None, granted: set[str]) -> set[str]:
+    if "users.card.edit.all" in granted:
+        granted.add("users.manage")
+        return granted
+
+    if role == "administrator" and "users.card.edit.administrator" in granted:
+        granted.add("users.manage")
+        return granted
+
+    if role == "manager" and "users.card.edit.manager" in granted:
+        granted.add("users.manage")
+
     return granted
 
 

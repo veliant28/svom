@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { CheckCircle2, Pencil, UserCheck, UserX, XCircle, type LucideIcon } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, Pencil, UserCheck, UserX, XCircle, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import {
@@ -21,10 +21,11 @@ import { BackofficeTooltip } from "@/features/backoffice/components/widgets/back
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
 import { useAuth } from "@/features/auth/hooks/use-auth";
-import { BACKOFFICE_CAPABILITIES, hasBackofficeCapability } from "@/features/backoffice/lib/capabilities";
+import { canEditBackofficeUserCard } from "@/features/backoffice/lib/capabilities";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
 import { useBackofficeQuery } from "@/features/backoffice/hooks/use-backoffice-query";
 import type { BackofficeManagedUser, BackofficeManagedUserWritePayload } from "@/features/backoffice/types/rbac.types";
+import { PHONE_INPUT_MAX_LENGTH, PHONE_INPUT_PLACEHOLDER, formatPhoneInput } from "@/shared/lib/phone-input";
 
 const EMPTY_FORM: BackofficeManagedUserWritePayload = {
   email: "",
@@ -83,7 +84,10 @@ export function UsersPage() {
   const { user } = useAuth();
   const { showApiError, showSuccess } = useBackofficeFeedback();
 
-  const canManageUsers = hasBackofficeCapability(user, BACKOFFICE_CAPABILITIES.usersManage);
+  const canManageUsers = canEditBackofficeUserCard(user);
+  const currentRole = user?.system_role ?? null;
+  const isAdministratorRole = currentRole === "administrator";
+  const isManagerRole = currentRole === "manager";
 
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -92,6 +96,7 @@ export function UsersPage() {
   const [editingUser, setEditingUser] = useState<BackofficeManagedUser | null>(null);
   const [isCreateMode, setIsCreateMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showManagerPassword, setShowManagerPassword] = useState(false);
   const [form, setForm] = useState<BackofficeManagedUserWritePayload>(EMPTY_FORM);
 
   const usersQuery = useCallback(
@@ -134,6 +139,7 @@ export function UsersPage() {
   const openCreate = useCallback(() => {
     setIsCreateMode(true);
     setEditingUser(null);
+    setShowManagerPassword(false);
     setForm({ ...EMPTY_FORM });
   }, []);
 
@@ -141,12 +147,13 @@ export function UsersPage() {
     (target: BackofficeManagedUser) => {
       setIsCreateMode(false);
       setEditingUser(target);
+      setShowManagerPassword(false);
       setForm({
         email: target.email,
         first_name: target.first_name,
         last_name: target.last_name,
-        middle_name: target.middle_name,
-        phone: target.phone,
+        middle_name: target.middle_name || "",
+        phone: formatPhoneInput(target.phone || ""),
         preferred_language: target.preferred_language,
         is_active: target.is_active,
         password: "",
@@ -160,8 +167,11 @@ export function UsersPage() {
   const closeEditor = useCallback(() => {
     setIsCreateMode(false);
     setEditingUser(null);
+    setShowManagerPassword(false);
     setForm({ ...EMPTY_FORM });
   }, []);
+
+  const passwordInputType = isAdministratorRole ? "text" : isManagerRole && showManagerPassword ? "text" : "password";
 
   const submit = useCallback(async () => {
     if (!usersState.token || isSaving || !canManageUsers) {
@@ -357,8 +367,40 @@ export function UsersPage() {
           <input value={form.email || ""} onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))} placeholder={t("rbac.users.fields.email")} className="h-9 rounded-md border px-3 text-sm" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} disabled={!canManageUsers} />
           <input value={form.first_name || ""} onChange={(event) => setForm((prev) => ({ ...prev, first_name: event.target.value }))} placeholder={t("rbac.users.fields.firstName")} className="h-9 rounded-md border px-3 text-sm" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} disabled={!canManageUsers} />
           <input value={form.last_name || ""} onChange={(event) => setForm((prev) => ({ ...prev, last_name: event.target.value }))} placeholder={t("rbac.users.fields.lastName")} className="h-9 rounded-md border px-3 text-sm" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} disabled={!canManageUsers} />
-          <input value={form.phone || ""} onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))} placeholder={t("rbac.users.fields.phone")} className="h-9 rounded-md border px-3 text-sm" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} disabled={!canManageUsers} />
-          <input value={form.password || ""} onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))} placeholder={t("rbac.users.fields.password")} className="h-9 rounded-md border px-3 text-sm" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} disabled={!canManageUsers} />
+          <input
+            value={form.phone || ""}
+            onChange={(event) => setForm((prev) => ({ ...prev, phone: formatPhoneInput(event.target.value) }))}
+            placeholder={PHONE_INPUT_PLACEHOLDER}
+            inputMode="numeric"
+            maxLength={PHONE_INPUT_MAX_LENGTH}
+            title={PHONE_INPUT_PLACEHOLDER}
+            className="h-9 rounded-md border px-3 text-sm"
+            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+            disabled={!canManageUsers}
+          />
+          <div className="relative">
+            <input
+              type={passwordInputType}
+              value={form.password || ""}
+              onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
+              placeholder={t("rbac.users.fields.password")}
+              className="h-9 w-full rounded-md border px-3 pr-10 text-sm"
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+              disabled={!canManageUsers}
+            />
+            {isManagerRole ? (
+              <button
+                type="button"
+                aria-label={showManagerPassword ? t("rbac.users.actions.hidePassword") : t("rbac.users.actions.showPassword")}
+                title={showManagerPassword ? t("rbac.users.actions.hidePassword") : t("rbac.users.actions.showPassword")}
+                onClick={() => setShowManagerPassword((value) => !value)}
+                className="absolute inset-y-0 right-0 inline-flex w-10 items-center justify-center"
+                style={{ color: "var(--muted)" }}
+              >
+                {showManagerPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            ) : null}
+          </div>
 
           <select value={form.system_role || ""} onChange={(event) => setForm((prev) => ({ ...prev, system_role: (event.target.value || null) as BackofficeManagedUserWritePayload["system_role"] }))} className="h-9 rounded-md border px-3 text-sm" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} disabled={!canManageUsers}>
             <option value="">{t("rbac.users.fields.noRole")}</option>
