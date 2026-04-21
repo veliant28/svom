@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { Check } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import {
@@ -200,14 +201,14 @@ export function GroupsPage() {
             <div className="mt-1 grid gap-1">
               {capabilities.map((capability) => {
                 const checked = (form.capability_codes || []).includes(capability.code);
+                const isReadOnly = !canManageGroups || Boolean(editingGroup?.is_system_role_group);
                 return (
                   <label key={capability.code} className="inline-flex items-start gap-2">
                     <input
                       type="checkbox"
                       checked={checked}
-                      disabled={!canManageGroups || Boolean(editingGroup?.is_system_role_group)}
-                      className="h-4 w-4"
-                      style={{ accentColor: "var(--accent)" }}
+                      disabled={isReadOnly}
+                      className="sr-only"
                       onChange={(event) => {
                         setForm((prev) => {
                           const next = new Set(prev.capability_codes || []);
@@ -220,6 +221,17 @@ export function GroupsPage() {
                         });
                       }}
                     />
+                    <span
+                      className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded border"
+                      style={{
+                        borderColor: checked ? "color-mix(in srgb, var(--accent) 82%, #000000 18%)" : "var(--border)",
+                        backgroundColor: checked ? "var(--accent)" : "var(--surface)",
+                        color: "#ffffff",
+                        opacity: isReadOnly ? 0.85 : 1,
+                      }}
+                    >
+                      {checked ? <Check className="h-3 w-3" /> : null}
+                    </span>
                     <span>
                       <span className="font-semibold">{capability.code}</span>
                       <span className="block" style={{ color: "var(--muted)" }}>{capability.description}</span>
