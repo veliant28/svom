@@ -106,15 +106,25 @@ export function GroupsPage() {
     [capabilities],
   );
   const displayCapabilities = useMemo(() => {
-    const visible = capabilities.filter((capability) => !USERS_MANAGEMENT_CAPABILITY_CODES.includes(capability.code));
-    return [
-      ...visible,
-      {
-        code: USERS_MANAGEMENT_BUNDLE_CODE,
-        title: t("rbac.groups.capabilityBundles.usersManagement.title"),
-        description: t("rbac.groups.capabilityBundles.usersManagement.description"),
-      },
-    ];
+    const visible = capabilities
+      .filter((capability) => !USERS_MANAGEMENT_CAPABILITY_CODES.includes(capability.code))
+      .map((capability) => ({
+        code: String(capability.code),
+        title: capability.title,
+        description: capability.description,
+      }));
+    const usersManagementBundle = {
+      code: USERS_MANAGEMENT_BUNDLE_CODE,
+      title: t("rbac.groups.capabilityBundles.usersManagement.title"),
+      description: t("rbac.groups.capabilityBundles.usersManagement.description"),
+    };
+    const usersViewIndex = visible.findIndex((capability) => capability.code === "users.view");
+    if (usersViewIndex < 0) {
+      return [usersManagementBundle, ...visible];
+    }
+    const ordered = [...visible];
+    ordered.splice(usersViewIndex + 1, 0, usersManagementBundle);
+    return ordered;
   }, [capabilities, t]);
 
   const getCapabilityTitle = useCallback((code: string, fallback?: string) => {
