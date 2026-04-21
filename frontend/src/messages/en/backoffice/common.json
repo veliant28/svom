@@ -1321,7 +1321,7 @@
           "editor": {
             "createTitle": "New group",
             "editTitle": "Group card",
-            "helper": "System role groups are read-only."
+            "helper": "Configure group name and capabilities. Only administrator can edit system role groups."
           },
           "messages": {
             "created": "Group created.",

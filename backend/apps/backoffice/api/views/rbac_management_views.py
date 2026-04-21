@@ -188,8 +188,8 @@ class BackofficeGroupRetrieveUpdateAPIView(RetrieveUpdateAPIView):
 
     def update(self, request, *args, **kwargs):
         group = self.get_object()
-        serializer = self.get_serializer(group, data=request.data, partial=True, context={"group": group})
+        serializer = self.get_serializer(group, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.update(group, serializer.validated_data)
+        serializer.save()
         group.refresh_from_db()
         return Response(BackofficeGroupDetailSerializer(group).data, status=status.HTTP_200_OK)

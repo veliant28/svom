@@ -43,6 +43,7 @@ export function GroupsPage() {
   const { showApiError, showSuccess } = useBackofficeFeedback();
 
   const canManageGroups = hasBackofficeCapability(user, BACKOFFICE_CAPABILITIES.groupsManage);
+  const isAdministratorRole = user?.system_role === "administrator";
 
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -113,6 +114,7 @@ export function GroupsPage() {
   }, [canManageGroups, closeEditor, editingGroup, form, groupsState, isCreateMode, isSaving, showApiError, showSuccess, t]);
 
   const asyncError = groupsState.error || metaState.error;
+  const isSystemRoleReadonly = Boolean(editingGroup?.is_system_role_group) && !isAdministratorRole;
 
   return (
     <AsyncState
@@ -192,14 +194,14 @@ export function GroupsPage() {
         <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>{t("rbac.groups.editor.helper")}</p>
 
         <div className="mt-3 grid gap-2">
-          <input value={form.name || ""} onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))} placeholder={t("rbac.groups.fields.name")} className="h-9 rounded-md border px-3 text-sm" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} disabled={!canManageGroups || Boolean(editingGroup?.is_system_role_group)} />
+          <input value={form.name || ""} onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))} placeholder={t("rbac.groups.fields.name")} className="h-9 rounded-md border px-3 text-sm" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} disabled={!canManageGroups || isSystemRoleReadonly} />
 
           <div className="rounded-md border p-2 text-xs" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}>
             <p className="font-semibold">{t("rbac.groups.fields.capabilities")}</p>
             <div className="mt-1 grid gap-1">
               {capabilities.map((capability) => {
                 const checked = (form.capability_codes || []).includes(capability.code);
-                const isReadOnly = !canManageGroups || Boolean(editingGroup?.is_system_role_group);
+                const isReadOnly = !canManageGroups || isSystemRoleReadonly;
                 return (
                   <label key={capability.code} className="inline-flex items-start gap-2">
                     <input
@@ -240,12 +242,12 @@ export function GroupsPage() {
             </div>
           </div>
 
-          {editingGroup?.is_system_role_group ? (
+          {isSystemRoleReadonly ? (
             <p className="text-xs" style={{ color: "#d97706" }}>{t("rbac.groups.messages.systemReadonly")}</p>
           ) : null}
 
           <div className="flex gap-2">
-            <button type="button" className="h-9 rounded-md border px-3 text-xs font-semibold" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} onClick={() => { void submit(); }} disabled={!canManageGroups || isSaving || Boolean(editingGroup?.is_system_role_group)}>
+            <button type="button" className="h-9 rounded-md border px-3 text-xs font-semibold" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} onClick={() => { void submit(); }} disabled={!canManageGroups || isSaving || isSystemRoleReadonly}>
               {isSaving ? t("rbac.groups.actions.saving") : t("rbac.groups.actions.save")}
             </button>
             <button type="button" className="h-9 rounded-md border px-3 text-xs font-semibold" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }} onClick={closeEditor}>

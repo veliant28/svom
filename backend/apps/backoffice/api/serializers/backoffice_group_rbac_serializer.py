@@ -5,8 +5,10 @@ from rest_framework import serializers
 
 from apps.users.rbac import (
     BACKOFFICE_CAPABILITY_CODES,
+    SYSTEM_ROLE_ADMINISTRATOR,
     ensure_system_groups_exist,
     get_group_capability_codes,
+    get_user_system_role,
     get_system_role_for_group_name,
     is_system_role_group,
     normalize_capability_codes,
@@ -90,7 +92,18 @@ class BackofficeGroupUpdateSerializer(serializers.Serializer):
 
     def update(self, instance: Group, validated_data: dict) -> Group:
         if is_system_role_group(instance):
-            raise serializers.ValidationError({"detail": "System role group cannot be edited."})
+            request = self.context.get("request")
+            request_user = getattr(request, "user", None)
+            is_administrator = bool(
+                request_user
+                and request_user.is_authenticated
+                and (
+                    request_user.is_superuser
+                    or get_user_system_role(request_user) == SYSTEM_ROLE_ADMINISTRATOR
+                )
+            )
+            if not is_administrator:
+                raise serializers.ValidationError({"detail": "System role group cannot be edited."})
 
         if "name" in validated_data:
             instance.name = validated_data["name"]
