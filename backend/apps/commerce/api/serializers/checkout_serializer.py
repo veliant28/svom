@@ -12,6 +12,7 @@ class CheckoutPreviewQuerySerializer(serializers.Serializer):
         choices=[choice[0] for choice in Order.DELIVERY_METHOD_CHOICES],
         required=False,
     )
+    promo_code = serializers.CharField(required=False, allow_blank=True, max_length=64)
 
 
 class CheckoutNovaPoshtaLookupQuerySerializer(serializers.Serializer):
@@ -36,6 +37,7 @@ class CheckoutSubmitSerializer(serializers.Serializer):
     delivery_snapshot = serializers.DictField(required=False)
     payment_method = serializers.ChoiceField(choices=[choice[0] for choice in Order.PAYMENT_METHOD_CHOICES])
     customer_comment = serializers.CharField(required=False, allow_blank=True)
+    promo_code = serializers.CharField(required=False, allow_blank=True, max_length=64)
 
     def validate_contact_phone(self, value: str) -> str:
         # Accept compact and spaced variants from the storefront input, store in compact canonical form.
@@ -46,3 +48,12 @@ class CheckoutSubmitSerializer(serializers.Serializer):
         if not PHONE_FORMAT_REGEX.fullmatch(compact_value):
             raise serializers.ValidationError("Phone must match format 38(0XX)XXX-XX-XX.")
         return compact_value
+
+
+class CheckoutPromoApplySerializer(serializers.Serializer):
+    promo_code = serializers.CharField(max_length=64)
+    delivery_method = serializers.ChoiceField(choices=[choice[0] for choice in Order.DELIVERY_METHOD_CHOICES], required=False)
+
+
+class CheckoutPromoClearSerializer(serializers.Serializer):
+    delivery_method = serializers.ChoiceField(choices=[choice[0] for choice in Order.DELIVERY_METHOD_CHOICES], required=False)

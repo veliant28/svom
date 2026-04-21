@@ -50,12 +50,11 @@ ROLE_CAPABILITIES = {
 
 
 def bootstrap_backoffice_rbac(apps, schema_editor):
-    User = apps.get_model("users", "User")
     Group = apps.get_model("auth", "Group")
     Permission = apps.get_model("auth", "Permission")
     ContentType = apps.get_model("contenttypes", "ContentType")
 
-    content_type = ContentType.objects.get(app_label=User._meta.app_label, model=User._meta.model_name)
+    content_type, _ = ContentType.objects.get_or_create(app_label="users", model="user")
 
     permissions_by_code = {}
     for code, codename, title in CAPABILITIES:

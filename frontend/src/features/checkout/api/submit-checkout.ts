@@ -11,6 +11,7 @@ export type CheckoutSubmitPayload = {
   delivery_snapshot?: Record<string, unknown>;
   payment_method: Order["payment_method"];
   customer_comment?: string;
+  promo_code?: string;
 };
 
 export async function submitCheckout(token: string, payload: CheckoutSubmitPayload): Promise<Order> {

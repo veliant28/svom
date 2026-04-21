@@ -19,6 +19,7 @@ export type BackofficeCapabilityCode =
   | "imports.view"
   | "imports.manage"
   | "settings.manage"
+  | "loyalty.issue"
   | "procurement.manage";
 
 export type BackofficeSystemRole = "administrator" | "manager" | "user" | "operator" | null;

@@ -1,6 +1,6 @@
 "use client";
 
-import { CarFront, Heart, LogIn, LogOut, PackageSearch, Shield, UserRound } from "lucide-react";
+import { CarFront, Heart, LogIn, LogOut, PackageSearch, Shield, TicketPercent, UserRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -154,6 +154,16 @@ export function HeaderUserMenu() {
           >
             <CarFront size={15} />
             <span>{t("menu.garage")}</span>
+          </Link>
+
+          <Link
+            href="/account/loyalty"
+            className="header-menu-item"
+            role="menuitem"
+            onClick={() => setIsOpen(false)}
+          >
+            <TicketPercent size={15} />
+            <span>{t("menu.loyalty")}</span>
           </Link>
 
           <div className="header-dropdown-divider" />

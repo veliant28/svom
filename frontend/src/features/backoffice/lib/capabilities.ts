@@ -22,6 +22,7 @@ export const BACKOFFICE_CAPABILITIES = {
   importsView: "imports.view",
   importsManage: "imports.manage",
   settingsManage: "settings.manage",
+  loyaltyIssue: "loyalty.issue",
   procurementManage: "procurement.manage",
 } as const;
 

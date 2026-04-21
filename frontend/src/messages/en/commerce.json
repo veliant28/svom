@@ -66,6 +66,7 @@
         "contact": "Contact information",
         "delivery": "Delivery method",
         "payment": "Payment method",
+        "promo": "Promo code",
         "orderReview": "Order review"
       },
       "fields": {
@@ -126,7 +127,43 @@
       },
       "review": {
         "deliveryFee": "Delivery fee: {fee} {currency}",
+        "discount": "Discount: -{amount} {currency}",
         "total": "Total: {total} {currency}"
+      },
+      "promo": {
+        "placeholder": "Enter promo code",
+        "types": {
+          "delivery": "Delivery discount",
+          "product": "Product markup discount"
+        },
+        "labels": {
+          "code": "Code",
+          "type": "Type",
+          "discount": "Total savings",
+          "deliverySavings": "Delivery savings",
+          "productSavings": "Product savings"
+        },
+        "actions": {
+          "apply": "Apply",
+          "applying": "Applying...",
+          "clear": "Clear"
+        },
+        "messages": {
+          "applied": "Promo code applied.",
+          "cleared": "Promo code cleared.",
+          "applyFailed": "Failed to apply promo code.",
+          "clearFailed": "Failed to clear promo code.",
+          "applyInvalidated": "Promo code became invalid for current checkout."
+        },
+        "errors": {
+          "notFound": "Promo code not found.",
+          "notOwned": "This promo code does not belong to your account.",
+          "expired": "Promo code has expired.",
+          "used": "Promo code has already been used.",
+          "disabled": "Promo code is disabled.",
+          "deliveryZero": "Delivery discount cannot be applied when delivery is free.",
+          "noMarkup": "Product promo cannot be applied because no safe markup discount is available."
+        }
       },
       "success": "Order created: {orderNumber}",
       "phoneFormatError": "Enter phone in format 38(0XX)XXX-XX-XX.",
@@ -136,6 +173,43 @@
         "deliveryStreetRequired": "Select street and enter house number for courier delivery."
       },
       "submitError": "Failed to place order. Check required fields."
+    },
+    "loyalty": {
+      "title": "Loyalty",
+      "subtitle": "Your assigned promo codes are shown here.",
+      "authRequired": "Login is required to view loyalty promo codes.",
+      "goToLogin": "Go to login",
+      "actions": {
+        "copy": "Copy"
+      },
+      "labels": {
+        "code": "Promo code",
+        "type": "Type",
+        "discount": "Discount",
+        "usage": "Usage",
+        "expiresAt": "Expires",
+        "reason": "Reason",
+        "noExpiry": "No expiry"
+      },
+      "types": {
+        "delivery": "Delivery discount",
+        "product": "Product markup discount"
+      },
+      "states": {
+        "loading": "Loading promo codes...",
+        "error": "Failed to load promo codes.",
+        "emptyTitle": "No promo codes yet",
+        "emptyDescription": "When your manager issues a promo code, it will appear here.",
+        "values": {
+          "active": "Active",
+          "used": "Used",
+          "expired": "Expired",
+          "disabled": "Disabled"
+        }
+      },
+      "messages": {
+        "copied": "Promo code copied."
+      }
     },
     "orders": {
       "title": "My orders",

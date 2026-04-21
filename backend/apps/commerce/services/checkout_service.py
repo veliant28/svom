@@ -14,6 +14,12 @@ from apps.commerce.services.liqpay.service import LiqPayApiError, build_checkout
 from apps.commerce.services.cart_calculations import calculate_cart_totals, get_line_total, quantize_money
 from apps.commerce.services.cart_service import get_or_create_user_cart
 from apps.commerce.services.delivery_snapshot import build_delivery_snapshot_from_checkout
+from apps.commerce.services.loyalty_service import (
+    LoyaltyDiscountComputation,
+    LoyaltyPromoValidationError,
+    compute_loyalty_discount_for_checkout,
+    register_promo_redemption,
+)
 from apps.commerce.services.monobank.client import MonobankApiError
 from apps.commerce.services.monobank.invoice_service import create_invoice_for_order, get_order_payment
 from apps.commerce.services.sellable_state import build_cart_item_warning, get_cart_item_sellable_snapshot
@@ -27,7 +33,9 @@ class CheckoutPreview:
     items_count: int
     subtotal: Decimal
     delivery_fee: Decimal
+    discount_total: Decimal
     total: Decimal
+    promo: dict[str, Any] | None
     warnings: list[dict]
 
 
@@ -40,7 +48,12 @@ def resolve_delivery_fee(delivery_method: str) -> Decimal:
     return delivery_fee_map.get(delivery_method, Decimal("0.00"))
 
 
-def build_checkout_preview(*, user: User, delivery_method: str | None = None) -> CheckoutPreview:
+def build_checkout_preview(
+    *,
+    user: User,
+    delivery_method: str | None = None,
+    promo_code: str | None = None,
+) -> CheckoutPreview:
     cart = get_or_create_user_cart(user)
     supplier_offers_prefetch = Prefetch(
         "product__supplier_offers",
@@ -69,11 +82,29 @@ def build_checkout_preview(*, user: User, delivery_method: str | None = None) ->
                 }
             )
 
+    discount_total = Decimal("0.00")
+    total = quantize_money(totals.subtotal + delivery_fee)
+    promo_payload: dict[str, Any] | None = None
+
+    if promo_code:
+        computation = compute_loyalty_discount_for_checkout(
+            user=user,
+            promo_code_value=promo_code,
+            items=items,
+            delivery_fee=delivery_fee,
+            currency=items[0].last_known_currency if items and items[0].last_known_currency else "UAH",
+        )
+        discount_total = computation.total_discount
+        total = computation.total_after_discount
+        promo_payload = computation.to_payload()
+
     return CheckoutPreview(
         items_count=totals.items_count,
         subtotal=totals.subtotal,
         delivery_fee=delivery_fee,
-        total=quantize_money(totals.subtotal + delivery_fee),
+        discount_total=discount_total,
+        total=total,
+        promo=promo_payload,
         warnings=warnings,
     )
 
@@ -184,8 +215,26 @@ def submit_checkout(
 
     totals = calculate_cart_totals(items)
     delivery_fee = quantize_money(resolve_delivery_fee(delivery_method))
-    total = quantize_money(totals.subtotal + delivery_fee)
     order_currency = item_snapshots[str(items[0].id)].currency if items else "UAH"
+    promo_code_value = str(payload.get("promo_code") or "").strip()
+    promo_computation: LoyaltyDiscountComputation | None = None
+
+    if promo_code_value:
+        try:
+            promo_computation = compute_loyalty_discount_for_checkout(
+                user=user,
+                promo_code_value=promo_code_value,
+                items=items,
+                delivery_fee=delivery_fee,
+                currency=order_currency,
+            )
+        except LoyaltyPromoValidationError as exc:
+            raise ValidationError({"promo_code": str(exc.message)}) from exc
+
+    discount_total = promo_computation.total_discount if promo_computation else Decimal("0.00")
+    total = promo_computation.total_after_discount if promo_computation else quantize_money(totals.subtotal + delivery_fee)
+    applied_promo_code = promo_computation.promo.code if promo_computation else ""
+    discount_breakdown = promo_computation.to_payload() if promo_computation else {}
 
     order = Order.objects.create(
         user=user,
@@ -200,6 +249,9 @@ def submit_checkout(
         payment_method=payment_method,
         subtotal=totals.subtotal,
         delivery_fee=delivery_fee,
+        discount_total=discount_total,
+        applied_promo_code=applied_promo_code,
+        discount_breakdown=discount_breakdown,
         total=total,
         currency=order_currency,
         customer_comment=payload.get("customer_comment", ""),
@@ -233,6 +285,12 @@ def submit_checkout(
         )
 
     OrderItem.objects.bulk_create(order_items)
+
+    if promo_computation:
+        try:
+            register_promo_redemption(user=user, order=order, computation=promo_computation)
+        except LoyaltyPromoValidationError as exc:
+            raise ValidationError({"promo_code": str(exc.message)}) from exc
 
     payment = get_order_payment(order)
     payment.amount = order.total

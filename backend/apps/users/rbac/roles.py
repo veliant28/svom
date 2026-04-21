@@ -59,6 +59,7 @@ SYSTEM_ROLE_DEFINITIONS: dict[str, BackofficeSystemRoleDefinition] = {
             "pricing.view",
             "suppliers.view",
             "imports.view",
+            "loyalty.issue",
             "procurement.manage",
         ),
     ),
@@ -79,8 +80,8 @@ SYSTEM_ROLE_DEFINITIONS: dict[str, BackofficeSystemRoleDefinition] = {
         code=SYSTEM_ROLE_USER,
         group_name="Backoffice Role: user",
         title="User",
-        description="Minimal backoffice access with explicitly granted capabilities.",
-        capability_codes=("backoffice.access",),
+        description="Base role without backoffice access by default.",
+        capability_codes=(),
     ),
 }
 

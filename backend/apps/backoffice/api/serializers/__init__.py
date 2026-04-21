@@ -93,6 +93,12 @@ from .supplier_workspace_serializer import (
     SupplierWorkspaceSupplierSerializer,
     SupplierWorkspaceUtrSerializer,
 )
+from .loyalty_serializer import (
+    BackofficeLoyaltyCustomerLookupSerializer,
+    BackofficeLoyaltyIssueSerializer,
+    BackofficeLoyaltyPromoSerializer,
+    BackofficeLoyaltyStaffStatsSerializer,
+)
 from .vehicle_engine_serializer import BackofficeVehicleEngineSerializer
 from .vehicle_generation_serializer import BackofficeVehicleGenerationSerializer
 from .vehicle_make_serializer import BackofficeVehicleMakeSerializer
@@ -180,4 +186,8 @@ __all__ = [
     "SupplierWorkspaceCooldownSerializer",
     "SupplierWorkspaceUtrSerializer",
     "SupplierWorkspaceSerializer",
+    "BackofficeLoyaltyIssueSerializer",
+    "BackofficeLoyaltyPromoSerializer",
+    "BackofficeLoyaltyStaffStatsSerializer",
+    "BackofficeLoyaltyCustomerLookupSerializer",
 ]

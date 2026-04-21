@@ -48,7 +48,27 @@ export type CheckoutPreview = {
   items_count: number;
   subtotal: string;
   delivery_fee: string;
+  discount_total: string;
   total: string;
+  promo: {
+    code: string;
+    discount_type: "delivery_fee" | "product_markup";
+    requested_percent: string;
+    applied_percent: string;
+    subtotal_before_discount: string;
+    delivery_fee_before_discount: string;
+    total_before_discount: string;
+    product_markup_cap: {
+      available_markup_total: string;
+      requested_discount_amount: string;
+      applied_discount_amount: string;
+    };
+    delivery_discount: string;
+    product_discount: string;
+    total_discount: string;
+    total_after_discount: string;
+    currency: string;
+  } | null;
   warnings: Array<{
     product_id: string;
     product_name: string;
@@ -60,6 +80,24 @@ export type CheckoutPreview = {
 export type CheckoutPreviewResponse = {
   cart: Cart;
   checkout_preview: CheckoutPreview;
+};
+
+export type LoyaltyPromoCode = {
+  id: string;
+  code: string;
+  discount_type: "delivery_fee" | "product_markup";
+  discount_percent: string;
+  reason: string;
+  status: "active" | "disabled";
+  state: "active" | "used" | "expired" | "disabled";
+  is_active: boolean;
+  is_used: boolean;
+  is_expired: boolean;
+  usage_limit: number;
+  usage_count: number;
+  expires_at: string | null;
+  last_redeemed_at: string | null;
+  created_at: string;
 };
 
 export type OrderItem = {
@@ -142,6 +180,9 @@ export type Order = {
   payment?: OrderPayment | null;
   subtotal: string;
   delivery_fee: string;
+  discount_total: string;
+  applied_promo_code: string;
+  discount_breakdown: Record<string, unknown>;
   total: string;
   currency: string;
   customer_comment: string;

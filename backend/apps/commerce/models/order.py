@@ -90,6 +90,9 @@ class Order(UUIDPrimaryKeyMixin, TimestampedMixin):
 
     subtotal = models.DecimalField(_("Промежуточная сумма"), max_digits=12, decimal_places=2, default=0)
     delivery_fee = models.DecimalField(_("Стоимость доставки"), max_digits=12, decimal_places=2, default=0)
+    discount_total = models.DecimalField(_("Сумма скидки"), max_digits=12, decimal_places=2, default=0)
+    applied_promo_code = models.CharField(_("Примененный промокод"), max_length=64, blank=True, default="")
+    discount_breakdown = models.JSONField(_("Детали скидки"), default=dict, blank=True)
     total = models.DecimalField(_("Итоговая сумма"), max_digits=12, decimal_places=2, default=0)
     currency = models.CharField(_("Валюта"), max_length=3, default="UAH")
 

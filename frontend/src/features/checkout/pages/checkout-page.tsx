@@ -8,6 +8,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { CartSummaryBlock } from "@/features/cart/components/cart-summary-block";
 import { useCart } from "@/features/cart/hooks/use-cart";
+import { applyCheckoutPromo } from "@/features/checkout/api/apply-checkout-promo";
+import { clearCheckoutPromo } from "@/features/checkout/api/clear-checkout-promo";
 import { getCheckoutPreview } from "@/features/checkout/api/get-checkout-preview";
 import {
   lookupCheckoutNovaPoshtaSettlements,
@@ -24,6 +26,7 @@ import { PaymentMethodToggle } from "@/features/checkout/components/payment/paym
 import type { CheckoutPaymentMethod, MonobankWidgetResponse } from "@/features/checkout/types/payment";
 import type { CheckoutPreview, Order } from "@/features/commerce/types";
 import { Link } from "@/i18n/navigation";
+import { isApiRequestError } from "@/shared/api/http-client";
 import { useStorefrontFeedback } from "@/shared/hooks/use-storefront-feedback";
 import {
   PHONE_INPUT_MAX_LENGTH,
@@ -126,6 +129,31 @@ function formatWarehouseInputValue(item: CheckoutNovaPoshtaWarehouse, locale: st
   return [display.label, display.subtitle].filter(Boolean).join(", ");
 }
 
+function resolvePromoErrorKey(code: string): string {
+  if (code === "not_found") {
+    return "notFound";
+  }
+  if (code === "not_owned") {
+    return "notOwned";
+  }
+  if (code === "expired") {
+    return "expired";
+  }
+  if (code === "used") {
+    return "used";
+  }
+  if (code === "disabled") {
+    return "disabled";
+  }
+  if (code === "delivery_zero") {
+    return "deliveryZero";
+  }
+  if (code === "no_markup") {
+    return "noMarkup";
+  }
+  return "";
+}
+
 export function CheckoutPage() {
   const t = useTranslations("commerce.checkout");
   const locale = useLocale();
@@ -175,6 +203,9 @@ export function CheckoutPage() {
   const [monobankWidgetState, setMonobankWidgetState] = useState<MonobankWidgetResponse | null>(null);
   const [monobankWidgetLoading, setMonobankWidgetLoading] = useState(false);
   const [preview, setPreview] = useState<CheckoutPreview | null>(null);
+  const [promoInput, setPromoInput] = useState("");
+  const [appliedPromoCode, setAppliedPromoCode] = useState("");
+  const [isPromoApplying, setIsPromoApplying] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const cityLookupRootRef = useRef<HTMLLabelElement | null>(null);
   const warehouseLookupRootRef = useRef<HTMLLabelElement | null>(null);
@@ -376,13 +407,24 @@ export function CheckoutPage() {
       }
 
       try {
-        const response = await getCheckoutPreview(token, effectiveDeliveryMethod);
+        const response = await getCheckoutPreview(token, effectiveDeliveryMethod, appliedPromoCode || undefined);
         if (isMounted) {
           setPreview(response.checkout_preview);
+          if (response.checkout_preview.promo?.code) {
+            setAppliedPromoCode(response.checkout_preview.promo.code);
+            setPromoInput(response.checkout_preview.promo.code);
+          }
         }
-      } catch {
+      } catch (error) {
         if (isMounted) {
           setPreview(null);
+          if (appliedPromoCode) {
+            setAppliedPromoCode("");
+            const apiCode = isApiRequestError(error) ? String(error.payload?.promo_code_error || "") : "";
+            const key = resolvePromoErrorKey(apiCode);
+            const message = key ? t(`promo.errors.${key}`) : t("promo.messages.applyInvalidated");
+            showApiError(error, message);
+          }
         }
       }
     }
@@ -392,7 +434,7 @@ export function CheckoutPage() {
     return () => {
       isMounted = false;
     };
-  }, [token, isAuthenticated, effectiveDeliveryMethod, cart?.updated_at]);
+  }, [token, isAuthenticated, effectiveDeliveryMethod, cart?.updated_at, appliedPromoCode, showApiError, t]);
 
   useEffect(() => {
     if (!token || !isAuthenticated || deliveryOption === "pickup") {
@@ -572,6 +614,63 @@ export function CheckoutPage() {
     scrollDropdownOptionIntoView(streetLookupRootRef.current, "checkout-street", activeStreetIndex);
   }, [activeStreetIndex, streetOptions.length]);
 
+  function resolvePromoErrorMessage(error: unknown, fallback: string): string {
+    if (!isApiRequestError(error)) {
+      return fallback;
+    }
+    const apiCode = String(error.payload?.promo_code_error || "");
+    const key = resolvePromoErrorKey(apiCode);
+    if (!key) {
+      return fallback;
+    }
+    return t(`promo.errors.${key}`);
+  }
+
+  async function handleApplyPromo() {
+    const normalized = promoInput.trim();
+    if (!token || !normalized) {
+      return;
+    }
+
+    setIsPromoApplying(true);
+    try {
+      const response = await applyCheckoutPromo(token, {
+        promo_code: normalized,
+        delivery_method: effectiveDeliveryMethod,
+      });
+      setPreview(response.checkout_preview);
+      const code = response.checkout_preview.promo?.code || normalized;
+      setAppliedPromoCode(code);
+      setPromoInput(code);
+      showSuccess(t("promo.messages.applied"));
+    } catch (error) {
+      showApiError(error, resolvePromoErrorMessage(error, t("promo.messages.applyFailed")));
+    } finally {
+      setIsPromoApplying(false);
+    }
+  }
+
+  async function handleClearPromo() {
+    if (!token) {
+      return;
+    }
+
+    setIsPromoApplying(true);
+    try {
+      const response = await clearCheckoutPromo(token, {
+        delivery_method: effectiveDeliveryMethod,
+      });
+      setPreview(response.checkout_preview);
+      setAppliedPromoCode("");
+      setPromoInput("");
+      showSuccess(t("promo.messages.cleared"));
+    } catch (error) {
+      showApiError(error, t("promo.messages.clearFailed"));
+    } finally {
+      setIsPromoApplying(false);
+    }
+  }
+
   if (!isAuthenticated) {
     return (
       <section className="mx-auto max-w-6xl px-4 py-8">
@@ -654,9 +753,12 @@ export function CheckoutPage() {
                 delivery_snapshot: resolvedDeliverySnapshot,
                 payment_method: paymentMethod,
                 customer_comment: comment,
+                promo_code: appliedPromoCode || undefined,
               });
               showSuccess(t("success", { orderNumber: order.order_number }));
               await refresh();
+              setAppliedPromoCode("");
+              setPromoInput("");
               if (paymentMethod === "monobank") {
                 const checkoutPageUrl = (order.payment?.page_url || "").trim();
                 if (checkoutPageUrl) {
@@ -1160,10 +1262,80 @@ export function CheckoutPage() {
           />
 
           <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
+            <h2 className="text-sm font-semibold">{t("sections.promo")}</h2>
+            <div className="mt-2 grid gap-2">
+              <div className="flex gap-2">
+                <input
+                  value={promoInput}
+                  onChange={(event) => setPromoInput(event.target.value.toUpperCase())}
+                  placeholder={t("promo.placeholder")}
+                  className="h-9 min-w-0 flex-1 rounded-md border px-3 text-sm"
+                  style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                />
+                <button
+                  type="button"
+                  disabled={isPromoApplying || !promoInput.trim()}
+                  className="h-9 rounded-md border px-3 text-xs font-semibold disabled:opacity-60"
+                  style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                  onClick={() => {
+                    void handleApplyPromo();
+                  }}
+                >
+                  {isPromoApplying ? t("promo.actions.applying") : t("promo.actions.apply")}
+                </button>
+                {appliedPromoCode ? (
+                  <button
+                    type="button"
+                    disabled={isPromoApplying}
+                    className="h-9 rounded-md border px-3 text-xs font-semibold disabled:opacity-60"
+                    style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                    onClick={() => {
+                      void handleClearPromo();
+                    }}
+                  >
+                    {t("promo.actions.clear")}
+                  </button>
+                ) : null}
+              </div>
+
+              {preview?.promo ? (
+                <div className="rounded-lg border p-2 text-xs" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}>
+                  <p><span style={{ color: "var(--muted)" }}>{t("promo.labels.code")}:</span> <strong>{preview.promo.code}</strong></p>
+                  <p className="mt-1">
+                    <span style={{ color: "var(--muted)" }}>{t("promo.labels.type")}:</span>{" "}
+                    {preview.promo.discount_type === "delivery_fee" ? t("promo.types.delivery") : t("promo.types.product")}
+                  </p>
+                  <p className="mt-1">
+                    <span style={{ color: "var(--muted)" }}>{t("promo.labels.discount")}:</span>{" "}
+                    {preview.promo.total_discount} {cart.currency}
+                  </p>
+                  {preview.promo.delivery_discount !== "0.00" ? (
+                    <p className="mt-1">
+                      <span style={{ color: "var(--muted)" }}>{t("promo.labels.deliverySavings")}:</span>{" "}
+                      {preview.promo.delivery_discount} {cart.currency}
+                    </p>
+                  ) : null}
+                  {preview.promo.product_discount !== "0.00" ? (
+                    <p className="mt-1">
+                      <span style={{ color: "var(--muted)" }}>{t("promo.labels.productSavings")}:</span>{" "}
+                      {preview.promo.product_discount} {cart.currency}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
             <h2 className="text-sm font-semibold">{t("sections.orderReview")}</h2>
             <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>
               {t("review.deliveryFee", { fee: preview?.delivery_fee ?? "0.00", currency: cart.currency })}
             </p>
+            {(preview?.discount_total ?? "0.00") !== "0.00" ? (
+              <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
+                {t("review.discount", { amount: preview?.discount_total ?? "0.00", currency: cart.currency })}
+              </p>
+            ) : null}
             <p className="mt-1 text-sm font-semibold">
               {t("review.total", { total: preview?.total ?? cart.summary.subtotal, currency: cart.currency })}
             </p>

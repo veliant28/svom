@@ -10,6 +10,8 @@ from rest_framework.views import APIView
 
 from apps.commerce.api.serializers import (
     CheckoutNovaPoshtaLookupQuerySerializer,
+    CheckoutPromoApplySerializer,
+    CheckoutPromoClearSerializer,
     CheckoutNovaPoshtaStreetLookupQuerySerializer,
     CheckoutNovaPoshtaWarehouseLookupQuerySerializer,
     CheckoutPreviewQuerySerializer,
@@ -19,6 +21,7 @@ from apps.commerce.api.serializers import (
 from apps.commerce.api.views.cart_views import _serialize_user_cart
 from apps.commerce.models import Order
 from apps.commerce.services import (
+    LoyaltyPromoValidationError,
     MonobankWebhookService,
     build_checkout_preview,
     build_selector_widget_init_payload,
@@ -41,20 +44,45 @@ class CheckoutPreviewAPIView(APIView):
         query_serializer.is_valid(raise_exception=True)
 
         delivery_method = query_serializer.validated_data.get("delivery_method")
-        preview = build_checkout_preview(user=request.user, delivery_method=delivery_method)
+        promo_code = query_serializer.validated_data.get("promo_code")
+        try:
+            preview = build_checkout_preview(user=request.user, delivery_method=delivery_method, promo_code=promo_code)
+        except LoyaltyPromoValidationError as exc:
+            raise ValidationError(detail={"promo_code": str(exc.message), "promo_code_error": exc.code})
 
-        return Response(
-            {
-                "cart": _serialize_user_cart(request=request),
-                "checkout_preview": {
-                    "items_count": preview.items_count,
-                    "subtotal": preview.subtotal,
-                    "delivery_fee": preview.delivery_fee,
-                    "total": preview.total,
-                    "warnings": preview.warnings,
-                },
-            }
-        )
+        return Response(_build_checkout_preview_response(request=request, preview=preview))
+
+
+class CheckoutPromoApplyAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = CheckoutPromoApplySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        promo_code = serializer.validated_data.get("promo_code")
+        delivery_method = serializer.validated_data.get("delivery_method")
+        try:
+            preview = build_checkout_preview(user=request.user, delivery_method=delivery_method, promo_code=promo_code)
+        except LoyaltyPromoValidationError as exc:
+            raise ValidationError(detail={"promo_code": str(exc.message), "promo_code_error": exc.code})
+        return Response(_build_checkout_preview_response(request=request, preview=preview))
+
+
+class CheckoutPromoClearAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = CheckoutPromoClearSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        delivery_method = serializer.validated_data.get("delivery_method")
+        preview = build_checkout_preview(user=request.user, delivery_method=delivery_method)
+        payload = _build_checkout_preview_response(request=request, preview=preview)
+        payload["cleared"] = True
+        return Response(payload)
 
 
 class CheckoutSubmitAPIView(APIView):
@@ -300,3 +328,18 @@ def _nova_poshta_error_response(exc: NovaPoshtaIntegrationError) -> Response:
         },
         status=status.HTTP_400_BAD_REQUEST,
     )
+
+
+def _build_checkout_preview_response(*, request, preview) -> dict:
+    return {
+        "cart": _serialize_user_cart(request=request),
+        "checkout_preview": {
+            "items_count": preview.items_count,
+            "subtotal": preview.subtotal,
+            "delivery_fee": preview.delivery_fee,
+            "discount_total": preview.discount_total,
+            "total": preview.total,
+            "promo": preview.promo,
+            "warnings": preview.warnings,
+        },
+    }

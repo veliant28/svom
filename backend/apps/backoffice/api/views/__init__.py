@@ -119,6 +119,12 @@ from .rbac_management_views import (
     BackofficeUserListCreateAPIView,
     BackofficeUserRetrieveUpdateAPIView,
 )
+from .loyalty_views import (
+    BackofficeLoyaltyCustomerLookupAPIView,
+    BackofficeLoyaltyIssueAPIView,
+    BackofficeLoyaltyIssuanceListAPIView,
+    BackofficeLoyaltyStatsAPIView,
+)
 from .summary_view import BackofficeSummaryAPIView
 from .vehicle_taxonomy_views import (
     BackofficeVehicleEngineListCreateAPIView,
@@ -254,6 +260,10 @@ __all__ = [
     "BackofficeUserDeactivateAPIView",
     "BackofficeGroupListCreateAPIView",
     "BackofficeGroupRetrieveUpdateAPIView",
+    "BackofficeLoyaltyIssueAPIView",
+    "BackofficeLoyaltyIssuanceListAPIView",
+    "BackofficeLoyaltyStatsAPIView",
+    "BackofficeLoyaltyCustomerLookupAPIView",
     "RunImportSourceActionAPIView",
     "ImportAllActionAPIView",
     "RepriceAfterImportActionAPIView",

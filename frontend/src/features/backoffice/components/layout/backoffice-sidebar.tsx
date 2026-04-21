@@ -11,6 +11,7 @@ import {
   Shapes,
   ShoppingBag,
   PackageCheck,
+  TicketPercent,
   Tags,
   Truck,
   Wallet2,
@@ -30,6 +31,7 @@ type SidebarNavItem = {
     | "suppliers"
     | "products"
     | "pricing"
+    | "loyalty"
     | "payments"
     | "brands"
     | "categories"
@@ -48,6 +50,7 @@ const NAV_ITEMS: SidebarNavItem[] = [
   { href: "/backoffice/suppliers", icon: Truck, key: "suppliers", requiredCapability: BACKOFFICE_CAPABILITIES.suppliersView },
   { href: "/backoffice/products", icon: Package, key: "products", requiredCapability: BACKOFFICE_CAPABILITIES.catalogView },
   { href: "/backoffice/pricing", icon: CircleDollarSign, key: "pricing", requiredCapability: BACKOFFICE_CAPABILITIES.pricingView },
+  { href: "/backoffice/loyalty", icon: TicketPercent, key: "loyalty", requiredCapability: BACKOFFICE_CAPABILITIES.loyaltyIssue },
   { href: "/backoffice/payments", icon: Wallet2, key: "payments", requiredCapability: BACKOFFICE_CAPABILITIES.settingsManage },
   { href: "/backoffice/brands", icon: Tags, key: "brands", requiredCapability: BACKOFFICE_CAPABILITIES.catalogView },
   { href: "/backoffice/categories", icon: Shapes, key: "categories", requiredCapability: BACKOFFICE_CAPABILITIES.catalogView },

@@ -9,3 +9,4 @@ export type * from "./payment.types";
 export type * from "./vehicles.types";
 export type * from "./nova-poshta.types";
 export type * from "./rbac.types";
+export type * from "./loyalty.types";

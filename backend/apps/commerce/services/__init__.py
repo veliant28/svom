@@ -1,6 +1,15 @@
 from .cart_calculations import CartTotals, calculate_cart_totals, get_line_total, get_product_unit_price
 from .cart_service import add_product_to_cart, get_or_create_user_cart, remove_cart_item, set_cart_item_quantity
 from .checkout_service import CheckoutPreview, build_checkout_preview, submit_checkout
+from .loyalty_service import (
+    LoyaltyDiscountComputation,
+    LoyaltyPromoValidationError,
+    compute_loyalty_discount_for_checkout,
+    issue_loyalty_promo,
+    register_promo_redemption,
+    serialize_loyalty_promo_for_ui,
+    serialize_loyalty_promo_status,
+)
 from .monobank import (
     MonobankApiClient,
     MonobankApiError,
@@ -46,6 +55,13 @@ __all__ = [
     "remove_cart_item",
     "build_checkout_preview",
     "submit_checkout",
+    "LoyaltyDiscountComputation",
+    "LoyaltyPromoValidationError",
+    "compute_loyalty_discount_for_checkout",
+    "issue_loyalty_promo",
+    "register_promo_redemption",
+    "serialize_loyalty_promo_for_ui",
+    "serialize_loyalty_promo_status",
     "MonobankApiClient",
     "MonobankApiError",
     "MonobankWebhookService",

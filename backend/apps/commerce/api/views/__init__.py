@@ -1,6 +1,8 @@
 from .cart_views import CartItemCreateAPIView, CartItemUpdateDeleteAPIView, CartRetrieveAPIView
 from .checkout_views import (
     CheckoutMonobankSelectorWidgetAPIView,
+    CheckoutPromoApplyAPIView,
+    CheckoutPromoClearAPIView,
     CheckoutNovaPoshtaSettlementsLookupAPIView,
     CheckoutNovaPoshtaStreetsLookupAPIView,
     CheckoutNovaPoshtaWarehousesLookupAPIView,
@@ -11,6 +13,7 @@ from .checkout_views import (
     MonobankWebhookAPIView,
 )
 from .order_views import OrderDetailAPIView, OrderListAPIView
+from .loyalty_views import LoyaltyMyPromoCodesAPIView
 from .wishlist_views import WishlistItemCreateAPIView, WishlistItemDeleteAPIView, WishlistListAPIView
 
 __all__ = [
@@ -23,6 +26,8 @@ __all__ = [
     "CheckoutPreviewAPIView",
     "CheckoutSubmitAPIView",
     "CheckoutMonobankSelectorWidgetAPIView",
+    "CheckoutPromoApplyAPIView",
+    "CheckoutPromoClearAPIView",
     "CheckoutOrderMonobankWidgetAPIView",
     "MonobankWebhookAPIView",
     "LiqPayWebhookAPIView",
@@ -31,4 +36,5 @@ __all__ = [
     "CheckoutNovaPoshtaStreetsLookupAPIView",
     "OrderListAPIView",
     "OrderDetailAPIView",
+    "LoyaltyMyPromoCodesAPIView",
 ]

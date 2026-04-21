@@ -5,6 +5,8 @@ from apps.commerce.api.views import (
     CartItemUpdateDeleteAPIView,
     CartRetrieveAPIView,
     CheckoutMonobankSelectorWidgetAPIView,
+    CheckoutPromoApplyAPIView,
+    CheckoutPromoClearAPIView,
     CheckoutNovaPoshtaSettlementsLookupAPIView,
     CheckoutNovaPoshtaStreetsLookupAPIView,
     CheckoutNovaPoshtaWarehousesLookupAPIView,
@@ -12,6 +14,7 @@ from apps.commerce.api.views import (
     CheckoutPreviewAPIView,
     CheckoutSubmitAPIView,
     LiqPayWebhookAPIView,
+    LoyaltyMyPromoCodesAPIView,
     MonobankWebhookAPIView,
     OrderDetailAPIView,
     OrderListAPIView,
@@ -30,6 +33,8 @@ urlpatterns = [
     path("cart/items/", CartItemCreateAPIView.as_view(), name="cart-item-create"),
     path("cart/items/<uuid:item_id>/", CartItemUpdateDeleteAPIView.as_view(), name="cart-item-update-delete"),
     path("checkout/preview/", CheckoutPreviewAPIView.as_view(), name="checkout-preview"),
+    path("checkout/promo/apply/", CheckoutPromoApplyAPIView.as_view(), name="checkout-promo-apply"),
+    path("checkout/promo/clear/", CheckoutPromoClearAPIView.as_view(), name="checkout-promo-clear"),
     path("checkout/submit/", CheckoutSubmitAPIView.as_view(), name="checkout-submit"),
     path(
         "checkout/monobank-selector-widget/",
@@ -60,4 +65,5 @@ urlpatterns = [
     ),
     path("orders/", OrderListAPIView.as_view(), name="order-list"),
     path("orders/<uuid:pk>/", OrderDetailAPIView.as_view(), name="order-detail"),
+    path("loyalty/my-codes/", LoyaltyMyPromoCodesAPIView.as_view(), name="loyalty-my-codes"),
 ]

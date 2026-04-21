@@ -33,6 +33,7 @@
         "orders": "Заказы",
         "favorites": "Избранное",
         "garage": "Гараж",
+        "loyalty": "Лояльность",
         "logout": "Выйти",
         "backoffice": "Бэк-офис"
       },

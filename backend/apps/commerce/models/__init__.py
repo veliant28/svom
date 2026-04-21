@@ -1,6 +1,7 @@
 from .cart import Cart
 from .cart_item import CartItem
 from .liqpay_settings import LiqPaySettings
+from .loyalty import LoyaltyPromoCode, LoyaltyPromoEvent, LoyaltyPromoRedemption
 from .nova_poshta_sender_profile import NovaPoshtaSenderProfile
 from .novapay_settings import NovaPaySettings
 from .order import Order
@@ -23,4 +24,7 @@ __all__ = [
     "NovaPoshtaSenderProfile",
     "OrderNovaPoshtaWaybill",
     "OrderNovaPoshtaWaybillEvent",
+    "LoyaltyPromoCode",
+    "LoyaltyPromoRedemption",
+    "LoyaltyPromoEvent",
 ]

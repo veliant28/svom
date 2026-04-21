@@ -33,6 +33,7 @@
         "orders": "Orders",
         "favorites": "Favorites",
         "garage": "Garage",
+        "loyalty": "Loyalty",
         "logout": "Logout",
         "backoffice": "Backoffice"
       },

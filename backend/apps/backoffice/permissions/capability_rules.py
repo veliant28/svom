@@ -36,6 +36,7 @@ RULES: tuple[BackofficeCapabilityRule, ...] = (
     BackofficeCapabilityRule("actions/bulk-move-products-category/", ("catalog.manage",), ("catalog.manage",)),
     BackofficeCapabilityRule("product-prices/", ("pricing.view",), ("pricing.manage",)),
     BackofficeCapabilityRule("pricing/", ("pricing.view",), ("pricing.manage",)),
+    BackofficeCapabilityRule("loyalty/", ("loyalty.issue",), ("loyalty.issue",)),
     BackofficeCapabilityRule("autocatalog/", ("catalog.view",), ("catalog.manage",)),
     BackofficeCapabilityRule("brands/", ("catalog.view",), ("catalog.manage",)),
     BackofficeCapabilityRule("categories/", ("catalog.view",), ("catalog.manage",)),

@@ -133,6 +133,12 @@ BACKOFFICE_CAPABILITIES: tuple[BackofficeCapabilityDefinition, ...] = (
         description="Manage operational/system settings in backoffice.",
     ),
     BackofficeCapabilityDefinition(
+        code="loyalty.issue",
+        permission_codename="bo_cap_loyalty_issue",
+        title="Loyalty issue",
+        description="Issue loyalty promo codes and view loyalty analytics.",
+    ),
+    BackofficeCapabilityDefinition(
         code="procurement.manage",
         permission_codename="bo_cap_procurement_manage",
         title="Procurement manage",
