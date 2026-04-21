@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { CheckCircle2, XCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import {
@@ -14,6 +15,7 @@ import {
 } from "@/features/backoffice/api/rbac-api";
 import { RoleGroupBadge } from "@/features/backoffice/components/rbac/role-group-badge";
 import { BackofficeTable } from "@/features/backoffice/components/table/backoffice-table";
+import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
 import { useAuth } from "@/features/auth/hooks/use-auth";
@@ -271,7 +273,15 @@ export function UsersPage() {
                   "-"
                 ),
             },
-            { key: "status", label: t("rbac.users.columns.status"), render: (item) => item.is_active ? t("statuses.active") : t("statuses.inactive") },
+            {
+              key: "status",
+              label: t("rbac.users.columns.status"),
+              render: (item) => (
+                <BackofficeStatusChip tone={item.is_active ? "success" : "gray"} icon={item.is_active ? CheckCircle2 : XCircle}>
+                  {item.is_active ? t("statuses.active") : t("statuses.inactive")}
+                </BackofficeStatusChip>
+              ),
+            },
             {
               key: "actions",
               label: t("rbac.users.columns.actions"),
