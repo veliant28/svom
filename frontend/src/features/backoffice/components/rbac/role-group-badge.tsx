@@ -39,21 +39,38 @@ function resolveRoleVisual(role: SystemRoleCode): {
   return { tone: "gray", icon: UserRound };
 }
 
-export function RoleGroupBadge({ groupName }: { groupName: string }) {
+export function RoleGroupBadge({
+  groupName,
+  className = "",
+  forceDark = false,
+}: {
+  groupName: string;
+  className?: string;
+  forceDark?: boolean;
+}) {
   const t = useTranslations("backoffice.common");
+  const darkToneByRole: Record<SystemRoleCode, string> = {
+    administrator: "border-red-300/70 bg-red-500/24 text-red-50",
+    manager: "border-blue-300/70 bg-blue-500/24 text-blue-50",
+    operator: "border-orange-300/70 bg-orange-500/24 text-orange-50",
+    user: "border-zinc-300/70 bg-zinc-500/22 text-zinc-50",
+  };
+  const darkToneCustom = "border-slate-300/70 bg-slate-500/22 text-slate-50";
 
   const role = resolveSystemRole(groupName);
   if (role) {
     const visual = resolveRoleVisual(role);
+    const forceToneClass = forceDark ? darkToneByRole[role] : "";
     return (
-      <BackofficeStatusChip tone={visual.tone} icon={visual.icon}>
+      <BackofficeStatusChip tone={visual.tone} icon={visual.icon} className={`${forceToneClass} ${className}`.trim()}>
         {t(`rbac.roles.values.${role}`)}
       </BackofficeStatusChip>
     );
   }
 
+  const forceToneClass = forceDark ? darkToneCustom : "";
   return (
-    <BackofficeStatusChip tone="info" icon={UsersRound}>
+    <BackofficeStatusChip tone="info" icon={UsersRound} className={`${forceToneClass} ${className}`.trim()}>
       {groupName || "-"}
     </BackofficeStatusChip>
   );

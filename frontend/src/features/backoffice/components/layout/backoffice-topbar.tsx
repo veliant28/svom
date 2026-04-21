@@ -36,6 +36,9 @@ export function BackofficeTopbar({ onToggleSidebar, user }: { onToggleSidebar: (
             <Menu size={18} />
           </button>
           <div className="min-w-0">
+            <p className="text-xs uppercase tracking-[0.16em]" style={{ color: "var(--muted)" }}>
+              {t("topbar.role")}
+            </p>
             <p className="min-w-0 truncate text-sm font-semibold lg:text-base">{title}</p>
           </div>
           {config.switcher ? <div className="flex flex-wrap items-center gap-2">{config.switcher}</div> : null}

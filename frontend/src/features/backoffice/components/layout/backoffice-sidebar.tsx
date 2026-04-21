@@ -116,7 +116,11 @@ export function BackofficeSidebar({ open, onNavigate, user }: { open: boolean; o
             <p className="truncate text-sm font-semibold text-white">{displayName}</p>
             {roleGroupName ? (
               <div className="mt-1 flex justify-end">
-                <RoleGroupBadge groupName={roleGroupName} />
+                <RoleGroupBadge
+                  groupName={roleGroupName}
+                  forceDark
+                  className="px-1.5 py-0.5 text-[11px]"
+                />
               </div>
             ) : null}
           </div>
