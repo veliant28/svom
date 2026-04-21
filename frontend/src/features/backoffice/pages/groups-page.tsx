@@ -118,6 +118,9 @@ export function GroupsPage() {
   }, [capabilities, t]);
 
   const getCapabilityTitle = useCallback((code: string, fallback?: string) => {
+    if (code === USERS_MANAGEMENT_BUNDLE_CODE) {
+      return fallback || t("rbac.groups.capabilityBundles.usersManagement.title");
+    }
     try {
       return t(`rbac.capabilities.${code}.title` as never);
     } catch {
@@ -126,6 +129,9 @@ export function GroupsPage() {
   }, [t]);
 
   const getCapabilityDescription = useCallback((code: string, fallback?: string) => {
+    if (code === USERS_MANAGEMENT_BUNDLE_CODE) {
+      return fallback || t("rbac.groups.capabilityBundles.usersManagement.description");
+    }
     try {
       return t(`rbac.capabilities.${code}.description` as never);
     } catch {
