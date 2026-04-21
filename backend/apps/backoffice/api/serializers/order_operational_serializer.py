@@ -217,8 +217,15 @@ class BackofficeOrderOperationalListSerializer(serializers.ModelSerializer):
         }
 
     def get_payment(self, obj: Order) -> dict:
-        default_provider = "monobank" if obj.payment_method == Order.PAYMENT_MONOBANK else "cash_on_delivery"
-        default_method = "monobank" if obj.payment_method == Order.PAYMENT_MONOBANK else "cash_on_delivery"
+        if obj.payment_method == Order.PAYMENT_MONOBANK:
+            default_provider = "monobank"
+            default_method = "monobank"
+        elif obj.payment_method == Order.PAYMENT_LIQPAY:
+            default_provider = "liqpay"
+            default_method = "liqpay"
+        else:
+            default_provider = "cash_on_delivery"
+            default_method = "cash_on_delivery"
 
         if not _order_payment_table_exists():
             return {
@@ -258,15 +265,24 @@ class BackofficeOrderOperationalListSerializer(serializers.ModelSerializer):
                 "last_sync_at": None,
             }
 
+        provider = payment.provider
+        invoice_id = payment.monobank_invoice_id
+        reference = payment.monobank_reference
+        page_url = payment.monobank_page_url
+        if provider == payment.PROVIDER_LIQPAY:
+            invoice_id = payment.liqpay_payment_id
+            reference = payment.liqpay_order_id
+            page_url = payment.liqpay_page_url
+
         return {
             "provider": payment.provider,
             "method": payment.method,
             "status": payment.status,
             "amount": payment.amount,
             "currency": payment.currency,
-            "invoice_id": payment.monobank_invoice_id,
-            "reference": payment.monobank_reference,
-            "page_url": payment.monobank_page_url,
+            "invoice_id": invoice_id,
+            "reference": reference,
+            "page_url": page_url,
             "failure_reason": payment.failure_reason,
             "provider_created_at": payment.provider_created_at,
             "provider_modified_at": payment.provider_modified_at,

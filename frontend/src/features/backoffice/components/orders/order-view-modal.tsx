@@ -64,6 +64,9 @@ function resolvePaymentMethodLabel(value: string, t: Translator): string {
   if (normalized === "monobank") {
     return t("orders.payment.values.methods.monobank");
   }
+  if (normalized === "liqpay") {
+    return t("orders.payment.values.methods.liqpay");
+  }
   if (normalized === "card_placeholder") {
     return t("orders.payment.values.methods.card_placeholder");
   }
@@ -129,6 +132,9 @@ function resolveOrderPaymentMethodLabel(value: string, t: Translator): string {
   }
   if (normalized === "monobank") {
     return t("orders.payment.values.methods.monobank");
+  }
+  if (normalized === "liqpay") {
+    return t("orders.payment.values.methods.liqpay");
   }
   if (normalized === "card_placeholder") {
     return t("orders.payment.values.methods.card_placeholder");
@@ -429,6 +435,7 @@ export function OrderViewModal({
   const itemsLabel = extractLabel(t("orders.modals.view.summary.items", { count: 0 }));
   const activeActionLabel = actionOptions.find((option) => option.value === selectedAction)?.label ?? t("orders.actions.refresh");
   const isMonobankPayment = (order?.payment?.provider || "").trim().toLowerCase() === "monobank";
+  const isLiqPayPayment = (order?.payment?.provider || "").trim().toLowerCase() === "liqpay";
 
   const applyButtonStyle: CSSProperties = {
     borderColor: "#2563eb",
@@ -514,7 +521,7 @@ export function OrderViewModal({
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-semibold">{t("orders.payment.title")}</p>
                     <div className="flex items-center gap-2">
-                      {isMonobankPayment && order.payment?.page_url ? (
+                      {(isMonobankPayment || isLiqPayPayment) && order.payment?.page_url ? (
                         <a
                           href={order.payment.page_url}
                           target="_blank"
@@ -534,7 +541,7 @@ export function OrderViewModal({
                           aria-label={t("orders.payment.refreshStatus")}
                           disabled={Boolean(paymentRefreshing || paymentRefreshDisabled)}
                         >
-                          <RefreshCw className={`h-4 w-4 ${paymentRefreshing ? "animate-spin" : ""}`} />
+                          <RefreshCw className="h-4 w-4 animate-spin" style={{ animationDuration: "2.2s" }} />
                         </button>
                       ) : null}
                     </div>
@@ -555,7 +562,7 @@ export function OrderViewModal({
                       bold
                     />
                     <ValueField label={t("orders.payment.lastSyncAt")} value={formatBackofficeDate(order.payment?.last_sync_at)} />
-                    {isMonobankPayment ? (
+                    {(isMonobankPayment || isLiqPayPayment) ? (
                       <>
                         <ValueField label={t("orders.payment.invoiceId")} value={order.payment?.invoice_id || "-"} mono />
                         <ValueField label={t("orders.payment.reference")} value={order.payment?.reference || "-"} />
@@ -702,7 +709,7 @@ export function OrderViewModal({
                           disabled={Boolean(actionLoading)}
                           aria-label={activeActionLabel}
                         >
-                          <RefreshCw className={`h-4 w-4 ${actionLoading ? "animate-spin" : ""}`} />
+                          <RefreshCw className="h-4 w-4 animate-spin" style={{ animationDuration: "2.2s" }} />
                         </button>
                       </BackofficeTooltip>
                     </div>

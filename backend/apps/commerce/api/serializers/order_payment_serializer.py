@@ -4,9 +4,9 @@ from apps.commerce.models import OrderPayment
 
 
 class OrderPaymentSerializer(serializers.ModelSerializer):
-    invoice_id = serializers.CharField(source="monobank_invoice_id", read_only=True)
-    reference = serializers.CharField(source="monobank_reference", read_only=True)
-    page_url = serializers.CharField(source="monobank_page_url", read_only=True)
+    invoice_id = serializers.SerializerMethodField(read_only=True)
+    reference = serializers.SerializerMethodField(read_only=True)
+    page_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = OrderPayment
@@ -25,3 +25,21 @@ class OrderPaymentSerializer(serializers.ModelSerializer):
             "last_webhook_received_at",
             "last_sync_at",
         )
+
+    def get_invoice_id(self, obj: OrderPayment) -> str:
+        provider = (obj.provider or "").strip().lower()
+        if provider == OrderPayment.PROVIDER_LIQPAY:
+            return obj.liqpay_payment_id or ""
+        return obj.monobank_invoice_id or ""
+
+    def get_reference(self, obj: OrderPayment) -> str:
+        provider = (obj.provider or "").strip().lower()
+        if provider == OrderPayment.PROVIDER_LIQPAY:
+            return obj.liqpay_order_id or ""
+        return obj.monobank_reference or ""
+
+    def get_page_url(self, obj: OrderPayment) -> str:
+        provider = (obj.provider or "").strip().lower()
+        if provider == OrderPayment.PROVIDER_LIQPAY:
+            return obj.liqpay_page_url or ""
+        return obj.monobank_page_url or ""

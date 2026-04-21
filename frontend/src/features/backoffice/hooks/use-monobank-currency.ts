@@ -23,7 +23,7 @@ function extractCooldownSecondsFromMessage(message: string): number | null {
 
 export function useMonobankCurrency({ t }: { t: (key: string, values?: Record<string, string | number>) => string }) {
   const { token } = useAuth();
-  const { showApiError, showWarning } = useBackofficeFeedback();
+  const { showApiError, showWarning, showInfo } = useBackofficeFeedback();
   const [data, setData] = useState<BackofficeMonobankCurrencyResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshCooldown, setIsRefreshCooldown] = useState(false);
@@ -37,6 +37,9 @@ export function useMonobankCurrency({ t }: { t: (key: string, values?: Record<st
     if (forceRefresh && isRefreshCooldown) {
       showWarning(t("toast.errors.cooldownSeconds", { seconds: CURRENCY_REFRESH_COOLDOWN_SECONDS }));
       return;
+    }
+    if (forceRefresh) {
+      showInfo(t("payments.messages.currencyRefreshing"));
     }
     setIsLoading(true);
     try {
@@ -56,7 +59,7 @@ export function useMonobankCurrency({ t }: { t: (key: string, values?: Record<st
     } finally {
       setIsLoading(false);
     }
-  }, [isRefreshCooldown, showApiError, showWarning, t, token]);
+  }, [isRefreshCooldown, showApiError, showInfo, showWarning, t, token]);
 
   useEffect(() => {
     void load(false);

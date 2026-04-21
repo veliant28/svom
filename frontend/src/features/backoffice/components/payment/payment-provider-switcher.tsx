@@ -5,11 +5,12 @@ export function PaymentProviderSwitcher({
   onChange,
   labels,
 }: {
-  active: "mono" | "nova";
-  onChange: (provider: "mono" | "nova") => void;
+  active: "mono" | "nova" | "liq";
+  onChange: (provider: "mono" | "nova" | "liq") => void;
   labels: {
     mono: string;
     nova: string;
+    liq: string;
   };
 }) {
   const { theme } = useTheme();
@@ -17,6 +18,8 @@ export function PaymentProviderSwitcher({
   const monoActiveBackground = isDark ? "#ffffff" : "#000000";
   const monoActiveText = isDark ? "#111111" : "#ffffff";
   const novaActiveBackground = "#690DD3";
+  const liqActiveBackground = isDark ? "#D8D8D8" : "#A5A5A5";
+  const liqActiveText = "#111111";
 
   return (
     <div
@@ -53,6 +56,21 @@ export function PaymentProviderSwitcher({
         onClick={() => onChange("nova")}
       >
         {labels.nova}
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={active === "liq"}
+        className="h-10 rounded-lg border px-4 text-sm transition-colors"
+        style={{
+          borderColor: active === "liq" ? liqActiveBackground : "var(--border)",
+          backgroundColor: active === "liq" ? liqActiveBackground : "var(--surface-2)",
+          color: active === "liq" ? liqActiveText : "var(--text)",
+          fontWeight: active === "liq" ? 700 : 500,
+        }}
+        onClick={() => onChange("liq")}
+      >
+        {labels.liq}
       </button>
     </div>
   );

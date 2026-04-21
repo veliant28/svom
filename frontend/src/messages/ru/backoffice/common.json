@@ -1012,11 +1012,13 @@
           "values": {
             "providers": {
               "cash_on_delivery": "Наложенный платеж",
-              "monobank": "Monobank"
+              "monobank": "Monobank",
+              "liqpay": "LiqPay"
             },
             "methods": {
               "cash_on_delivery": "Наложенный платеж",
               "monobank": "Monobank",
+              "liqpay": "LiqPay",
               "card_placeholder": "Оплата картой"
             },
             "statuses": {
@@ -1132,6 +1134,7 @@
         "providers": {
           "mono": "Mono",
           "nova": "Nova",
+          "liq": "Liq",
           "novaPlaceholder": "Интеграция Nova Pay в разработке."
         },
         "monobank": {
@@ -1171,16 +1174,33 @@
           "save": "Сохранить настройки",
           "saving": "Сохраняем..."
         },
+        "liqpay": {
+          "title": "Настройки LiqPay",
+          "helper": "Публичный и приватный ключ LiqPay хранятся на backend в БД.",
+          "enabled": "Включено",
+          "publicKey": "Public key",
+          "privateKey": "Private key",
+          "publicKeyMasked": "Сохранённый публичный ключ",
+          "privateKeyMasked": "Сохранённый приватный ключ",
+          "serverUrl": "Server URL (callback)",
+          "resultUrl": "Result URL (redirect)",
+          "save": "Сохранить настройки",
+          "saving": "Сохраняем..."
+        },
         "messages": {
           "loadSettingsFailed": "Не удалось загрузить настройки Monobank.",
           "saveSettingsFailed": "Не удалось сохранить настройки Monobank.",
           "settingsSaved": "Настройки Monobank сохранены.",
           "connectionFailed": "Не удалось проверить соединение Monobank.",
           "connectionOk": "Соединение Monobank успешно.",
+          "currencyRefreshing": "Загрузка курсов Monobank...",
           "currencyFailed": "Не удалось загрузить курсы валют Monobank.",
           "loadNovaSettingsFailed": "Не удалось загрузить настройки Nova Pay.",
           "saveNovaSettingsFailed": "Не удалось сохранить настройки Nova Pay.",
-          "novaSettingsSaved": "Настройки Nova Pay сохранены."
+          "novaSettingsSaved": "Настройки Nova Pay сохранены.",
+          "loadLiqpaySettingsFailed": "Не удалось загрузить настройки LiqPay.",
+          "saveLiqpaySettingsFailed": "Не удалось сохранить настройки LiqPay.",
+          "liqpaySettingsSaved": "Настройки LiqPay сохранены."
         }
       }
     }

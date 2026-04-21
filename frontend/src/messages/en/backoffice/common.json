@@ -1012,11 +1012,13 @@
           "values": {
             "providers": {
               "cash_on_delivery": "Cash on delivery",
-              "monobank": "Monobank"
+              "monobank": "Monobank",
+              "liqpay": "LiqPay"
             },
             "methods": {
               "cash_on_delivery": "Cash on delivery",
               "monobank": "Monobank",
+              "liqpay": "LiqPay",
               "card_placeholder": "Card payment"
             },
             "statuses": {
@@ -1132,6 +1134,7 @@
         "providers": {
           "mono": "Mono",
           "nova": "Nova",
+          "liq": "Liq",
           "novaPlaceholder": "Nova Pay integration is in development."
         },
         "monobank": {
@@ -1171,16 +1174,33 @@
           "save": "Save settings",
           "saving": "Saving..."
         },
+        "liqpay": {
+          "title": "LiqPay settings",
+          "helper": "LiqPay public and private keys are stored on backend in DB.",
+          "enabled": "Enabled",
+          "publicKey": "Public key",
+          "privateKey": "Private key",
+          "publicKeyMasked": "Stored public key",
+          "privateKeyMasked": "Stored private key",
+          "serverUrl": "Server URL (callback)",
+          "resultUrl": "Result URL (redirect)",
+          "save": "Save settings",
+          "saving": "Saving..."
+        },
         "messages": {
           "loadSettingsFailed": "Failed to load Monobank settings.",
           "saveSettingsFailed": "Failed to save Monobank settings.",
           "settingsSaved": "Monobank settings saved.",
           "connectionFailed": "Failed to test Monobank connection.",
           "connectionOk": "Monobank connection successful.",
+          "currencyRefreshing": "Loading Monobank rates...",
           "currencyFailed": "Failed to load Monobank currency rates.",
           "loadNovaSettingsFailed": "Failed to load Nova Pay settings.",
           "saveNovaSettingsFailed": "Failed to save Nova Pay settings.",
-          "novaSettingsSaved": "Nova Pay settings saved."
+          "novaSettingsSaved": "Nova Pay settings saved.",
+          "loadLiqpaySettingsFailed": "Failed to load LiqPay settings.",
+          "saveLiqpaySettingsFailed": "Failed to save LiqPay settings.",
+          "liqpaySettingsSaved": "LiqPay settings saved."
         }
       }
     }

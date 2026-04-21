@@ -38,6 +38,9 @@ def get_order_payment(order: Order) -> OrderPayment:
     if order.payment_method == Order.PAYMENT_MONOBANK:
         provider = OrderPayment.PROVIDER_MONOBANK
         method = OrderPayment.METHOD_MONOBANK
+    elif order.payment_method == Order.PAYMENT_LIQPAY:
+        provider = OrderPayment.PROVIDER_LIQPAY
+        method = OrderPayment.METHOD_LIQPAY
 
     payment, _ = OrderPayment.objects.get_or_create(
         order=order,

@@ -103,6 +103,9 @@ function resolvePaymentMethodLabel(value: Order["payment_method"], locale: strin
   if (value === "monobank") {
     return "Monobank";
   }
+  if (value === "liqpay") {
+    return "LiqPay";
+  }
   if (normalizedLocale.startsWith("uk")) {
     return "Оплата карткою";
   }
@@ -277,6 +280,7 @@ function MonopayInlineButton({
 
 export function AccountOrderDetailPage({ orderId }: { orderId: string }) {
   const t = useTranslations("commerce.orders");
+  const tCheckout = useTranslations("commerce.checkout");
   const locale = useLocale();
   const { theme } = useTheme();
   const { token, isAuthenticated } = useAuth();
@@ -349,6 +353,7 @@ export function AccountOrderDetailPage({ orderId }: { orderId: string }) {
   const statusTone = resolveOrderStatusChipTone(order.status);
   const paymentLabel = resolvePaymentMethodLabel(order.payment_method, locale);
   const monobankPageUrl = order.payment_method === "monobank" ? (order.payment?.page_url || "").trim() : "";
+  const liqpayPageUrl = order.payment_method === "liqpay" ? (order.payment?.page_url || "").trim() : "";
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-8">
@@ -396,6 +401,16 @@ export function AccountOrderDetailPage({ orderId }: { orderId: string }) {
                   </div>
                   {monobankPageUrl ? (
                     <MonopayInlineButton token={token} orderId={order.id} pageUrl={monobankPageUrl} theme={theme} />
+                  ) : liqpayPageUrl ? (
+                    <a
+                      href={liqpayPageUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex h-10 items-center justify-center rounded-md border px-3 text-sm font-semibold"
+                      style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                    >
+                      {tCheckout("payment.openLiqpayPage")}
+                    </a>
                   ) : null}
                 </div>
               </div>

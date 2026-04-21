@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from apps.commerce.models import MonobankSettings, NovaPaySettings, OrderPayment
+from apps.commerce.models import LiqPaySettings, MonobankSettings, NovaPaySettings, OrderPayment
 
 
 class MonobankSettingsSerializer(serializers.ModelSerializer):
@@ -84,6 +84,47 @@ class NovaPaySettingsSerializer(serializers.ModelSerializer):
         return instance
 
 
+class LiqPaySettingsSerializer(serializers.ModelSerializer):
+    public_key = serializers.CharField(write_only=True, required=False, allow_blank=False, trim_whitespace=True)
+    private_key = serializers.CharField(write_only=True, required=False, allow_blank=False, trim_whitespace=True)
+    public_key_masked = serializers.CharField(read_only=True)
+    private_key_masked = serializers.CharField(read_only=True)
+    server_url = serializers.CharField(read_only=True)
+    result_url = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = LiqPaySettings
+        fields = (
+            "is_enabled",
+            "public_key",
+            "private_key",
+            "public_key_masked",
+            "private_key_masked",
+            "server_url",
+            "result_url",
+        )
+
+    def to_representation(self, instance: LiqPaySettings) -> dict:
+        data = super().to_representation(instance)
+        data["public_key_masked"] = instance.public_key_masked
+        data["private_key_masked"] = instance.private_key_masked
+        data["server_url"] = self.context.get("server_url", "")
+        data["result_url"] = self.context.get("result_url", "")
+        return data
+
+    def update(self, instance: LiqPaySettings, validated_data: dict) -> LiqPaySettings:
+        public_key = validated_data.pop("public_key", None)
+        private_key = validated_data.pop("private_key", None)
+        if public_key is not None:
+            instance.public_key = public_key.strip()
+        if private_key is not None:
+            instance.private_key = private_key.strip()
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        instance.save()
+        return instance
+
+
 class MonobankConnectionCheckSerializer(serializers.Serializer):
     ok = serializers.BooleanField()
     message = serializers.CharField()
@@ -106,9 +147,9 @@ class MonobankCurrencyResponseSerializer(serializers.Serializer):
 
 
 class BackofficeOrderPaymentSerializer(serializers.ModelSerializer):
-    invoice_id = serializers.CharField(source="monobank_invoice_id", read_only=True)
-    reference = serializers.CharField(source="monobank_reference", read_only=True)
-    page_url = serializers.CharField(source="monobank_page_url", read_only=True)
+    invoice_id = serializers.SerializerMethodField(read_only=True)
+    reference = serializers.SerializerMethodField(read_only=True)
+    page_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = OrderPayment
@@ -127,6 +168,24 @@ class BackofficeOrderPaymentSerializer(serializers.ModelSerializer):
             "last_webhook_received_at",
             "last_sync_at",
         )
+
+    def get_invoice_id(self, obj: OrderPayment) -> str:
+        provider = (obj.provider or "").strip().lower()
+        if provider == OrderPayment.PROVIDER_LIQPAY:
+            return obj.liqpay_payment_id or ""
+        return obj.monobank_invoice_id or ""
+
+    def get_reference(self, obj: OrderPayment) -> str:
+        provider = (obj.provider or "").strip().lower()
+        if provider == OrderPayment.PROVIDER_LIQPAY:
+            return obj.liqpay_order_id or ""
+        return obj.monobank_reference or ""
+
+    def get_page_url(self, obj: OrderPayment) -> str:
+        provider = (obj.provider or "").strip().lower()
+        if provider == OrderPayment.PROVIDER_LIQPAY:
+            return obj.liqpay_page_url or ""
+        return obj.monobank_page_url or ""
 
 
 class BackofficeMonobankPaymentActionSerializer(serializers.Serializer):

@@ -8,18 +8,22 @@ from apps.core.db.mixins import TimestampedMixin, UUIDPrimaryKeyMixin
 
 class OrderPayment(UUIDPrimaryKeyMixin, TimestampedMixin):
     PROVIDER_MONOBANK = "monobank"
+    PROVIDER_LIQPAY = "liqpay"
     PROVIDER_COD = "cash_on_delivery"
 
     PROVIDER_CHOICES = (
         (PROVIDER_MONOBANK, _("Monobank")),
+        (PROVIDER_LIQPAY, _("LiqPay")),
         (PROVIDER_COD, _("Наложенный платеж")),
     )
 
     METHOD_MONOBANK = "monobank"
+    METHOD_LIQPAY = "liqpay"
     METHOD_CASH_ON_DELIVERY = "cash_on_delivery"
 
     METHOD_CHOICES = (
         (METHOD_MONOBANK, _("Monobank")),
+        (METHOD_LIQPAY, _("LiqPay")),
         (METHOD_CASH_ON_DELIVERY, _("Наложенный платеж")),
     )
 
@@ -59,6 +63,9 @@ class OrderPayment(UUIDPrimaryKeyMixin, TimestampedMixin):
     monobank_invoice_id = models.CharField(_("Invoice ID Monobank"), max_length=128, blank=True)
     monobank_reference = models.CharField(_("Reference Monobank"), max_length=128, blank=True)
     monobank_page_url = models.URLField(_("Page URL Monobank"), max_length=1024, blank=True)
+    liqpay_payment_id = models.CharField(_("Payment ID LiqPay"), max_length=128, blank=True)
+    liqpay_order_id = models.CharField(_("Order ID LiqPay"), max_length=128, blank=True)
+    liqpay_page_url = models.URLField(_("Page URL LiqPay"), max_length=1024, blank=True)
 
     failure_reason = models.TextField(_("Причина ошибки"), blank=True)
     provider_created_at = models.DateTimeField(_("Создан у провайдера"), blank=True, null=True)

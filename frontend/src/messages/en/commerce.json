@@ -115,8 +115,10 @@
         "widgetFailedFallback": "Monobank widget is unavailable. Use payment page fallback.",
         "novapayComingSoon": "NovaPay will be available soon.",
         "liqpay": "LiqPay",
-        "liqpayHint": "LiqPay payment will be available soon.",
-        "liqpayComingSoon": "LiqPay will be available soon."
+        "liqpayHint": "Online payment via LiqPay checkout page.",
+        "openLiqpayPage": "Open LiqPay payment page",
+        "liqpayComingSoon": "LiqPay will be available soon.",
+        "liqpayPageUnavailable": "LiqPay payment page is not ready yet. Please refresh the order later."
       },
       "actions": {
         "submit": "Place order",

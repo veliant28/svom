@@ -7,6 +7,7 @@ from .checkout_views import (
     CheckoutOrderMonobankWidgetAPIView,
     CheckoutPreviewAPIView,
     CheckoutSubmitAPIView,
+    LiqPayWebhookAPIView,
     MonobankWebhookAPIView,
 )
 from .order_views import OrderDetailAPIView, OrderListAPIView
@@ -24,6 +25,7 @@ __all__ = [
     "CheckoutMonobankSelectorWidgetAPIView",
     "CheckoutOrderMonobankWidgetAPIView",
     "MonobankWebhookAPIView",
+    "LiqPayWebhookAPIView",
     "CheckoutNovaPoshtaSettlementsLookupAPIView",
     "CheckoutNovaPoshtaWarehousesLookupAPIView",
     "CheckoutNovaPoshtaStreetsLookupAPIView",

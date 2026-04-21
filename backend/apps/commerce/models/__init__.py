@@ -1,5 +1,6 @@
 from .cart import Cart
 from .cart_item import CartItem
+from .liqpay_settings import LiqPaySettings
 from .nova_poshta_sender_profile import NovaPoshtaSenderProfile
 from .novapay_settings import NovaPaySettings
 from .order import Order
@@ -17,6 +18,7 @@ __all__ = [
     "OrderPayment",
     "MonobankSettings",
     "NovaPaySettings",
+    "LiqPaySettings",
     "OrderItem",
     "NovaPoshtaSenderProfile",
     "OrderNovaPoshtaWaybill",

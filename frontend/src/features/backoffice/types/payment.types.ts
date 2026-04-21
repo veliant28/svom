@@ -17,6 +17,14 @@ export type BackofficeNovaPaySettings = {
   api_token_masked: string;
 };
 
+export type BackofficeLiqPaySettings = {
+  is_enabled: boolean;
+  public_key_masked: string;
+  private_key_masked: string;
+  server_url: string;
+  result_url: string;
+};
+
 export type BackofficeMonobankConnectionCheck = {
   ok: boolean;
   message: string;

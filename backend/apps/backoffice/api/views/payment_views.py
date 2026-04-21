@@ -10,6 +10,7 @@ from apps.backoffice.api.serializers import (
     BackofficeMonobankPaymentActionResponseSerializer,
     BackofficeMonobankPaymentActionSerializer,
     BackofficeOrderPaymentSerializer,
+    LiqPaySettingsSerializer,
     MonobankConnectionCheckSerializer,
     MonobankCurrencyResponseSerializer,
     MonobankSettingsSerializer,
@@ -25,10 +26,15 @@ from apps.commerce.services.monobank import (
     get_currency_rates,
     get_monobank_settings,
     get_order_payment,
-    get_urls_for_request,
+    get_urls_for_request as get_monobank_urls_for_request,
     refresh_invoice_status,
     remove_invoice,
     test_monobank_connection,
+)
+from apps.commerce.services.liqpay import (
+    get_liqpay_settings,
+    get_urls_for_request as get_liqpay_urls_for_request,
+    refresh_liqpay_payment_status,
 )
 from apps.commerce.services.novapay import get_novapay_settings
 
@@ -36,13 +42,13 @@ from apps.commerce.services.novapay import get_novapay_settings
 class BackofficeMonobankSettingsAPIView(BackofficeAPIView):
     def get(self, request):
         settings = get_monobank_settings()
-        urls = get_urls_for_request(request=request)
+        urls = get_monobank_urls_for_request(request=request)
         serializer = MonobankSettingsSerializer(settings, context=urls)
         return Response(serializer.data)
 
     def patch(self, request):
         settings = get_monobank_settings()
-        urls = get_urls_for_request(request=request)
+        urls = get_monobank_urls_for_request(request=request)
         serializer = MonobankSettingsSerializer(settings, data=request.data, partial=True, context=urls)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -78,6 +84,22 @@ class BackofficeNovaPaySettingsAPIView(BackofficeAPIView):
         return Response(serializer.data)
 
 
+class BackofficeLiqPaySettingsAPIView(BackofficeAPIView):
+    def get(self, request):
+        settings = get_liqpay_settings()
+        urls = get_liqpay_urls_for_request(request=request)
+        serializer = LiqPaySettingsSerializer(settings, context=urls)
+        return Response(serializer.data)
+
+    def patch(self, request):
+        settings = get_liqpay_settings()
+        urls = get_liqpay_urls_for_request(request=request)
+        serializer = LiqPaySettingsSerializer(settings, data=request.data, partial=True, context=urls)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
 class BackofficeOrderPaymentRefreshAPIView(BackofficeAPIView):
     def post(self, request, order_id):
         order = get_object_or_404(Order, id=order_id)
@@ -85,6 +107,9 @@ class BackofficeOrderPaymentRefreshAPIView(BackofficeAPIView):
 
         if payment.provider == payment.PROVIDER_MONOBANK and payment.monobank_invoice_id:
             refresh_invoice_status(payment=payment)
+            payment.refresh_from_db()
+        elif payment.provider == payment.PROVIDER_LIQPAY and payment.liqpay_order_id:
+            refresh_liqpay_payment_status(payment=payment)
             payment.refresh_from_db()
 
         serializer = BackofficeOrderPaymentSerializer(payment)

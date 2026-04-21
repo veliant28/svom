@@ -10,6 +10,7 @@ from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 
 from apps.commerce.models import Order, OrderItem
+from apps.commerce.services.liqpay.service import LiqPayApiError, build_checkout_data
 from apps.commerce.services.cart_calculations import calculate_cart_totals, get_line_total, quantize_money
 from apps.commerce.services.cart_service import get_or_create_user_cart
 from apps.commerce.services.delivery_snapshot import build_delivery_snapshot_from_checkout
@@ -78,7 +79,15 @@ def build_checkout_preview(*, user: User, delivery_method: str | None = None) ->
 
 
 @transaction.atomic
-def submit_checkout(*, user: User, payload: dict, monobank_webhook_url: str = "", monobank_redirect_url: str = "") -> Order:
+def submit_checkout(
+    *,
+    user: User,
+    payload: dict,
+    monobank_webhook_url: str = "",
+    monobank_redirect_url: str = "",
+    liqpay_server_url: str = "",
+    liqpay_result_url: str = "",
+) -> Order:
     cart = get_or_create_user_cart(user)
     # Lock cart rows first without joined nullable tables; fetch relations in a separate query.
     locked_item_ids = list(cart.items.select_for_update().values_list("id", flat=True))
@@ -231,7 +240,21 @@ def submit_checkout(*, user: User, payload: dict, monobank_webhook_url: str = ""
     if payment_method == Order.PAYMENT_MONOBANK:
         payment.provider = payment.PROVIDER_MONOBANK
         payment.method = payment.METHOD_MONOBANK
-        payment.save(update_fields=("provider", "method", "amount", "currency", "updated_at"))
+        payment.liqpay_payment_id = ""
+        payment.liqpay_order_id = ""
+        payment.liqpay_page_url = ""
+        payment.save(
+            update_fields=(
+                "provider",
+                "method",
+                "amount",
+                "currency",
+                "liqpay_payment_id",
+                "liqpay_order_id",
+                "liqpay_page_url",
+                "updated_at",
+            )
+        )
         try:
             create_invoice_for_order(
                 order=order,
@@ -240,12 +263,60 @@ def submit_checkout(*, user: User, payload: dict, monobank_webhook_url: str = ""
             )
         except MonobankApiError as exc:
             raise ValidationError({"payment_method": str(exc)}) from exc
+    elif payment_method == Order.PAYMENT_LIQPAY:
+        payment.provider = payment.PROVIDER_LIQPAY
+        payment.method = payment.METHOD_LIQPAY
+        payment.status = payment.STATUS_CREATED
+        payment.monobank_invoice_id = ""
+        payment.monobank_reference = ""
+        payment.monobank_page_url = ""
+        payment.failure_reason = ""
+        try:
+            checkout_data = build_checkout_data(
+                order=order,
+                server_url=liqpay_server_url,
+                result_url=liqpay_result_url,
+            )
+        except (ValidationError, LiqPayApiError) as exc:
+            raise ValidationError({"payment_method": str(exc)}) from exc
+
+        payment.liqpay_order_id = checkout_data.order_id
+        payment.liqpay_page_url = checkout_data.checkout_url
+        payment.raw_create_payload = {
+            "data": checkout_data.data,
+            "signature": checkout_data.signature,
+        }
+        payment.raw_create_response = {
+            "checkout_url": checkout_data.checkout_url,
+        }
+        payment.save(
+            update_fields=(
+                "provider",
+                "method",
+                "status",
+                "amount",
+                "currency",
+                "monobank_invoice_id",
+                "monobank_reference",
+                "monobank_page_url",
+                "liqpay_order_id",
+                "liqpay_page_url",
+                "failure_reason",
+                "raw_create_payload",
+                "raw_create_response",
+                "updated_at",
+            )
+        )
     else:
         payment.provider = payment.PROVIDER_COD
         payment.method = payment.METHOD_CASH_ON_DELIVERY
         payment.status = payment.STATUS_PENDING
         payment.monobank_invoice_id = ""
+        payment.monobank_reference = ""
         payment.monobank_page_url = ""
+        payment.liqpay_payment_id = ""
+        payment.liqpay_order_id = ""
+        payment.liqpay_page_url = ""
         payment.failure_reason = ""
         payment.save(
             update_fields=(
@@ -255,7 +326,11 @@ def submit_checkout(*, user: User, payload: dict, monobank_webhook_url: str = ""
                 "amount",
                 "currency",
                 "monobank_invoice_id",
+                "monobank_reference",
                 "monobank_page_url",
+                "liqpay_payment_id",
+                "liqpay_order_id",
+                "liqpay_page_url",
                 "failure_reason",
                 "updated_at",
             )

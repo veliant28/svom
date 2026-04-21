@@ -11,6 +11,7 @@ from apps.commerce.api.views import (
     CheckoutOrderMonobankWidgetAPIView,
     CheckoutPreviewAPIView,
     CheckoutSubmitAPIView,
+    LiqPayWebhookAPIView,
     MonobankWebhookAPIView,
     OrderDetailAPIView,
     OrderListAPIView,
@@ -41,6 +42,7 @@ urlpatterns = [
         name="checkout-order-monobank-widget",
     ),
     path("payments/monobank/webhook/", MonobankWebhookAPIView.as_view(), name="payments-monobank-webhook"),
+    path("payments/liqpay/webhook/", LiqPayWebhookAPIView.as_view(), name="payments-liqpay-webhook"),
     path(
         "checkout/lookups/nova-poshta/settlements/",
         CheckoutNovaPoshtaSettlementsLookupAPIView.as_view(),

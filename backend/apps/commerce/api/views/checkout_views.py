@@ -25,6 +25,7 @@ from apps.commerce.services import (
     build_widget_init_payload,
     get_monobank_settings,
     get_order_payment,
+    handle_liqpay_webhook,
     submit_checkout,
 )
 from apps.commerce.services.nova_poshta import NovaPoshtaLookupService, NovaPoshtaSenderProfileService
@@ -70,6 +71,8 @@ class CheckoutSubmitAPIView(APIView):
                 payload=serializer.validated_data,
                 monobank_webhook_url=request.build_absolute_uri("/api/commerce/payments/monobank/webhook/"),
                 monobank_redirect_url=request.build_absolute_uri("/checkout"),
+                liqpay_server_url=request.build_absolute_uri("/api/commerce/payments/liqpay/webhook/"),
+                liqpay_result_url=request.build_absolute_uri("/checkout"),
             )
         except DjangoValidationError as exc:
             raise ValidationError(detail=exc.message_dict)
@@ -174,6 +177,33 @@ class MonobankWebhookAPIView(APIView):
                 "ok": True,
                 "order_id": str(payment.order_id),
                 "invoice_id": payment.monobank_invoice_id,
+                "applied": applied,
+            }
+        )
+
+
+class LiqPayWebhookAPIView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        data = request.data.get("data", "")
+        signature = request.data.get("signature", "")
+
+        try:
+            payment, applied = handle_liqpay_webhook(
+                data=str(data or ""),
+                signature=str(signature or ""),
+            )
+        except DjangoValidationError as exc:
+            detail = exc.message_dict if hasattr(exc, "message_dict") else getattr(exc, "messages", [str(exc)])
+            return Response({"detail": detail}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {
+                "ok": True,
+                "order_id": str(payment.order_id),
+                "liqpay_order_id": payment.liqpay_order_id,
                 "applied": applied,
             }
         )

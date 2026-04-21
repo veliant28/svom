@@ -6,6 +6,7 @@ import type {
   BackofficeOrderPayment,
 } from "@/features/backoffice/types/orders.types";
 import type {
+  BackofficeLiqPaySettings,
   BackofficeMonobankConnectionCheck,
   BackofficeMonobankCurrencyResponse,
   BackofficeMonobankSettings,
@@ -89,6 +90,26 @@ export async function updateBackofficeNovaPaySettings(
 ): Promise<BackofficeNovaPaySettings> {
   return patchJson<BackofficeNovaPaySettings, Record<string, unknown>>(
     "/backoffice/payments/novapay/settings/",
+    payload,
+    undefined,
+    { token },
+  );
+}
+
+export async function getBackofficeLiqPaySettings(token: string): Promise<BackofficeLiqPaySettings> {
+  return getJson<BackofficeLiqPaySettings>("/backoffice/payments/liqpay/settings/", undefined, { token });
+}
+
+export async function updateBackofficeLiqPaySettings(
+  token: string,
+  payload: Partial<{
+    is_enabled: boolean;
+    public_key: string;
+    private_key: string;
+  }>,
+): Promise<BackofficeLiqPaySettings> {
+  return patchJson<BackofficeLiqPaySettings, Record<string, unknown>>(
+    "/backoffice/payments/liqpay/settings/",
     payload,
     undefined,
     { token },

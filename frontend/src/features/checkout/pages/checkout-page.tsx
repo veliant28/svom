@@ -642,10 +642,6 @@ export function CheckoutPage() {
               showError(t("payment.novapayComingSoon"));
               return;
             }
-            if (paymentMethod === "liqpay") {
-              showError(t("payment.liqpayComingSoon"));
-              return;
-            }
 
             setIsSubmitting(true);
             try {
@@ -688,6 +684,14 @@ export function CheckoutPage() {
                 } finally {
                   setMonobankWidgetLoading(false);
                 }
+              } else if (paymentMethod === "liqpay") {
+                const checkoutPageUrl = (order.payment?.page_url || "").trim();
+                if (checkoutPageUrl) {
+                  window.location.assign(checkoutPageUrl);
+                  return;
+                }
+                showError(t("payment.liqpayPageUnavailable"));
+                setMonobankWidgetState(null);
               } else {
                 setMonobankWidgetState(null);
               }

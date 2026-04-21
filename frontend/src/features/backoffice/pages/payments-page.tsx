@@ -5,21 +5,24 @@ import { useTranslations } from "next-intl";
 
 import { MonobankRatesCard } from "@/features/backoffice/components/payment/monobank-rates-card";
 import { MonobankSettingsForm } from "@/features/backoffice/components/payment/monobank-settings-form";
+import { LiqPaySettingsForm } from "@/features/backoffice/components/payment/liqpay-settings-form";
 import { NovaPaySettingsForm } from "@/features/backoffice/components/payment/novapay-settings-form";
 import { PaymentProviderSwitcher } from "@/features/backoffice/components/payment/payment-provider-switcher";
 import { PaymentStatusCard } from "@/features/backoffice/components/payment/payment-status-card";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
+import { useLiqPaySettings } from "@/features/backoffice/hooks/use-liqpay-settings";
 import { useMonobankCurrency } from "@/features/backoffice/hooks/use-monobank-currency";
 import { useNovaPaySettings } from "@/features/backoffice/hooks/use-novapay-settings";
 import { usePaymentSettings } from "@/features/backoffice/hooks/use-payment-settings";
 
 export function PaymentsPage() {
   const t = useTranslations("backoffice.common");
-  const [provider, setProvider] = useState<"mono" | "nova">("mono");
+  const [provider, setProvider] = useState<"mono" | "nova" | "liq">("mono");
 
   const settingsState = usePaymentSettings({ t });
   const currencyState = useMonobankCurrency({ t });
   const novaSettingsState = useNovaPaySettings({ t });
+  const liqpaySettingsState = useLiqPaySettings({ t });
 
   return (
     <section className="grid gap-4">
@@ -33,6 +36,7 @@ export function PaymentsPage() {
             labels={{
               mono: t("payments.providers.mono"),
               nova: t("payments.providers.nova"),
+              liq: t("payments.providers.liq"),
             }}
           />
         }
@@ -44,6 +48,14 @@ export function PaymentsPage() {
           isLoading={novaSettingsState.isLoading}
           isSaving={novaSettingsState.isSaving}
           onSave={novaSettingsState.save}
+          t={t}
+        />
+      ) : provider === "liq" ? (
+        <LiqPaySettingsForm
+          settings={liqpaySettingsState.settings}
+          isLoading={liqpaySettingsState.isLoading}
+          isSaving={liqpaySettingsState.isSaving}
+          onSave={liqpaySettingsState.save}
           t={t}
         />
       ) : (

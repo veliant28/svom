@@ -115,8 +115,10 @@
         "widgetFailedFallback": "Віджет Monobank недоступний. Скористайтесь сторінкою оплати.",
         "novapayComingSoon": "NovaPay скоро буде доступний.",
         "liqpay": "LiqPay",
-        "liqpayHint": "Оплата через LiqPay незабаром буде доступна.",
-        "liqpayComingSoon": "LiqPay скоро буде доступний."
+        "liqpayHint": "Онлайн-оплата через платіжну сторінку LiqPay.",
+        "openLiqpayPage": "Відкрити сторінку оплати LiqPay",
+        "liqpayComingSoon": "LiqPay скоро буде доступний.",
+        "liqpayPageUnavailable": "Сторінка оплати LiqPay поки не готова. Спробуйте оновити замовлення пізніше."
       },
       "actions": {
         "submit": "Оформити замовлення",

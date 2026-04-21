@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
 
+import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import { formatBackofficeDate } from "@/features/backoffice/lib/supplier-workspace";
 import type { BackofficeMonobankCurrencyResponse } from "@/features/backoffice/types/payment.types";
 
@@ -34,18 +36,19 @@ export function MonobankRatesCard({
     <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-semibold">{t("payments.monobank.currencyRates")}</p>
-        <button
-          type="button"
-          className="rounded-md border px-3 py-1 text-xs font-semibold"
-          style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-          onClick={onRefresh}
-          disabled={isRefreshButtonDisabled}
-        >
-          {t("payments.monobank.refreshRates")}
-        </button>
+        <BackofficeTooltip content={t("payments.monobank.refreshRates")} placement="top" align="center" wrapperClassName="inline-flex">
+          <button
+            type="button"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md border"
+            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+            onClick={onRefresh}
+            disabled={isRefreshButtonDisabled}
+            aria-label={t("payments.monobank.refreshRates")}
+          >
+            <RefreshCw className="h-4 w-4 animate-spin" style={{ animationDuration: "2.2s" }} />
+          </button>
+        </BackofficeTooltip>
       </div>
-
-      {normalizedLoading ? <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>{t("loading")}</p> : null}
 
       {rates?.rows?.length ? (
         <div className="mt-3 grid gap-2">
