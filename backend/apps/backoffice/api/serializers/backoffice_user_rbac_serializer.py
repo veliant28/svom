@@ -35,6 +35,8 @@ class BackofficeUserListSerializer(serializers.ModelSerializer):
             "email",
             "first_name",
             "last_name",
+            "middle_name",
+            "phone",
             "preferred_language",
             "is_active",
             "full_name",

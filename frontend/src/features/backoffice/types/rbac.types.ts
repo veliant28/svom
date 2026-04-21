@@ -24,6 +24,8 @@ export type BackofficeManagedUser = {
   email: string;
   first_name: string;
   last_name: string;
+  middle_name: string;
+  phone: string;
   preferred_language: "uk" | "ru" | "en";
   is_active: boolean;
   full_name: string;
@@ -34,8 +36,6 @@ export type BackofficeManagedUser = {
 
 export type BackofficeManagedUserDetail = BackofficeManagedUser & {
   username: string;
-  middle_name: string;
-  phone: string;
   is_staff: boolean;
   is_superuser: boolean;
   capabilities: BackofficeCapabilityCode[];
