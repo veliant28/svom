@@ -11,6 +11,7 @@ import type {
   BackofficeMonobankCurrencyResponse,
   BackofficeMonobankSettings,
   BackofficeNovaPaySettings,
+  BackofficePaymentConnectionCheck,
 } from "@/features/backoffice/types/payment.types";
 
 export async function getBackofficeMonobankSettings(token: string): Promise<BackofficeMonobankSettings> {
@@ -96,6 +97,15 @@ export async function updateBackofficeNovaPaySettings(
   );
 }
 
+export async function testBackofficeNovaPayConnection(token: string): Promise<BackofficePaymentConnectionCheck> {
+  return postJson<BackofficePaymentConnectionCheck, Record<string, never>>(
+    "/backoffice/payments/novapay/test-connection/",
+    {},
+    undefined,
+    { token },
+  );
+}
+
 export async function getBackofficeLiqPaySettings(token: string): Promise<BackofficeLiqPaySettings> {
   return getJson<BackofficeLiqPaySettings>("/backoffice/payments/liqpay/settings/", undefined, { token });
 }
@@ -111,6 +121,15 @@ export async function updateBackofficeLiqPaySettings(
   return patchJson<BackofficeLiqPaySettings, Record<string, unknown>>(
     "/backoffice/payments/liqpay/settings/",
     payload,
+    undefined,
+    { token },
+  );
+}
+
+export async function testBackofficeLiqPayConnection(token: string): Promise<BackofficePaymentConnectionCheck> {
+  return postJson<BackofficePaymentConnectionCheck, Record<string, never>>(
+    "/backoffice/payments/liqpay/test-connection/",
+    {},
     undefined,
     { token },
   );

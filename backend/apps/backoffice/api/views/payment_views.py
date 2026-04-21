@@ -15,6 +15,7 @@ from apps.backoffice.api.serializers import (
     MonobankCurrencyResponseSerializer,
     MonobankSettingsSerializer,
     NovaPaySettingsSerializer,
+    PaymentConnectionCheckSerializer,
 )
 from apps.backoffice.api.views._base import BackofficeAPIView
 from apps.commerce.models import Order
@@ -35,8 +36,9 @@ from apps.commerce.services.liqpay import (
     get_liqpay_settings,
     get_urls_for_request as get_liqpay_urls_for_request,
     refresh_liqpay_payment_status,
+    test_liqpay_connection,
 )
-from apps.commerce.services.novapay import get_novapay_settings
+from apps.commerce.services.novapay import get_novapay_settings, test_novapay_connection
 
 
 class BackofficeMonobankSettingsAPIView(BackofficeAPIView):
@@ -84,6 +86,13 @@ class BackofficeNovaPaySettingsAPIView(BackofficeAPIView):
         return Response(serializer.data)
 
 
+class BackofficeNovaPayConnectionTestAPIView(BackofficeAPIView):
+    def post(self, request):
+        result = test_novapay_connection()
+        serializer = PaymentConnectionCheckSerializer(result)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class BackofficeLiqPaySettingsAPIView(BackofficeAPIView):
     def get(self, request):
         settings = get_liqpay_settings()
@@ -98,6 +107,13 @@ class BackofficeLiqPaySettingsAPIView(BackofficeAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+class BackofficeLiqPayConnectionTestAPIView(BackofficeAPIView):
+    def post(self, request):
+        result = test_liqpay_connection()
+        serializer = PaymentConnectionCheckSerializer(result)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class BackofficeOrderPaymentRefreshAPIView(BackofficeAPIView):

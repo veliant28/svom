@@ -22,6 +22,7 @@ from .liqpay import (
     get_urls_for_request as get_liqpay_urls_for_request,
     handle_webhook as handle_liqpay_webhook,
     refresh_liqpay_payment_status,
+    test_liqpay_connection,
 )
 from .nova_poshta import (
     NovaPoshtaApiClient,
@@ -30,7 +31,7 @@ from .nova_poshta import (
     NovaPoshtaTrackingService,
     NovaPoshtaWaybillService,
 )
-from .novapay import get_novapay_settings
+from .novapay import get_novapay_settings, test_novapay_connection
 from .sellable_state import build_cart_item_warning, get_cart_item_sellable_snapshot, get_product_sellable_snapshot
 
 __all__ = [
@@ -63,12 +64,14 @@ __all__ = [
     "get_liqpay_urls_for_request",
     "handle_liqpay_webhook",
     "refresh_liqpay_payment_status",
+    "test_liqpay_connection",
     "NovaPoshtaApiClient",
     "NovaPoshtaLookupService",
     "NovaPoshtaSenderProfileService",
     "NovaPoshtaTrackingService",
     "NovaPoshtaWaybillService",
     "get_novapay_settings",
+    "test_novapay_connection",
     "get_product_sellable_snapshot",
     "get_cart_item_sellable_snapshot",
     "build_cart_item_warning",

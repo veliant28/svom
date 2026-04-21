@@ -4,6 +4,7 @@ import base64
 import hashlib
 import hmac
 import json
+import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone as dt_timezone
 from decimal import Decimal, InvalidOperation
@@ -109,6 +110,30 @@ def refresh_liqpay_payment_status(*, payment: OrderPayment) -> OrderPayment:
     response = _request_api(payload=request_payload, private_key=private_key)
     apply_payment_payload(payment=payment, payload=response, source="sync")
     return payment
+
+
+def test_liqpay_connection() -> dict[str, Any]:
+    settings = get_liqpay_settings()
+    public_key = (settings.public_key or "").strip()
+    private_key = (settings.private_key or "").strip()
+    if not public_key:
+        return _save_check_result(settings=settings, ok=False, message="LiqPay public key is not configured.")
+    if not private_key:
+        return _save_check_result(settings=settings, ok=False, message="LiqPay private key is not configured.")
+
+    request_payload: dict[str, Any] = {
+        "version": 3,
+        "public_key": public_key,
+        "action": "status",
+        "order_id": f"connect-check-{uuid.uuid4().hex}",
+    }
+    try:
+        response = _request_api(payload=request_payload, private_key=private_key)
+    except LiqPayApiError as exc:
+        return _save_check_result(settings=settings, ok=False, message=str(exc))
+
+    ok, message = _resolve_connection_result(response)
+    return _save_check_result(settings=settings, ok=ok, message=message)
 
 
 def handle_webhook(*, data: str, signature: str) -> tuple[OrderPayment, bool]:
@@ -248,6 +273,44 @@ def _request_api(*, payload: dict[str, Any], private_key: str) -> dict[str, Any]
     if not isinstance(parsed, dict):
         raise LiqPayApiError("LiqPay API returned an unsupported payload.")
     return parsed
+
+
+def _resolve_connection_result(payload: dict[str, Any]) -> tuple[bool, str]:
+    status = str(payload.get("status") or "").strip().lower()
+    err_code = str(payload.get("err_code") or payload.get("err") or "").strip()
+    err_description = str(payload.get("err_description") or payload.get("description") or "").strip()
+    combined = f"{err_code} {err_description}".lower()
+
+    auth_markers = ("signature", "public_key", "merchant", "auth", "token", "key", "unauthorized", "forbidden")
+    not_found_markers = ("not found", "not exist", "order", "invoice")
+
+    if any(marker in combined for marker in auth_markers):
+        return False, err_description or err_code or "LiqPay credentials are invalid."
+    if status in {"error", "failure"} and err_code and not any(marker in combined for marker in not_found_markers):
+        return False, err_description or err_code
+
+    if err_description:
+        return True, f"Connection successful ({err_description})."
+    return True, "Connection successful."
+
+
+def _save_check_result(*, settings: LiqPaySettings, ok: bool, message: str) -> dict[str, Any]:
+    now = timezone.now()
+    settings.last_connection_checked_at = now
+    settings.last_connection_ok = bool(ok)
+    settings.last_connection_message = str(message or "").strip()
+    settings.save(
+        update_fields=(
+            "last_connection_checked_at",
+            "last_connection_ok",
+            "last_connection_message",
+            "updated_at",
+        )
+    )
+    return {
+        "ok": bool(ok),
+        "message": settings.last_connection_message,
+    }
 
 
 def _encode_data(payload: dict[str, Any]) -> str:

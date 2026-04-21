@@ -14,6 +14,9 @@ class NovaPaySettings(UUIDPrimaryKeyMixin, TimestampedMixin):
 
     merchant_id = models.CharField(_("Merchant ID"), max_length=64, blank=True)
     api_token = models.CharField(_("API token (X-Sign)"), max_length=255, blank=True)
+    last_connection_checked_at = models.DateTimeField(_("Последняя проверка соединения"), blank=True, null=True)
+    last_connection_ok = models.BooleanField(_("Последняя проверка успешна"), blank=True, null=True)
+    last_connection_message = models.TextField(_("Сообщение последней проверки"), blank=True)
 
     class Meta:
         verbose_name = _("Настройки Nova Pay")

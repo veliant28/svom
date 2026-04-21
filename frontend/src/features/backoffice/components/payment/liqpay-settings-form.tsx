@@ -7,14 +7,18 @@ import type { BackofficeLiqPaySettings } from "@/features/backoffice/types/payme
 export function LiqPaySettingsForm({
   settings,
   isSaving,
+  isTesting,
   isLoading,
   onSave,
+  onTestConnection,
   t,
 }: {
   settings: BackofficeLiqPaySettings | null;
   isSaving: boolean;
+  isTesting: boolean;
   isLoading: boolean;
   onSave: (payload: Partial<{ is_enabled: boolean; public_key: string; private_key: string }>) => Promise<unknown>;
+  onTestConnection: () => Promise<unknown>;
   t: (key: string) => string;
 }) {
   const [enabled, setEnabled] = useState<boolean>(Boolean(settings?.is_enabled));
@@ -121,6 +125,17 @@ export function LiqPaySettingsForm({
             }}
           >
             {isSaving ? t("payments.liqpay.saving") : t("payments.liqpay.save")}
+          </button>
+          <button
+            type="button"
+            className="rounded-md border px-3 py-2 text-xs font-semibold disabled:opacity-60"
+            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+            disabled={isTesting}
+            onClick={() => {
+              void onTestConnection();
+            }}
+          >
+            {isTesting ? t("payments.liqpay.testing") : t("payments.liqpay.testConnection")}
           </button>
         </div>
       </div>

@@ -7,14 +7,18 @@ import type { BackofficeNovaPaySettings } from "@/features/backoffice/types/paym
 export function NovaPaySettingsForm({
   settings,
   isSaving,
+  isTesting,
   isLoading,
   onSave,
+  onTestConnection,
   t,
 }: {
   settings: BackofficeNovaPaySettings | null;
   isSaving: boolean;
+  isTesting: boolean;
   isLoading: boolean;
   onSave: (payload: Partial<{ is_enabled: boolean; merchant_id: string; api_token: string }>) => Promise<unknown>;
+  onTestConnection: () => Promise<unknown>;
   t: (key: string) => string;
 }) {
   const [enabled, setEnabled] = useState<boolean>(Boolean(settings?.is_enabled));
@@ -86,6 +90,17 @@ export function NovaPaySettingsForm({
             }}
           >
             {isSaving ? t("payments.novapay.saving") : t("payments.novapay.save")}
+          </button>
+          <button
+            type="button"
+            className="rounded-md border px-3 py-2 text-xs font-semibold disabled:opacity-60"
+            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+            disabled={isTesting}
+            onClick={() => {
+              void onTestConnection();
+            }}
+          >
+            {isTesting ? t("payments.novapay.testing") : t("payments.novapay.testConnection")}
           </button>
         </div>
       </div>

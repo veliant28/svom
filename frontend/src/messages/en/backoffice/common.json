@@ -1171,6 +1171,12 @@
           "merchantId": "Merchant ID",
           "apiToken": "API token (X-Sign)",
           "apiTokenMasked": "Stored token",
+          "testConnection": "Test connection",
+          "testing": "Testing...",
+          "status": "Status",
+          "lastConnection": "Last connection check",
+          "lastConnectionState": "Connection state",
+          "lastConnectionMessage": "Connection message",
           "save": "Save settings",
           "saving": "Saving..."
         },
@@ -1184,6 +1190,12 @@
           "privateKeyMasked": "Stored private key",
           "serverUrl": "Server URL (callback)",
           "resultUrl": "Result URL (redirect)",
+          "testConnection": "Test connection",
+          "testing": "Testing...",
+          "status": "Status",
+          "lastConnection": "Last connection check",
+          "lastConnectionState": "Connection state",
+          "lastConnectionMessage": "Connection message",
           "save": "Save settings",
           "saving": "Saving..."
         },
@@ -1198,9 +1210,13 @@
           "loadNovaSettingsFailed": "Failed to load Nova Pay settings.",
           "saveNovaSettingsFailed": "Failed to save Nova Pay settings.",
           "novaSettingsSaved": "Nova Pay settings saved.",
+          "novaConnectionFailed": "Failed to test Nova Pay connection.",
+          "novaConnectionOk": "Nova Pay connection successful.",
           "loadLiqpaySettingsFailed": "Failed to load LiqPay settings.",
           "saveLiqpaySettingsFailed": "Failed to save LiqPay settings.",
-          "liqpaySettingsSaved": "LiqPay settings saved."
+          "liqpaySettingsSaved": "LiqPay settings saved.",
+          "liqpayConnectionFailed": "Failed to test LiqPay connection.",
+          "liqpayConnectionOk": "LiqPay connection successful."
         }
       }
     }

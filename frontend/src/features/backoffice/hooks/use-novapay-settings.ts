@@ -2,17 +2,22 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { getBackofficeNovaPaySettings, updateBackofficeNovaPaySettings } from "@/features/backoffice/api/payment-api";
+import {
+  getBackofficeNovaPaySettings,
+  testBackofficeNovaPayConnection,
+  updateBackofficeNovaPaySettings,
+} from "@/features/backoffice/api/payment-api";
 import type { BackofficeNovaPaySettings } from "@/features/backoffice/types/payment.types";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
 
 export function useNovaPaySettings({ t }: { t: (key: string) => string }) {
   const { token } = useAuth();
-  const { showApiError, showSuccess } = useBackofficeFeedback();
+  const { showApiError, showSuccess, showWarning } = useBackofficeFeedback();
   const [settings, setSettings] = useState<BackofficeNovaPaySettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) {
@@ -57,11 +62,35 @@ export function useNovaPaySettings({ t }: { t: (key: string) => string }) {
     [showApiError, showSuccess, t, token],
   );
 
+  const testConnection = useCallback(async () => {
+    if (!token) {
+      return null;
+    }
+    setIsTesting(true);
+    try {
+      const result = await testBackofficeNovaPayConnection(token);
+      if (result.ok) {
+        showSuccess(t("payments.messages.novaConnectionOk"));
+      } else {
+        showWarning(result.message || t("payments.messages.novaConnectionFailed"));
+      }
+      await load();
+      return result;
+    } catch (error) {
+      showApiError(error, t("payments.messages.novaConnectionFailed"));
+      return null;
+    } finally {
+      setIsTesting(false);
+    }
+  }, [load, showApiError, showSuccess, showWarning, t, token]);
+
   return {
     settings,
     isLoading,
     isSaving,
+    isTesting,
     save,
+    testConnection,
     reload: load,
   };
 }

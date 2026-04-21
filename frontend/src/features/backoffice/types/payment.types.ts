@@ -15,6 +15,9 @@ export type BackofficeNovaPaySettings = {
   is_enabled: boolean;
   merchant_id: string;
   api_token_masked: string;
+  last_connection_checked_at: string | null;
+  last_connection_ok: boolean | null;
+  last_connection_message: string;
 };
 
 export type BackofficeLiqPaySettings = {
@@ -23,12 +26,20 @@ export type BackofficeLiqPaySettings = {
   private_key_masked: string;
   server_url: string;
   result_url: string;
+  last_connection_checked_at: string | null;
+  last_connection_ok: boolean | null;
+  last_connection_message: string;
 };
 
 export type BackofficeMonobankConnectionCheck = {
   ok: boolean;
   message: string;
   public_key: string;
+};
+
+export type BackofficePaymentConnectionCheck = {
+  ok: boolean;
+  message: string;
 };
 
 export type BackofficeMonobankCurrencyRow = {

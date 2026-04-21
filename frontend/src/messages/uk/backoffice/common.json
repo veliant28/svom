@@ -1171,6 +1171,12 @@
           "merchantId": "Merchant ID",
           "apiToken": "API token (X-Sign)",
           "apiTokenMasked": "Збережений токен",
+          "testConnection": "Перевірити з’єднання",
+          "testing": "Перевіряємо...",
+          "status": "Статус",
+          "lastConnection": "Остання перевірка",
+          "lastConnectionState": "Стан з’єднання",
+          "lastConnectionMessage": "Повідомлення перевірки",
           "save": "Зберегти налаштування",
           "saving": "Зберігаємо..."
         },
@@ -1184,6 +1190,12 @@
           "privateKeyMasked": "Збережений приватний ключ",
           "serverUrl": "Server URL (callback)",
           "resultUrl": "Result URL (redirect)",
+          "testConnection": "Перевірити з’єднання",
+          "testing": "Перевіряємо...",
+          "status": "Статус",
+          "lastConnection": "Остання перевірка",
+          "lastConnectionState": "Стан з’єднання",
+          "lastConnectionMessage": "Повідомлення перевірки",
           "save": "Зберегти налаштування",
           "saving": "Зберігаємо..."
         },
@@ -1198,9 +1210,13 @@
           "loadNovaSettingsFailed": "Не вдалося завантажити налаштування Nova Pay.",
           "saveNovaSettingsFailed": "Не вдалося зберегти налаштування Nova Pay.",
           "novaSettingsSaved": "Налаштування Nova Pay збережено.",
+          "novaConnectionFailed": "Не вдалося перевірити з’єднання Nova Pay.",
+          "novaConnectionOk": "З’єднання Nova Pay успішне.",
           "loadLiqpaySettingsFailed": "Не вдалося завантажити налаштування LiqPay.",
           "saveLiqpaySettingsFailed": "Не вдалося зберегти налаштування LiqPay.",
-          "liqpaySettingsSaved": "Налаштування LiqPay збережено."
+          "liqpaySettingsSaved": "Налаштування LiqPay збережено.",
+          "liqpayConnectionFailed": "Не вдалося перевірити з’єднання LiqPay.",
+          "liqpayConnectionOk": "З’єднання LiqPay успішне."
         }
       }
     }

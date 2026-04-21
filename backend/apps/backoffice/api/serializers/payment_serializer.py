@@ -65,6 +65,9 @@ class NovaPaySettingsSerializer(serializers.ModelSerializer):
             "merchant_id",
             "api_token",
             "api_token_masked",
+            "last_connection_checked_at",
+            "last_connection_ok",
+            "last_connection_message",
         )
 
     def to_representation(self, instance: NovaPaySettings) -> dict:
@@ -102,6 +105,9 @@ class LiqPaySettingsSerializer(serializers.ModelSerializer):
             "private_key_masked",
             "server_url",
             "result_url",
+            "last_connection_checked_at",
+            "last_connection_ok",
+            "last_connection_message",
         )
 
     def to_representation(self, instance: LiqPaySettings) -> dict:
@@ -129,6 +135,11 @@ class MonobankConnectionCheckSerializer(serializers.Serializer):
     ok = serializers.BooleanField()
     message = serializers.CharField()
     public_key = serializers.CharField(allow_blank=True)
+
+
+class PaymentConnectionCheckSerializer(serializers.Serializer):
+    ok = serializers.BooleanField()
+    message = serializers.CharField()
 
 
 class MonobankCurrencyRowSerializer(serializers.Serializer):

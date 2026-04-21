@@ -43,21 +43,47 @@ export function PaymentsPage() {
       />
 
       {provider === "nova" ? (
-        <NovaPaySettingsForm
-          settings={novaSettingsState.settings}
-          isLoading={novaSettingsState.isLoading}
-          isSaving={novaSettingsState.isSaving}
-          onSave={novaSettingsState.save}
-          t={t}
-        />
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+          <NovaPaySettingsForm
+            settings={novaSettingsState.settings}
+            isLoading={novaSettingsState.isLoading}
+            isSaving={novaSettingsState.isSaving}
+            isTesting={novaSettingsState.isTesting}
+            onSave={novaSettingsState.save}
+            onTestConnection={novaSettingsState.testConnection}
+            t={t}
+          />
+          <PaymentStatusCard
+            settings={novaSettingsState.settings}
+            title={t("payments.novapay.status")}
+            enabledLabel={t("payments.novapay.enabled")}
+            lastConnectionLabel={t("payments.novapay.lastConnection")}
+            lastConnectionStateLabel={t("payments.novapay.lastConnectionState")}
+            lastConnectionMessageLabel={t("payments.novapay.lastConnectionMessage")}
+            t={t}
+          />
+        </div>
       ) : provider === "liq" ? (
-        <LiqPaySettingsForm
-          settings={liqpaySettingsState.settings}
-          isLoading={liqpaySettingsState.isLoading}
-          isSaving={liqpaySettingsState.isSaving}
-          onSave={liqpaySettingsState.save}
-          t={t}
-        />
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+          <LiqPaySettingsForm
+            settings={liqpaySettingsState.settings}
+            isLoading={liqpaySettingsState.isLoading}
+            isSaving={liqpaySettingsState.isSaving}
+            isTesting={liqpaySettingsState.isTesting}
+            onSave={liqpaySettingsState.save}
+            onTestConnection={liqpaySettingsState.testConnection}
+            t={t}
+          />
+          <PaymentStatusCard
+            settings={liqpaySettingsState.settings}
+            title={t("payments.liqpay.status")}
+            enabledLabel={t("payments.liqpay.enabled")}
+            lastConnectionLabel={t("payments.liqpay.lastConnection")}
+            lastConnectionStateLabel={t("payments.liqpay.lastConnectionState")}
+            lastConnectionMessageLabel={t("payments.liqpay.lastConnectionMessage")}
+            t={t}
+          />
+        </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
           <MonobankSettingsForm
@@ -70,7 +96,15 @@ export function PaymentsPage() {
           />
 
           <div className="grid gap-4">
-            <PaymentStatusCard settings={settingsState.settings} t={t} />
+            <PaymentStatusCard
+              settings={settingsState.settings}
+              title={t("payments.monobank.status")}
+              enabledLabel={t("payments.monobank.enabled")}
+              lastConnectionLabel={t("payments.monobank.lastConnection")}
+              lastConnectionStateLabel={t("payments.monobank.lastConnectionState")}
+              lastConnectionMessageLabel={t("payments.monobank.lastConnectionMessage")}
+              t={t}
+            />
             <MonobankRatesCard
               rates={currencyState.data}
               isLoading={currencyState.isLoading}

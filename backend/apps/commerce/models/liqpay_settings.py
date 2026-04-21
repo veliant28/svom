@@ -14,6 +14,9 @@ class LiqPaySettings(UUIDPrimaryKeyMixin, TimestampedMixin):
 
     public_key = models.CharField(_("Public key"), max_length=255, blank=True)
     private_key = models.CharField(_("Private key"), max_length=255, blank=True)
+    last_connection_checked_at = models.DateTimeField(_("Последняя проверка соединения"), blank=True, null=True)
+    last_connection_ok = models.BooleanField(_("Последняя проверка успешна"), blank=True, null=True)
+    last_connection_message = models.TextField(_("Сообщение последней проверки"), blank=True)
 
     class Meta:
         verbose_name = _("Настройки LiqPay")

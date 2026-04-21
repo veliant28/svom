@@ -7,6 +7,7 @@ from .service import (
     get_urls_for_request,
     handle_webhook,
     refresh_liqpay_payment_status,
+    test_liqpay_connection,
 )
 
 __all__ = [
@@ -18,4 +19,5 @@ __all__ = [
     "get_urls_for_request",
     "handle_webhook",
     "refresh_liqpay_payment_status",
+    "test_liqpay_connection",
 ]

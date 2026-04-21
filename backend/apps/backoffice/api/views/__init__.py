@@ -59,10 +59,12 @@ from .order_actions_view import (
     ReserveOrderItemsActionAPIView,
 )
 from .payment_views import (
+    BackofficeLiqPayConnectionTestAPIView,
     BackofficeLiqPaySettingsAPIView,
     BackofficeMonobankConnectionTestAPIView,
     BackofficeMonobankCurrencyAPIView,
     BackofficeMonobankSettingsAPIView,
+    BackofficeNovaPayConnectionTestAPIView,
     BackofficeNovaPaySettingsAPIView,
     BackofficeOrderPaymentMonobankActionAPIView,
     BackofficeOrderPaymentRefreshAPIView,
@@ -174,7 +176,9 @@ __all__ = [
     "BackofficeMonobankSettingsAPIView",
     "BackofficeMonobankConnectionTestAPIView",
     "BackofficeMonobankCurrencyAPIView",
+    "BackofficeNovaPayConnectionTestAPIView",
     "BackofficeNovaPaySettingsAPIView",
+    "BackofficeLiqPayConnectionTestAPIView",
     "BackofficeLiqPaySettingsAPIView",
     "BackofficeOrderPaymentMonobankActionAPIView",
     "BackofficeOrderPaymentRefreshAPIView",

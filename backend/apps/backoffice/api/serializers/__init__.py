@@ -48,6 +48,7 @@ from .payment_serializer import (
     MonobankCurrencyResponseSerializer,
     MonobankSettingsSerializer,
     NovaPaySettingsSerializer,
+    PaymentConnectionCheckSerializer,
 )
 from .product_price_operational_serializer import ProductPriceOperationalSerializer
 from .procurement_suggestion_serializer import (
@@ -117,6 +118,7 @@ __all__ = [
     "OrderSupplierCancelSerializer",
     "MonobankSettingsSerializer",
     "MonobankConnectionCheckSerializer",
+    "PaymentConnectionCheckSerializer",
     "MonobankCurrencyResponseSerializer",
     "BackofficeMonobankPaymentActionSerializer",
     "BackofficeMonobankFiscalCheckSerializer",
