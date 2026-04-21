@@ -20,7 +20,7 @@ export type BackofficeRbacMeta = {
 };
 
 export type BackofficeManagedUser = {
-  id: string;
+  id: number;
   email: string;
   first_name: string;
   last_name: string;

@@ -27,23 +27,23 @@ export async function createBackofficeUser(
   return postJson<BackofficeManagedUserDetail, BackofficeManagedUserWritePayload>("/backoffice/users/", payload, undefined, { token });
 }
 
-export async function getBackofficeUser(token: string, id: string): Promise<BackofficeManagedUserDetail> {
+export async function getBackofficeUser(token: string, id: number): Promise<BackofficeManagedUserDetail> {
   return getJson<BackofficeManagedUserDetail>(`/backoffice/users/${id}/`, undefined, { token });
 }
 
 export async function updateBackofficeUser(
   token: string,
-  id: string,
+  id: number,
   payload: BackofficeManagedUserWritePayload,
 ): Promise<BackofficeManagedUserDetail> {
   return patchJson<BackofficeManagedUserDetail, BackofficeManagedUserWritePayload>(`/backoffice/users/${id}/`, payload, undefined, { token });
 }
 
-export async function activateBackofficeUser(token: string, id: string): Promise<BackofficeManagedUserDetail> {
+export async function activateBackofficeUser(token: string, id: number): Promise<BackofficeManagedUserDetail> {
   return postJson<BackofficeManagedUserDetail, Record<string, never>>(`/backoffice/users/${id}/activate/`, {}, undefined, { token });
 }
 
-export async function deactivateBackofficeUser(token: string, id: string): Promise<BackofficeManagedUserDetail> {
+export async function deactivateBackofficeUser(token: string, id: number): Promise<BackofficeManagedUserDetail> {
   return postJson<BackofficeManagedUserDetail, Record<string, never>>(`/backoffice/users/${id}/deactivate/`, {}, undefined, { token });
 }
 
