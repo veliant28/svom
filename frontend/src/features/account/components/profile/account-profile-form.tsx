@@ -93,6 +93,13 @@ export function AccountProfileForm({
     }
     return user.groups[0]?.name || "";
   }, [user.groups, user.system_role]);
+  const groupFieldLabel = useMemo(() => {
+    try {
+      return t("fields.group");
+    } catch {
+      return "Group";
+    }
+  }, [t]);
 
   return (
     <form
@@ -105,6 +112,26 @@ export function AccountProfileForm({
     >
       <h2 className="text-lg font-semibold">{t("sections.base")}</h2>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div className="flex flex-col gap-1 text-xs">
+          {groupFieldLabel}
+          <div
+            className="inline-flex h-10 items-center rounded-md border px-3"
+            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+          >
+            {profileGroupName ? <RoleGroupBadge groupName={profileGroupName} /> : <span style={{ color: "var(--muted)" }}>-</span>}
+          </div>
+        </div>
+        <label className="flex flex-col gap-1 text-xs">
+          {t("fields.email")}
+          <input
+            type="email"
+            value={values.email}
+            onChange={(event) => setValues((current) => ({ ...current, email: event.target.value }))}
+            required
+            className="h-10 min-w-0 flex-1 rounded-md border px-3"
+            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+          />
+        </label>
         <label className="flex flex-col gap-1 text-xs">
           {t("fields.username")}
           <input
@@ -115,24 +142,6 @@ export function AccountProfileForm({
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
           />
         </label>
-        <div className="sm:col-span-1">
-          <label className="flex flex-col gap-1 text-xs">
-            {t("fields.email")}
-            <div className="flex items-center gap-2">
-              <div className="inline-flex h-10 items-center">
-                {profileGroupName ? <RoleGroupBadge groupName={profileGroupName} /> : null}
-              </div>
-              <input
-                type="email"
-                value={values.email}
-                onChange={(event) => setValues((current) => ({ ...current, email: event.target.value }))}
-                required
-                className="h-10 min-w-0 flex-1 rounded-md border px-3"
-                style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
-              />
-            </div>
-          </label>
-        </div>
         <label className="flex flex-col gap-1 text-xs">
           {t("fields.lastName")}
           <input
