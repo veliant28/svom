@@ -224,8 +224,8 @@ export function GroupsPage() {
                     <span
                       className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded border"
                       style={{
-                        borderColor: checked ? "color-mix(in srgb, var(--accent) 82%, #000000 18%)" : "var(--border)",
-                        backgroundColor: checked ? "var(--accent)" : "var(--surface)",
+                        borderColor: checked ? "#1d4ed8" : "var(--border)",
+                        backgroundColor: checked ? "#2563eb" : "var(--surface)",
                         color: "#ffffff",
                         opacity: isReadOnly ? 0.85 : 1,
                       }}
