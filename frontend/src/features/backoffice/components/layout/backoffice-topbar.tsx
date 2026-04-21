@@ -12,14 +12,14 @@ import { useTheme } from "@/shared/components/theme/theme-provider";
 
 export function BackofficeTopbar({ onToggleSidebar, user }: { onToggleSidebar: () => void; user: BackofficeUser }) {
   const t = useTranslations("backoffice.common");
+  const tNavigation = useTranslations("backoffice.navigation");
   const locale = useLocale();
   const router = useRouter();
   const { theme, themeMode, toggleTheme } = useTheme();
   const { logout } = useAuth();
   const config = useBackofficeHeaderConfig();
 
-  const displayName = user.username || user.email;
-  const title = config.title || displayName;
+  const title = config.title || tNavigation("title");
   const themeTooltip = `${t("topbar.toggleTheme")}: ${t(`topbar.themeMode.${themeMode}`)}`;
 
   return (
@@ -44,12 +44,6 @@ export function BackofficeTopbar({ onToggleSidebar, user }: { onToggleSidebar: (
         <div className="flex flex-wrap items-center justify-end gap-2">
           {config.actions ? <div className="flex flex-wrap items-center gap-2">{config.actions}</div> : null}
           {config.actionsBeforeLogout ? <div className="flex flex-wrap items-center gap-2">{config.actionsBeforeLogout}</div> : null}
-          <span
-            className="hidden h-9 items-center rounded-md border px-3 text-xs font-semibold md:inline-flex"
-            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", color: "var(--text)" }}
-          >
-            {displayName}
-          </span>
           <div className="backoffice-topbar-locale-switcher">
             <LocaleSwitcher />
           </div>

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { RoleGroupBadge } from "@/features/backoffice/components/rbac/role-group-badge";
 import { BACKOFFICE_CAPABILITIES, hasBackofficeCapabilities, type BackofficeCapabilityCode } from "@/features/backoffice/lib/capabilities";
 import type { BackofficeUser } from "@/features/backoffice/types/backoffice";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -85,6 +86,8 @@ export function BackofficeSidebar({ open, onNavigate, user }: { open: boolean; o
   const t = useTranslations("backoffice.navigation");
   const pathname = usePathname();
   const navItems = NAV_ITEMS.filter((item) => hasBackofficeCapabilities(user, item.requiredCapability));
+  const displayName = user.username || user.email;
+  const roleGroupName = user.system_role ? `Backoffice Role: ${user.system_role}` : (user.groups[0]?.name || "");
 
   return (
     <aside
@@ -98,14 +101,26 @@ export function BackofficeSidebar({ open, onNavigate, user }: { open: boolean; o
       }}
     >
       <div className="mb-7 border-b pb-4" style={{ borderColor: "rgba(255,255,255,0.14)" }}>
-        <Link
-          href="/"
-          onClick={onNavigate}
-          className="text-xs uppercase tracking-[0.22em] text-slate-300 transition hover:text-white"
-        >
-          {t("brand")}
-        </Link>
-        <h1 className="mt-1 text-lg font-semibold">{t("title")}</h1>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <Link
+              href="/"
+              onClick={onNavigate}
+              className="text-xs uppercase tracking-[0.22em] text-slate-300 transition hover:text-white"
+            >
+              {t("brand")}
+            </Link>
+            <h1 className="mt-1 text-lg font-semibold">{t("title")}</h1>
+          </div>
+          <div className="min-w-0 text-right">
+            <p className="truncate text-sm font-semibold text-white">{displayName}</p>
+            {roleGroupName ? (
+              <div className="mt-1 flex justify-end">
+                <RoleGroupBadge groupName={roleGroupName} />
+              </div>
+            ) : null}
+          </div>
+        </div>
       </div>
 
       <nav className="grid gap-1">
