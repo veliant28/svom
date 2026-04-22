@@ -46,7 +46,7 @@ export function PercentStepper({
 
   return (
     <div
-      className="inline-flex items-center rounded-full border p-1"
+      className="inline-flex h-9 items-center rounded-full border px-1"
       style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
     >
       <button

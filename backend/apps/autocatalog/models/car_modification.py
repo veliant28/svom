@@ -22,6 +22,7 @@ class CarModification(models.Model):
         verbose_name=_("Модель"),
     )
     start_date_at = models.DateField(_("Дата начала"), blank=True, null=True)
+    end_date_at = models.DateField(_("Дата окончания"), blank=True, null=True)
     year = models.PositiveSmallIntegerField(_("Год"), blank=True, null=True, db_index=True)
     modification = models.CharField(_("Модификация"), max_length=255, blank=True, default="")
     capacity = models.CharField(_("Объем"), max_length=32, blank=True, default="")

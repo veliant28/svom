@@ -84,6 +84,7 @@ export type BackofficeProductFitment = {
 
 export type BackofficeAutocatalogCar = {
   year: number | null;
+  end_date_at: string | null;
   make: string;
   model: string;
   modification: string;

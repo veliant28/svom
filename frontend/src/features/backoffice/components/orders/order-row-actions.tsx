@@ -1,10 +1,11 @@
-import { Eye, ReceiptText, Trash2, Truck } from "lucide-react";
+import { Eye, ScanBarcode, ScanLine, Trash2, Truck } from "lucide-react";
 
 import { ActionIconButton } from "@/features/backoffice/components/widgets/action-icon-button";
 
 type Translator = (key: string, values?: Record<string, string | number>) => string;
 
 export function OrderRowActions({
+  hasWaybill,
   deleting,
   opening,
   processingWaybill,
@@ -15,6 +16,7 @@ export function OrderRowActions({
   onDelete,
   t,
 }: {
+  hasWaybill: boolean;
   deleting: boolean;
   opening: boolean;
   processingWaybill: boolean;
@@ -25,6 +27,12 @@ export function OrderRowActions({
   onDelete: () => void;
   t: Translator;
 }) {
+  const waybillLabel = processingWaybill
+    ? t("loading")
+    : hasWaybill
+      ? t("orders.tooltips.waybill")
+      : t("orders.tooltips.waybillCreate");
+
   return (
     <div className="flex items-center gap-1.5 whitespace-nowrap">
       <ActionIconButton
@@ -34,8 +42,8 @@ export function OrderRowActions({
         onClick={onOpen}
       />
       <ActionIconButton
-        label={processingWaybill ? t("loading") : t("orders.tooltips.waybill")}
-        icon={ReceiptText}
+        label={waybillLabel}
+        icon={hasWaybill ? ScanBarcode : ScanLine}
         disabled={processingWaybill}
         onClick={onWaybill}
       />

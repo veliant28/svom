@@ -21,9 +21,19 @@ function asNumber(value: number | null | undefined): string {
   return value === null || value === undefined ? "-" : String(value);
 }
 
+function asYear(value: string | null | undefined): string {
+  const normalized = String(value ?? "").trim();
+  if (!normalized) {
+    return "-";
+  }
+  const match = normalized.match(/^\d{4}/);
+  return match ? match[0] : normalized;
+}
+
 export function AutocatalogPage() {
   const t = useTranslations("backoffice.autocatalog");
 
+  const [isHydrated, setIsHydrated] = useState(false);
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
   const [make, setMake] = useState("");
@@ -34,6 +44,10 @@ export function AutocatalogPage() {
   const [capacity, setCapacity] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(25);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -180,7 +194,7 @@ export function AutocatalogPage() {
             setEngine("");
             setPage(1);
           }}
-          disabled={!make}
+          disabled={isHydrated ? !make : undefined}
           className="h-10 rounded-md border px-3 text-sm disabled:cursor-not-allowed disabled:opacity-60"
           style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
         >
@@ -200,7 +214,7 @@ export function AutocatalogPage() {
             setEngine("");
             setPage(1);
           }}
-          disabled={!make || !model}
+          disabled={isHydrated ? (!make || !model) : undefined}
           className="h-10 rounded-md border px-3 text-sm disabled:cursor-not-allowed disabled:opacity-60"
           style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
         >
@@ -219,7 +233,7 @@ export function AutocatalogPage() {
             setEngine("");
             setPage(1);
           }}
-          disabled={!make || !model || !modification}
+          disabled={isHydrated ? (!make || !model || !modification) : undefined}
           className="h-10 rounded-md border px-3 text-sm disabled:cursor-not-allowed disabled:opacity-60"
           style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
         >
@@ -237,7 +251,7 @@ export function AutocatalogPage() {
             setEngine(event.target.value);
             setPage(1);
           }}
-          disabled={!make || !model || !modification || !capacity}
+          disabled={isHydrated ? (!make || !model || !modification || !capacity) : undefined}
           className="h-10 rounded-md border px-3 text-sm disabled:cursor-not-allowed disabled:opacity-60"
           style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
         >
@@ -259,6 +273,11 @@ export function AutocatalogPage() {
               key: "year",
               label: t("table.columns.year"),
               render: (item) => asNumber(item.year),
+            },
+            {
+              key: "end_date_at",
+              label: t("table.columns.to"),
+              render: (item) => asYear(item.end_date_at),
             },
             {
               key: "make",

@@ -230,6 +230,35 @@ class NovaPoshtaApiClient:
             operation="counterparty contacts lookup",
         )
 
+    def create_recipient_counterparty(
+        self,
+        *,
+        first_name: str,
+        middle_name: str,
+        last_name: str,
+        phone: str,
+        email: str = "",
+    ) -> NovaPoshtaResponse:
+        method_properties: dict[str, Any] = {
+            "FirstName": first_name.strip(),
+            "MiddleName": middle_name.strip(),
+            "LastName": last_name.strip(),
+            "Phone": phone.strip(),
+            "CounterpartyType": "PrivatePerson",
+            "CounterpartyProperty": "Recipient",
+        }
+        normalized_email = email.strip()
+        if normalized_email:
+            method_properties["Email"] = normalized_email
+        return self._request(
+            model_name="CounterpartyGeneral",
+            called_method="save",
+            method_properties=method_properties,
+            timeout=DEFAULT_TIMEOUT_SECONDS,
+            safe_to_retry=False,
+            operation="create recipient counterparty",
+        )
+
     def get_counterparty_addresses(
         self,
         *,

@@ -92,7 +92,7 @@ class BackofficeAutocatalogAPISmokeTests(APITestCase):
         first_row = response.data["results"][0]
         self.assertEqual(
             set(first_row.keys()),
-            {"year", "make", "model", "modification", "capacity", "engine", "hp", "kw"},
+            {"year", "end_date_at", "make", "model", "modification", "capacity", "engine", "hp", "kw"},
         )
         self.assertNotIn("id", first_row)
         self.assertNotIn("utr_detail_id", first_row)

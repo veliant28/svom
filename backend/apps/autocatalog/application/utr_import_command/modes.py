@@ -14,6 +14,7 @@ from apps.autocatalog.services import (
     UtrAutocatalogImportService,
 )
 from apps.catalog.models import Product
+from apps.autocatalog.models import UtrDetailCarMap
 from apps.supplier_imports.selectors import get_supplier_integration_by_code
 
 from . import reporting
@@ -38,6 +39,9 @@ def run_autocatalog_import_flow(
     reporting.write_product_detail_ids_available(output, count=len(product_detail_ids))
 
     mapped_detail_ids: list[str] = [] if options.products_only else resolver.collect_detail_ids()
+    existing_map_detail_ids = collect_existing_map_detail_ids()
+    if existing_map_detail_ids:
+        mapped_detail_ids = sorted({*mapped_detail_ids, *existing_map_detail_ids}, key=int)
     if not options.products_only:
         reporting.write_mapped_detail_ids_available(output, count=len(mapped_detail_ids))
 
@@ -150,6 +154,15 @@ def merge_detail_ids(
     return merged
 
 
+def collect_existing_map_detail_ids() -> list[str]:
+    queryset = (
+        UtrDetailCarMap.objects.values_list("utr_detail_id", flat=True)
+        .distinct()
+        .order_by("utr_detail_id")
+    )
+    return [value for value in queryset if str(value).isdigit()]
+
+
 def run_resolve_phase(
     *,
     resolver: UtrArticleDetailResolverService,
@@ -244,4 +257,5 @@ def accumulate_import_summary(
     total.makes_created += batch.makes_created
     total.models_created += batch.models_created
     total.modifications_created += batch.modifications_created
+    total.modifications_end_date_updated += batch.modifications_end_date_updated
     total.mappings_created += batch.mappings_created

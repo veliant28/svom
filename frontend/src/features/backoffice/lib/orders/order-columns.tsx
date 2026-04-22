@@ -20,6 +20,62 @@ const ATTENTION_WAYBILL_STATUS_CODES = new Set([
   "111", // failed delivery attempt
   "112", // delivery date postponed by recipient
 ]);
+const NP_STATUS_TEXT_CREATED_UK = "Відправник самостійно створив цю накладну, але ще не надав до відправки";
+const WAYBILL_STATUS_CATALOG_CODES = new Set([
+  "1",
+  "2",
+  "3",
+  "4",
+  "41",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+  "11",
+  "12",
+  "101",
+  "102",
+  "103",
+  "104",
+  "105",
+  "106",
+  "111",
+  "112",
+]);
+
+function resolveWaybillStatusView({
+  t,
+  statusCode,
+  statusText,
+  fallbackLabel,
+}: {
+  t: Translator;
+  statusCode: string;
+  statusText: string;
+  fallbackLabel: string;
+}): { shortLabel: string; tooltipLabel: string | null } {
+  const normalizedCode = statusCode.trim();
+  const normalizedText = statusText.trim();
+  const localizedCode = WAYBILL_STATUS_CATALOG_CODES.has(normalizedCode)
+    ? normalizedCode
+    : normalizedText === NP_STATUS_TEXT_CREATED_UK
+      ? "1"
+      : "";
+
+  if (localizedCode) {
+    return {
+      shortLabel: t(`orders.table.waybillStatusCatalog.${localizedCode}.short`),
+      tooltipLabel: t(`orders.table.waybillStatusCatalog.${localizedCode}.full`),
+    };
+  }
+
+  return {
+    shortLabel: fallbackLabel,
+    tooltipLabel: null,
+  };
+}
 
 function compactPersonName(fullName: string): string {
   const normalized = fullName.trim();
@@ -227,14 +283,34 @@ export function createOrderColumns({
         const hasError = item.nova_poshta_waybill_has_error;
         const statusCode = String(item.nova_poshta_waybill_status_code || "").trim();
         const hasAttention = ATTENTION_WAYBILL_STATUS_CODES.has(statusCode);
-        const label = item.nova_poshta_waybill_status_text || item.nova_poshta_waybill_status_code || t("orders.table.waybillStatusUnknown");
-        return (
+        const rawStatusText = String(item.nova_poshta_waybill_status_text || "").trim();
+        const fallbackLabel = rawStatusText || item.nova_poshta_waybill_status_code || t("orders.table.waybillStatusUnknown");
+        const statusView = resolveWaybillStatusView({
+          t,
+          statusCode,
+          statusText: rawStatusText,
+          fallbackLabel,
+        });
+        const chip = (
           <BackofficeStatusChip
             tone={hasError ? "error" : hasAttention ? "warning" : "blue"}
             icon={hasError || hasAttention ? TriangleAlert : Clock3}
           >
-            {label}
+            {statusView.shortLabel}
           </BackofficeStatusChip>
+        );
+        if (!statusView.tooltipLabel) {
+          return chip;
+        }
+        return (
+          <BackofficeTooltip
+            content={statusView.tooltipLabel}
+            placement="top"
+            align="center"
+            wrapperClassName="inline-flex"
+          >
+            {chip}
+          </BackofficeTooltip>
         );
       },
     },
@@ -244,6 +320,7 @@ export function createOrderColumns({
       className: "w-[15%] min-w-[156px]",
       render: (item) => (
         <OrderRowActions
+          hasWaybill={Boolean(item.nova_poshta_waybill_exists && item.nova_poshta_waybill_number)}
           deleting={deletingId === item.id}
           opening={openingId === item.id}
           processingWaybill={waybillLoadingId === item.id}

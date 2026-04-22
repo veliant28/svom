@@ -5,9 +5,16 @@ import { useEffect, useRef } from "react";
 type LoyaltyDailyChartProps = {
   items: Array<{ date: string; total: number }>;
   emptyLabel: string;
+  className?: string;
+  emptyClassName?: string;
 };
 
-export function LoyaltyDailyChart({ items, emptyLabel }: LoyaltyDailyChartProps) {
+export function LoyaltyDailyChart({
+  items,
+  emptyLabel,
+  className = "h-[190px] w-full",
+  emptyClassName = "h-[170px]",
+}: LoyaltyDailyChartProps) {
   const chartRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -87,7 +94,7 @@ export function LoyaltyDailyChart({ items, emptyLabel }: LoyaltyDailyChartProps)
   if (!items.length) {
     return (
       <div
-        className="flex h-[170px] items-center justify-center rounded-xl border text-sm"
+        className={`flex items-center justify-center rounded-xl border text-sm ${emptyClassName}`}
         style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)", color: "var(--muted)" }}
       >
         {emptyLabel}
@@ -95,5 +102,5 @@ export function LoyaltyDailyChart({ items, emptyLabel }: LoyaltyDailyChartProps)
     );
   }
 
-  return <div ref={chartRef} className="h-[190px] w-full" />;
+  return <div ref={chartRef} className={className} />;
 }

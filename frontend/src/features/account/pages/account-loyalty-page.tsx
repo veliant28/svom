@@ -1,26 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Copy } from "lucide-react";
+import { CheckCircle2, Clock3, Copy, MinusCircle, type LucideIcon, XCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { AccountAuthRequired } from "@/features/account/components/account-auth-required";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
 import { getMyLoyaltyCodes } from "@/features/commerce/api/get-my-loyalty-codes";
 import type { LoyaltyPromoCode } from "@/features/commerce/types";
 import { useStorefrontFeedback } from "@/shared/hooks/use-storefront-feedback";
 
-function resolveStateTone(state: LoyaltyPromoCode["state"]): { bg: string; color: string } {
+function resolveStateChip(state: LoyaltyPromoCode["state"]): { tone: BackofficeStatusChipTone; icon: LucideIcon } {
   if (state === "active") {
-    return { bg: "rgba(5,150,105,0.14)", color: "#047857" };
+    return { tone: "success", icon: CheckCircle2 };
   }
   if (state === "used") {
-    return { bg: "rgba(30,64,175,0.14)", color: "#1e40af" };
+    return { tone: "blue", icon: Clock3 };
   }
   if (state === "expired") {
-    return { bg: "rgba(120,113,108,0.16)", color: "#57534e" };
+    return { tone: "error", icon: XCircle };
   }
-  return { bg: "rgba(185,28,28,0.12)", color: "#b91c1c" };
+  return { tone: "gray", icon: MinusCircle };
 }
 
 export function AccountLoyaltyPage() {
@@ -99,7 +100,7 @@ export function AccountLoyaltyPage() {
       {!!codes.length ? (
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {codes.map((promo) => {
-            const tone = resolveStateTone(promo.state);
+            const stateChip = resolveStateChip(promo.state);
             return (
               <article
                 key={promo.id}
@@ -111,31 +112,32 @@ export function AccountLoyaltyPage() {
                     <p className="text-xs" style={{ color: "var(--muted)" }}>{t("labels.code")}</p>
                     <p className="text-lg font-semibold tracking-[0.06em]">{promo.code}</p>
                   </div>
-                  <span className="rounded-full px-2 py-1 text-xs font-semibold" style={{ backgroundColor: tone.bg, color: tone.color }}>
+                  <BackofficeStatusChip tone={stateChip.tone} icon={stateChip.icon}>
                     {t(`states.values.${promo.state}`)}
-                  </span>
+                  </BackofficeStatusChip>
                 </div>
 
-                <div className="mt-3 grid gap-1 text-sm">
-                  <p>{t("labels.type")}: {promo.discount_type === "delivery_fee" ? t("types.delivery") : t("types.product")}</p>
-                  <p>{t("labels.discount")}: {promo.discount_percent}%</p>
-                  <p>{t("labels.usage")}: {promo.usage_count}/{promo.usage_limit}</p>
-                  <p>{t("labels.expiresAt")}: {promo.expires_at ? new Date(promo.expires_at).toLocaleString() : t("labels.noExpiry")}</p>
-                  {promo.reason ? <p>{t("labels.reason")}: {promo.reason}</p> : null}
-                </div>
-
-                <div className="mt-3 flex justify-end">
-                  <button
-                    type="button"
-                    className="inline-flex h-8 items-center gap-1 rounded-md border px-3 text-xs font-semibold"
-                    style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-                    onClick={() => {
-                      void copyPromoCode(promo.code);
-                    }}
-                  >
-                    <Copy size={14} />
-                    {t("actions.copy")}
-                  </button>
+                <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-sm">
+                  <div className="grid gap-1">
+                    <p>{t("labels.type")}: {promo.discount_type === "delivery_fee" ? t("types.delivery") : t("types.product")}</p>
+                    <p>{t("labels.discount")}: {promo.discount_percent}%</p>
+                    <p>{t("labels.usage")}: {promo.usage_count}/{promo.usage_limit}</p>
+                    <p>{t("labels.expiresAt")}: {promo.expires_at ? new Date(promo.expires_at).toLocaleString() : t("labels.noExpiry")}</p>
+                    {promo.reason ? <p className="min-w-0">{t("labels.reason")}: {promo.reason}</p> : null}
+                  </div>
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md border px-3 text-xs font-semibold"
+                      style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                      onClick={() => {
+                        void copyPromoCode(promo.code);
+                      }}
+                    >
+                      <Copy size={14} />
+                      {t("actions.copy")}
+                    </button>
+                  </div>
                 </div>
               </article>
             );

@@ -474,7 +474,9 @@
           "used": "Used",
           "expired": "Expired",
           "disabled": "Disabled",
+          "selected": "Selected",
           "loadingCustomers": "Searching customers...",
+          "customersEmpty": "No customers found.",
           "empty": "No loyalty data yet.",
           "chartEmpty": "No issuance data for chart.",
           "statsEmpty": "No employee stats yet.",
@@ -501,13 +503,19 @@
             "issue": "Generate and issue code",
             "issuing": "Issuing...",
             "percentMinus": "Decrease percent",
-            "percentPlus": "Increase percent"
+            "percentPlus": "Increase percent",
+            "usageLimitMinus": "Decrease usage limit",
+            "usageLimitPlus": "Increase usage limit"
           },
           "lastIssued": "Issued code",
           "selectedCustomer": "Selected customer: {label}"
         },
         "issuances": {
           "title": "Recent issuances",
+          "types": {
+            "delivery": "Delivery",
+            "product": "Product"
+          },
           "columns": {
             "code": "Code",
             "customer": "Customer",
@@ -673,6 +681,7 @@
           "selectAll": "Select all orders on this page",
           "selectOne": "Select order {orderNumber}",
           "waybill": "Open waybill",
+          "waybillCreate": "Create waybill",
           "refresh": "Refresh"
         },
         "table": {
@@ -690,7 +699,93 @@
           "subtotal": "Subtotal: {value}",
           "waybillEmpty": "No waybill",
           "waybillStatusEmpty": "—",
-          "waybillStatusUnknown": "Unknown status"
+          "waybillStatusUnknown": "Unknown status",
+          "waybillStatusCatalog": {
+            "1": {
+              "short": "Created",
+              "full": "The sender created this waybill but has not yet handed it over for shipment."
+            },
+            "2": {
+              "short": "Deleted",
+              "full": "Deleted"
+            },
+            "3": {
+              "short": "Not found",
+              "full": "Number not found"
+            },
+            "4": {
+              "short": "In sender city",
+              "full": "Shipment is in city XXXX (status for inter-regional shipments)"
+            },
+            "41": {
+              "short": "Local in city",
+              "full": "Shipment is in city XXXX (status for Local Standard and Local Express services, delivery within the city)"
+            },
+            "5": {
+              "short": "In transit",
+              "full": "Shipment is heading to city YYYY"
+            },
+            "6": {
+              "short": "In recipient city",
+              "full": "Shipment is in city YYYY, estimated delivery to BRANCH-XXX dd-mm. Please wait for an additional arrival notification"
+            },
+            "7": {
+              "short": "At branch",
+              "full": "Arrived at branch"
+            },
+            "8": {
+              "short": "In parcel locker",
+              "full": "Arrived at branch (loaded into parcel locker)"
+            },
+            "9": {
+              "short": "Delivered",
+              "full": "Shipment received"
+            },
+            "10": {
+              "short": "Delivered, transfer pending",
+              "full": "Shipment received on %DateReceived%. Within 24 hours you will receive an SMS about money transfer availability at Nova Poshta branch cashier"
+            },
+            "11": {
+              "short": "Delivered, transfer issued",
+              "full": "Shipment received on %DateReceived%. Money transfer has been issued to the recipient"
+            },
+            "12": {
+              "short": "Being processed",
+              "full": "Nova Poshta is processing your shipment"
+            },
+            "101": {
+              "short": "Out for delivery",
+              "full": "On the way to recipient"
+            },
+            "102": {
+              "short": "Refused with return",
+              "full": "Refusal to receive (sender created a return request)"
+            },
+            "103": {
+              "short": "Refused",
+              "full": "Refusal to receive"
+            },
+            "104": {
+              "short": "Address changed",
+              "full": "Address changed"
+            },
+            "105": {
+              "short": "Storage stopped",
+              "full": "Storage stopped"
+            },
+            "106": {
+              "short": "Return waybill created",
+              "full": "Received and reverse-delivery waybill created"
+            },
+            "111": {
+              "short": "Delivery attempt failed",
+              "full": "Delivery attempt failed because recipient was unavailable at address or by phone"
+            },
+            "112": {
+              "short": "Delivery postponed",
+              "full": "Delivery date postponed by recipient"
+            }
+          }
         },
         "bulk": {
           "selected": "Selected: {count}"
@@ -972,6 +1067,18 @@
               "number": "Waybill number",
               "status": "Status"
             },
+            "tracking": {
+              "title": "TTN Tracking",
+              "currentStatus": "Current status",
+              "syncedAt": "Synced at",
+              "empty": "No tracking events yet.",
+              "close": "Close",
+              "location": "Location",
+              "warehouse": "Branch",
+              "note": "Note",
+              "comment": "Comment",
+              "planned": "Planned"
+            },
             "meta": {
               "senderType": "Sender type",
               "payerType": "Payer type",
@@ -986,6 +1093,7 @@
                 "nonCash": "Non-cash"
               },
               "validation": {
+                "controlPaymentUnavailable": "Control Payment is not enabled in Nova Poshta for the selected sender.",
                 "thirdPersonRequiresNonCash": "Only NonCash payment method is available for Third person payer.",
                 "thirdPersonUnavailable": "Third-person payer is unavailable for the selected sender.",
                 "nonCashUnavailable": "Non-cash payment is unavailable for the selected sender.",

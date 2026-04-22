@@ -33,8 +33,9 @@
           "modification": "Modification",
           "capacity": "Capacity",
           "engine": "Engine",
-          "hp": "Power HP",
-          "kw": "Power KW"
+          "hp": "HP",
+          "kw": "KW",
+          "to": "To"
         }
       }
     }

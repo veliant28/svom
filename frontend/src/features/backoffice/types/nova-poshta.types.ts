@@ -144,6 +144,19 @@ export type BackofficeOrderNovaPoshtaWaybill = {
   recipient_apartment: string;
   description_snapshot: string;
   additional_information_snapshot: string;
+  info_reg_client_barcodes: string;
+  saturday_delivery: boolean;
+  local_express: boolean;
+  delivery_by_hand: boolean;
+  delivery_by_hand_recipients: string;
+  special_cargo: boolean;
+  preferred_delivery_date: string;
+  time_interval: "CityDeliveryTimeInterval1" | "CityDeliveryTimeInterval2" | "CityDeliveryTimeInterval3" | "CityDeliveryTimeInterval4" | "";
+  accompanying_documents: string;
+  red_box_barcode: string;
+  number_of_floors_lifting: string;
+  number_of_floors_descent: string;
+  forwarding_count: string;
   error_codes: string[];
   warning_codes: string[];
   info_codes: string[];
@@ -157,6 +170,7 @@ export type BackofficeOrderNovaPoshtaWaybill = {
   updated_at: string;
   events_count: number;
   options_seat: BackofficeNovaPoshtaWaybillSeatOption[];
+  tracking_events: BackofficeNovaPoshtaWaybillTrackingEvent[];
 };
 
 export type BackofficeNovaPoshtaWaybillSeatOption = {
@@ -171,6 +185,19 @@ export type BackofficeNovaPoshtaWaybillSeatOption = {
   volumetric_volume: string;
   cargo_type: "Cargo" | "Parcel" | "Documents" | "Pallet" | "TiresWheels";
   special_cargo: boolean;
+};
+
+export type BackofficeNovaPoshtaWaybillTrackingEvent = {
+  id: string;
+  event_type: string;
+  status_code: string;
+  status_text: string;
+  location: string;
+  warehouse: string;
+  note: string;
+  comment: string;
+  event_at: string;
+  synced_at: string;
 };
 
 export type BackofficeOrderNovaPoshtaWaybillSummary = {

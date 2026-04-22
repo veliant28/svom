@@ -19,12 +19,14 @@ def resolve_payment_rule(
     sender_type: str,
     requested_afterpayment: Decimal | None,
     order_total: Decimal,
+    sender_options: dict[str, Any] | None = None,
     requested_payer_type: str | None = None,
     requested_payment_method: str | None = None,
 ) -> PaymentRuleResolution:
     normalized_sender_type = resolve_effective_sender_type(sender_type=sender_type)
     payer_type = _resolve_payer_type(requested_payer_type)
     payment_method = _resolve_payment_method(normalized_sender_type, requested_payment_method)
+    normalized_order_total = Decimal(str(order_total or "0"))
 
     if payer_type == "ThirdPerson" and payment_method != "NonCash":
         raise NovaPoshtaBusinessRuleError(
@@ -32,40 +34,49 @@ def resolve_payment_rule(
         )
 
     if normalized_sender_type == "private_person":
-        # Для физлица допускаем обычную логику наложенного платежа.
-        amount = requested_afterpayment if requested_afterpayment is not None else order_total
+        # Для физлица всегда используем наложенный платеж получателем на полную сумму заказа.
+        amount = normalized_order_total
         if amount <= 0:
             amount = None
         return PaymentRuleResolution(
-            payer_type=payer_type,
-            payment_method=payment_method,
+            payer_type="Recipient",
+            payment_method="Cash",
             afterpayment_amount=amount,
         )
 
     if normalized_sender_type in {"fop", "business"}:
-        if requested_afterpayment is None or requested_afterpayment <= 0:
+        if normalized_order_total <= 0:
             raise NovaPoshtaBusinessRuleError(
                 "Для отправителя типа ФОП/Организация требуется сумма контроля оплаты больше 0.",
             )
+        can_control_payment: bool | None = None
+        if sender_options is not None:
+            raw_capability = sender_options.get("CanAfterpaymentOnGoodsCost")
+            if isinstance(raw_capability, bool):
+                can_control_payment = raw_capability
+            elif isinstance(raw_capability, str):
+                normalized_capability = raw_capability.strip().lower()
+                if normalized_capability in {"true", "1"}:
+                    can_control_payment = True
+                elif normalized_capability in {"false", "0"}:
+                    can_control_payment = False
+
+        afterpayment_amount = normalized_order_total
+        # Если у контрагента не подключен "Контроль оплаты", создаем ТТН без этой услуги.
+        if can_control_payment is False:
+            afterpayment_amount = None
         return PaymentRuleResolution(
             payer_type=payer_type,
             payment_method=payment_method,
-            afterpayment_amount=requested_afterpayment,
+            afterpayment_amount=afterpayment_amount,
         )
 
     raise NovaPoshtaBusinessRuleError("Неизвестный тип отправителя Новой Почты.")
 
 
 def validate_sender_capabilities(*, sender_type: str, options: dict[str, Any]) -> None:
-    normalized_sender_type = resolve_effective_sender_type(sender_type=sender_type)
-    if normalized_sender_type not in {"fop", "business"}:
-        return
-
-    can_control_payment = bool(options.get("CanAfterpaymentOnGoodsCost"))
-    if not can_control_payment:
-        raise NovaPoshtaBusinessRuleError(
-            "Для выбранного отправителя не подключена услуга 'Контроль оплаты' в Новой Почте.",
-        )
+    _ = resolve_effective_sender_type(sender_type=sender_type)
+    _ = options
 
 def _resolve_payer_type(requested_payer_type: str | None) -> str:
     normalized_requested = (requested_payer_type or "").strip()

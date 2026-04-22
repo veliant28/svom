@@ -1,7 +1,8 @@
 import { formatBackofficeDate } from "@/features/backoffice/lib/supplier-workspace";
 
 export function formatOrderDate(value: string | null | undefined): string {
-  return formatBackofficeDate(value);
+  const formatted = formatBackofficeDate(value);
+  return formatted.replace(/,\s+/g, " ");
 }
 
 export function formatOrderTotal(value: string | number | null | undefined, currency: string, locale: string): string {

@@ -29,6 +29,7 @@ class AutocatalogImportSummary:
     makes_created: int = 0
     models_created: int = 0
     modifications_created: int = 0
+    modifications_end_date_updated: int = 0
     mappings_created: int = 0
 
     def to_dict(self) -> dict[str, int]:
@@ -160,6 +161,7 @@ class UtrAutocatalogImportService:
                         car_row=car_row,
                     )
                     start_date_at = self._parse_start_date(car_row.get("startDateAt"))
+                    end_date_at = self._parse_end_date(car_row.get("endDateAt"))
                     hp_from = self._parse_optional_int(car_row.get("capacityHpFrom"))
                     kw_from = self._parse_optional_int(car_row.get("capacityKwFrom"))
 
@@ -199,6 +201,12 @@ class UtrAutocatalogImportService:
                         )
                         raise
                     summary.modifications_created += int(modification_created)
+
+                    # Business rule: use only UTR period end (endDateAt) to fill/update local end_date_at.
+                    if end_date_at and car_modification.end_date_at != end_date_at:
+                        car_modification.end_date_at = end_date_at
+                        car_modification.save(update_fields=["end_date_at", "updated_at"])
+                        summary.modifications_end_date_updated += 1
 
                     _, mapping_created = UtrDetailCarMap.objects.get_or_create(
                         utr_detail_id=detail_id,
@@ -262,6 +270,20 @@ class UtrAutocatalogImportService:
     def _parse_start_date(self, value) -> date | None:
         text = str(value or "").strip()
         if not text:
+            return None
+        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+            try:
+                return datetime.strptime(text, fmt).date()
+            except ValueError:
+                continue
+        return None
+
+    def _parse_end_date(self, value) -> date | None:
+        text = str(value or "").strip()
+        if not text:
+            return None
+        lowered = text.lower()
+        if lowered in {"-", "present", "current", "now", "null", "none"}:
             return None
         for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
             try:

@@ -1,7 +1,7 @@
 "use client";
 
-import { Store } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, Loader2, Store, X } from "lucide-react";
+import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 
@@ -671,6 +671,17 @@ export function CheckoutPage() {
     }
   }
 
+  function handlePromoInputKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") {
+      return;
+    }
+    event.preventDefault();
+    if (isPromoApplying || !promoInput.trim()) {
+      return;
+    }
+    void handleApplyPromo();
+  }
+
   if (!isAuthenticated) {
     return (
       <section className="mx-auto max-w-6xl px-4 py-8">
@@ -1268,33 +1279,46 @@ export function CheckoutPage() {
                 <input
                   value={promoInput}
                   onChange={(event) => setPromoInput(event.target.value.toUpperCase())}
+                  onKeyDown={handlePromoInputKeyDown}
                   placeholder={t("promo.placeholder")}
                   className="h-9 min-w-0 flex-1 rounded-md border px-3 text-sm"
                   style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
                 />
-                <button
-                  type="button"
-                  disabled={isPromoApplying || !promoInput.trim()}
-                  className="h-9 rounded-md border px-3 text-xs font-semibold disabled:opacity-60"
-                  style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-                  onClick={() => {
-                    void handleApplyPromo();
-                  }}
-                >
-                  {isPromoApplying ? t("promo.actions.applying") : t("promo.actions.apply")}
-                </button>
-                {appliedPromoCode ? (
+                <span className="group relative inline-flex">
                   <button
                     type="button"
-                    disabled={isPromoApplying}
-                    className="h-9 rounded-md border px-3 text-xs font-semibold disabled:opacity-60"
+                    aria-label={isPromoApplying ? t("promo.actions.applying") : t("promo.actions.apply")}
+                    disabled={isPromoApplying || !promoInput.trim()}
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border disabled:opacity-60"
                     style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
                     onClick={() => {
-                      void handleClearPromo();
+                      void handleApplyPromo();
                     }}
                   >
-                    {t("promo.actions.clear")}
+                    {isPromoApplying ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
                   </button>
+                  <span role="tooltip" className="header-tooltip hidden group-hover:block group-focus-within:block">
+                    {isPromoApplying ? t("promo.actions.applying") : t("promo.actions.apply")}
+                  </span>
+                </span>
+                {appliedPromoCode ? (
+                  <span className="group relative inline-flex">
+                    <button
+                      type="button"
+                      aria-label={t("promo.actions.clear")}
+                      disabled={isPromoApplying}
+                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border disabled:opacity-60"
+                      style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                      onClick={() => {
+                        void handleClearPromo();
+                      }}
+                    >
+                      <X size={15} />
+                    </button>
+                    <span role="tooltip" className="header-tooltip hidden group-hover:block group-focus-within:block">
+                      {t("promo.actions.clear")}
+                    </span>
+                  </span>
                 ) : null}
               </div>
 

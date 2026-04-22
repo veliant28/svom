@@ -13,6 +13,7 @@ class BackofficeAutocatalogCarSerializer(serializers.ModelSerializer):
         model = CarModification
         fields = (
             "year",
+            "end_date_at",
             "make",
             "model",
             "modification",

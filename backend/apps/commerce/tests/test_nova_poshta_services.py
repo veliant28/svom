@@ -19,15 +19,16 @@ class NovaPoshtaPaymentRulesTests(SimpleTestCase):
 
         self.assertEqual(rule.payer_type, "Recipient")
         self.assertEqual(rule.payment_method, "Cash")
-        self.assertEqual(rule.afterpayment_amount, Decimal("500.00"))
+        self.assertEqual(rule.afterpayment_amount, Decimal("1200.00"))
 
-    def test_business_sender_requires_afterpayment_amount(self):
-        with self.assertRaises(NovaPoshtaBusinessRuleError):
-            resolve_payment_rule(
-                sender_type="business",
-                requested_afterpayment=None,
-                order_total=Decimal("1200.00"),
-            )
+    def test_business_sender_uses_control_payment_when_supported(self):
+        rule = resolve_payment_rule(
+            sender_type="business",
+            requested_afterpayment=None,
+            order_total=Decimal("1200.00"),
+            sender_options={"CanAfterpaymentOnGoodsCost": True},
+        )
+        self.assertEqual(rule.afterpayment_amount, Decimal("1200.00"))
 
     def test_business_sender_keeps_requested_delivery_payment_method(self):
         rule = resolve_payment_rule(
@@ -41,12 +42,20 @@ class NovaPoshtaPaymentRulesTests(SimpleTestCase):
         self.assertEqual(rule.payment_method, "Cash")
         self.assertEqual(rule.afterpayment_amount, Decimal("1200.00"))
 
-    def test_validate_capabilities_fails_without_control_payment(self):
-        with self.assertRaises(NovaPoshtaBusinessRuleError):
-            validate_sender_capabilities(
-                sender_type="business",
-                options={"CanAfterpaymentOnGoodsCost": False, "CanNonCashPayment": True},
-            )
+    def test_business_sender_skips_control_payment_when_not_supported(self):
+        rule = resolve_payment_rule(
+            sender_type="business",
+            requested_afterpayment=Decimal("1200.00"),
+            order_total=Decimal("1200.00"),
+            sender_options={"CanAfterpaymentOnGoodsCost": False, "CanNonCashPayment": True},
+        )
+        self.assertIsNone(rule.afterpayment_amount)
+
+    def test_validate_capabilities_allows_sender_without_control_payment(self):
+        validate_sender_capabilities(
+            sender_type="business",
+            options={"CanAfterpaymentOnGoodsCost": False, "CanNonCashPayment": True},
+        )
 
     def test_error_mapper_returns_business_error_for_control_payment_message(self):
         exc = map_error_from_payload(

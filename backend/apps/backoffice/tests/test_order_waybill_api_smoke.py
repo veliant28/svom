@@ -10,6 +10,7 @@ from rest_framework.test import APITestCase
 from apps.catalog.models import Brand, Category, Product
 from apps.commerce.models import NovaPoshtaSenderProfile, Order, OrderItem
 from apps.commerce.services.nova_poshta.client import NovaPoshtaResponse
+from apps.commerce.services.nova_poshta.constants import WAYBILL_DESCRIPTION
 from apps.commerce.services.nova_poshta.errors import NovaPoshtaErrorContext
 from apps.users.models import User
 
@@ -20,11 +21,10 @@ def _np_response(payload: dict) -> NovaPoshtaResponse:
 
 class BackofficeOrderWaybillAPISmokeTests(APITestCase):
     def setUp(self):
-        self.staff = User.objects.create_user(
+        self.staff = User.objects.create_superuser(
             email="waybill-staff@test.local",
             first_name="waybill-staff",
             password="demo12345",
-            is_staff=True,
         )
         self.regular = User.objects.create_user(
             email="waybill-user@test.local",
@@ -201,3 +201,145 @@ class BackofficeOrderWaybillAPISmokeTests(APITestCase):
             **self._auth(self.regular_token.key),
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    @patch("apps.commerce.services.nova_poshta.client.NovaPoshtaApiClient.get_tracking_status")
+    @patch("apps.commerce.services.nova_poshta.client.NovaPoshtaApiClient.create_waybill")
+    @patch("apps.commerce.services.nova_poshta.client.NovaPoshtaApiClient.get_counterparty_options")
+    def test_private_sender_forces_cod_and_order_total_contract(
+        self,
+        mock_options,
+        mock_create,
+        mock_tracking,
+    ):
+        self.order.total = "1450.00"
+        self.order.save(update_fields=("total", "updated_at"))
+        mock_options.return_value = _np_response({"success": True, "data": [{"CanAfterpaymentOnGoodsCost": True, "CanNonCashPayment": True}]})
+        mock_create.return_value = _np_response({"success": True, "data": [{"Ref": "np-ref-2", "IntDocNumber": "20451234567891"}]})
+        mock_tracking.return_value = _np_response({"success": True, "data": [{"StatusCode": "1", "Status": "Створено"}]})
+
+        payload = self._payload()
+        payload.update(
+            {
+                "description": "Wrong value from UI",
+                "cost": "1.00",
+                "afterpayment_amount": "1.00",
+                "payer_type": "Sender",
+                "payment_method": "NonCash",
+            }
+        )
+
+        response = self.client.post(
+            reverse("backoffice_api:order-waybill-create", kwargs={"order_id": self.order.id}),
+            payload,
+            format="json",
+            **self._auth(self.staff_token.key),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        request_payload = mock_create.call_args.kwargs["method_properties"]
+        self.assertEqual(request_payload["Description"], WAYBILL_DESCRIPTION)
+        self.assertEqual(request_payload["AdditionalInformation"], f"Номер заказа {self.order.order_number}")
+        self.assertEqual(request_payload["Cost"], "1450")
+        self.assertEqual(request_payload["AfterpaymentOnGoodsCost"], "1450")
+        self.assertEqual(request_payload["PayerType"], "Recipient")
+        self.assertEqual(request_payload["PaymentMethod"], "Cash")
+        self.assertEqual(response.data["description_snapshot"], WAYBILL_DESCRIPTION)
+        self.assertEqual(response.data["cost"], "1450.00")
+        self.assertEqual(response.data["afterpayment_amount"], "1450.00")
+
+    @patch("apps.commerce.services.nova_poshta.client.NovaPoshtaApiClient.get_tracking_status")
+    @patch("apps.commerce.services.nova_poshta.client.NovaPoshtaApiClient.create_waybill")
+    @patch("apps.commerce.services.nova_poshta.client.NovaPoshtaApiClient.get_counterparty_options")
+    def test_business_sender_uses_order_total_and_keeps_multi_seat_packaging(
+        self,
+        mock_options,
+        mock_create,
+        mock_tracking,
+    ):
+        self.order.total = "5000.00"
+        self.order.save(update_fields=("total", "updated_at"))
+        business_sender = NovaPoshtaSenderProfile.objects.create(
+            name="Business sender",
+            sender_type=NovaPoshtaSenderProfile.TYPE_BUSINESS,
+            api_token="token-456",
+            counterparty_ref="counterparty-business-ref",
+            contact_ref="contact-business-ref",
+            address_ref="address-business-ref",
+            city_ref="city-business-ref",
+            phone="+380671111112",
+            contact_name="ТОВ Приклад",
+            organization_name="ТОВ Приклад",
+            edrpou="12345678",
+            is_active=True,
+            is_default=False,
+        )
+
+        mock_options.return_value = _np_response({"success": True, "data": [{"CanAfterpaymentOnGoodsCost": True, "CanNonCashPayment": True}]})
+        mock_create.return_value = _np_response({"success": True, "data": [{"Ref": "np-ref-3", "IntDocNumber": "20451234567892"}]})
+        mock_tracking.return_value = _np_response({"success": True, "data": [{"StatusCode": "1", "Status": "Створено"}]})
+
+        response = self.client.post(
+            reverse("backoffice_api:order-waybill-create", kwargs={"order_id": self.order.id}),
+            {
+                "sender_profile_id": str(business_sender.id),
+                "delivery_type": "warehouse",
+                "recipient_city_ref": "recipient-city-ref",
+                "recipient_city_label": "Миколаїв",
+                "recipient_address_ref": "warehouse-ref-39",
+                "recipient_address_label": "Відділення №39",
+                "recipient_name": "Сухин Валерий Геннадиевич",
+                "recipient_phone": "+380660002702",
+                "seats_amount": 3,
+                "weight": "5.000",
+                "cost": "100.00",
+                "afterpayment_amount": "100.00",
+                "payer_type": "Recipient",
+                "payment_method": "Cash",
+                "options_seat": [
+                    {
+                        "description": "Seat A",
+                        "cost": "30.00",
+                        "weight": "2.000",
+                        "pack_ref": "box-10kg-ref-1",
+                        "volumetric_width": "40",
+                        "volumetric_length": "30",
+                        "volumetric_height": "20",
+                    },
+                    {
+                        "description": "Seat B",
+                        "cost": "30.00",
+                        "weight": "2.000",
+                        "pack_ref": "box-10kg-ref-2",
+                        "volumetric_width": "50",
+                        "volumetric_length": "35",
+                        "volumetric_height": "25",
+                    },
+                    {
+                        "description": "Seat C",
+                        "cost": "40.00",
+                        "weight": "1.000",
+                        "pack_ref": "box-10kg-ref-3",
+                        "volumetric_width": "60",
+                        "volumetric_length": "40",
+                        "volumetric_height": "30",
+                    },
+                ],
+            },
+            format="json",
+            **self._auth(self.staff_token.key),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        request_payload = mock_create.call_args.kwargs["method_properties"]
+        self.assertEqual(request_payload["Description"], WAYBILL_DESCRIPTION)
+        self.assertEqual(request_payload["AdditionalInformation"], f"Номер заказа {self.order.order_number}")
+        self.assertEqual(request_payload["Cost"], "5000")
+        self.assertEqual(request_payload["AfterpaymentOnGoodsCost"], "5000")
+        self.assertEqual(request_payload["SeatsAmount"], "3")
+        self.assertIn("OptionsSeat", request_payload)
+        self.assertEqual(len(request_payload["OptionsSeat"]), 3)
+        self.assertEqual(request_payload["OptionsSeat"][0]["packRef"], "box-10kg-ref-1")
+        self.assertEqual(request_payload["OptionsSeat"][1]["packRef"], "box-10kg-ref-2")
+        self.assertEqual(request_payload["OptionsSeat"][2]["packRef"], "box-10kg-ref-3")
+        self.assertEqual(response.data["cost"], "5000.00")
+        self.assertEqual(response.data["afterpayment_amount"], "5000.00")

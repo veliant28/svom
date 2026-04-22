@@ -8,7 +8,6 @@ import {
   ScanBarcode,
   ScanLine,
   Truck,
-  Trash2,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
@@ -24,6 +23,7 @@ import {
   lookupBackofficeNovaPoshtaTimeIntervals,
   lookupBackofficeNovaPoshtaWarehouses,
 } from "@/features/backoffice/api/orders-api";
+import { OrderWaybillTrackingModal } from "@/features/backoffice/components/orders/order-waybill-tracking-modal";
 import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import {
@@ -33,6 +33,7 @@ import {
   type WaybillSeatOptionPayload,
   type WaybillFormPayload,
 } from "@/features/backoffice/lib/orders/waybill-form";
+import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
 import type { BackofficeOrderOperational } from "@/features/backoffice/types/orders.types";
 import type {
   BackofficeNovaPoshtaLookupCounterparty,
@@ -52,6 +53,7 @@ type WaybillAddressSuggestion = {
   ref: string;
   label: string;
   subtitle: string;
+  selectedLabel?: string;
   settlementRef?: string;
 };
 
@@ -262,6 +264,14 @@ function formatWarehouseLookupDisplay(item: BackofficeNovaPoshtaLookupWarehouse)
   };
 }
 
+function formatWarehouseSelectedLabel(item: BackofficeNovaPoshtaLookupWarehouse): string {
+  const normalizedDescription = String(item.description || item.full_description || "").trim();
+  if (normalizedDescription) {
+    return normalizedDescription.replace(/\s*:\s*/g, ", ");
+  }
+  return String(item.label || "").trim();
+}
+
 function splitAddressInput(value: string): { base: string; suffix: string } {
   const normalized = value.trim();
   if (!normalized) {
@@ -360,6 +370,7 @@ function resolveSenderPreview(): { payer: string; payment: string } {
 }
 
 type SenderPaymentCapabilities = {
+  canAfterpaymentOnGoodsCost: boolean | null;
   canNonCashPayment: boolean | null;
   canPayThirdPerson: boolean | null;
 };
@@ -385,6 +396,7 @@ function resolveSenderPaymentCapabilities(
 ): SenderPaymentCapabilities {
   if (!sender) {
     return {
+      canAfterpaymentOnGoodsCost: null,
       canNonCashPayment: null,
       canPayThirdPerson: null,
     };
@@ -408,6 +420,11 @@ function resolveSenderPaymentCapabilities(
   ) as Record<string, unknown>;
   const normalizedMeta = meta as Record<string, unknown>;
 
+  const canAfterpaymentOnGoodsCost = parseCapabilityBoolean(
+    options.CanAfterpaymentOnGoodsCost
+      ?? normalizedMeta.CanAfterpaymentOnGoodsCost
+      ?? normalizedMeta.can_afterpayment_on_goods_cost,
+  );
   const canNonCashPayment = parseCapabilityBoolean(
     options.CanNonCashPayment ?? normalizedMeta.CanNonCashPayment ?? normalizedMeta.can_non_cash_payment,
   );
@@ -416,6 +433,7 @@ function resolveSenderPaymentCapabilities(
   );
 
   return {
+    canAfterpaymentOnGoodsCost,
     canNonCashPayment,
     canPayThirdPerson,
   };
@@ -583,8 +601,13 @@ export function OrderWaybillModal({
   onClose: () => void;
   t: Translator;
 }) {
+  const { showInfo } = useBackofficeFeedback();
   const defaultSenderId = useMemo(() => {
-    const sender = senderProfiles.find((item) => item.is_default) || senderProfiles[0];
+    const sender =
+      senderProfiles.find((item) => item.is_default && item.is_active)
+      || senderProfiles.find((item) => item.is_active)
+      || senderProfiles.find((item) => item.is_default)
+      || senderProfiles[0];
     return sender?.id ?? "";
   }, [senderProfiles]);
 
@@ -602,6 +625,7 @@ export function OrderWaybillModal({
   const [recipientCounterpartyLoading, setRecipientCounterpartyLoading] = useState(false);
   const [activeRecipientCounterpartyIndex, setActiveRecipientCounterpartyIndex] = useState(-1);
   const [cityQuery, setCityQuery] = useState("");
+  const [cityLookupInteracted, setCityLookupInteracted] = useState(false);
   const [selectedSettlementRef, setSelectedSettlementRef] = useState("");
   const [settlements, setSettlements] = useState<BackofficeNovaPoshtaLookupSettlement[]>([]);
   const [settlementLoading, setSettlementLoading] = useState(false);
@@ -620,6 +644,7 @@ export function OrderWaybillModal({
   const [packingsLoading, setPackingsLoading] = useState(false);
   const [timeIntervals, setTimeIntervals] = useState<BackofficeNovaPoshtaLookupTimeInterval[]>([]);
   const [timeIntervalsLoading, setTimeIntervalsLoading] = useState(false);
+  const [trackingModalOpen, setTrackingModalOpen] = useState(false);
   const [deliveryDateLookup, setDeliveryDateLookup] = useState<BackofficeNovaPoshtaLookupDeliveryDate | null>(null);
   const [deliveryDateLookupLoading, setDeliveryDateLookupLoading] = useState(false);
   const [senderMenuOpen, setSenderMenuOpen] = useState(false);
@@ -658,6 +683,7 @@ export function OrderWaybillModal({
   const streetDropdownRef = useRef<HTMLDivElement | null>(null);
   const warehouseDropdownRef = useRef<HTMLDivElement | null>(null);
   const packingsDropdownRef = useRef<HTMLDivElement | null>(null);
+  const lastPaymentWarningToastRef = useRef("");
   const sender = useMemo(
     () => senderProfiles.find((item) => item.id === payload.sender_profile_id),
     [payload.sender_profile_id, senderProfiles],
@@ -672,6 +698,7 @@ export function OrderWaybillModal({
   const recipientHasSelectedCounterparty = Boolean((payload.recipient_counterparty_ref || "").trim());
   const recipientIsPrivatePerson = !recipientHasSelectedCounterparty || recipientCounterpartyType === "private_person";
   const privateCounterpartyLabel = t("orders.modals.waybill.meta.senderTypes.privatePerson");
+  const controlPaymentSupported = senderPaymentCapabilities.canAfterpaymentOnGoodsCost !== false;
   const nonCashSupported = senderPaymentCapabilities.canNonCashPayment !== false;
   const thirdPersonSupported = senderPaymentCapabilities.canPayThirdPerson !== false && nonCashSupported;
   const normalizedPreferredDeliveryDate = normalizePreferredDeliveryDate(payload.preferred_delivery_date || "");
@@ -710,6 +737,7 @@ export function OrderWaybillModal({
     setRecipientCounterparties([]);
     setActiveRecipientCounterpartyIndex(-1);
     setCityQuery(initialPayload.recipient_city_label || "");
+    setCityLookupInteracted(false);
     setSelectedSettlementRef(initialPayload.recipient_city_ref || "");
     setWarehouseQuery(initialPayload.recipient_address_label || "");
     setStreetQuery(initialPayload.recipient_street_label || "");
@@ -930,6 +958,12 @@ export function OrderWaybillModal({
       setSettlementLoading(false);
       return;
     }
+    if (!cityLookupInteracted) {
+      setSettlements([]);
+      setActiveSettlementIndex(-1);
+      setSettlementLoading(false);
+      return;
+    }
     if (skipNextSettlementLookupRef.current) {
       skipNextSettlementLookupRef.current = false;
       setSettlementLoading(false);
@@ -971,7 +1005,7 @@ export function OrderWaybillModal({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [cityQuery, isOpen, locale, payload.sender_profile_id, token]);
+  }, [cityLookupInteracted, cityQuery, isOpen, locale, payload.sender_profile_id, token]);
 
   useEffect(() => {
     if (!isOpen || !token || !payload.sender_profile_id || !payload.recipient_city_ref) {
@@ -1010,7 +1044,7 @@ export function OrderWaybillModal({
             sender_profile_id: payload.sender_profile_id,
             city_ref: payload.recipient_city_ref,
             query: warehouseLookupQuery,
-            locale,
+            locale: "uk",
           }),
           hasLetters && Boolean(selectedSettlementRef.trim())
             ? lookupBackofficeNovaPoshtaStreets(token, {
@@ -1029,6 +1063,7 @@ export function OrderWaybillModal({
               ref: item.ref,
               label: formatted.label,
               subtitle: formatted.subtitle,
+              selectedLabel: formatWarehouseSelectedLabel(item),
             };
           });
           const streetRows: WaybillAddressSuggestion[] = streetsResponse.results.map((item) => ({
@@ -1368,6 +1403,26 @@ export function OrderWaybillModal({
     }),
     [t, timeIntervals],
   );
+  const controlPaymentWarningMessage = senderRequiresControlPayment && !controlPaymentSupported
+    ? t("orders.modals.waybill.meta.validation.controlPaymentUnavailable")
+    : "";
+
+  useEffect(() => {
+    if (!isOpen) {
+      lastPaymentWarningToastRef.current = "";
+      setTrackingModalOpen(false);
+      return;
+    }
+    if (!controlPaymentWarningMessage) {
+      lastPaymentWarningToastRef.current = "";
+      return;
+    }
+    if (lastPaymentWarningToastRef.current === controlPaymentWarningMessage) {
+      return;
+    }
+    showInfo(controlPaymentWarningMessage);
+    lastPaymentWarningToastRef.current = controlPaymentWarningMessage;
+  }, [controlPaymentWarningMessage, isOpen, showInfo]);
 
   if (!isOpen) {
     return null;
@@ -1399,6 +1454,13 @@ export function OrderWaybillModal({
     paymentValidationMessage = t("orders.modals.waybill.meta.validation.thirdPersonRequiresNonCash");
   }
   const canSubmit = canSaveWaybill(payload) && !formDisabled && !paymentValidationMessage && !preferredDeliveryDateInvalid;
+  const handleTrackWaybill = async () => {
+    if (!waybill) {
+      return;
+    }
+    setTrackingModalOpen(true);
+    await onSync();
+  };
   const normalizedSeatsAmount = Math.max(1, seatOptions.length || payload.seats_amount || 1);
   const width = parsePositiveNumber(packagingWidth);
   const length = parsePositiveNumber(packagingLength);
@@ -1430,7 +1492,7 @@ export function OrderWaybillModal({
   const recipientCounterpartyDropdownStyle = (recipientCounterpartyLoading || recipientCounterparties.length > 0)
     ? computeFloatingDropdownStyle(recipientCounterpartyInputRef.current)
     : null;
-  const cityDropdownStyle = (settlementLoading || settlements.length > 0)
+  const cityDropdownStyle = cityLookupInteracted && (settlementLoading || settlements.length > 0)
     ? computeFloatingDropdownStyle(cityInputRef.current)
     : null;
   const streetDropdownStyle = (streetLoading || streets.length > 0)
@@ -1469,7 +1531,8 @@ export function OrderWaybillModal({
       return;
     }
     skipNextWarehouseLookupRef.current = true;
-    setWarehouseQuery(item.label);
+    const selectedLabel = (item.selectedLabel || item.label || "").trim();
+    setWarehouseQuery(selectedLabel);
     const normalizedSuggestionText = `${item.label} ${item.subtitle}`.toLowerCase();
     const isPostomatSuggestion =
       normalizedSuggestionText.includes("поштомат")
@@ -1480,7 +1543,7 @@ export function OrderWaybillModal({
       ...prev,
       delivery_type: isPostomatSuggestion ? "postomat" : "warehouse",
       recipient_address_ref: item.ref,
-      recipient_address_label: item.label,
+      recipient_address_label: selectedLabel,
       recipient_street_ref: "",
       recipient_street_label: "",
       recipient_house: "",
@@ -1718,6 +1781,7 @@ export function OrderWaybillModal({
     }),
   };
   const applySettlementSelection = (settlement: BackofficeNovaPoshtaLookupSettlement) => {
+    setCityLookupInteracted(false);
     skipNextSettlementLookupRef.current = true;
     setSelectedSettlementRef(settlement.settlement_ref || settlement.ref || "");
     setCityQuery(settlement.label);
@@ -1759,6 +1823,7 @@ export function OrderWaybillModal({
     if (normalizedCityRef) {
       skipNextSettlementLookupRef.current = true;
       setSelectedSettlementRef("");
+      setCityLookupInteracted(false);
       if (normalizedCityLabel) {
         setCityQuery(normalizedCityLabel);
       }
@@ -1821,6 +1886,7 @@ export function OrderWaybillModal({
         if (detailsCityRef) {
           skipNextSettlementLookupRef.current = true;
           setSelectedSettlementRef("");
+          setCityLookupInteracted(false);
           if (detailsCityLabel) {
             setCityQuery(detailsCityLabel);
           }
@@ -2117,6 +2183,7 @@ export function OrderWaybillModal({
                     disabled={formDisabled}
                     onChange={(event) => {
                       const next = event.target.value;
+                      setCityLookupInteracted(true);
                       setSelectedSettlementRef("");
                       setCityQuery(next);
                       setSettlements([]);
@@ -3156,18 +3223,15 @@ export function OrderWaybillModal({
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1">
               {waybill ? (
-                <BackofficeTooltip content={t("orders.modals.waybill.actions.delete")} placement="top" align="center" wrapperClassName="inline-flex">
-                  <button
-                    type="button"
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-md border"
-                    style={{ borderColor: "#ef4444", backgroundColor: "rgba(239,68,68,.08)", color: "#b91c1c" }}
-                    disabled={isBusy}
-                    onClick={onDelete}
-                    aria-label={t("orders.modals.waybill.actions.delete")}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </BackofficeTooltip>
+                <button
+                  type="button"
+                  className="h-10 rounded-md border px-4 text-xs font-semibold"
+                  style={{ borderColor: "#dc2626", backgroundColor: "#dc2626", color: "#fff" }}
+                  disabled={isBusy}
+                  onClick={onDelete}
+                >
+                  {t("orders.modals.waybill.actions.delete")}
+                </button>
               ) : null}
 
               <button
@@ -3196,7 +3260,7 @@ export function OrderWaybillModal({
                 className="h-10 rounded-md border px-4 text-xs font-semibold"
                 style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
                 disabled={isBusy || !waybill}
-                onClick={onSync}
+                onClick={handleTrackWaybill}
               >
                 {t("orders.modals.waybill.actions.trackTtn")}
               </button>
@@ -3232,6 +3296,13 @@ export function OrderWaybillModal({
           </div>
         </footer>
       </div>
+      <OrderWaybillTrackingModal
+        isOpen={trackingModalOpen}
+        waybill={waybill}
+        locale={locale}
+        t={t}
+        onClose={() => setTrackingModalOpen(false)}
+      />
     </div>
   );
 }

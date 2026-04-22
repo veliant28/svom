@@ -62,13 +62,35 @@ def _normalize_city_with_region(city: str, region: str) -> str:
 
     city_parts = [part.strip() for part in normalized_city.split(",") if part.strip()]
     lower_region = normalized_region.lower()
-    if any(part.lower() == lower_region for part in city_parts[1:]):
+    normalized_region_token = _normalize_region_token(normalized_region)
+    if any(
+        part.lower() == lower_region
+        or (
+            normalized_region_token
+            and _normalize_region_token(part) == normalized_region_token
+        )
+        for part in city_parts[1:]
+    ):
         return normalized_city
 
     lower_city = normalized_city.lower()
     if lower_city.startswith("г. ") or lower_city.startswith("м. "):
         return f"{normalized_city}, {normalized_region}"
     return f"г. {normalized_city}, {normalized_region}"
+
+
+def _normalize_region_token(value: str) -> str:
+    normalized = _clean(value).lower().replace(".", " ")
+    if not normalized:
+        return ""
+
+    stopwords = {"область", "обл", "обл ", "район", "р н", "рн"}
+    cleaned_parts = [
+        part
+        for part in normalized.split()
+        if part and part not in stopwords
+    ]
+    return " ".join(cleaned_parts)
 
 
 def _is_postomat_token(value: str) -> bool:

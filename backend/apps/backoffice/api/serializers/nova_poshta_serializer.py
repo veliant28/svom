@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from apps.commerce.models import NovaPoshtaSenderProfile, OrderNovaPoshtaWaybill
+from apps.commerce.models import NovaPoshtaSenderProfile, OrderNovaPoshtaWaybill, OrderNovaPoshtaWaybillEvent
 from apps.commerce.services.nova_poshta.tracking_status_catalog import resolve_tracking_status_text
 
 
@@ -221,6 +221,20 @@ class OrderNovaPoshtaWaybillSerializer(serializers.ModelSerializer):
     events_count = serializers.SerializerMethodField(read_only=True)
     status_text = serializers.SerializerMethodField(read_only=True)
     options_seat = serializers.SerializerMethodField(read_only=True)
+    tracking_events = serializers.SerializerMethodField(read_only=True)
+    info_reg_client_barcodes = serializers.SerializerMethodField(read_only=True)
+    saturday_delivery = serializers.SerializerMethodField(read_only=True)
+    local_express = serializers.SerializerMethodField(read_only=True)
+    delivery_by_hand = serializers.SerializerMethodField(read_only=True)
+    delivery_by_hand_recipients = serializers.SerializerMethodField(read_only=True)
+    special_cargo = serializers.SerializerMethodField(read_only=True)
+    preferred_delivery_date = serializers.SerializerMethodField(read_only=True)
+    time_interval = serializers.SerializerMethodField(read_only=True)
+    accompanying_documents = serializers.SerializerMethodField(read_only=True)
+    red_box_barcode = serializers.SerializerMethodField(read_only=True)
+    number_of_floors_lifting = serializers.SerializerMethodField(read_only=True)
+    number_of_floors_descent = serializers.SerializerMethodField(read_only=True)
+    forwarding_count = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = OrderNovaPoshtaWaybill
@@ -257,6 +271,19 @@ class OrderNovaPoshtaWaybillSerializer(serializers.ModelSerializer):
             "recipient_apartment",
             "description_snapshot",
             "additional_information_snapshot",
+            "info_reg_client_barcodes",
+            "saturday_delivery",
+            "local_express",
+            "delivery_by_hand",
+            "delivery_by_hand_recipients",
+            "special_cargo",
+            "preferred_delivery_date",
+            "time_interval",
+            "accompanying_documents",
+            "red_box_barcode",
+            "number_of_floors_lifting",
+            "number_of_floors_descent",
+            "forwarding_count",
             "error_codes",
             "warning_codes",
             "info_codes",
@@ -270,6 +297,7 @@ class OrderNovaPoshtaWaybillSerializer(serializers.ModelSerializer):
             "updated_at",
             "events_count",
             "options_seat",
+            "tracking_events",
         )
         read_only_fields = fields
 
@@ -310,6 +338,150 @@ class OrderNovaPoshtaWaybillSerializer(serializers.ModelSerializer):
                 }
             )
         return normalized
+
+    def get_info_reg_client_barcodes(self, obj: OrderNovaPoshtaWaybill) -> str:
+        raw = self._raw_request(obj)
+        return str(raw.get("InfoRegClientBarcodes") or "").strip()
+
+    def get_saturday_delivery(self, obj: OrderNovaPoshtaWaybill) -> bool:
+        return self._parse_np_bool(self._raw_request(obj).get("SaturdayDelivery"))
+
+    def get_local_express(self, obj: OrderNovaPoshtaWaybill) -> bool:
+        return self._parse_np_bool(self._raw_request(obj).get("LocalExpress"))
+
+    def get_delivery_by_hand(self, obj: OrderNovaPoshtaWaybill) -> bool:
+        return self._parse_np_bool(self._raw_request(obj).get("DeliveryByHand"))
+
+    def get_delivery_by_hand_recipients(self, obj: OrderNovaPoshtaWaybill) -> str:
+        value = self._raw_request(obj).get("DeliveryByHandRecipients")
+        if isinstance(value, list):
+            rows = [str(item).strip() for item in value if str(item).strip()]
+            return "\n".join(rows)
+        return str(value or "").strip()
+
+    def get_special_cargo(self, obj: OrderNovaPoshtaWaybill) -> bool:
+        raw = self._raw_request(obj)
+        if self._parse_np_bool(raw.get("specialCargo")):
+            return True
+        options = raw.get("OptionsSeat")
+        if isinstance(options, list):
+            for item in options:
+                if isinstance(item, dict) and self._parse_np_bool(item.get("specialCargo")):
+                    return True
+        return False
+
+    def get_preferred_delivery_date(self, obj: OrderNovaPoshtaWaybill) -> str:
+        return str(self._raw_request(obj).get("PreferredDeliveryDate") or "").strip()
+
+    def get_time_interval(self, obj: OrderNovaPoshtaWaybill) -> str:
+        return str(self._raw_request(obj).get("TimeInterval") or "").strip()
+
+    def get_accompanying_documents(self, obj: OrderNovaPoshtaWaybill) -> str:
+        return str(self._raw_request(obj).get("AccompanyingDocuments") or "").strip()
+
+    def get_red_box_barcode(self, obj: OrderNovaPoshtaWaybill) -> str:
+        return str(self._raw_request(obj).get("RedBoxBarcode") or "").strip()
+
+    def get_number_of_floors_lifting(self, obj: OrderNovaPoshtaWaybill) -> str:
+        return str(self._raw_request(obj).get("NumberOfFloorsLifting") or "").strip()
+
+    def get_number_of_floors_descent(self, obj: OrderNovaPoshtaWaybill) -> str:
+        return str(self._raw_request(obj).get("NumberOfFloorsDescent") or "").strip()
+
+    def get_forwarding_count(self, obj: OrderNovaPoshtaWaybill) -> str:
+        return str(self._raw_request(obj).get("ForwardingCount") or "").strip()
+
+    @staticmethod
+    def _raw_request(obj: OrderNovaPoshtaWaybill) -> dict:
+        return obj.raw_request_json if isinstance(obj.raw_request_json, dict) else {}
+
+    @staticmethod
+    def _parse_np_bool(value) -> bool:
+        if isinstance(value, bool):
+            return value
+        normalized = str(value or "").strip().lower()
+        return normalized in {"1", "true", "yes", "y"}
+
+    @staticmethod
+    def _extract_tracking_status_data(event: OrderNovaPoshtaWaybillEvent) -> dict:
+        payload = event.payload if isinstance(event.payload, dict) else {}
+        status_data = payload.get("status")
+        if isinstance(status_data, dict):
+            return status_data
+
+        raw_response = event.raw_response if isinstance(event.raw_response, dict) else {}
+        raw_data = raw_response.get("data")
+        if isinstance(raw_data, list) and raw_data and isinstance(raw_data[0], dict):
+            return raw_data[0]
+        return {}
+
+    def get_tracking_events(self, obj: OrderNovaPoshtaWaybill) -> list[dict]:
+        events = list(
+            obj.events.filter(
+                event_type=OrderNovaPoshtaWaybillEvent.EVENT_SYNC,
+            )
+            .exclude(status_code="")
+            .order_by("-created_at")
+        )
+        if not events:
+            events = list(obj.events.exclude(status_code="").order_by("-created_at"))
+        result: list[dict] = []
+        seen_snapshots: set[str] = set()
+        for event in events:
+            status_data = self._extract_tracking_status_data(event)
+            location = str(
+                status_data.get("CityRecipient")
+                or status_data.get("RecipientAddress")
+                or ""
+            ).strip()
+            warehouse = str(
+                status_data.get("WarehouseRecipient")
+                or status_data.get("WarehouseRecipientAddress")
+                or ""
+            ).strip()
+            note = str(
+                status_data.get("UndeliveryReasonsSubtypeDescription")
+                or status_data.get("UndeliveryReasons")
+                or ""
+            ).strip()
+            comment = str(status_data.get("CounterpartyRecipientDescription") or "").strip()
+            event_at = (
+                str(status_data.get("DateScan") or "").strip()
+                or str(status_data.get("TrackingUpdateDate") or "").strip()
+                or event.created_at.isoformat()
+            )
+            resolved_status_text = resolve_tracking_status_text(
+                status_code=event.status_code,
+                status_text=event.status_text,
+            )
+            snapshot_key = "|".join(
+                (
+                    str(event.status_code or "").strip(),
+                    resolved_status_text.strip(),
+                    location,
+                    warehouse,
+                    note,
+                    comment,
+                )
+            ).lower()
+            if snapshot_key in seen_snapshots:
+                continue
+            seen_snapshots.add(snapshot_key)
+            result.append(
+                {
+                    "id": str(event.id),
+                    "event_type": event.event_type,
+                    "status_code": event.status_code,
+                    "status_text": resolved_status_text,
+                    "location": location,
+                    "warehouse": warehouse,
+                    "note": note,
+                    "comment": comment,
+                    "event_at": event_at,
+                    "synced_at": event.created_at.isoformat(),
+                }
+            )
+        return result
 
 
 class NovaPoshtaWaybillSummarySerializer(serializers.Serializer):
