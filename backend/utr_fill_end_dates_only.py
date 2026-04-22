@@ -76,6 +76,14 @@ class LocalRowMeta:
     engine_codes: set[str]
 
 
+class UtrHttpError(RuntimeError):
+    def __init__(self, *, code: int, url: str, body: str):
+        self.code = int(code)
+        self.url = str(url)
+        self.body = str(body or "")
+        super().__init__(f"UTR HTTPError {self.code} for {self.url}: {self.body[:300]}")
+
+
 class UtrApiClient:
     def __init__(self, *, token: str, sleep_seconds: float, base_url: str = "https://order24-api.utr.ua"):
         self.token = token
@@ -102,7 +110,7 @@ class UtrApiClient:
                 status = response.status
         except HTTPError as exc:
             body = exc.read().decode("utf-8", "ignore") if hasattr(exc, "read") else ""
-            raise RuntimeError(f"UTR HTTPError {exc.code} for {url}: {body[:300]}") from exc
+            raise UtrHttpError(code=exc.code, url=url, body=body) from exc
         except URLError as exc:
             raise RuntimeError(f"UTR URLError for {url}: {exc}") from exc
 
@@ -314,7 +322,13 @@ def main() -> int:
             local_rows = local_models_map[model_name]
             local_index = build_local_index(local_rows)
 
-            model_payload = client.get_json(f"/tecdoc/manufacturers/{manufacturer_id}/models/{model_id}")
+            try:
+                model_payload = client.get_json(f"/tecdoc/manufacturers/{manufacturer_id}/models/{model_id}")
+            except UtrHttpError as exc:
+                if exc.code == 404 and "Modifications not found" in exc.body:
+                    print(f"  [skip model] {model_name}: UTR says modifications not found (404)")
+                    continue
+                raise
             modifications = []
             if isinstance(model_payload, dict) and isinstance(model_payload.get("modifications"), list):
                 modifications = model_payload["modifications"]
