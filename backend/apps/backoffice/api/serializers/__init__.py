@@ -99,6 +99,7 @@ from .loyalty_serializer import (
     BackofficeLoyaltyPromoSerializer,
     BackofficeLoyaltyStaffStatsSerializer,
 )
+from .support_serializer import BackofficeSupportAssignSerializer, BackofficeSupportStatusUpdateSerializer
 from .vehicle_engine_serializer import BackofficeVehicleEngineSerializer
 from .vehicle_generation_serializer import BackofficeVehicleGenerationSerializer
 from .vehicle_make_serializer import BackofficeVehicleMakeSerializer
@@ -190,4 +191,6 @@ __all__ = [
     "BackofficeLoyaltyPromoSerializer",
     "BackofficeLoyaltyStaffStatsSerializer",
     "BackofficeLoyaltyCustomerLookupSerializer",
+    "BackofficeSupportAssignSerializer",
+    "BackofficeSupportStatusUpdateSerializer",
 ]

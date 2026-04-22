@@ -1,6 +1,6 @@
 "use client";
 
-import { CarFront, Heart, LogIn, LogOut, PackageSearch, Shield, TicketPercent, UserRound } from "lucide-react";
+import { CarFront, Headset, Heart, LogIn, LogOut, PackageSearch, Shield, TicketPercent, UserRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -72,6 +72,12 @@ export function HeaderUserMenu() {
   }
 
   const isAdmin = Boolean(user?.is_staff || user?.is_superuser);
+  let supportLabel = "Support";
+  try {
+    supportLabel = t("menu.support");
+  } catch {
+    supportLabel = "Support";
+  }
 
   return (
     <div ref={wrapperRef} className="relative inline-flex">
@@ -164,6 +170,16 @@ export function HeaderUserMenu() {
           >
             <TicketPercent size={15} />
             <span>{t("menu.loyalty")}</span>
+          </Link>
+
+          <Link
+            href="/account/support"
+            className="header-menu-item"
+            role="menuitem"
+            onClick={() => setIsOpen(false)}
+          >
+            <Headset size={15} />
+            <span>{supportLabel}</span>
           </Link>
 
           <div className="header-dropdown-divider" />

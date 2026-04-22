@@ -35,7 +35,8 @@
         "garage": "Гараж",
         "loyalty": "Лояльність",
         "logout": "Вийти",
-        "backoffice": "Бек-офіс"
+        "backoffice": "Бек-офіс",
+        "support": "Технічна підтримка"
       },
       "searchModal": {
         "title": "Пошук товарів",
@@ -120,6 +121,13 @@
       "featured": "Популярні товари",
       "heroPlaceholder": "Плейсхолдер hero-слайдера. Додайте слайди в Django admin.",
       "performanceTagline": "SVOM Performance"
+    },
+    "footer": {
+      "navigation": "Навігація",
+      "workingHours": "Час роботи",
+      "workingHoursValue": "ПН, ВТ, СР, ЧТ, ПТ, СБ 10:00-17:00",
+      "phone": "Телефон",
+      "phoneValue": "+38(099)897-94-67"
     },
     "theme": {
       "switch": "Перемкнути режим теми",

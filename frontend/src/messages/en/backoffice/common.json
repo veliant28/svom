@@ -72,7 +72,12 @@
         "article_conflict": "Article conflict",
         "ambiguous_match": "Ambiguous match",
         "missing_brand": "Missing brand",
-        "missing_article": "Missing article"
+        "missing_article": "Missing article",
+        "open": "Open",
+        "waiting_for_support": "Waiting for support",
+        "waiting_for_client": "Waiting for client",
+        "resolved": "Resolved",
+        "closed": "Closed"
       },
       "topbar": {
         "role": "Operations",
@@ -727,10 +732,6 @@
               "short": "In sender city",
               "full": "Shipment is in city XXXX (status for inter-regional shipments)"
             },
-            "41": {
-              "short": "Local in city",
-              "full": "Shipment is in city XXXX (status for Local Standard and Local Express services, delivery within the city)"
-            },
             "5": {
               "short": "In transit",
               "full": "Shipment is heading to city YYYY"
@@ -762,6 +763,10 @@
             "12": {
               "short": "Being processed",
               "full": "Nova Poshta is processing your shipment"
+            },
+            "41": {
+              "short": "Local in city",
+              "full": "Shipment is in city XXXX (status for Local Standard and Local Express services, delivery within the city)"
             },
             "101": {
               "short": "Out for delivery",
@@ -1422,6 +1427,45 @@
           "liqpayConnectionOk": "LiqPay connection successful."
         }
       },
+      "footerSettings": {
+        "title": "Footer",
+        "subtitle": "Edit storefront footer contact data.",
+        "fields": {
+          "workingHours": "Working hours",
+          "timeFrom": "From",
+          "timeTo": "To",
+          "phone": "Phone"
+        },
+        "days": {
+          "mon": "Mon",
+          "tue": "Tue",
+          "wed": "Wed",
+          "thu": "Thu",
+          "fri": "Fri",
+          "sat": "Sat",
+          "sun": "Sun"
+        },
+        "placeholders": {
+          "workingHours": "Mon, Tue, Wed, Thu, Fri, Sat 10:00-17:00",
+          "phone": "38(0XX)XXX-XX-XX"
+        },
+        "hints": {
+          "phoneMask": "Format: 38(0XX)XXX-XX-XX. If you type 066..., the 38 prefix is added automatically."
+        },
+        "validation": {
+          "daysRequired": "Select at least one weekday.",
+          "phoneIncomplete": "Enter full phone number in format 38(0XX)XXX-XX-XX."
+        },
+        "actions": {
+          "save": "Save",
+          "saving": "Saving..."
+        },
+        "messages": {
+          "loadFailed": "Failed to load footer settings.",
+          "saveFailed": "Failed to save footer settings.",
+          "saved": "Footer settings saved."
+        }
+      },
       "rbac": {
         "roles": {
           "values": {
@@ -1584,6 +1628,12 @@
               "description": "Allows managing operational and system settings in backoffice."
             }
           },
+          "footer": {
+            "settings": {
+              "title": "Footer settings",
+              "description": "Allows managing storefront footer contact data."
+            }
+          },
           "loyalty": {
             "issue": {
               "title": "Issue loyalty promo codes",
@@ -1697,6 +1747,99 @@
             "updated": "Group updated.",
             "saveFailed": "Failed to save group.",
             "systemReadonly": "System role group cannot be edited manually."
+          }
+        }
+      },
+      "support": {
+        "title": "Technical support",
+        "subtitle": "Live queue, thread details and operator actions on one screen.",
+        "actions": {
+          "refresh": "Refresh"
+        },
+        "filters": {
+          "search": "Search by subject, customer or email",
+          "waiting": "Waiting only",
+          "assignedToMe": "Assigned to me",
+          "unassigned": "Unassigned"
+        },
+        "states": {
+          "loading": "Loading support threads...",
+          "emptyThreads": "No support threads found.",
+          "emptyMessages": "No messages yet.",
+          "realtimeConnected": "Real-time connection is active.",
+          "realtimeReconnecting": "Reconnecting to real-time updates..."
+        },
+        "messages": {
+          "loadFailed": "Failed to load support data.",
+          "loadStaffFailed": "Failed to load support staff.",
+          "sendFailed": "Failed to send reply.",
+          "assigned": "Assignee updated.",
+          "assignFailed": "Failed to update assignee.",
+          "statusChanged": "Thread status updated.",
+          "statusFailed": "Failed to update thread status.",
+          "loadWallboardFailed": "Failed to load wallboard."
+        },
+        "details": {
+          "actions": "Actions",
+          "selectStatus": "Select status",
+          "selectAssignee": "Select assignee"
+        },
+        "composer": {
+          "placeholder": "Write a reply",
+          "send": "Send",
+          "sending": "Sending..."
+        },
+        "statuses": {
+          "new": "New",
+          "open": "Open",
+          "waiting_for_support": "Waiting for support",
+          "waiting_for_client": "Waiting for client",
+          "resolved": "Resolved",
+          "closed": "Closed"
+        },
+        "shared": {
+          "customer": "Customer",
+          "assigned": "Assigned staff",
+          "lastActivity": "Last activity",
+          "firstResponse": "First response",
+          "selectThread": "Select a support thread to view details.",
+          "online": "Online",
+          "offline": "Offline",
+          "mine": "Mine",
+          "typing": "{users} is typing...",
+          "systemEvents": {
+            "assignedManual": "Thread assigned manually.",
+            "assignedAutoReply": "Thread assigned automatically after reply.",
+            "reassignedManual": "Thread reassigned manually.",
+            "reassignedAutoReply": "Thread reassigned automatically after reply.",
+            "statusChanged": "Status changed to {status}.",
+            "generic": "System event"
+          },
+          "statusValues": {
+            "new": "New",
+            "open": "Open",
+            "waiting_for_support": "Waiting for support",
+            "waiting_for_client": "Waiting for client",
+            "resolved": "Resolved",
+            "closed": "Closed"
+          }
+        },
+        "wallboard": {
+          "title": "Support wallboard",
+          "subtitle": "Realtime support queue and operator overview.",
+          "oldestWaiting": "Oldest waiting thread",
+          "operators": "Operators",
+          "latest": "Latest active threads",
+          "counts": {
+            "new": "New",
+            "open": "Open",
+            "waiting_for_support": "Waiting for support",
+            "waiting_for_client": "Waiting for client",
+            "resolved": "Resolved",
+            "closed": "Closed",
+            "unassigned": "Unassigned",
+            "online_operators": "Online operators",
+            "active_threads": "Active threads"
           }
         }
       }

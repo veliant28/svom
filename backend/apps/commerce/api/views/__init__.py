@@ -14,6 +14,13 @@ from .checkout_views import (
 )
 from .order_views import OrderDetailAPIView, OrderListAPIView
 from .loyalty_views import LoyaltyMyPromoCodesAPIView
+from .support_views import (
+    SupportBootstrapAPIView,
+    SupportThreadDetailAPIView,
+    SupportThreadListCreateAPIView,
+    SupportThreadMessagesAPIView,
+    SupportThreadReadAPIView,
+)
 from .wishlist_views import WishlistItemCreateAPIView, WishlistItemDeleteAPIView, WishlistListAPIView
 
 __all__ = [
@@ -37,4 +44,9 @@ __all__ = [
     "OrderListAPIView",
     "OrderDetailAPIView",
     "LoyaltyMyPromoCodesAPIView",
+    "SupportBootstrapAPIView",
+    "SupportThreadListCreateAPIView",
+    "SupportThreadDetailAPIView",
+    "SupportThreadMessagesAPIView",
+    "SupportThreadReadAPIView",
 ]

@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.humanize",
+    "channels",
     "corsheaders",
     "rest_framework",
     "rest_framework.authtoken",
@@ -61,6 +62,7 @@ INSTALLED_APPS = [
     "apps.supplier_imports.apps.SupplierImportsConfig",
     "apps.backoffice.apps.BackofficeConfig",
     "apps.commerce.apps.CommerceConfig",
+    "apps.support.apps.SupportConfig",
 ]
 
 MIDDLEWARE = [
@@ -106,10 +108,22 @@ DATABASES = {
     }
 }
 
+REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "redis://127.0.0.1:6379/1")
+REDIS_CHANNEL_LAYER_URL = os.getenv("REDIS_CHANNEL_LAYER_URL", REDIS_CACHE_URL)
+
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": os.getenv("REDIS_CACHE_URL", "redis://127.0.0.1:6379/1"),
+        "LOCATION": REDIS_CACHE_URL,
+    }
+}
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [REDIS_CHANNEL_LAYER_URL],
+        },
     }
 }
 
@@ -164,6 +178,14 @@ CELERY_BEAT_SCHEDULE = {
     "commerce-sync-nova-poshta-waybills": {
         "task": "commerce.sync_nova_poshta_waybill_statuses",
         "schedule": crontab(minute="*/20"),
+    },
+    "support-reconcile-presence": {
+        "task": "support.reconcile_presence",
+        "schedule": crontab(minute="*"),
+    },
+    "support-rebuild-wallboard-snapshots": {
+        "task": "support.rebuild_wallboard_snapshots",
+        "schedule": crontab(minute="*/5"),
     },
 }
 

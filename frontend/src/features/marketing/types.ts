@@ -16,3 +16,8 @@ export type PromoBanner = {
   target_url: string;
   sort_order: number;
 };
+
+export type MarketingFooterSettings = {
+  working_hours: string;
+  phone: string;
+};

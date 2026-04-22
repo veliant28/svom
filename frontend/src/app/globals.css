@@ -259,6 +259,130 @@ label:has(select:disabled) {
   color: var(--muted);
 }
 
+@keyframes headerStickerRustle {
+  0% {
+    transform: perspective(900px) rotateX(2deg) rotateZ(-4deg) translateY(0) skewX(-1deg);
+  }
+  18% {
+    transform: perspective(900px) rotateX(2deg) rotateZ(-2deg) translateY(-1px) skewX(0deg);
+  }
+  37% {
+    transform: perspective(900px) rotateX(3deg) rotateZ(1deg) translateY(1px) skewX(1deg);
+  }
+  55% {
+    transform: perspective(900px) rotateX(2deg) rotateZ(3deg) translateY(0) skewX(0deg);
+  }
+  74% {
+    transform: perspective(900px) rotateX(3deg) rotateZ(0deg) translateY(1px) skewX(-1deg);
+  }
+  100% {
+    transform: perspective(900px) rotateX(2deg) rotateZ(-4deg) translateY(0) skewX(-1deg);
+  }
+}
+
+.header-contact-sticker-anchor {
+  position: relative;
+  flex: 0 0 11rem;
+  width: 11rem;
+  height: 4.8rem;
+  align-items: flex-start;
+  justify-content: center;
+  margin-inline: 0.4rem 0.4rem;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.header-contact-sticker {
+  position: relative;
+  display: block;
+  width: 10.4rem;
+  margin-top: -0.2rem;
+  transform-origin: top center;
+  transform: perspective(900px) rotateX(2deg) rotateZ(-4deg);
+  animation: headerStickerRustle 4s ease-in-out infinite;
+  color: #101013;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+  pointer-events: auto;
+  overflow: visible;
+}
+
+.header-contact-sticker-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.header-contact-sticker:hover {
+  transform: perspective(900px) rotateX(2deg) rotateZ(-2deg) translateY(1px);
+}
+
+.header-contact-sticker-overlay {
+  position: absolute;
+  left: 1.72rem;
+  top: 2.82rem;
+  width: 6.1rem;
+  display: grid;
+  gap: 0.18rem;
+  transform: rotate(5.8deg);
+  transform-origin: top left;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.header-contact-sticker-item {
+  display: grid;
+  gap: 0.06rem;
+  align-items: start;
+}
+
+.header-contact-sticker-label {
+  font-size: 0.41rem;
+  line-height: 0.55rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: #5d5d58;
+}
+
+.header-contact-sticker-value {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  font-size: 0.54rem;
+  line-height: 0.65rem;
+  font-weight: 700;
+  color: #252522;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-contact-sticker {
+    animation: none;
+  }
+}
+
+@keyframes footerHeroShift {
+  0% {
+    background-position: 0% 12%, 100% 88%, 0% 50%;
+  }
+  50% {
+    background-position: 100% 82%, 0% 18%, 100% 50%;
+  }
+  100% {
+    background-position: 0% 12%, 100% 88%, 0% 50%;
+  }
+}
+
+.footer-hero-surface {
+  background-image:
+    radial-gradient(130% 180% at 0% 0%, rgba(77, 121, 166, 0.32) 0%, rgba(77, 121, 166, 0) 62%),
+    radial-gradient(130% 180% at 100% 100%, rgba(196, 116, 84, 0.28) 0%, rgba(196, 116, 84, 0) 62%),
+    linear-gradient(120deg, #1b252d 0%, #2e3d48 45%, #3a4d59 100%);
+  background-size: 210% 210%, 210% 210%, 170% 170%;
+  animation: footerHeroShift 20s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
 .header-dropdown {
   position: absolute;
   right: 0;

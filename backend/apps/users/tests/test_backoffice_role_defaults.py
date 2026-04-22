@@ -14,12 +14,14 @@ class BackofficeRoleDefaultsTest(SimpleTestCase):
         self.assertIn("categories.view", capabilities)
         self.assertIn("autocatalog.view", capabilities)
         self.assertIn("loyalty.issue", capabilities)
+        self.assertIn("customers.support", capabilities)
 
     def test_manager_defaults_include_loyalty_and_autocatalog_only(self):
         manager = SYSTEM_ROLE_DEFINITIONS["manager"]
         capabilities = set(manager.capability_codes)
         self.assertIn("loyalty.issue", capabilities)
         self.assertIn("autocatalog.view", capabilities)
+        self.assertIn("customers.support", capabilities)
         self.assertNotIn("schedules.view", capabilities)
         self.assertNotIn("payments.view", capabilities)
         self.assertNotIn("nova_poshta.settings", capabilities)
@@ -31,6 +33,7 @@ class BackofficeRoleDefaultsTest(SimpleTestCase):
         capabilities = set(operator.capability_codes)
         self.assertIn("loyalty.issue", capabilities)
         self.assertIn("autocatalog.view", capabilities)
+        self.assertIn("customers.support", capabilities)
         self.assertNotIn("schedules.view", capabilities)
         self.assertNotIn("payments.view", capabilities)
         self.assertNotIn("nova_poshta.settings", capabilities)

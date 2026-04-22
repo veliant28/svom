@@ -247,6 +247,38 @@
         "completed": "Completed",
         "cancelled": "Cancelled"
       }
+    },
+    "support": {
+      "title": "Technical support",
+      "subtitle": "Create a thread and chat with support in real time.",
+      "authRequired": "Login is required to use technical support.",
+      "goToLogin": "Go to login",
+      "actions": {
+        "refresh": "Refresh",
+        "create": "Create thread"
+      },
+      "create": {
+        "subjectPlaceholder": "Subject",
+        "messagePlaceholder": "Describe the issue"
+      },
+      "states": {
+        "loading": "Loading threads...",
+        "error": "Failed to load support threads.",
+        "emptyThreads": "No support threads yet.",
+        "emptyMessages": "Select a thread or create a new one.",
+        "realtimeConnected": "Real-time connection is active.",
+        "realtimeReconnecting": "Reconnecting to real-time updates..."
+      },
+      "messages": {
+        "threadCreated": "Support thread created.",
+        "createFailed": "Failed to create support thread.",
+        "sendFailed": "Failed to send message."
+      },
+      "composer": {
+        "placeholder": "Write a message",
+        "send": "Send",
+        "sending": "Sending..."
+      }
     }
   }
 }

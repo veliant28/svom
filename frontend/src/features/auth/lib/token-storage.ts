@@ -50,16 +50,18 @@ export function readStoredAuthToken(): string | null {
     return null;
   }
 
+  const cookieToken = readAuthCookie();
+  if (cookieToken) {
+    if (window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY) !== cookieToken) {
+      window.localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, cookieToken);
+    }
+    return cookieToken;
+  }
+
   const storageToken = window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
   if (storageToken) {
     writeAuthCookie(storageToken);
     return storageToken;
-  }
-
-  const cookieToken = readAuthCookie();
-  if (cookieToken) {
-    window.localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, cookieToken);
-    return cookieToken;
   }
 
   return null;

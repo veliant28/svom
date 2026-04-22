@@ -247,6 +247,38 @@
         "completed": "Выполнен",
         "cancelled": "Отменен"
       }
+    },
+    "support": {
+      "title": "Техническая поддержка",
+      "subtitle": "Создайте обращение и общайтесь с поддержкой в реальном времени.",
+      "authRequired": "Для обращения в техническую поддержку нужна авторизация.",
+      "goToLogin": "Перейти ко входу",
+      "actions": {
+        "refresh": "Обновить",
+        "create": "Создать обращение"
+      },
+      "create": {
+        "subjectPlaceholder": "Тема",
+        "messagePlaceholder": "Опишите проблему"
+      },
+      "states": {
+        "loading": "Загружаем обращения...",
+        "error": "Не удалось загрузить обращения.",
+        "emptyThreads": "Обращений пока нет.",
+        "emptyMessages": "Выберите обращение или создайте новое.",
+        "realtimeConnected": "Соединение realtime активно.",
+        "realtimeReconnecting": "Переподключаем realtime..."
+      },
+      "messages": {
+        "threadCreated": "Обращение создано.",
+        "createFailed": "Не удалось создать обращение.",
+        "sendFailed": "Не удалось отправить сообщение."
+      },
+      "composer": {
+        "placeholder": "Введите сообщение",
+        "send": "Отправить",
+        "sending": "Отправляем..."
+      }
     }
   }
 }

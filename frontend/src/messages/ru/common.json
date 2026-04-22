@@ -35,7 +35,8 @@
         "garage": "Гараж",
         "loyalty": "Лояльность",
         "logout": "Выйти",
-        "backoffice": "Бэк-офис"
+        "backoffice": "Бэк-офис",
+        "support": "Техническая поддержка"
       },
       "searchModal": {
         "title": "Поиск товаров",
@@ -120,6 +121,13 @@
       "featured": "Популярные товары",
       "heroPlaceholder": "Плейсхолдер hero-слайдера. Добавьте слайды в Django admin.",
       "performanceTagline": "SVOM Performance"
+    },
+    "footer": {
+      "navigation": "Навигация",
+      "workingHours": "Время работы",
+      "workingHoursValue": "ПН, ВТ, СР, ЧТ, ПТ, СБ 10:00-17:00",
+      "phone": "Телефон",
+      "phoneValue": "+38(099)897-94-67"
     },
     "theme": {
       "switch": "Переключить режим темы",

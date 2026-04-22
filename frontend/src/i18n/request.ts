@@ -32,6 +32,7 @@ type LocaleModuleLoaders = {
 
 const messagesCache = new Map<AppLocale, Messages>();
 const messagesInflight = new Map<AppLocale, Promise<Messages>>();
+const shouldCacheMessages = process.env.NODE_ENV === "production";
 
 const localeModuleLoaders: Record<AppLocale, LocaleModuleLoaders> = {
   en: {
@@ -153,14 +154,16 @@ async function loadModule(locale: AppLocale, name: string, loader: MessagesLoade
 }
 
 async function loadMessages(locale: AppLocale): Promise<Messages> {
-  const cached = messagesCache.get(locale);
-  if (cached) {
-    return cached;
-  }
+  if (shouldCacheMessages) {
+    const cached = messagesCache.get(locale);
+    if (cached) {
+      return cached;
+    }
 
-  const inflight = messagesInflight.get(locale);
-  if (inflight) {
-    return inflight;
+    const inflight = messagesInflight.get(locale);
+    if (inflight) {
+      return inflight;
+    }
   }
 
   const loadPromise = (async () => {
@@ -233,15 +236,21 @@ async function loadMessages(locale: AppLocale): Promise<Messages> {
         ...getBackofficeBlock(backofficeErrors),
       },
     };
-    messagesCache.set(locale, merged);
+    if (shouldCacheMessages) {
+      messagesCache.set(locale, merged);
+    }
     return merged;
   })();
 
-  messagesInflight.set(locale, loadPromise);
+  if (shouldCacheMessages) {
+    messagesInflight.set(locale, loadPromise);
+  }
   try {
     return await loadPromise;
   } finally {
-    messagesInflight.delete(locale);
+    if (shouldCacheMessages) {
+      messagesInflight.delete(locale);
+    }
   }
 }
 

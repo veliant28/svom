@@ -2,13 +2,14 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.marketing.models import HeroSlide, HeroSliderSettings, PromoBanner, PromoBannerSettings
+from apps.marketing.models import FooterSettings, HeroSlide, HeroSliderSettings, PromoBanner, PromoBannerSettings
 
 
 class MarketingAPISmokeTests(APITestCase):
     def setUp(self):
         HeroSliderSettings.objects.create(code="default", max_active_slides=10)
         PromoBannerSettings.objects.create(code="default", max_active_banners=5)
+        FooterSettings.objects.create(code="default", working_hours="Mon-Sat 10:00-17:00", phone="+380998979467")
 
         HeroSlide.objects.create(
             title_uk="Hero",
@@ -33,8 +34,12 @@ class MarketingAPISmokeTests(APITestCase):
     def test_marketing_endpoints_return_data(self):
         hero_response = self.client.get(reverse("marketing_api:hero-slide-list"))
         promo_response = self.client.get(reverse("marketing_api:promo-banner-list"))
+        footer_response = self.client.get(reverse("marketing_api:footer-settings"))
 
         self.assertEqual(hero_response.status_code, status.HTTP_200_OK)
         self.assertEqual(promo_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(footer_response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(hero_response.data), 1)
         self.assertEqual(len(promo_response.data), 1)
+        self.assertEqual(footer_response.data["working_hours"], "Mon-Sat 10:00-17:00")
+        self.assertEqual(footer_response.data["phone"], "+380998979467")

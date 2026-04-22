@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
 import { HeaderParentCategoryButtons } from "@/shared/components/layout/header/categories/header-parent-category-buttons";
+import { HeaderContactSticker } from "@/shared/components/layout/header/header-contact-sticker";
 import { StorefrontNav } from "@/shared/components/layout/header/storefront-nav";
 import { HeaderUserMenu } from "@/shared/components/layout/header/user-menu";
 import { LocaleSwitcher } from "@/shared/components/layout/locale-switcher";
@@ -109,6 +110,8 @@ export function Header() {
           </span>
           <HeaderParentCategoryButtons />
         </div>
+
+        <HeaderContactSticker />
 
         <div className="flex items-center gap-2">
           <StorefrontNav showCategories={false} />

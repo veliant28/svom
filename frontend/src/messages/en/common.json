@@ -35,7 +35,8 @@
         "garage": "Garage",
         "loyalty": "Loyalty",
         "logout": "Logout",
-        "backoffice": "Backoffice"
+        "backoffice": "Backoffice",
+        "support": "Technical support"
       },
       "searchModal": {
         "title": "Product search",
@@ -120,6 +121,13 @@
       "featured": "Featured products",
       "heroPlaceholder": "Hero slider placeholder. Add slides in Django admin.",
       "performanceTagline": "SVOM Performance"
+    },
+    "footer": {
+      "navigation": "Navigation",
+      "workingHours": "Working hours",
+      "workingHoursValue": "Mon, Tue, Wed, Thu, Fri, Sat 10:00-17:00",
+      "phone": "Phone",
+      "phoneValue": "+38(099)897-94-67"
     },
     "theme": {
       "switch": "Toggle theme mode",

@@ -39,3 +39,7 @@ class BackofficeCapabilityRulesTest(SimpleTestCase):
             resolve_required_capabilities_for_request("/api/backoffice/autocatalog/", "GET"),
             ("autocatalog.view",),
         )
+        self.assertEqual(
+            resolve_required_capabilities_for_request("/api/backoffice/settings/footer/", "GET"),
+            ("footer.settings",),
+        )

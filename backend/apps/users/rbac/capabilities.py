@@ -85,12 +85,6 @@ BACKOFFICE_CAPABILITIES: tuple[BackofficeCapabilityDefinition, ...] = (
         description="Perform order operations in backoffice.",
     ),
     BackofficeCapabilityDefinition(
-        code="customers.support",
-        permission_codename="bo_cap_customers_support",
-        title="Customers support",
-        description="Customer service actions in order flow.",
-    ),
-    BackofficeCapabilityDefinition(
         code="pricing.view",
         permission_codename="bo_cap_pricing_view",
         title="Pricing view",
@@ -169,10 +163,22 @@ BACKOFFICE_CAPABILITIES: tuple[BackofficeCapabilityDefinition, ...] = (
         description="Manage operational/system settings in backoffice.",
     ),
     BackofficeCapabilityDefinition(
+        code="footer.settings",
+        permission_codename="bo_cap_footer_settings",
+        title="Footer settings",
+        description="Manage storefront footer settings in backoffice.",
+    ),
+    BackofficeCapabilityDefinition(
         code="loyalty.issue",
         permission_codename="bo_cap_loyalty_issue",
         title="Loyalty issue",
         description="Issue loyalty promo codes and view loyalty analytics.",
+    ),
+    BackofficeCapabilityDefinition(
+        code="customers.support",
+        permission_codename="bo_cap_customers_support",
+        title="Customers support",
+        description="Customer service actions in order flow.",
     ),
     BackofficeCapabilityDefinition(
         code="procurement.manage",

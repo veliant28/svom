@@ -17,9 +17,11 @@
       "orders": "Заказы",
       "autocatalog": "Автокаталог",
       "novaPoshtaSenders": "Нова Пошта",
+      "footerSettings": "Футер",
       "payments": "Оплата",
       "users": "Пользователи",
-      "groups": "Группы"
+      "groups": "Группы",
+      "support": "Поддержка"
     }
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { Fragment, useCallback, useMemo, useState } from "react";
 import { Check, Power, RotateCcw } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -8,6 +8,7 @@ import { getBackofficeImportSchedules, updateBackofficeImportSchedule } from "@/
 import { BackofficeTable } from "@/features/backoffice/components/table/backoffice-table";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { ActionIconButton } from "@/features/backoffice/components/widgets/action-icon-button";
+import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
 import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
@@ -20,6 +21,29 @@ type ScheduleDraft = {
   schedule_timezone: string;
   schedule_every_day: boolean;
 };
+
+type ScenarioStep = {
+  label: string;
+  order: number;
+};
+
+const SCENARIO_TONES: BackofficeStatusChipTone[] = ["blue", "success", "orange", "red", "info", "warning"];
+
+function splitScenarioSteps(raw: string): ScenarioStep[] {
+  return raw
+    .split(/\s*->\s*/g)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((label, index) => ({ label, order: index }));
+}
+
+function chunkScenarioRows(steps: ScenarioStep[], rowSize = 3): ScenarioStep[][] {
+  const rows: ScenarioStep[][] = [];
+  for (let index = 0; index < steps.length; index += rowSize) {
+    rows.push(steps.slice(index, index + rowSize));
+  }
+  return rows;
+}
 
 function buildDraft(item: BackofficeImportSource): ScheduleDraft {
   return {
@@ -100,6 +124,56 @@ export function ImportSchedulesPage() {
   }
 
   const scenarioLabel = t("importSchedules.table.pipelineScenario");
+  const scenarioRows = useMemo(() => chunkScenarioRows(splitScenarioSteps(scenarioLabel), 3), [scenarioLabel]);
+  const scenarioView = useMemo(() => {
+    if (!scenarioRows.length) {
+      return (
+        <p className="text-xs" style={{ color: "var(--muted)" }}>
+          {scenarioLabel}
+        </p>
+      );
+    }
+
+    return (
+      <div className="grid gap-1.5">
+        {scenarioRows.map((row, rowIndex) => {
+          const isReverseRow = rowIndex % 2 === 1;
+          const displaySteps = isReverseRow ? [...row].reverse() : row;
+          const flowArrow = isReverseRow ? "←" : "→";
+          const turnArrow = isReverseRow ? "↙" : "↘";
+          return (
+            <div key={`scenario-row-${rowIndex}`} className="grid gap-1">
+              <div className={`flex flex-wrap items-center gap-1 ${isReverseRow ? "justify-end" : "justify-start"}`}>
+                {displaySteps.map((step, stepIndex) => (
+                  <Fragment key={`${rowIndex}-${step.order}`}>
+                    <BackofficeStatusChip tone={SCENARIO_TONES[step.order % SCENARIO_TONES.length]}>{step.label}</BackofficeStatusChip>
+                    {stepIndex < displaySteps.length - 1 ? (
+                      <BackofficeStatusChip
+                        tone={SCENARIO_TONES[(step.order + 1) % SCENARIO_TONES.length]}
+                        className="min-w-[1.85rem] justify-center px-1.5 py-0.5 leading-none"
+                      >
+                        {flowArrow}
+                      </BackofficeStatusChip>
+                    ) : null}
+                  </Fragment>
+                ))}
+              </div>
+              {rowIndex < scenarioRows.length - 1 ? (
+                <div className={`flex ${isReverseRow ? "justify-start" : "justify-end"}`}>
+                  <BackofficeStatusChip
+                    tone={SCENARIO_TONES[(displaySteps[displaySteps.length - 1]?.order ?? rowIndex) % SCENARIO_TONES.length]}
+                    className="min-w-[1.85rem] justify-center px-1.5 py-0.5 leading-none"
+                  >
+                    {turnArrow}
+                  </BackofficeStatusChip>
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }, [scenarioLabel, scenarioRows]);
 
   return (
     <section>
@@ -206,11 +280,7 @@ export function ImportSchedulesPage() {
             {
               key: "scenario",
               label: t("importSchedules.table.columns.pipeline"),
-              render: () => (
-                <p className="text-xs" style={{ color: "var(--muted)" }}>
-                  {scenarioLabel}
-                </p>
-              ),
+              render: () => scenarioView,
             },
             {
               key: "actions",

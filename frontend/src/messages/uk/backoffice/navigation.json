@@ -17,9 +17,11 @@
       "orders": "Замовлення",
       "autocatalog": "Автокаталог",
       "novaPoshtaSenders": "Відправники НП",
+      "footerSettings": "Футер",
       "payments": "Оплата",
       "users": "Користувачі",
-      "groups": "Групи"
+      "groups": "Групи",
+      "support": "Підтримка"
     }
   }
 }

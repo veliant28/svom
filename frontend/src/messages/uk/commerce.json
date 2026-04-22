@@ -247,6 +247,38 @@
         "completed": "Виконано",
         "cancelled": "Скасовано"
       }
+    },
+    "support": {
+      "title": "Технічна підтримка",
+      "subtitle": "Створіть звернення та спілкуйтеся з підтримкою в реальному часі.",
+      "authRequired": "Для звернення до технічної підтримки потрібна авторизація.",
+      "goToLogin": "Перейти до входу",
+      "actions": {
+        "refresh": "Оновити",
+        "create": "Створити звернення"
+      },
+      "create": {
+        "subjectPlaceholder": "Тема",
+        "messagePlaceholder": "Опишіть проблему"
+      },
+      "states": {
+        "loading": "Завантажуємо звернення...",
+        "error": "Не вдалося завантажити звернення.",
+        "emptyThreads": "Звернень поки немає.",
+        "emptyMessages": "Оберіть звернення або створіть нове.",
+        "realtimeConnected": "Realtime-зʼєднання активне.",
+        "realtimeReconnecting": "Перепідключаємо realtime..."
+      },
+      "messages": {
+        "threadCreated": "Звернення створено.",
+        "createFailed": "Не вдалося створити звернення.",
+        "sendFailed": "Не вдалося надіслати повідомлення."
+      },
+      "composer": {
+        "placeholder": "Введіть повідомлення",
+        "send": "Надіслати",
+        "sending": "Надсилаємо..."
+      }
     }
   }
 }

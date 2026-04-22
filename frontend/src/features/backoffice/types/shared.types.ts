@@ -25,6 +25,7 @@ export type BackofficeCapabilityCode =
   | "payments.view"
   | "nova_poshta.settings"
   | "settings.manage"
+  | "footer.settings"
   | "loyalty.issue"
   | "procurement.manage";
 

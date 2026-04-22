@@ -16,6 +16,8 @@ import {
   Truck,
   Wallet2,
   Clock3,
+  Headset,
+  Settings2,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -32,6 +34,7 @@ type SidebarNavItem = {
     | "suppliers"
     | "products"
     | "pricing"
+    | "support"
     | "loyalty"
     | "payments"
     | "brands"
@@ -39,6 +42,7 @@ type SidebarNavItem = {
     | "autocatalog"
     | "orders"
     | "novaPoshtaSenders"
+    | "footerSettings"
     | "users"
     | "groups"
     | "importSchedules";
@@ -47,6 +51,7 @@ type SidebarNavItem = {
 
 const NAV_ITEMS: SidebarNavItem[] = [
   { href: "/backoffice", icon: LayoutDashboard, key: "dashboard", requiredCapability: BACKOFFICE_CAPABILITIES.backofficeAccess },
+  { href: "/backoffice/support", icon: Headset, key: "support", requiredCapability: BACKOFFICE_CAPABILITIES.customersSupport },
   { href: "/backoffice/orders", icon: ShoppingBag, key: "orders", requiredCapability: BACKOFFICE_CAPABILITIES.ordersView },
   { href: "/backoffice/loyalty", icon: TicketPercent, key: "loyalty", requiredCapability: BACKOFFICE_CAPABILITIES.loyaltyIssue },
   { href: "/backoffice/autocatalog", icon: Car, key: "autocatalog", requiredCapability: BACKOFFICE_CAPABILITIES.autocatalogView },
@@ -65,6 +70,12 @@ const NAV_ITEMS: SidebarNavItem[] = [
   { href: "/backoffice/categories", icon: Shapes, key: "categories", requiredCapability: BACKOFFICE_CAPABILITIES.categoriesView },
   { href: "/backoffice/users", icon: UsersRound, key: "users", requiredCapability: BACKOFFICE_CAPABILITIES.usersView },
   { href: "/backoffice/groups", icon: ShieldCheck, key: "groups", requiredCapability: BACKOFFICE_CAPABILITIES.groupsView },
+  {
+    href: "/backoffice/footer",
+    icon: Settings2,
+    key: "footerSettings",
+    requiredCapability: BACKOFFICE_CAPABILITIES.footerSettings,
+  },
 ];
 
 function normalizePath(path: string): string {

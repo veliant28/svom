@@ -125,6 +125,19 @@ from .loyalty_views import (
     BackofficeLoyaltyIssuanceListAPIView,
     BackofficeLoyaltyStatsAPIView,
 )
+from .support_views import (
+    BackofficeSupportBootstrapAPIView,
+    BackofficeSupportCountersAPIView,
+    BackofficeSupportQueueAPIView,
+    BackofficeSupportStaffOptionsAPIView,
+    BackofficeSupportThreadAssignAPIView,
+    BackofficeSupportThreadDetailAPIView,
+    BackofficeSupportThreadListAPIView,
+    BackofficeSupportThreadMessagesAPIView,
+    BackofficeSupportThreadReadAPIView,
+    BackofficeSupportThreadStatusAPIView,
+    BackofficeSupportWallboardAPIView,
+)
 from .summary_view import BackofficeSummaryAPIView
 from .staff_activity_view import BackofficeStaffActivityAPIView
 from .vehicle_taxonomy_views import (
@@ -266,6 +279,17 @@ __all__ = [
     "BackofficeLoyaltyIssuanceListAPIView",
     "BackofficeLoyaltyStatsAPIView",
     "BackofficeLoyaltyCustomerLookupAPIView",
+    "BackofficeSupportBootstrapAPIView",
+    "BackofficeSupportCountersAPIView",
+    "BackofficeSupportQueueAPIView",
+    "BackofficeSupportStaffOptionsAPIView",
+    "BackofficeSupportThreadAssignAPIView",
+    "BackofficeSupportThreadDetailAPIView",
+    "BackofficeSupportThreadListAPIView",
+    "BackofficeSupportThreadMessagesAPIView",
+    "BackofficeSupportThreadReadAPIView",
+    "BackofficeSupportThreadStatusAPIView",
+    "BackofficeSupportWallboardAPIView",
     "RunImportSourceActionAPIView",
     "ImportAllActionAPIView",
     "RepriceAfterImportActionAPIView",
