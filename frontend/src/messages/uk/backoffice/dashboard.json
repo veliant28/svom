@@ -2,59 +2,94 @@
   "backoffice": {
     "dashboard": {
       "title": "Операційний дашборд",
-      "subtitle": "Огляд імпорту та ціноутворення.",
+      "subtitle": "Ключові сигнали по замовленнях, публікації та імпорту.",
       "actions": {
-        "refresh": "Оновити"
+        "refreshOperationalContour": "Оновити"
       },
       "cards": {
-        "sources": "Активні джерела",
-        "runs": "Запуски імпорту",
-        "errors": "Помилки",
-        "errors24h": "{count} за 24 год",
+        "unprocessedOrders": "Необроблені замовлення",
+        "unprocessedOrdersSubtitle": "Потрібна зміна статусу по черзі замовлень.",
+        "unprocessedOrdersSubtitleWithOrder": "Найстаріше замовлення: {order}",
+        "unprocessedOrdersTimer": "Таймер: {value}",
+        "unprocessedOrdersTimerIdle": "00:00:00",
+        "publishedProducts": "Опубліковані товари",
+        "publishedProductsSubtitle": "Прайсових позицій: {count}",
         "repriced": "Переоцінені товари",
-        "rawOffers": "Сирі офери",
-        "invalidRawOffers": "{count} невалідних",
-        "supplierOffers": "Офери постачальників",
-        "productPrices": "Ціни товарів",
-        "unmatched": "Незіставлені офери",
-        "conflicts": "Конфлікти",
-        "autoMatched": "Автоматично зіставлено",
-        "manuallyResolved": "Зіставлено вручну"
+        "repriced24h": "{count} за 24 год",
+        "errors24hTitle": "Помилки імпорту (24 год)",
+        "errorsTotal": "Усього помилок: {count}"
       },
       "charts": {
-        "runStatuses": "Статуси запусків",
-        "matchRateBySupplier": "Частка зіставлення за постачальниками"
-      },
-      "latestRuns": {
-        "title": "Останні запуски",
-        "subtitle": "Нещодавні виконання пайплайна.",
-        "columns": {
-          "source": "Джерело",
-          "status": "Статус",
-          "rows": "Рядки",
-          "errors": "Помилки",
-          "repriced": "Переоцінено"
+        "quality": {
+          "title": "Тренд якості імпорту",
+          "subtitle": "Останні 10 запусків: частка зіставлення та помилок.",
+          "matchRate": "Зіставлення",
+          "errorRate": "Помилки"
+        },
+        "runStatuses": {
+          "title": "Статуси запусків",
+          "subtitle": "Розподіл за підсумковими статусами."
+        },
+        "suppliers": {
+          "title": "Постачальники: якість",
+          "subtitle": "Зріз на {generatedAt}",
+          "matchRate": "Зіставлення",
+          "errorRate": "Помилки"
         }
       },
       "states": {
         "empty": "Поки немає даних дашборда."
       },
-      "quality": {
-        "title": "Якість останнього імпорту",
-        "subtitle": "Метрики останнього запуску ({source}).",
-        "processed": "Оброблено",
-        "errors": "Помилки",
-        "errorRate": "Частка помилок",
-        "skipped": "Пропущено"
+      "alerts": {
+        "unprocessedOrdersInfo": "Є необроблені замовлення: {count}.",
+        "unprocessedOrdersWarning": "Необроблені замовлення зростають: {count}. Перевірте зміну статусів.",
+        "unprocessedOrdersCritical": "Критично: {count} необроблених замовлень. Потрібна термінова обробка."
       },
-      "attention": {
-        "title": "Потребує уваги оператора",
-        "subtitle": "Запуски з деградацією якості або пороговими сповіщеннями.",
-        "columns": {
-          "source": "Джерело",
-          "status": "Статус",
-          "matchRate": "Частка зіставлення",
-          "errorRate": "Частка помилок"
+      "staff": {
+        "switcherAriaLabel": "Перемикач ролі операційного контуру",
+        "title": "{role}: статистика активності",
+        "titleAll": "Статистика активності",
+        "subtitle": "Зведення дій співробітників за останні 14 днів: ТТН, лояльність та зміни цін.",
+        "roles": {
+          "dashboard": "Дашборд",
+          "managers": "Менеджери",
+          "operators": "Оператори"
+        },
+        "metrics": {
+          "ttnActions": "ТТН",
+          "loyaltyIssued": "Промокоди",
+          "priceChanges": "Зміни цін",
+          "actionsTotal": "Усього дій"
+        },
+        "kpis": {
+          "staffTotal": "Співробітники",
+          "withActivity": "Активних: {count}",
+          "actionsTotal": "Дії",
+          "ttnTotal": "ТТН: {count}",
+          "loyaltyTotal": "Лояльність",
+          "priceChangesTotal": "Зміни цін: {count}",
+          "period": "Період",
+          "periodDays": "{days} днів",
+          "generatedAt": "Оновлено: {value}"
+        },
+        "charts": {
+          "dailyTitle": "Денний тренд активності",
+          "dailySubtitle": "ТТН, лояльність та зміни цін по днях.",
+          "staffTitle": "Топ співробітників за діями",
+          "staffSubtitle": "Поточний рейтинг за сумарною активністю."
+        },
+        "table": {
+          "title": "Деталізація по співробітниках",
+          "subtitle": "Персональне зведення по операціях і останній активності.",
+          "columns": {
+            "staff": "Співробітник",
+            "actions": "Дії",
+            "ttn": "ТТН/Замовлення",
+            "loyalty": "Промо (вид./викор.)",
+            "discountSum": "Сума знижок",
+            "pricing": "Ціни (усього/руч./імп./авто)",
+            "lastActivity": "Остання активність"
+          }
         }
       }
     }

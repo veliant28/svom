@@ -17,6 +17,7 @@ const ROUTE_PREFETCH_LIST = [
   "/backoffice/brands",
   "/backoffice/categories",
   "/backoffice/suppliers",
+  "/backoffice/import-schedules",
   "/backoffice/suppliers/import",
   "/backoffice/suppliers/import-runs",
   "/backoffice/suppliers/import-errors",

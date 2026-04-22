@@ -13,6 +13,9 @@ export type BackofficeImportSource = {
   is_auto_import_enabled: boolean;
   schedule_cron: string;
   schedule_timezone: string;
+  schedule_start_date: string | null;
+  schedule_run_time: string;
+  schedule_every_day: boolean;
   auto_reprice_after_import: boolean;
   auto_reindex_after_import: boolean;
   last_started_at: string | null;

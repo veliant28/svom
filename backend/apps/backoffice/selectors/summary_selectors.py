@@ -5,6 +5,8 @@ from datetime import timedelta
 from django.db.models import Count, Sum
 from django.utils import timezone
 
+from apps.catalog.models import Product
+from apps.commerce.models import Order
 from apps.pricing.models import ProductPrice, SupplierOffer
 from apps.supplier_imports.models import ImportRowError, ImportRun, ImportRunQuality, ImportSource, SupplierRawOffer
 
@@ -33,6 +35,10 @@ def build_backoffice_summary_payload() -> dict:
     ]
 
     status_buckets = ImportRun.objects.values("status").annotate(total=Count("id")).order_by("status")
+    repriced_24h = ImportRun.objects.filter(created_at__gte=since_24h).aggregate(total=Sum("repriced_products")).get("total") or 0
+    unprocessed_statuses = (Order.STATUS_NEW, Order.STATUS_DRAFT, Order.STATUS_PLACED)
+    unprocessed_orders_qs = Order.objects.filter(status__in=unprocessed_statuses)
+    unprocessed_oldest = unprocessed_orders_qs.order_by("placed_at", "created_at").first()
 
     totals = {
         "sources": ImportSource.objects.filter(is_active=True).count(),
@@ -46,8 +52,10 @@ def build_backoffice_summary_payload() -> dict:
         "auto_matched_offers": SupplierRawOffer.objects.filter(match_status=SupplierRawOffer.MATCH_STATUS_AUTO_MATCHED).count(),
         "manually_resolved_offers": SupplierRawOffer.objects.filter(match_status=SupplierRawOffer.MATCH_STATUS_MANUALLY_MATCHED).count(),
         "supplier_offers": SupplierOffer.objects.count(),
+        "published_products": Product.objects.filter(is_active=True).count(),
         "product_prices": ProductPrice.objects.count(),
         "repriced_products_total": ImportRun.objects.aggregate(total=Sum("repriced_products")).get("total") or 0,
+        "repriced_products_24h": repriced_24h,
     }
 
     latest_completed_run = (
@@ -152,6 +160,11 @@ def build_backoffice_summary_payload() -> dict:
     return {
         "generated_at": now,
         "totals": totals,
+        "orders_unprocessed": {
+            "count": unprocessed_orders_qs.count(),
+            "oldest_created_at": (unprocessed_oldest.placed_at if unprocessed_oldest else None),
+            "oldest_order_number": (unprocessed_oldest.order_number if unprocessed_oldest else ""),
+        },
         "status_buckets": list(status_buckets),
         "latest_runs": latest_runs,
         "quality_summary": quality_summary,

@@ -23,6 +23,9 @@ import type { BackofficeGroupItem, BackofficeGroupWritePayload } from "@/feature
 import type { BackofficeCapabilityCode } from "@/features/backoffice/types/shared.types";
 
 const USERS_MANAGEMENT_BUNDLE_CODE = "users.management.bundle";
+const BACKOFFICE_ACCESS_CODE = "backoffice.access";
+const VIEW_SUFFIX = ".view";
+const MANAGE_SUFFIX = ".manage";
 const USERS_MANAGEMENT_CAPABILITY_CODES: BackofficeCapabilityCode[] = [
   "users.manage",
   "users.card.edit.administrator",
@@ -110,31 +113,11 @@ export function GroupsPage() {
   const pagesCount = Math.max(1, Math.ceil(groupsCount / 20));
 
   const capabilities = metaState.data?.capabilities ?? [];
+  const collator = useMemo(() => new Intl.Collator(undefined, { sensitivity: "base" }), []);
   const capabilitiesByCode = useMemo(
     () => new Map(capabilities.map((capability) => [capability.code, capability])),
     [capabilities],
   );
-  const displayCapabilities = useMemo(() => {
-    const visible = capabilities
-      .filter((capability) => !USERS_MANAGEMENT_CAPABILITY_CODES.includes(capability.code))
-      .map((capability) => ({
-        code: String(capability.code),
-        title: capability.title,
-        description: capability.description,
-      }));
-    const usersManagementBundle = {
-      code: USERS_MANAGEMENT_BUNDLE_CODE,
-      title: t("rbac.groups.capabilityBundles.usersManagement.title"),
-      description: t("rbac.groups.capabilityBundles.usersManagement.description"),
-    };
-    const usersViewIndex = visible.findIndex((capability) => capability.code === "users.view");
-    if (usersViewIndex < 0) {
-      return [usersManagementBundle, ...visible];
-    }
-    const ordered = [...visible];
-    ordered.splice(usersViewIndex + 1, 0, usersManagementBundle);
-    return ordered;
-  }, [capabilities, t]);
 
   const getCapabilityTitle = useCallback((code: string, fallback?: string) => {
     if (code === USERS_MANAGEMENT_BUNDLE_CODE) {
@@ -157,6 +140,95 @@ export function GroupsPage() {
       return fallback || "";
     }
   }, [t]);
+
+  const sortCapabilityCodes = useCallback((codes: string[]) => {
+    const codesSet = new Set(codes);
+    const getPairedBase = (code: string): string | null => {
+      if (code.endsWith(VIEW_SUFFIX)) {
+        return code.slice(0, -VIEW_SUFFIX.length);
+      }
+      if (code.endsWith(MANAGE_SUFFIX)) {
+        return code.slice(0, -MANAGE_SUFFIX.length);
+      }
+      return null;
+    };
+    const getGroupTitle = (code: string): string => {
+      const base = getPairedBase(code);
+      if (!base) {
+        return getCapabilityTitle(code, capabilitiesByCode.get(code as BackofficeCapabilityCode)?.title);
+      }
+      const viewCode = `${base}${VIEW_SUFFIX}`;
+      if (codesSet.has(viewCode)) {
+        return getCapabilityTitle(viewCode, capabilitiesByCode.get(viewCode as BackofficeCapabilityCode)?.title);
+      }
+      return getCapabilityTitle(code, capabilitiesByCode.get(code as BackofficeCapabilityCode)?.title);
+    };
+    const getWithinGroupRank = (code: string): number => {
+      if (code.endsWith(VIEW_SUFFIX)) {
+        return 0;
+      }
+      if (code.endsWith(MANAGE_SUFFIX)) {
+        return 1;
+      }
+      return 0;
+    };
+
+    return [...codes].sort((leftCode, rightCode) => {
+      if (leftCode === BACKOFFICE_ACCESS_CODE && rightCode !== BACKOFFICE_ACCESS_CODE) {
+        return -1;
+      }
+      if (rightCode === BACKOFFICE_ACCESS_CODE && leftCode !== BACKOFFICE_ACCESS_CODE) {
+        return 1;
+      }
+
+      const leftGroupTitle = getGroupTitle(leftCode);
+      const rightGroupTitle = getGroupTitle(rightCode);
+      const byGroup = collator.compare(leftGroupTitle, rightGroupTitle);
+      if (byGroup !== 0) {
+        return byGroup;
+      }
+
+      const leftBase = getPairedBase(leftCode);
+      const rightBase = getPairedBase(rightCode);
+      if (leftBase && rightBase && leftBase === rightBase) {
+        const byRank = getWithinGroupRank(leftCode) - getWithinGroupRank(rightCode);
+        if (byRank !== 0) {
+          return byRank;
+        }
+      }
+
+      const leftTitle = getCapabilityTitle(leftCode, capabilitiesByCode.get(leftCode as BackofficeCapabilityCode)?.title);
+      const rightTitle = getCapabilityTitle(rightCode, capabilitiesByCode.get(rightCode as BackofficeCapabilityCode)?.title);
+      return collator.compare(leftTitle, rightTitle);
+    });
+  }, [capabilitiesByCode, collator, getCapabilityTitle]);
+
+  const displayCapabilities = useMemo(() => {
+    const visible = capabilities
+      .filter((capability) => !USERS_MANAGEMENT_CAPABILITY_CODES.includes(capability.code))
+      .map((capability) => ({
+        code: String(capability.code),
+        title: capability.title,
+        description: capability.description,
+      }));
+    const usersManagementBundle = {
+      code: USERS_MANAGEMENT_BUNDLE_CODE,
+      title: t("rbac.groups.capabilityBundles.usersManagement.title"),
+      description: t("rbac.groups.capabilityBundles.usersManagement.description"),
+    };
+    return sortCapabilityCodes([usersManagementBundle.code, ...visible.map((item) => item.code)])
+      .map((code) => {
+        if (code === USERS_MANAGEMENT_BUNDLE_CODE) {
+          return usersManagementBundle;
+        }
+        const capability = visible.find((item) => item.code === code);
+        return capability || {
+          code,
+          title: capabilitiesByCode.get(code as BackofficeCapabilityCode)?.title || code,
+          description: capabilitiesByCode.get(code as BackofficeCapabilityCode)?.description || "",
+        };
+      });
+  }, [capabilities, capabilitiesByCode, sortCapabilityCodes, t]);
 
   const openCreate = useCallback(() => {
     if (!canCreateGroups) {
@@ -270,7 +342,7 @@ export function GroupsPage() {
               key: "capabilities",
               label: t("rbac.groups.columns.capabilities"),
               render: (item) => {
-                const collapsed = collapseUsersManagementCapabilities(item.capability_codes);
+                const collapsed = sortCapabilityCodes(collapseUsersManagementCapabilities(item.capability_codes));
                 return collapsed.length
                   ? collapsed
                     .map((code) => {

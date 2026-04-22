@@ -4,6 +4,7 @@ from rest_framework import serializers
 class BackofficeSummarySerializer(serializers.Serializer):
     generated_at = serializers.DateTimeField()
     totals = serializers.DictField()
+    orders_unprocessed = serializers.DictField(required=False)
     status_buckets = serializers.ListField()
     latest_runs = serializers.ListField()
     quality_summary = serializers.DictField(required=False)

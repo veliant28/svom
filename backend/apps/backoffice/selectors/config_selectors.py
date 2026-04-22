@@ -6,7 +6,7 @@ from apps.supplier_imports.models import ArticleNormalizationRule, ImportSource,
 
 
 def get_import_schedule_sources_queryset() -> QuerySet[ImportSource]:
-    return ImportSource.objects.select_related("supplier").order_by("name")
+    return ImportSource.objects.select_related("supplier", "integration").order_by("name")
 
 
 def get_supplier_brand_aliases_queryset() -> QuerySet[SupplierBrandAlias]:

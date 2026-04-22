@@ -2,59 +2,94 @@
   "backoffice": {
     "dashboard": {
       "title": "Operations Dashboard",
-      "subtitle": "Import pipeline and pricing overview.",
+      "subtitle": "Key signals for orders, publishing, and imports.",
       "actions": {
-        "refresh": "Refresh"
+        "refreshOperationalContour": "Refresh"
       },
       "cards": {
-        "sources": "Active Sources",
-        "runs": "Import Runs",
-        "errors": "Errors",
-        "errors24h": "{count} in 24h",
+        "unprocessedOrders": "Unprocessed Orders",
+        "unprocessedOrdersSubtitle": "Status change is still required in order queue.",
+        "unprocessedOrdersSubtitleWithOrder": "Oldest order: {order}",
+        "unprocessedOrdersTimer": "Timer: {value}",
+        "unprocessedOrdersTimerIdle": "00:00:00",
+        "publishedProducts": "Published Products",
+        "publishedProductsSubtitle": "Priced rows: {count}",
         "repriced": "Repriced Products",
-        "rawOffers": "Raw Offers",
-        "invalidRawOffers": "{count} invalid",
-        "supplierOffers": "Supplier Offers",
-        "productPrices": "Product Prices",
-        "unmatched": "Unmatched Offers",
-        "conflicts": "Conflicts",
-        "autoMatched": "Auto Matched",
-        "manuallyResolved": "Manually Resolved"
+        "repriced24h": "{count} in 24h",
+        "errors24hTitle": "Import Errors (24h)",
+        "errorsTotal": "Total errors: {count}"
       },
       "charts": {
-        "runStatuses": "Run Statuses",
-        "matchRateBySupplier": "Match Rate by Supplier"
-      },
-      "latestRuns": {
-        "title": "Latest Imports",
-        "subtitle": "Recent pipeline executions and outcomes.",
-        "columns": {
-          "source": "Source",
-          "status": "Status",
-          "rows": "Rows",
-          "errors": "Errors",
-          "repriced": "Repriced"
+        "quality": {
+          "title": "Import Quality Trend",
+          "subtitle": "Last 10 runs: match rate and error rate.",
+          "matchRate": "Match Rate",
+          "errorRate": "Error Rate"
+        },
+        "runStatuses": {
+          "title": "Run Statuses",
+          "subtitle": "Distribution by final run status."
+        },
+        "suppliers": {
+          "title": "Suppliers: Quality",
+          "subtitle": "Snapshot at {generatedAt}",
+          "matchRate": "Match Rate",
+          "errorRate": "Error Rate"
         }
       },
       "states": {
         "empty": "No dashboard data yet."
       },
-      "quality": {
-        "title": "Latest Import Quality",
-        "subtitle": "Quality metrics for latest run ({source}).",
-        "processed": "Processed",
-        "errors": "Errors",
-        "errorRate": "Error rate",
-        "skipped": "Skipped"
+      "alerts": {
+        "unprocessedOrdersInfo": "There are unprocessed orders: {count}.",
+        "unprocessedOrdersWarning": "Unprocessed orders are growing: {count}. Please update statuses.",
+        "unprocessedOrdersCritical": "Critical: {count} unprocessed orders. Immediate handling is required."
       },
-      "attention": {
-        "title": "Requires Operator Attention",
-        "subtitle": "Imports with degraded quality or threshold alerts.",
-        "columns": {
-          "source": "Source",
-          "status": "Status",
-          "matchRate": "Match rate",
-          "errorRate": "Error rate"
+      "staff": {
+        "switcherAriaLabel": "Operations role switcher",
+        "title": "{role}: activity statistics",
+        "titleAll": "Activity Statistics",
+        "subtitle": "Team activity summary for the last 14 days: waybills, loyalty actions, and price changes.",
+        "roles": {
+          "dashboard": "Dashboard",
+          "managers": "Managers",
+          "operators": "Operators"
+        },
+        "metrics": {
+          "ttnActions": "Waybills",
+          "loyaltyIssued": "Promo Codes",
+          "priceChanges": "Price Changes",
+          "actionsTotal": "Total Actions"
+        },
+        "kpis": {
+          "staffTotal": "Staff",
+          "withActivity": "Active: {count}",
+          "actionsTotal": "Actions",
+          "ttnTotal": "Waybills: {count}",
+          "loyaltyTotal": "Loyalty",
+          "priceChangesTotal": "Price changes: {count}",
+          "period": "Period",
+          "periodDays": "{days} days",
+          "generatedAt": "Updated: {value}"
+        },
+        "charts": {
+          "dailyTitle": "Daily Activity Trend",
+          "dailySubtitle": "Waybills, loyalty actions, and price changes by day.",
+          "staffTitle": "Top Staff by Actions",
+          "staffSubtitle": "Current ranking by total activity."
+        },
+        "table": {
+          "title": "Staff Activity Details",
+          "subtitle": "Per-staff summary for operations and last activity timestamp.",
+          "columns": {
+            "staff": "Staff",
+            "actions": "Actions",
+            "ttn": "Waybills/Orders",
+            "loyalty": "Promo (iss./used)",
+            "discountSum": "Discount Amount",
+            "pricing": "Pricing (total/manual/import/auto)",
+            "lastActivity": "Last Activity"
+          }
         }
       }
     }

@@ -6,6 +6,7 @@ from apps.backoffice.api.views import (
     BackofficeAutocatalogFilterOptionsAPIView,
     BackofficeAutocatalogListAPIView,
     BackofficeSummaryAPIView,
+    BackofficeStaffActivityAPIView,
     BackofficeCatalogBrandListCreateAPIView,
     BackofficeCatalogBrandRetrieveUpdateDestroyAPIView,
     BackofficeCatalogCategoryListCreateAPIView,
@@ -134,6 +135,7 @@ app_name = "backoffice_api"
 
 urlpatterns = [
     path("summary/", BackofficeSummaryAPIView.as_view(), name="summary"),
+    path("summary/staff/", BackofficeStaffActivityAPIView.as_view(), name="summary-staff-activity"),
     path("import-sources/", ImportSourceListAPIView.as_view(), name="import-source-list"),
     path("import-schedules/", ImportScheduleListAPIView.as_view(), name="import-schedule-list"),
     path("import-schedules/<uuid:id>/", ImportScheduleUpdateAPIView.as_view(), name="import-schedule-update"),

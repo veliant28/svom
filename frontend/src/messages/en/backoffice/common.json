@@ -161,8 +161,12 @@
         }
       },
       "importSchedules": {
-        "title": "Import Schedules",
-        "subtitle": "Configure automatic imports per source.",
+        "title": "Schedule",
+        "subtitle": "Unified import schedule table for all suppliers.",
+        "schedule": {
+          "daily": "Daily 7/7",
+          "time": "Time:"
+        },
         "filters": {
           "search": "Search source"
         },
@@ -172,11 +176,15 @@
         "actions": {
           "enable": "Enable",
           "disable": "Disable",
+          "enableSchedule": "Enable schedule",
+          "disableSchedule": "Disable schedule",
+          "saveSchedule": "Save schedule",
           "saveDefaults": "Save defaults"
         },
         "messages": {
           "scheduleUpdated": "Schedule state updated for {source}.",
           "scheduleSaved": "Schedule settings saved for {source}.",
+          "scheduleDefaultsApplied": "Default schedule applied for {source}.",
           "actionFailed": "Unable to update the import schedule."
         },
         "table": {
@@ -186,8 +194,10 @@
             "cron": "Schedule",
             "nextRun": "Next run",
             "lastResult": "Last result",
+            "pipeline": "Scenario",
             "actions": "Actions"
           },
+          "pipelineScenario": "Token check/update -> Price request/download/import -> Publish -> Markup -> Reindex",
           "lastRunSummary": "rows: {rows} / errors: {errors}"
         }
       },
@@ -1530,6 +1540,42 @@
             "manage": {
               "title": "Manage imports",
               "description": "Allows running import and import maintenance actions."
+            }
+          },
+          "schedules": {
+            "view": {
+              "title": "View schedules",
+              "description": "Allows viewing and managing supplier import schedules."
+            }
+          },
+          "brands": {
+            "view": {
+              "title": "View brands",
+              "description": "Allows viewing and managing catalog brands."
+            }
+          },
+          "categories": {
+            "view": {
+              "title": "View categories",
+              "description": "Allows viewing and managing catalog categories."
+            }
+          },
+          "autocatalog": {
+            "view": {
+              "title": "View autocatalog",
+              "description": "Allows viewing autocatalog data and filters."
+            }
+          },
+          "payments": {
+            "view": {
+              "title": "View payments",
+              "description": "Allows viewing and managing payment provider settings."
+            }
+          },
+          "nova_poshta": {
+            "settings": {
+              "title": "Nova Poshta settings",
+              "description": "Allows viewing and managing Nova Poshta sender settings."
             }
           },
           "settings": {

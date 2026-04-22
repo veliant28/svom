@@ -59,6 +59,7 @@ SYSTEM_ROLE_DEFINITIONS: dict[str, BackofficeSystemRoleDefinition] = {
             "pricing.view",
             "suppliers.view",
             "imports.view",
+            "autocatalog.view",
             "loyalty.issue",
             "procurement.manage",
         ),
@@ -74,6 +75,8 @@ SYSTEM_ROLE_DEFINITIONS: dict[str, BackofficeSystemRoleDefinition] = {
             "orders.view",
             "orders.manage",
             "customers.support",
+            "loyalty.issue",
+            "autocatalog.view",
         ),
     ),
     SYSTEM_ROLE_USER: BackofficeSystemRoleDefinition(

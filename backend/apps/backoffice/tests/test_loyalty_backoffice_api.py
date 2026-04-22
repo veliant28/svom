@@ -35,7 +35,7 @@ class LoyaltyBackofficeAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn("code", response.data)
 
-    def test_operator_without_capability_cannot_issue_promo(self):
+    def test_operator_with_default_capability_can_issue_promo(self):
         response = self.client.post(
             reverse("backoffice_api:loyalty-issue"),
             {
@@ -48,4 +48,5 @@ class LoyaltyBackofficeAPITests(APITestCase):
             format="json",
             HTTP_AUTHORIZATION=f"Token {self.operator_token.key}",
         )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn("code", response.data)

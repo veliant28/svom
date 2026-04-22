@@ -22,6 +22,8 @@ from .service import (
     normalize_capability_codes,
     replace_group_capabilities,
     set_user_system_role,
+    should_user_be_staff_by_system_role,
+    sync_user_staff_flag_by_system_role,
     user_has_capability,
 )
 
@@ -48,5 +50,7 @@ __all__ = [
     "normalize_capability_codes",
     "replace_group_capabilities",
     "set_user_system_role",
+    "should_user_be_staff_by_system_role",
+    "sync_user_staff_flag_by_system_role",
     "user_has_capability",
 ]

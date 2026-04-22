@@ -1,7 +1,7 @@
 "use client";
 
 import { SupplierAuthorizationCard, SupplierConnectionStatusCard } from "@/features/backoffice/components/suppliers/supplier-card";
-import { SuppliersFooter, SuppliersSchedulesList } from "@/features/backoffice/components/suppliers/suppliers-list";
+import { SuppliersFooter } from "@/features/backoffice/components/suppliers/suppliers-list";
 import { suppliersWorkspaceEmptyLabel } from "@/features/backoffice/components/suppliers/suppliers-empty-state";
 import { SuppliersToolbar } from "@/features/backoffice/components/suppliers/suppliers-toolbar";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
@@ -11,13 +11,9 @@ export function SuppliersPage() {
   const {
     t,
     tAuth,
-    tCommon,
     tUtr,
     tGpl,
     scope,
-    schedulesLoading,
-    schedulesError,
-    supplierScheduleRows,
     actions,
     login,
     setLogin,
@@ -91,19 +87,6 @@ export function SuppliersPage() {
                 accessTone={accessTone}
               />
             </section>
-
-            <SuppliersSchedulesList
-              tCommon={tCommon}
-              schedulesLoading={schedulesLoading}
-              schedulesError={schedulesError}
-              rows={supplierScheduleRows}
-              onToggleAutoImport={(item) => {
-                void actions.toggleAutoImport(item);
-              }}
-              onSaveDefaultCron={(item) => {
-                void actions.saveDefaultCron(item);
-              }}
-            />
 
             <SuppliersFooter
               t={t}

@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
-import { getBackofficeImportSchedules } from "@/features/backoffice/api/imports-api";
-import { useBackofficeQuery } from "@/features/backoffice/hooks/use-backoffice-query";
 import { useSupplierActions } from "@/features/backoffice/hooks/use-supplier-actions";
 import { useSupplierWorkspaceScope } from "@/features/backoffice/hooks/use-supplier-workspace-scope";
 import { useTokenCountdown } from "@/features/backoffice/hooks/use-token-countdown";
@@ -12,7 +10,6 @@ import {
   resolveSupplierTokenStateLabel,
   supplierTokenCountdownTone,
 } from "@/features/backoffice/lib/suppliers/supplier-status";
-import type { BackofficeImportSource } from "@/features/backoffice/types/imports.types";
 
 export function useSuppliersPage() {
   const t = useTranslations("backoffice.suppliers");
@@ -37,19 +34,6 @@ export function useSuppliersPage() {
     setIsEnabled(scope.workspace.supplier.is_enabled);
   }, [scope.workspace]);
 
-  const schedulesQuery = useCallback((apiToken: string) => getBackofficeImportSchedules(apiToken), []);
-  const {
-    data: schedulesData,
-    isLoading: schedulesLoading,
-    error: schedulesError,
-    refetch: refetchSchedules,
-  } = useBackofficeQuery<{ count: number; results: BackofficeImportSource[] }>(schedulesQuery, []);
-
-  const supplierScheduleRows = useMemo(
-    () => (schedulesData?.results ?? []).filter((item) => item.supplier_code === scope.activeCode),
-    [scope.activeCode, schedulesData],
-  );
-
   const actions = useSupplierActions({
     token: scope.token,
     activeCode: scope.activeCode,
@@ -57,7 +41,6 @@ export function useSuppliersPage() {
     tCommon,
     tErrors,
     refreshWorkspaceScope: scope.refreshWorkspaceScope,
-    refetchSchedules,
   });
 
   const handleSaveSettings = useCallback(async () => {
@@ -100,9 +83,6 @@ export function useSuppliersPage() {
     tUtr,
     tGpl,
     scope,
-    schedulesLoading,
-    schedulesError,
-    supplierScheduleRows,
     actions,
     login,
     setLogin,

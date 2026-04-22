@@ -2,59 +2,94 @@
   "backoffice": {
     "dashboard": {
       "title": "Операционный дашборд",
-      "subtitle": "Обзор импорта и ценообразования.",
+      "subtitle": "Ключевые сигналы по заказам, публикации и импорту.",
       "actions": {
-        "refresh": "Обновить"
+        "refreshOperationalContour": "Обновить"
       },
       "cards": {
-        "sources": "Активные источники",
-        "runs": "Запуски импорта",
-        "errors": "Ошибки",
-        "errors24h": "{count} за 24 ч",
+        "unprocessedOrders": "Необработанные заказы",
+        "unprocessedOrdersSubtitle": "Нужна смена статуса по очереди заказов.",
+        "unprocessedOrdersSubtitleWithOrder": "Самый старый заказ: {order}",
+        "unprocessedOrdersTimer": "Таймер: {value}",
+        "unprocessedOrdersTimerIdle": "00:00:00",
+        "publishedProducts": "Опубликованные товары",
+        "publishedProductsSubtitle": "Прайсовых позиций: {count}",
         "repriced": "Переоцененные товары",
-        "rawOffers": "Сырые офферы",
-        "invalidRawOffers": "{count} невалидных",
-        "supplierOffers": "Офферы поставщиков",
-        "productPrices": "Цены товаров",
-        "unmatched": "Несопоставленные офферы",
-        "conflicts": "Конфликты",
-        "autoMatched": "Автоматически сопоставлены",
-        "manuallyResolved": "Сопоставлены вручную"
+        "repriced24h": "{count} за 24 ч",
+        "errors24hTitle": "Ошибки импорта (24 ч)",
+        "errorsTotal": "Всего ошибок: {count}"
       },
       "charts": {
-        "runStatuses": "Статусы запусков",
-        "matchRateBySupplier": "Доля сопоставления по поставщикам"
-      },
-      "latestRuns": {
-        "title": "Последние запуски",
-        "subtitle": "Недавние выполнения пайплайна.",
-        "columns": {
-          "source": "Источник",
-          "status": "Статус",
-          "rows": "Строки",
-          "errors": "Ошибки",
-          "repriced": "Переоценено"
+        "quality": {
+          "title": "Тренд качества импорта",
+          "subtitle": "Последние 10 запусков: доля сопоставления и ошибок.",
+          "matchRate": "Сопоставление",
+          "errorRate": "Ошибки"
+        },
+        "runStatuses": {
+          "title": "Статусы запусков",
+          "subtitle": "Распределение по итоговым статусам."
+        },
+        "suppliers": {
+          "title": "Поставщики: качество",
+          "subtitle": "Срез на {generatedAt}",
+          "matchRate": "Сопоставление",
+          "errorRate": "Ошибки"
         }
       },
       "states": {
         "empty": "Пока нет данных дашборда."
       },
-      "quality": {
-        "title": "Качество последнего импорта",
-        "subtitle": "Метрики последнего запуска ({source}).",
-        "processed": "Обработано",
-        "errors": "Ошибки",
-        "errorRate": "Доля ошибок",
-        "skipped": "Пропущено"
+      "alerts": {
+        "unprocessedOrdersInfo": "Есть необработанные заказы: {count}.",
+        "unprocessedOrdersWarning": "Необработанные заказы растут: {count}. Проверьте смену статусов.",
+        "unprocessedOrdersCritical": "Критично: {count} необработанных заказов. Нужна срочная обработка."
       },
-      "attention": {
-        "title": "Требует внимания оператора",
-        "subtitle": "Запуски с деградацией качества или срабатыванием порогов.",
-        "columns": {
-          "source": "Источник",
-          "status": "Статус",
-          "matchRate": "Доля сопоставления",
-          "errorRate": "Доля ошибок"
+      "staff": {
+        "switcherAriaLabel": "Переключатель роли операционного контура",
+        "title": "{role}: статистика активности",
+        "titleAll": "Статистика активности",
+        "subtitle": "Сводка действий сотрудников за последние 14 дней: ТТН, лояльность и изменения цен.",
+        "roles": {
+          "dashboard": "Дашборд",
+          "managers": "Менеджеры",
+          "operators": "Операторы"
+        },
+        "metrics": {
+          "ttnActions": "ТТН",
+          "loyaltyIssued": "Промокоды",
+          "priceChanges": "Изменения цен",
+          "actionsTotal": "Всего действий"
+        },
+        "kpis": {
+          "staffTotal": "Сотрудники",
+          "withActivity": "Активных: {count}",
+          "actionsTotal": "Действия",
+          "ttnTotal": "ТТН: {count}",
+          "loyaltyTotal": "Лояльность",
+          "priceChangesTotal": "Изменения цен: {count}",
+          "period": "Период",
+          "periodDays": "{days} дней",
+          "generatedAt": "Обновлено: {value}"
+        },
+        "charts": {
+          "dailyTitle": "Дневной тренд активности",
+          "dailySubtitle": "ТТН, лояльность и изменения цен по дням.",
+          "staffTitle": "Топ сотрудников по действиям",
+          "staffSubtitle": "Текущий рейтинг по суммарной активности."
+        },
+        "table": {
+          "title": "Детализация по сотрудникам",
+          "subtitle": "Персональная сводка по операциям и последней активности.",
+          "columns": {
+            "staff": "Сотрудник",
+            "actions": "Действия",
+            "ttn": "ТТН/Заказы",
+            "loyalty": "Промо (выд./исп.)",
+            "discountSum": "Сумма скидок",
+            "pricing": "Цены (всего/руч./имп./авто)",
+            "lastActivity": "Последняя активность"
+          }
         }
       }
     }

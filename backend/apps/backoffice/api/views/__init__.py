@@ -126,6 +126,7 @@ from .loyalty_views import (
     BackofficeLoyaltyStatsAPIView,
 )
 from .summary_view import BackofficeSummaryAPIView
+from .staff_activity_view import BackofficeStaffActivityAPIView
 from .vehicle_taxonomy_views import (
     BackofficeVehicleEngineListCreateAPIView,
     BackofficeVehicleEngineRetrieveUpdateDestroyAPIView,
@@ -153,6 +154,7 @@ __all__ = [
     "BackofficeCatalogProductListCreateAPIView",
     "BackofficeCatalogProductRetrieveUpdateDestroyAPIView",
     "BackofficeSummaryAPIView",
+    "BackofficeStaffActivityAPIView",
     "ImportSourceListAPIView",
     "ImportScheduleListAPIView",
     "ImportScheduleUpdateAPIView",

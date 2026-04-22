@@ -29,7 +29,7 @@ export function useSupplierActions({
   tCommon: Translator;
   tErrors: Translator;
   refreshWorkspaceScope: () => Promise<unknown>;
-  refetchSchedules: () => Promise<unknown>;
+  refetchSchedules?: () => Promise<unknown>;
 }) {
   const { showApiError, showSuccess } = useBackofficeFeedback();
 
@@ -127,13 +127,16 @@ export function useSupplierActions({
     if (!token) {
       return;
     }
+    const sourceLabel = item.code.toUpperCase();
 
     try {
       await updateBackofficeImportSchedule(token, item.id, {
         is_auto_import_enabled: !item.is_auto_import_enabled,
       });
-      showSuccess(tCommon("importSchedules.messages.scheduleUpdated", { source: item.code }));
-      await refetchSchedules();
+      showSuccess(tCommon("importSchedules.messages.scheduleUpdated", { source: sourceLabel }));
+      if (refetchSchedules) {
+        await refetchSchedules();
+      }
     } catch (error: unknown) {
       showApiError(error, tCommon("importSchedules.messages.actionFailed"));
     }
@@ -143,11 +146,14 @@ export function useSupplierActions({
     if (!token) {
       return;
     }
+    const sourceLabel = item.code.toUpperCase();
 
     try {
       await updateBackofficeImportSchedule(token, item.id, buildDefaultImportSchedulePayload(item));
-      showSuccess(tCommon("importSchedules.messages.scheduleSaved", { source: item.code }));
-      await refetchSchedules();
+      showSuccess(tCommon("importSchedules.messages.scheduleSaved", { source: sourceLabel }));
+      if (refetchSchedules) {
+        await refetchSchedules();
+      }
     } catch (error: unknown) {
       showApiError(error, tCommon("importSchedules.messages.actionFailed"));
     }

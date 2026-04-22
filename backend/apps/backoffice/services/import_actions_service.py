@@ -6,7 +6,6 @@ from apps.supplier_imports.models import ImportRun
 from apps.supplier_imports.selectors import ensure_default_import_sources, get_active_import_sources, get_import_source_by_code
 from apps.supplier_imports.services import SupplierImportRunner
 from apps.supplier_imports.services.integrations.exceptions import SupplierCooldownError
-from apps.supplier_imports.tasks import import_all_suppliers_task, import_supplier_file_task, reprice_after_import_task
 
 
 @dataclass(frozen=True)
@@ -30,6 +29,8 @@ class ImportActionsService:
         ensure_default_import_sources()
 
         if dispatch_async:
+            from apps.supplier_imports.tasks import import_supplier_file_task
+
             task = import_supplier_file_task.delay(
                 source_code=source_code,
                 dry_run=dry_run,
@@ -71,6 +72,8 @@ class ImportActionsService:
         ensure_default_import_sources()
 
         if dispatch_async:
+            from apps.supplier_imports.tasks import import_all_suppliers_task
+
             task = import_all_suppliers_task.delay(
                 dry_run=dry_run,
                 reprice=reprice,
@@ -111,6 +114,7 @@ class ImportActionsService:
 
     def reprice_after_import(self, *, run_id: str, dispatch_async: bool, trigger: str) -> ActionResult:
         run = ImportRun.objects.select_related("source").get(id=run_id)
+        from apps.supplier_imports.tasks import reprice_after_import_task
 
         if dispatch_async:
             task = reprice_after_import_task.delay(import_run_id=str(run.id), trigger_note=trigger)

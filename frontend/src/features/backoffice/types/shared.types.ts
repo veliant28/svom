@@ -18,6 +18,12 @@ export type BackofficeCapabilityCode =
   | "suppliers.manage"
   | "imports.view"
   | "imports.manage"
+  | "schedules.view"
+  | "brands.view"
+  | "categories.view"
+  | "autocatalog.view"
+  | "payments.view"
+  | "nova_poshta.settings"
   | "settings.manage"
   | "loyalty.issue"
   | "procurement.manage";

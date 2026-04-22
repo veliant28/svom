@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from apps.backoffice.api.serializers import ImportRunSerializer
 from apps.backoffice.permissions import IsStaffOrSuperuser
 from apps.backoffice.selectors.imports_selectors import apply_import_run_filters, get_import_runs_queryset
+from apps.supplier_imports.services import ScheduledImportService
 
 
 class ImportRunListAPIView(ListAPIView):
@@ -15,6 +16,7 @@ class ImportRunListAPIView(ListAPIView):
     ordering = ("-created_at",)
 
     def get_queryset(self):
+        ScheduledImportService().close_stale_running_runs()
         queryset = get_import_runs_queryset()
         queryset = apply_import_run_filters(queryset, params=self.request.query_params)
 

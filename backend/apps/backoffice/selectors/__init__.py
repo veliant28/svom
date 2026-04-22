@@ -26,6 +26,7 @@ from .quality_selectors import (
     get_import_quality_queryset,
 )
 from .summary_selectors import build_backoffice_summary_payload
+from .staff_activity_selectors import build_backoffice_staff_activity_payload
 from .supplier_workspace_selectors import (
     apply_supplier_prices_filters,
     get_supplier_errors_queryset,
@@ -37,6 +38,7 @@ from .supplier_workspace_selectors import (
 
 __all__ = [
     "build_backoffice_summary_payload",
+    "build_backoffice_staff_activity_payload",
     "build_import_quality_summary_payload",
     "build_run_quality_comparison_payload",
     "get_autocatalog_modifications_queryset",

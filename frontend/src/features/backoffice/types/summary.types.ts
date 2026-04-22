@@ -12,8 +12,15 @@ export type BackofficeSummary = {
     auto_matched_offers: number;
     manually_resolved_offers: number;
     supplier_offers: number;
+    published_products: number;
     product_prices: number;
     repriced_products_total: number;
+    repriced_products_24h: number;
+  };
+  orders_unprocessed?: {
+    count: number;
+    oldest_created_at: string | null;
+    oldest_order_number: string;
   };
   status_buckets: Array<{ status: string; total: number }>;
   latest_runs: Array<{
@@ -82,5 +89,44 @@ export type BackofficeSummary = {
     match_rate: number;
     error_rate: number;
     created_at: string;
+  }>;
+};
+
+export type BackofficeStaffActivityRole = "manager" | "operator";
+
+export type BackofficeStaffActivityPayload = {
+  generated_at: string;
+  role: BackofficeStaffActivityRole;
+  days: number;
+  kpis: {
+    staff_total: number;
+    with_activity_total: number;
+    actions_total: number;
+    ttn_actions_total: number;
+    loyalty_issued_total: number;
+    price_changes_total: number;
+  };
+  chart_by_day: Array<{
+    date: string;
+    ttn_actions: number;
+    loyalty_issued: number;
+    price_changes: number;
+    total: number;
+  }>;
+  staff: Array<{
+    staff_id: string;
+    staff_email: string;
+    staff_name: string;
+    actions_total: number;
+    ttn_actions: number;
+    ttn_orders: number;
+    loyalty_issued: number;
+    loyalty_used: number;
+    loyalty_discount_sum: string;
+    price_changes: number;
+    price_manual: number;
+    price_import: number;
+    price_auto: number;
+    last_activity_at: string | null;
   }>;
 };

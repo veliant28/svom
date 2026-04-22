@@ -4,7 +4,6 @@ from dataclasses import dataclass
 
 from apps.supplier_imports.selectors import ensure_default_import_sources, get_import_source_by_code
 from apps.supplier_imports.services.import_runner import SupplierImportRunner
-from apps.supplier_imports.tasks import import_supplier_file_task
 
 
 @dataclass(frozen=True)
@@ -28,6 +27,8 @@ class SupplierImportOrchestrationService:
         source = get_import_source_by_code(source_code)
 
         if dispatch_async:
+            from apps.supplier_imports.tasks import import_supplier_file_task
+
             task = import_supplier_file_task.delay(
                 source_code=source.code,
                 dry_run=dry_run,

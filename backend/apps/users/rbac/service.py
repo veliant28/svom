@@ -18,6 +18,8 @@ from .roles import SYSTEM_ROLE_DEFINITIONS, SYSTEM_ROLE_PRIORITY, get_system_rol
 
 User = get_user_model()
 
+STAFF_ENABLED_SYSTEM_ROLES = {"administrator", "manager", "operator"}
+
 
 def _get_anchor_content_type() -> ContentType:
     return ContentType.objects.get_for_model(User)
@@ -146,6 +148,24 @@ def user_has_capability(user, capability_code: str) -> bool:
     return normalized in get_backoffice_capabilities_for_user(user)
 
 
+def should_user_be_staff_by_system_role(*, user) -> bool:
+    if getattr(user, "is_superuser", False):
+        return True
+
+    role_code = get_user_system_role(user)
+    return role_code in STAFF_ENABLED_SYSTEM_ROLES
+
+
+def sync_user_staff_flag_by_system_role(*, user) -> bool:
+    desired_is_staff = should_user_be_staff_by_system_role(user=user)
+    if bool(getattr(user, "is_staff", False)) == desired_is_staff:
+        return False
+
+    user.is_staff = desired_is_staff
+    user.save(update_fields=("is_staff", "updated_at"))
+    return True
+
+
 def set_user_system_role(*, user, role_code: str | None) -> str | None:
     normalized = str(role_code or "").strip().lower() or None
     if normalized is not None and normalized not in SYSTEM_ROLE_DEFINITIONS:
@@ -155,12 +175,14 @@ def set_user_system_role(*, user, role_code: str | None) -> str | None:
     user.groups.remove(*list(user.groups.filter(name__in=system_group_names)))
 
     if normalized is None:
+        sync_user_staff_flag_by_system_role(user=user)
         return None
 
     ensure_system_groups_exist()
     definition = SYSTEM_ROLE_DEFINITIONS[normalized]
     group = Group.objects.get(name=definition.group_name)
     user.groups.add(group)
+    sync_user_staff_flag_by_system_role(user=user)
     return normalized
 
 

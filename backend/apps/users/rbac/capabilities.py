@@ -127,6 +127,42 @@ BACKOFFICE_CAPABILITIES: tuple[BackofficeCapabilityDefinition, ...] = (
         description="Run import and import maintenance actions.",
     ),
     BackofficeCapabilityDefinition(
+        code="schedules.view",
+        permission_codename="bo_cap_schedules_view",
+        title="Schedules view",
+        description="Read and manage supplier import schedules.",
+    ),
+    BackofficeCapabilityDefinition(
+        code="brands.view",
+        permission_codename="bo_cap_brands_view",
+        title="Brands view",
+        description="Read and manage catalog brands in backoffice.",
+    ),
+    BackofficeCapabilityDefinition(
+        code="categories.view",
+        permission_codename="bo_cap_categories_view",
+        title="Categories view",
+        description="Read and manage catalog categories in backoffice.",
+    ),
+    BackofficeCapabilityDefinition(
+        code="autocatalog.view",
+        permission_codename="bo_cap_autocatalog_view",
+        title="Autocatalog view",
+        description="Read autocatalog workspace and filters.",
+    ),
+    BackofficeCapabilityDefinition(
+        code="payments.view",
+        permission_codename="bo_cap_payments_view",
+        title="Payments view",
+        description="Read and manage payment provider settings.",
+    ),
+    BackofficeCapabilityDefinition(
+        code="nova_poshta.settings",
+        permission_codename="bo_cap_nova_poshta_settings",
+        title="Nova Poshta settings",
+        description="Read and manage Nova Poshta sender settings.",
+    ),
+    BackofficeCapabilityDefinition(
         code="settings.manage",
         permission_codename="bo_cap_settings_manage",
         title="Settings manage",

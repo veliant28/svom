@@ -11,6 +11,7 @@ from apps.users.rbac import (
     get_backoffice_capabilities_for_user,
     get_user_system_role,
     set_user_system_role,
+    sync_user_staff_flag_by_system_role,
 )
 
 
@@ -126,6 +127,9 @@ class _BackofficeUserWriteSerializer(serializers.Serializer):
 
         if not user.groups.exists():
             set_user_system_role(user=user, role_code="user")
+            return
+
+        sync_user_staff_flag_by_system_role(user=user)
 
 
 class BackofficeUserCreateSerializer(_BackofficeUserWriteSerializer):
