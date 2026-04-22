@@ -15,6 +15,7 @@ import {
   Tags,
   Truck,
   Wallet2,
+  Clock3,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -39,7 +40,8 @@ type SidebarNavItem = {
     | "orders"
     | "novaPoshtaSenders"
     | "users"
-    | "groups";
+    | "groups"
+    | "importSchedules";
   requiredCapability: BackofficeCapabilityCode | BackofficeCapabilityCode[];
 };
 
@@ -48,19 +50,20 @@ const NAV_ITEMS: SidebarNavItem[] = [
   { href: "/backoffice/users", icon: UsersRound, key: "users", requiredCapability: BACKOFFICE_CAPABILITIES.usersView },
   { href: "/backoffice/groups", icon: ShieldCheck, key: "groups", requiredCapability: BACKOFFICE_CAPABILITIES.groupsView },
   { href: "/backoffice/suppliers", icon: Truck, key: "suppliers", requiredCapability: BACKOFFICE_CAPABILITIES.suppliersView },
+  { href: "/backoffice/import-schedules", icon: Clock3, key: "importSchedules", requiredCapability: BACKOFFICE_CAPABILITIES.schedulesView },
   { href: "/backoffice/products", icon: Package, key: "products", requiredCapability: BACKOFFICE_CAPABILITIES.catalogView },
   { href: "/backoffice/pricing", icon: CircleDollarSign, key: "pricing", requiredCapability: BACKOFFICE_CAPABILITIES.pricingView },
   { href: "/backoffice/loyalty", icon: TicketPercent, key: "loyalty", requiredCapability: BACKOFFICE_CAPABILITIES.loyaltyIssue },
-  { href: "/backoffice/payments", icon: Wallet2, key: "payments", requiredCapability: BACKOFFICE_CAPABILITIES.settingsManage },
-  { href: "/backoffice/brands", icon: Tags, key: "brands", requiredCapability: BACKOFFICE_CAPABILITIES.catalogView },
-  { href: "/backoffice/categories", icon: Shapes, key: "categories", requiredCapability: BACKOFFICE_CAPABILITIES.catalogView },
-  { href: "/backoffice/autocatalog", icon: Car, key: "autocatalog", requiredCapability: BACKOFFICE_CAPABILITIES.catalogView },
+  { href: "/backoffice/payments", icon: Wallet2, key: "payments", requiredCapability: BACKOFFICE_CAPABILITIES.paymentsView },
+  { href: "/backoffice/brands", icon: Tags, key: "brands", requiredCapability: BACKOFFICE_CAPABILITIES.brandsView },
+  { href: "/backoffice/categories", icon: Shapes, key: "categories", requiredCapability: BACKOFFICE_CAPABILITIES.categoriesView },
+  { href: "/backoffice/autocatalog", icon: Car, key: "autocatalog", requiredCapability: BACKOFFICE_CAPABILITIES.autocatalogView },
   { href: "/backoffice/orders", icon: ShoppingBag, key: "orders", requiredCapability: BACKOFFICE_CAPABILITIES.ordersView },
   {
     href: "/backoffice/nova-poshta-senders",
     icon: PackageCheck,
     key: "novaPoshtaSenders",
-    requiredCapability: [BACKOFFICE_CAPABILITIES.ordersManage, BACKOFFICE_CAPABILITIES.customersSupport],
+    requiredCapability: BACKOFFICE_CAPABILITIES.novaPoshtaSettings,
   },
 ];
 
@@ -79,7 +82,7 @@ function isActiveNavItem(pathname: string, href: string): boolean {
   const target = normalizePath(href);
 
   if (target === "/backoffice") {
-    return current === target;
+    return current === target || current.startsWith("/backoffice/operations");
   }
 
   return current === target || current.startsWith(`${target}/`);
