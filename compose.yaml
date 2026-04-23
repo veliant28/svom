@@ -73,7 +73,7 @@ services:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
-    command: bash -lc "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    command: bash -lc "python manage.py migrate && daphne -b 0.0.0.0 -p 8000 config.asgi:application"
 
   celery_worker:
     build:
