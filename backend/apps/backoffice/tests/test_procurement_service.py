@@ -37,7 +37,7 @@ class ProcurementServiceTests(TestCase):
         self.order = Order.objects.create(
             user=self.user,
             order_number="ORD-PROC-1",
-            status=Order.STATUS_AWAITING_PROCUREMENT,
+            status=Order.STATUS_PROCESSING,
             contact_full_name="Procurement User",
             contact_phone="+380000000001",
             contact_email="procurement@test.local",

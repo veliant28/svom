@@ -11,6 +11,11 @@ type PercentStepperProps = {
   minusLabel: string;
   plusLabel: string;
   inputLabel: string;
+  suffix?: string;
+  inputMode?: "decimal" | "numeric";
+  integerOnly?: boolean;
+  inputWidthClassName?: string;
+  containerClassName?: string;
 };
 
 function clampPercent(value: number, min: number, max: number): number {
@@ -20,7 +25,7 @@ function clampPercent(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-function parsePercentInput(raw: string, min: number, max: number, fallback: number): number {
+function parsePercentInput(raw: string, min: number, max: number, fallback: number, integerOnly: boolean): number {
   const normalized = raw.trim().replace(",", ".").replace(/[^0-9.]/g, "");
   if (!normalized) {
     return min;
@@ -29,7 +34,8 @@ function parsePercentInput(raw: string, min: number, max: number, fallback: numb
   if (!Number.isFinite(parsed)) {
     return fallback;
   }
-  return clampPercent(parsed, min, max);
+  const nextValue = integerOnly ? Math.round(parsed) : parsed;
+  return clampPercent(nextValue, min, max);
 }
 
 export function PercentStepper({
@@ -41,12 +47,18 @@ export function PercentStepper({
   minusLabel,
   plusLabel,
   inputLabel,
+  suffix = "%",
+  inputMode = "decimal",
+  integerOnly = false,
+  inputWidthClassName = "w-16",
+  containerClassName = "",
 }: PercentStepperProps) {
   const safeValue = clampPercent(value, min, max);
+  const hasSuffix = suffix.trim().length > 0;
 
   return (
     <div
-      className="inline-flex h-9 items-center rounded-full border px-1"
+      className={`inline-flex h-9 items-center rounded-full border px-1 ${containerClassName}`}
       style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
     >
       <button
@@ -62,16 +74,27 @@ export function PercentStepper({
       <label className="relative inline-flex items-center px-1">
         <input
           type="text"
-          inputMode="decimal"
+          inputMode={inputMode}
           autoComplete="off"
           value={safeValue}
           aria-label={inputLabel}
-          className="h-7 w-16 border-0 bg-transparent px-1 pr-4 text-center text-sm font-semibold outline-none"
-          onChange={(event) => onChange(parsePercentInput(event.target.value, min, max, safeValue))}
+          className={`h-7 border-0 bg-transparent px-1 text-center text-sm font-semibold outline-none ${inputWidthClassName} ${hasSuffix ? "pr-4" : "pr-1"}`}
+          onChange={(event) => onChange(parsePercentInput(event.target.value, min, max, safeValue, integerOnly))}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowUp") {
+              event.preventDefault();
+              onChange(clampPercent(safeValue + step, min, max));
+            } else if (event.key === "ArrowDown") {
+              event.preventDefault();
+              onChange(clampPercent(safeValue - step, min, max));
+            }
+          }}
         />
-        <span className="pointer-events-none absolute right-1 text-xs" style={{ color: "var(--muted)" }}>
-          %
-        </span>
+        {hasSuffix ? (
+          <span className="pointer-events-none absolute right-1 text-xs" style={{ color: "var(--muted)" }}>
+            {suffix}
+          </span>
+        ) : null}
       </label>
 
       <button

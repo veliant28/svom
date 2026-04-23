@@ -24,6 +24,7 @@ def seed_marketing_demo() -> dict[str, int]:
             "autoplay_enabled": True,
             "transition_interval_ms": 4500,
             "transition_speed_ms": 650,
+            "transition_effect": "fade",
             "max_active_banners": 5,
         },
     )

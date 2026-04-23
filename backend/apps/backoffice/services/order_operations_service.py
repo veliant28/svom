@@ -23,7 +23,7 @@ class OrderOperationsService:
 
     @transaction.atomic
     def confirm_order(self, *, order: Order, operator_note: str = "") -> OrderActionResult:
-        order.status = Order.STATUS_CONFIRMED
+        order.status = Order.STATUS_PROCESSING
         if operator_note:
             order.operator_notes = self._merge_note(order.operator_notes, operator_note)
         order.save(update_fields=("status", "operator_notes", "updated_at"))
@@ -36,7 +36,7 @@ class OrderOperationsService:
                 item.procurement_status = OrderItem.PROCUREMENT_AWAITING
                 item.save(update_fields=("procurement_status", "updated_at"))
 
-        order.status = Order.STATUS_AWAITING_PROCUREMENT
+        order.status = Order.STATUS_PROCESSING
         if operator_note:
             order.operator_notes = self._merge_note(order.operator_notes, operator_note)
         order.save(update_fields=("status", "operator_notes", "updated_at"))
@@ -119,10 +119,51 @@ class OrderOperationsService:
         if order.items.filter(procurement_status=OrderItem.PROCUREMENT_UNAVAILABLE).exists():
             raise ValidationError({"order": _("Cannot mark as ready to ship while unavailable items exist.")})
 
-        order.status = Order.STATUS_READY_TO_SHIP
+        order.status = Order.STATUS_READY_FOR_SHIPMENT
         if operator_note:
             order.operator_notes = self._merge_note(order.operator_notes, operator_note)
         order.save(update_fields=("status", "operator_notes", "updated_at"))
+        return OrderActionResult(order_id=str(order.id), status=order.status)
+
+    @transaction.atomic
+    def mark_shipped(self, *, order: Order, operator_note: str = "") -> OrderActionResult:
+        if order.status not in {Order.STATUS_READY_FOR_SHIPMENT, Order.STATUS_SHIPPED}:
+            raise ValidationError({"order": _("Cannot mark order as shipped before it is ready for shipment.")})
+
+        order.status = Order.STATUS_SHIPPED
+        if operator_note:
+            order.operator_notes = self._merge_note(order.operator_notes, operator_note)
+        order.save(update_fields=("status", "operator_notes", "updated_at"))
+        return OrderActionResult(order_id=str(order.id), status=order.status)
+
+    @transaction.atomic
+    def mark_completed(self, *, order: Order, operator_note: str = "") -> OrderActionResult:
+        if order.status not in {Order.STATUS_READY_FOR_SHIPMENT, Order.STATUS_SHIPPED, Order.STATUS_COMPLETED}:
+            raise ValidationError({"order": _("Cannot complete order before shipment stage.")})
+
+        order.status = Order.STATUS_COMPLETED
+        if operator_note:
+            order.operator_notes = self._merge_note(order.operator_notes, operator_note)
+        order.save(update_fields=("status", "operator_notes", "updated_at"))
+        return OrderActionResult(order_id=str(order.id), status=order.status)
+
+    @transaction.atomic
+    def reset_to_new(self, *, order: Order, operator_note: str = "") -> OrderActionResult:
+        order.status = Order.STATUS_NEW
+        order.cancellation_reason_code = ""
+        order.cancellation_reason_note = ""
+        if operator_note:
+            order.operator_notes = self._merge_note(order.operator_notes, operator_note)
+
+        order.save(
+            update_fields=(
+                "status",
+                "cancellation_reason_code",
+                "cancellation_reason_note",
+                "operator_notes",
+                "updated_at",
+            )
+        )
         return OrderActionResult(order_id=str(order.id), status=order.status)
 
     @transaction.atomic
@@ -209,14 +250,15 @@ class OrderOperationsService:
         return self.procurement_service.build_item_recommendation(item)
 
     def _recalculate_order_status_from_items(self, order: Order) -> None:
-        statuses = list(order.items.values_list("procurement_status", flat=True))
+        if order.status in {
+            Order.STATUS_READY_FOR_SHIPMENT,
+            Order.STATUS_SHIPPED,
+            Order.STATUS_COMPLETED,
+            Order.STATUS_CANCELLED,
+        }:
+            return
 
-        if statuses and all(status == OrderItem.PROCUREMENT_RESERVED for status in statuses):
-            next_status = Order.STATUS_RESERVED
-        elif any(status in {OrderItem.PROCUREMENT_RESERVED, OrderItem.PROCUREMENT_PARTIALLY_RESERVED} for status in statuses):
-            next_status = Order.STATUS_PARTIALLY_RESERVED
-        else:
-            next_status = Order.STATUS_AWAITING_PROCUREMENT
+        next_status = Order.STATUS_PROCESSING
 
         if order.status != next_status:
             order.status = next_status

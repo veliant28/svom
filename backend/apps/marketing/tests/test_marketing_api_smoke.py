@@ -34,12 +34,16 @@ class MarketingAPISmokeTests(APITestCase):
     def test_marketing_endpoints_return_data(self):
         hero_response = self.client.get(reverse("marketing_api:hero-slide-list"))
         promo_response = self.client.get(reverse("marketing_api:promo-banner-list"))
+        promo_config_response = self.client.get(reverse("marketing_api:promo-banner-config"))
         footer_response = self.client.get(reverse("marketing_api:footer-settings"))
 
         self.assertEqual(hero_response.status_code, status.HTTP_200_OK)
         self.assertEqual(promo_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(promo_config_response.status_code, status.HTTP_200_OK)
         self.assertEqual(footer_response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(hero_response.data), 1)
         self.assertEqual(len(promo_response.data), 1)
+        self.assertEqual(len(promo_config_response.data["banners"]), 1)
+        self.assertEqual(promo_config_response.data["settings"]["transition_effect"], "fade")
         self.assertEqual(footer_response.data["working_hours"], "Mon-Sat 10:00-17:00")
         self.assertEqual(footer_response.data["phone"], "+380998979467")

@@ -11,10 +11,7 @@ from apps.commerce.models import Order
 class ProcurementSuggestionsListAPIView(BackofficeAPIView):
     DEFAULT_STATUSES = {
         Order.STATUS_NEW,
-        Order.STATUS_CONFIRMED,
-        Order.STATUS_AWAITING_PROCUREMENT,
-        Order.STATUS_RESERVED,
-        Order.STATUS_PARTIALLY_RESERVED,
+        Order.STATUS_PROCESSING,
     }
 
     def get(self, request):

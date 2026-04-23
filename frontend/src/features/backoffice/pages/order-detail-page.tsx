@@ -8,12 +8,14 @@ import {
   confirmBackofficeOrder,
   getBackofficeOrderDetail,
   getBackofficeOrderItemSupplierRecommendation,
-  markBackofficeOrderAwaitingProcurement,
+  markBackofficeOrderCompleted,
   markBackofficeOrderReadyToShip,
+  markBackofficeOrderShipped,
   overrideBackofficeOrderItemSupplier,
   refreshBackofficeOrderPayment,
-  reserveBackofficeOrder,
+  resetBackofficeOrderToNew,
 } from "@/features/backoffice/api/backoffice-api";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { OrderPaymentSection } from "@/features/backoffice/components/orders/payment/order-payment-section";
 import { BackofficeTable } from "@/features/backoffice/components/table/backoffice-table";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
@@ -25,6 +27,7 @@ import { Link } from "@/i18n/navigation";
 
 export function OrderDetailPage({ orderId }: { orderId: string }) {
   const t = useTranslations("backoffice.common");
+  const { user } = useAuth();
   const [itemRecommendations, setItemRecommendations] = useState<Record<string, BackofficeProcurementRecommendation>>({});
   const [cancelReason, setCancelReason] = useState("supplier_shortage");
   const [paymentRefreshing, setPaymentRefreshing] = useState(false);
@@ -43,27 +46,35 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
     await refetch();
   }
 
-  async function runAwaitingProcurement() {
-    if (!token || !data) {
-      return;
-    }
-    await markBackofficeOrderAwaitingProcurement(token, { order_id: data.id });
-    await refetch();
-  }
-
-  async function runReserve() {
-    if (!token || !data) {
-      return;
-    }
-    await reserveBackofficeOrder(token, { order_id: data.id });
-    await refetch();
-  }
-
   async function runReadyToShip() {
     if (!token || !data) {
       return;
     }
     await markBackofficeOrderReadyToShip(token, { order_id: data.id });
+    await refetch();
+  }
+
+  async function runShip() {
+    if (!token || !data) {
+      return;
+    }
+    await markBackofficeOrderShipped(token, { order_id: data.id });
+    await refetch();
+  }
+
+  async function runComplete() {
+    if (!token || !data) {
+      return;
+    }
+    await markBackofficeOrderCompleted(token, { order_id: data.id });
+    await refetch();
+  }
+
+  async function runResetToNew() {
+    if (!token || !data) {
+      return;
+    }
+    await resetBackofficeOrderToNew(token, { order_id: data.id });
     await refetch();
   }
 
@@ -115,6 +126,19 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
     }
   }
 
+  const canProcess = data?.status === "new";
+  const canReadyForShipment = data?.status === "processing";
+  const canShip = data?.status === "ready_for_shipment";
+  const canComplete = data?.status === "shipped";
+  const canResetToNew = Boolean(
+    data
+      && data.status !== "new"
+      && user?.groups.some(
+        (group) => group.name === "Backoffice Role: administrator" || group.name === "Backoffice Role: manager",
+      ),
+  );
+  const canCancel = Boolean(data && data.status !== "completed" && data.status !== "cancelled");
+
   return (
     <section>
       <PageHeader
@@ -133,46 +157,62 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
               type="button"
               className="h-9 rounded-md border px-3 text-xs font-semibold"
               style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+              disabled={!canProcess}
               onClick={() => {
                 void runConfirm();
               }}
             >
-              {t("orderDetail.actions.confirm")}
+              {t("orderDetail.actions.processing")}
             </button>
             <button
               type="button"
               className="h-9 rounded-md border px-3 text-xs font-semibold"
               style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
-              onClick={() => {
-                void runAwaitingProcurement();
-              }}
-            >
-              {t("orderDetail.actions.awaiting")}
-            </button>
-            <button
-              type="button"
-              className="h-9 rounded-md border px-3 text-xs font-semibold"
-              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
-              onClick={() => {
-                void runReserve();
-              }}
-            >
-              {t("orderDetail.actions.reserve")}
-            </button>
-            <button
-              type="button"
-              className="h-9 rounded-md border px-3 text-xs font-semibold"
-              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+              disabled={!canReadyForShipment}
               onClick={() => {
                 void runReadyToShip();
               }}
             >
-              {t("orderDetail.actions.readyToShip")}
+              {t("orderDetail.actions.readyForShipment")}
+            </button>
+            <button
+              type="button"
+              className="h-9 rounded-md border px-3 text-xs font-semibold"
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+              disabled={!canShip}
+              onClick={() => {
+                void runShip();
+              }}
+            >
+              {t("orderDetail.actions.ship")}
+            </button>
+            <button
+              type="button"
+              className="h-9 rounded-md border px-3 text-xs font-semibold"
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+              disabled={!canComplete}
+              onClick={() => {
+                void runComplete();
+              }}
+            >
+              {t("orderDetail.actions.complete")}
+            </button>
+            <button
+              type="button"
+              className="h-9 rounded-md border px-3 text-xs font-semibold"
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+              disabled={!canResetToNew}
+              onClick={() => {
+                void runResetToNew();
+              }}
+            >
+              {t("statuses.new")}
             </button>
             <select
               value={cancelReason}
               onChange={(event) => setCancelReason(event.target.value)}
               className="h-9 rounded-md border px-3 text-xs"
+              disabled={!canCancel}
               style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
             >
               <option value="customer_request">{t("orderDetail.cancelReasons.customer_request")}</option>
@@ -186,6 +226,7 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
               type="button"
               className="h-9 rounded-md border px-3 text-xs font-semibold"
               style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+              disabled={!canCancel}
               onClick={() => {
                 void runCancel();
               }}

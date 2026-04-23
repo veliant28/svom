@@ -13,6 +13,8 @@ class PromoBanner(UUIDPrimaryKeyMixin, TimestampedMixin, PublishableMixin, Sorta
     description_en = models.CharField(_("Описание (en)"), max_length=500, blank=True)
     image = models.ImageField(_("Изображение"), upload_to="marketing/promo/")
     target_url = models.URLField(_("Целевая ссылка"), blank=True)
+    starts_at = models.DateTimeField(_("Показ с"), null=True, blank=True)
+    ends_at = models.DateTimeField(_("Показ до"), null=True, blank=True)
 
     class Meta(SortableMixin.Meta):
         verbose_name = _("Промо-баннер")

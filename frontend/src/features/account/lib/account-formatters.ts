@@ -26,13 +26,13 @@ export function formatDateTime(value: string, locale: string): string {
 }
 
 export function resolveOrderStatusTone(status: string): "success" | "warning" | "danger" | "neutral" {
-  if (status === "completed" || status === "shipped" || status === "ready_to_ship") {
+  if (status === "completed" || status === "shipped" || status === "ready_for_shipment") {
     return "success";
   }
   if (status === "cancelled") {
     return "danger";
   }
-  if (status === "awaiting_procurement" || status === "partially_reserved") {
+  if (status === "processing") {
     return "warning";
   }
   return "neutral";

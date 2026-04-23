@@ -26,6 +26,7 @@ export type BackofficeCapabilityCode =
   | "nova_poshta.settings"
   | "settings.manage"
   | "footer.settings"
+  | "promo_banners.manage"
   | "loyalty.issue"
   | "procurement.manage";
 

@@ -113,6 +113,7 @@ export function useOrdersPage() {
     viewPaymentCooldown: orderActions.viewPaymentCooldown,
     viewMonobankActionLoading: orderActions.viewMonobankActionLoading,
     viewMonobankFiscalChecks: orderActions.viewMonobankFiscalChecks,
+    canResetToNew: orderActions.canResetToNew,
     supplierOpen: supplierFlow.supplierOpen,
     supplierTarget: supplierFlow.supplierTarget,
     supplierPreview: supplierFlow.supplierPreview,

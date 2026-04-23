@@ -14,7 +14,7 @@ import type {
 
 type Translator = (key: string, values?: Record<string, string | number>) => string;
 
-type ActionKind = "confirm" | "awaiting" | "reserve" | "ready" | "cancel";
+type ActionKind = "confirm" | "ready" | "ship" | "complete" | "reset" | "cancel";
 
 function ValueField({
   label,
@@ -312,26 +312,32 @@ function formatNovaPoshtaDestination(rawDestination: string, city: string, t: Tr
   return [resolvedPointToken, tail].filter(Boolean).join(", ");
 }
 
-function nextActionForStatus(status: string): ActionKind {
+function selectedActionForStatus(status: string, canResetToNew = false): ActionKind {
   const normalized = status.trim().toLowerCase();
 
+  if (normalized === "new" && canResetToNew) {
+    return "reset";
+  }
   if (normalized === "new") {
     return "confirm";
   }
-  if (normalized === "confirmed") {
-    return "awaiting";
+  if (normalized === "processing") {
+    return "confirm";
   }
-  if (normalized === "awaiting_procurement") {
-    return "reserve";
-  }
-  if (normalized === "reserved" || normalized === "partially_reserved") {
+  if (normalized === "ready_for_shipment") {
     return "ready";
+  }
+  if (normalized === "shipped") {
+    return "ship";
+  }
+  if (normalized === "completed") {
+    return "complete";
   }
   if (normalized === "cancelled") {
     return "cancel";
   }
 
-  return "ready";
+  return "confirm";
 }
 
 export function OrderViewModal({
@@ -339,6 +345,7 @@ export function OrderViewModal({
   isLoading,
   order,
   actionLoading,
+  canResetToNew,
   paymentRefreshing,
   paymentRefreshDisabled,
   monobankActionLoading,
@@ -353,6 +360,7 @@ export function OrderViewModal({
   isLoading: boolean;
   order: BackofficeOrderOperational | null;
   actionLoading: ActionKind | null;
+  canResetToNew?: boolean;
   paymentRefreshing?: boolean;
   paymentRefreshDisabled?: boolean;
   monobankActionLoading?: BackofficeMonobankPaymentAction | null;
@@ -371,17 +379,23 @@ export function OrderViewModal({
       return;
     }
 
-    setSelectedAction(nextActionForStatus(order.status));
+    setSelectedAction(selectedActionForStatus(order.status, Boolean(canResetToNew)));
     setMonobankAmountMinorInput("");
-  }, [order]);
+  }, [canResetToNew, order]);
 
-  const actionOptions = useMemo(() => ([
-    { value: "confirm" as const, label: t("orders.modals.view.actions.confirm") },
-    { value: "awaiting" as const, label: t("orders.modals.view.actions.awaiting") },
-    { value: "reserve" as const, label: t("orders.modals.view.actions.reserve") },
-    { value: "ready" as const, label: t("orders.modals.view.actions.ready") },
-    { value: "cancel" as const, label: t("orders.modals.view.actions.cancel") },
-  ]), [t]);
+  const actionOptions = useMemo(() => {
+    const options: Array<{ value: ActionKind; label: string }> = [
+      { value: "confirm" as const, label: t("orders.modals.view.actions.processing") },
+      { value: "ready" as const, label: t("orders.modals.view.actions.readyForShipment") },
+      { value: "ship" as const, label: t("orders.modals.view.actions.ship") },
+      { value: "complete" as const, label: t("orders.modals.view.actions.complete") },
+      { value: "cancel" as const, label: t("orders.modals.view.actions.cancel") },
+    ];
+    if (canResetToNew) {
+      options.unshift({ value: "reset" as const, label: t("statuses.new") });
+    }
+    return options;
+  }, [canResetToNew, t]);
   const parsedMonobankAmountMinor = useMemo(() => {
     const normalized = monobankAmountMinorInput.trim();
     if (!normalized) {

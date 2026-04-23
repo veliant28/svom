@@ -33,6 +33,7 @@ export function OrdersPage() {
     viewPaymentCooldown,
     viewMonobankActionLoading,
     viewMonobankFiscalChecks,
+    canResetToNew,
     supplierOpen,
     supplierTarget,
     supplierPreview,
@@ -124,6 +125,7 @@ export function OrdersPage() {
         isLoading={viewLoading}
         order={viewOrder}
         actionLoading={viewActionLoading}
+        canResetToNew={canResetToNew}
         paymentRefreshing={viewPaymentRefreshing}
         paymentRefreshDisabled={viewPaymentCooldown}
         monobankActionLoading={viewMonobankActionLoading}

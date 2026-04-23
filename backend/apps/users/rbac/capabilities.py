@@ -169,6 +169,12 @@ BACKOFFICE_CAPABILITIES: tuple[BackofficeCapabilityDefinition, ...] = (
         description="Manage storefront footer settings in backoffice.",
     ),
     BackofficeCapabilityDefinition(
+        code="promo_banners.manage",
+        permission_codename="bo_cap_promo_banners_manage",
+        title="Promo banners manage",
+        description="Manage storefront promo banners and rotation settings in backoffice.",
+    ),
+    BackofficeCapabilityDefinition(
         code="loyalty.issue",
         permission_codename="bo_cap_loyalty_issue",
         title="Loyalty issue",

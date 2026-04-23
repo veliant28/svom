@@ -18,6 +18,7 @@ import {
   Clock3,
   Headset,
   Settings2,
+  ImageUp,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -43,6 +44,7 @@ type SidebarNavItem = {
     | "orders"
     | "novaPoshtaSenders"
     | "footerSettings"
+    | "promoBanners"
     | "users"
     | "groups"
     | "importSchedules";
@@ -70,6 +72,12 @@ const NAV_ITEMS: SidebarNavItem[] = [
   { href: "/backoffice/categories", icon: Shapes, key: "categories", requiredCapability: BACKOFFICE_CAPABILITIES.categoriesView },
   { href: "/backoffice/users", icon: UsersRound, key: "users", requiredCapability: BACKOFFICE_CAPABILITIES.usersView },
   { href: "/backoffice/groups", icon: ShieldCheck, key: "groups", requiredCapability: BACKOFFICE_CAPABILITIES.groupsView },
+  {
+    href: "/backoffice/promo-banners",
+    icon: ImageUp,
+    key: "promoBanners",
+    requiredCapability: BACKOFFICE_CAPABILITIES.promoBannersManage,
+  },
   {
     href: "/backoffice/footer",
     icon: Settings2,

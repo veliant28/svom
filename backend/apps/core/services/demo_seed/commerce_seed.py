@@ -70,7 +70,7 @@ def _seed_orders(*, demo_user: User, products: list[Product]) -> tuple[int, int]
         order_number="DEMO-ORDER-001",
         defaults={
             "user": demo_user,
-            "status": Order.STATUS_CONFIRMED,
+            "status": Order.STATUS_PROCESSING,
             "contact_full_name": "Demo User",
             "contact_phone": "+380001112233",
             "contact_email": demo_user.email,

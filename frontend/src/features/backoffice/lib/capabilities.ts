@@ -29,6 +29,7 @@ export const BACKOFFICE_CAPABILITIES = {
   novaPoshtaSettings: "nova_poshta.settings",
   settingsManage: "settings.manage",
   footerSettings: "footer.settings",
+  promoBannersManage: "promo_banners.manage",
   loyaltyIssue: "loyalty.issue",
   procurementManage: "procurement.manage",
 } as const;

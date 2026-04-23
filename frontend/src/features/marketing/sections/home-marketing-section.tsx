@@ -10,12 +10,12 @@ import { usePromoBanners } from "@/features/marketing/hooks/use-promo-banners";
 export function HomeMarketingSection() {
   const locale = useLocale();
   const { slides } = useHeroSlides(locale);
-  const { banners } = usePromoBanners(locale);
+  const { banners, settings } = usePromoBanners(locale);
 
   return (
     <>
       <HeroBackgroundSlider slides={slides} />
-      <PromoBannerCarousel banners={banners} />
+      <PromoBannerCarousel banners={banners} settings={settings} />
     </>
   );
 }

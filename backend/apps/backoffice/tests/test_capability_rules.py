@@ -43,3 +43,7 @@ class BackofficeCapabilityRulesTest(SimpleTestCase):
             resolve_required_capabilities_for_request("/api/backoffice/settings/footer/", "GET"),
             ("footer.settings",),
         )
+        self.assertEqual(
+            resolve_required_capabilities_for_request("/api/backoffice/settings/promo-banners/", "GET"),
+            ("promo_banners.manage",),
+        )

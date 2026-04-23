@@ -57,11 +57,8 @@ export function OrdersFilters({
       >
         <option value="">{t("orders.filters.allStatuses")}</option>
         <option value="new">{t("statuses.new")}</option>
-        <option value="confirmed">{t("statuses.confirmed")}</option>
-        <option value="awaiting_procurement">{t("statuses.awaiting_procurement")}</option>
-        <option value="reserved">{t("statuses.reserved")}</option>
-        <option value="partially_reserved">{t("statuses.partially_reserved")}</option>
-        <option value="ready_to_ship">{t("statuses.ready_to_ship")}</option>
+        <option value="processing">{t("statuses.processing")}</option>
+        <option value="ready_for_shipment">{t("statuses.ready_for_shipment")}</option>
         <option value="shipped">{t("statuses.shipped")}</option>
         <option value="completed">{t("statuses.completed")}</option>
         <option value="cancelled">{t("statuses.cancelled")}</option>

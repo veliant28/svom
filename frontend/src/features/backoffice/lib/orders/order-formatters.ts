@@ -41,11 +41,8 @@ export function resolveOrderStatusDescription(
   const normalized = status.trim().toLowerCase();
   const byStatus: Record<string, string> = {
     new: "orders.statusDescriptions.new",
-    confirmed: "orders.statusDescriptions.confirmed",
-    awaiting_procurement: "orders.statusDescriptions.awaiting_procurement",
-    reserved: "orders.statusDescriptions.reserved",
-    partially_reserved: "orders.statusDescriptions.partially_reserved",
-    ready_to_ship: "orders.statusDescriptions.ready_to_ship",
+    processing: "orders.statusDescriptions.processing",
+    ready_for_shipment: "orders.statusDescriptions.ready_for_shipment",
     shipped: "orders.statusDescriptions.shipped",
     completed: "orders.statusDescriptions.completed",
     cancelled: "orders.statusDescriptions.cancelled",

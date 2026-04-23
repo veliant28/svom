@@ -75,6 +75,32 @@ export async function markBackofficeOrderReadyToShip(
   return postJson<{ order_id: string; status: string }, typeof payload>("/backoffice/orders/actions/ready-to-ship/", payload, undefined, { token });
 }
 
+export async function markBackofficeOrderShipped(
+  token: string,
+  payload: { order_id: string; operator_note?: string },
+): Promise<{ order_id: string; status: string }> {
+  return postJson<{ order_id: string; status: string }, typeof payload>("/backoffice/orders/actions/ship/", payload, undefined, { token });
+}
+
+export async function markBackofficeOrderCompleted(
+  token: string,
+  payload: { order_id: string; operator_note?: string },
+): Promise<{ order_id: string; status: string }> {
+  return postJson<{ order_id: string; status: string }, typeof payload>("/backoffice/orders/actions/complete/", payload, undefined, { token });
+}
+
+export async function resetBackofficeOrderToNew(
+  token: string,
+  payload: { order_id: string; operator_note?: string },
+): Promise<{ order_id: string; status: string }> {
+  return postJson<{ order_id: string; status: string }, typeof payload>(
+    "/backoffice/orders/actions/reset-to-new/",
+    payload,
+    undefined,
+    { token },
+  );
+}
+
 export async function cancelBackofficeOrder(
   token: string,
   payload: { order_id: string; reason_code: string; reason_note?: string; operator_note?: string },

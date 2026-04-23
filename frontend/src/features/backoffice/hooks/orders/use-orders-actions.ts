@@ -6,18 +6,20 @@ import {
   confirmBackofficeOrder,
   deleteBackofficeOrder,
   getBackofficeOrderDetail,
-  markBackofficeOrderAwaitingProcurement,
+  markBackofficeOrderCompleted,
   markBackofficeOrderReadyToShip,
-  reserveBackofficeOrder,
+  markBackofficeOrderShipped,
+  resetBackofficeOrderToNew,
 } from "@/features/backoffice/api/orders-api";
 import { refreshBackofficeOrderPayment, runBackofficeOrderMonobankPaymentAction } from "@/features/backoffice/api/payment-api";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import type {
   BackofficeMonobankFiscalCheck,
   BackofficeMonobankPaymentAction,
   BackofficeOrderOperational,
 } from "@/features/backoffice/types/orders.types";
 
-export type OrderViewAction = "confirm" | "awaiting" | "reserve" | "ready" | "cancel";
+export type OrderViewAction = "confirm" | "ready" | "ship" | "complete" | "reset" | "cancel";
 
 type OrdersActionsFeedback = {
   showApiError: (error: unknown, fallbackMessage?: string) => string;
@@ -56,6 +58,7 @@ export function useOrdersActions({
   onSupplierDeleted?: (deletedIds: string[]) => void;
 }) {
   const t = useTranslations("backoffice.common");
+  const { user } = useAuth();
 
   const [viewOpen, setViewOpen] = useState(false);
   const [viewOrderId, setViewOrderId] = useState<string | null>(null);
@@ -71,6 +74,11 @@ export function useOrdersActions({
 
   const [deleteTarget, setDeleteTarget] = useState<BackofficeOrderOperational | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const canResetToNew = Boolean(
+    user && user.groups.some(
+      (group) => group.name === "Backoffice Role: administrator" || group.name === "Backoffice Role: manager",
+    ),
+  );
 
   const startPaymentRefreshCooldown = useCallback((seconds: number) => {
     if (cooldownTimeoutRef.current) {
@@ -138,16 +146,19 @@ export function useOrdersActions({
     try {
       if (action === "confirm") {
         await confirmBackofficeOrder(token, { order_id: viewOrder.id });
-        feedback.showSuccess(t("orders.messages.confirmed"));
-      } else if (action === "awaiting") {
-        await markBackofficeOrderAwaitingProcurement(token, { order_id: viewOrder.id });
-        feedback.showSuccess(t("orders.messages.awaiting"));
-      } else if (action === "reserve") {
-        await reserveBackofficeOrder(token, { order_id: viewOrder.id });
-        feedback.showSuccess(t("orders.messages.reserved"));
+        feedback.showSuccess(t("orders.messages.processing"));
       } else if (action === "ready") {
         await markBackofficeOrderReadyToShip(token, { order_id: viewOrder.id });
-        feedback.showSuccess(t("orders.messages.readyToShip"));
+        feedback.showSuccess(t("orders.messages.readyForShipment"));
+      } else if (action === "ship") {
+        await markBackofficeOrderShipped(token, { order_id: viewOrder.id });
+        feedback.showSuccess(t("orders.messages.shipped"));
+      } else if (action === "complete") {
+        await markBackofficeOrderCompleted(token, { order_id: viewOrder.id });
+        feedback.showSuccess(t("orders.messages.completed"));
+      } else if (action === "reset") {
+        await resetBackofficeOrderToNew(token, { order_id: viewOrder.id });
+        feedback.showSuccess(t("orders.messages.resetToNew"));
       } else if (action === "cancel") {
         await cancelBackofficeOrder(token, { order_id: viewOrder.id, reason_code: "supplier_shortage" });
         feedback.showSuccess(t("orders.messages.cancelled"));
@@ -303,6 +314,7 @@ export function useOrdersActions({
     viewPaymentCooldown,
     viewMonobankActionLoading,
     viewMonobankFiscalChecks,
+    canResetToNew,
     deleteTarget,
     deletingId,
     loadOrderDetail,

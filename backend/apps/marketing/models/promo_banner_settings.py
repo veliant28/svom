@@ -9,6 +9,7 @@ class PromoBannerSettings(UUIDPrimaryKeyMixin, TimestampedMixin):
     autoplay_enabled = models.BooleanField(_("Автопрокрутка включена"), default=True)
     transition_interval_ms = models.PositiveIntegerField(_("Интервал перехода, мс"), default=4500)
     transition_speed_ms = models.PositiveIntegerField(_("Скорость перехода, мс"), default=700)
+    transition_effect = models.CharField(_("Эффект смены"), max_length=32, default="fade")
     max_active_banners = models.PositiveSmallIntegerField(_("Максимум активных баннеров"), default=5)
 
     class Meta:

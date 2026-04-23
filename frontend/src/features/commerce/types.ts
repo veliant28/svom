@@ -157,16 +157,11 @@ export type Order = {
   order_number: string;
   status:
     | "new"
-    | "confirmed"
-    | "awaiting_procurement"
-    | "reserved"
-    | "partially_reserved"
-    | "ready_to_ship"
+    | "processing"
+    | "ready_for_shipment"
     | "shipped"
     | "completed"
-    | "cancelled"
-    | "draft"
-    | "placed";
+    | "cancelled";
   contact_full_name: string;
   contact_phone: string;
   contact_email: string;

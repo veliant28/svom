@@ -36,7 +36,11 @@ def build_backoffice_summary_payload() -> dict:
 
     status_buckets = ImportRun.objects.values("status").annotate(total=Count("id")).order_by("status")
     repriced_24h = ImportRun.objects.filter(created_at__gte=since_24h).aggregate(total=Sum("repriced_products")).get("total") or 0
-    unprocessed_statuses = (Order.STATUS_NEW, Order.STATUS_DRAFT, Order.STATUS_PLACED)
+    unprocessed_statuses = (
+        Order.STATUS_NEW,
+        Order.STATUS_PROCESSING,
+        Order.STATUS_READY_FOR_SHIPMENT,
+    )
     unprocessed_orders_qs = Order.objects.filter(status__in=unprocessed_statuses)
     unprocessed_oldest = unprocessed_orders_qs.order_by("placed_at", "created_at").first()
 

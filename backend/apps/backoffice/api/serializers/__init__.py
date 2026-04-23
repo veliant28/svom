@@ -68,6 +68,7 @@ from .payment_serializer import (
     NovaPaySettingsSerializer,
     PaymentConnectionCheckSerializer,
 )
+from .promo_banner_serializer import BackofficePromoBannerSerializer, BackofficePromoBannerSettingsSerializer
 from .product_price_operational_serializer import ProductPriceOperationalSerializer
 from .procurement_suggestion_serializer import (
     ProcurementItemRecommendationSerializer,
@@ -193,4 +194,6 @@ __all__ = [
     "BackofficeLoyaltyCustomerLookupSerializer",
     "BackofficeSupportAssignSerializer",
     "BackofficeSupportStatusUpdateSerializer",
+    "BackofficePromoBannerSerializer",
+    "BackofficePromoBannerSettingsSerializer",
 ]

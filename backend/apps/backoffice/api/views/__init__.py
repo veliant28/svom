@@ -45,6 +45,7 @@ from .order_actions_view import (
     BulkDeleteOrdersActionAPIView,
     BulkConfirmOrdersActionAPIView,
     CancelOrderActionAPIView,
+    CompleteOrderActionAPIView,
     ConfirmOrderActionAPIView,
     DeleteOrderActionAPIView,
     GplCancelOrderAPIView,
@@ -56,7 +57,9 @@ from .order_actions_view import (
     OrderItemSupplierOverrideAPIView,
     OrderItemSupplierRecommendationAPIView,
     ReadyToShipOrderActionAPIView,
+    ResetOrderToNewActionAPIView,
     ReserveOrderItemsActionAPIView,
+    ShippedOrderActionAPIView,
 )
 from .payment_views import (
     BackofficeLiqPayConnectionTestAPIView,
@@ -140,6 +143,11 @@ from .support_views import (
 )
 from .summary_view import BackofficeSummaryAPIView
 from .staff_activity_view import BackofficeStaffActivityAPIView
+from .promo_banner_views import (
+    BackofficePromoBannerListCreateAPIView,
+    BackofficePromoBannerRetrieveUpdateDestroyAPIView,
+    BackofficePromoBannerSettingsAPIView,
+)
 from .vehicle_taxonomy_views import (
     BackofficeVehicleEngineListCreateAPIView,
     BackofficeVehicleEngineRetrieveUpdateDestroyAPIView,
@@ -213,6 +221,9 @@ __all__ = [
     "BackofficeOrderPaymentMonobankActionAPIView",
     "BackofficeOrderPaymentRefreshAPIView",
     "ReadyToShipOrderActionAPIView",
+    "ResetOrderToNewActionAPIView",
+    "ShippedOrderActionAPIView",
+    "CompleteOrderActionAPIView",
     "CancelOrderActionAPIView",
     "DeleteOrderActionAPIView",
     "BulkConfirmOrdersActionAPIView",
@@ -290,6 +301,9 @@ __all__ = [
     "BackofficeSupportThreadReadAPIView",
     "BackofficeSupportThreadStatusAPIView",
     "BackofficeSupportWallboardAPIView",
+    "BackofficePromoBannerSettingsAPIView",
+    "BackofficePromoBannerListCreateAPIView",
+    "BackofficePromoBannerRetrieveUpdateDestroyAPIView",
     "RunImportSourceActionAPIView",
     "ImportAllActionAPIView",
     "RepriceAfterImportActionAPIView",

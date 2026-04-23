@@ -7,29 +7,19 @@ from apps.core.db.mixins import TimestampedMixin, UUIDPrimaryKeyMixin
 
 class Order(UUIDPrimaryKeyMixin, TimestampedMixin):
     STATUS_NEW = "new"
-    STATUS_CONFIRMED = "confirmed"
-    STATUS_AWAITING_PROCUREMENT = "awaiting_procurement"
-    STATUS_RESERVED = "reserved"
-    STATUS_PARTIALLY_RESERVED = "partially_reserved"
-    STATUS_READY_TO_SHIP = "ready_to_ship"
+    STATUS_PROCESSING = "processing"
+    STATUS_READY_FOR_SHIPMENT = "ready_for_shipment"
     STATUS_SHIPPED = "shipped"
     STATUS_COMPLETED = "completed"
     STATUS_CANCELLED = "cancelled"
-    STATUS_DRAFT = "draft"
-    STATUS_PLACED = "placed"
 
     STATUS_CHOICES = (
         (STATUS_NEW, _("Новый")),
-        (STATUS_CONFIRMED, _("Подтвержден")),
-        (STATUS_AWAITING_PROCUREMENT, _("Ожидает закупки")),
-        (STATUS_RESERVED, _("Зарезервирован")),
-        (STATUS_PARTIALLY_RESERVED, _("Частично зарезервирован")),
-        (STATUS_READY_TO_SHIP, _("Готов к отправке")),
+        (STATUS_PROCESSING, _("В работе")),
+        (STATUS_READY_FOR_SHIPMENT, _("Готов к отправке")),
         (STATUS_SHIPPED, _("Отправлен")),
         (STATUS_COMPLETED, _("Завершен")),
         (STATUS_CANCELLED, _("Отменен")),
-        (STATUS_DRAFT, _("Черновик (legacy)")),
-        (STATUS_PLACED, _("Оформлен (legacy)")),
     )
 
     CANCELLATION_CUSTOMER_REQUEST = "customer_request"

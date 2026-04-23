@@ -17,6 +17,26 @@ export type PromoBanner = {
   sort_order: number;
 };
 
+export type PromoBannerEffect =
+  | "fade"
+  | "slide_left"
+  | "slide_up"
+  | "blinds_vertical"
+  | "zoom_in";
+
+export type PromoBannerSettings = {
+  autoplay_enabled: boolean;
+  transition_interval_ms: number;
+  transition_speed_ms: number;
+  transition_effect: PromoBannerEffect;
+  max_active_banners: number;
+};
+
+export type PromoBannerConfig = {
+  settings: PromoBannerSettings;
+  banners: PromoBanner[];
+};
+
 export type MarketingFooterSettings = {
   working_hours: string;
   phone: string;

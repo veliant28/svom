@@ -38,10 +38,12 @@
         "expired": "Token expired",
         "error": "Error",
         "new": "New",
+        "processing": "Processing",
         "confirmed": "Confirmed",
         "awaiting_procurement": "Awaiting procurement",
         "reserved": "Reserved",
         "partially_reserved": "Partially reserved",
+        "ready_for_shipment": "Ready for shipment",
         "ready_to_ship": "Ready to ship",
         "shipped": "Shipped",
         "completed": "Completed",
@@ -817,10 +819,15 @@
         },
         "messages": {
           "detailFailed": "Unable to load order details.",
+          "processing": "Order moved to processing.",
           "confirmed": "Order confirmed.",
           "awaiting": "Order moved to awaiting procurement.",
           "reserved": "Order items reserved.",
+          "readyForShipment": "Order marked as ready for shipment.",
           "readyToShip": "Order marked as ready to ship.",
+          "shipped": "Order marked as shipped.",
+          "completed": "Order completed.",
+          "resetToNew": "Order status returned to New.",
           "cancelled": "Order cancelled.",
           "actionFailed": "Unable to perform order action.",
           "supplierPayloadFailed": "Unable to prepare supplier order payload.",
@@ -861,10 +868,12 @@
         },
         "statusDescriptions": {
           "new": "New order. Confirm it to continue processing.",
+          "processing": "Order is in processing.",
           "confirmed": "Order confirmed and ready for the next stage.",
           "awaiting_procurement": "Order is waiting for supplier procurement.",
           "reserved": "All items are reserved.",
           "partially_reserved": "Some items are reserved, some still need procurement.",
+          "ready_for_shipment": "Order is ready for shipment.",
           "ready_to_ship": "Order is ready for shipment.",
           "shipped": "Order has been shipped.",
           "completed": "Order is completed.",
@@ -917,16 +926,26 @@
               "empty": "No additional comments."
             },
             "actions": {
+              "processing": "Start processing",
               "confirm": "Confirm",
+              "readyForShipment": "Ready for shipment",
               "awaiting": "Awaiting procurement",
+              "ship": "Mark shipped",
+              "complete": "Complete",
+              "resetToNew": "Reset to new",
               "reserve": "Reserve",
               "ready": "Ready to ship",
               "cancel": "Cancel order",
               "openSupplierOrder": "Supplier order"
             },
             "tooltips": {
+              "processing": "Move order to processing",
               "confirm": "Confirm order",
+              "readyForShipment": "Mark order as ready for shipment",
               "awaiting": "Move order to awaiting procurement",
+              "ship": "Mark order as shipped",
+              "complete": "Complete order",
+              "resetToNew": "Return order to New status",
               "reserve": "Try to reserve order items",
               "ready": "Mark order as ready to ship",
               "cancel": "Cancel order"
@@ -1245,13 +1264,14 @@
       "orderDetail": {
         "title": "Order",
         "titleWithNumber": "Order {orderNumber}",
-        "subtitle": "Order operations, item procurement and supplier assignment.",
+        "subtitle": "Order, payment, delivery and item operations.",
         "actions": {
           "backToOrders": "Back to orders",
-          "confirm": "Confirm",
-          "awaiting": "Awaiting procurement",
-          "reserve": "Reserve items",
-          "readyToShip": "Ready to ship",
+          "processing": "Start processing",
+          "readyForShipment": "Ready for shipment",
+          "ship": "Mark shipped",
+          "complete": "Complete",
+          "resetToNew": "Reset to new",
           "cancel": "Cancel order",
           "recommendSupplier": "Recommend supplier",
           "setRecommendedSupplier": "Set recommended supplier"
@@ -1466,6 +1486,64 @@
           "saved": "Footer settings saved."
         }
       },
+      "promoBanners": {
+        "title": "Ad Banner",
+        "subtitle": "Manage storefront banners: up to 10 items, schedule window, and transition animation.",
+        "actions": {
+          "refresh": "Refresh",
+          "saving": "Saving...",
+          "saveSettings": "Save",
+          "creating": "Creating...",
+          "createBanner": "Add",
+          "saveBanner": "Save",
+          "deleteBanner": "Delete"
+        },
+        "settings": {
+          "title": "Display settings",
+          "limitLabel": "Banners: {count} / {max}",
+          "effect": "Animation type",
+          "intervalSeconds": "Display time (sec)",
+          "speedMs": "Transition speed (ms)",
+          "maxActive": "Banners at once",
+          "autoplay": "Autoplay"
+        },
+        "effects": {
+          "fade": "Fade",
+          "slideLeft": "Slide left",
+          "slideUp": "Slide up",
+          "blindsVertical": "Vertical blinds",
+          "zoomIn": "Soft zoom in"
+        },
+        "create": {
+          "title": "New banner",
+          "subtitle": "Fill in the fields and upload an image. Changes are applied on the storefront immediately.",
+          "imageHint": "Recommended size: 1600x500 px, JPG/PNG/WebP."
+        },
+        "fields": {
+          "title": "Title",
+          "description": "Description",
+          "link": "Link (https://... or /catalog)",
+          "sortOrder": "Order",
+          "active": "Enabled",
+          "startsAt": "Show from",
+          "endsAt": "Show until",
+          "image": "Image"
+        },
+        "states": {
+          "empty": "No banners added yet."
+        },
+        "messages": {
+          "loadFailed": "Failed to load banners.",
+          "settingsSaved": "Display settings saved.",
+          "settingsSaveFailed": "Failed to save display settings.",
+          "bannerCreated": "Banner created.",
+          "bannerCreateFailed": "Failed to create banner.",
+          "bannerSaved": "Banner saved.",
+          "bannerSaveFailed": "Failed to save banner.",
+          "bannerDeleted": "Banner deleted.",
+          "bannerDeleteFailed": "Failed to delete banner."
+        }
+      },
       "rbac": {
         "roles": {
           "values": {
@@ -1632,6 +1710,12 @@
             "settings": {
               "title": "Footer settings",
               "description": "Allows managing storefront footer contact data."
+            }
+          },
+          "promo_banners": {
+            "manage": {
+              "title": "Ad banners",
+              "description": "Allows managing storefront ad banners and transition animation."
             }
           },
           "loyalty": {

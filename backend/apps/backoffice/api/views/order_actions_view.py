@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from apps.backoffice.api.serializers import (
@@ -18,6 +19,19 @@ from apps.backoffice.api.views.supplier_workspace_views import supplier_action_e
 from apps.backoffice.services import OrderOperationsService, OrderSupplierService
 from apps.commerce.models import Order, OrderItem
 from apps.pricing.models import SupplierOffer
+from apps.users.rbac.roles import SYSTEM_ROLE_DEFINITIONS
+
+
+RESET_TO_NEW_ALLOWED_GROUPS = {
+    SYSTEM_ROLE_DEFINITIONS["administrator"].group_name,
+    SYSTEM_ROLE_DEFINITIONS["manager"].group_name,
+}
+
+
+def _ensure_reset_to_new_allowed(user) -> None:
+    if user.groups.filter(name__in=RESET_TO_NEW_ALLOWED_GROUPS).exists():
+        return
+    raise PermissionDenied("Only administrators and managers can reset orders to new.")
 
 
 class ConfirmOrderActionAPIView(BackofficeAPIView):
@@ -67,6 +81,47 @@ class ReadyToShipOrderActionAPIView(BackofficeAPIView):
 
         order = get_object_or_404(Order, id=serializer.validated_data["order_id"])
         result = OrderOperationsService().mark_ready_to_ship(
+            order=order,
+            operator_note=serializer.validated_data.get("operator_note", ""),
+        )
+        return Response({"order_id": result.order_id, "status": result.status})
+
+
+class ShippedOrderActionAPIView(BackofficeAPIView):
+    def post(self, request):
+        serializer = OrderActionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        order = get_object_or_404(Order, id=serializer.validated_data["order_id"])
+        result = OrderOperationsService().mark_shipped(
+            order=order,
+            operator_note=serializer.validated_data.get("operator_note", ""),
+        )
+        return Response({"order_id": result.order_id, "status": result.status})
+
+
+class CompleteOrderActionAPIView(BackofficeAPIView):
+    def post(self, request):
+        serializer = OrderActionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        order = get_object_or_404(Order, id=serializer.validated_data["order_id"])
+        result = OrderOperationsService().mark_completed(
+            order=order,
+            operator_note=serializer.validated_data.get("operator_note", ""),
+        )
+        return Response({"order_id": result.order_id, "status": result.status})
+
+
+class ResetOrderToNewActionAPIView(BackofficeAPIView):
+    def post(self, request):
+        _ensure_reset_to_new_allowed(request.user)
+
+        serializer = OrderActionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        order = get_object_or_404(Order, id=serializer.validated_data["order_id"])
+        result = OrderOperationsService().reset_to_new(
             order=order,
             operator_note=serializer.validated_data.get("operator_note", ""),
         )
