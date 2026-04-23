@@ -61,17 +61,63 @@ export function SupportThreadFeed({
   const t = useTranslations("backoffice.common.support.shared");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const shouldStickToBottomRef = useRef(true);
+  const prevThreadIdRef = useRef<string | null>(null);
+  const prevLastMessageIdRef = useRef<string | null>(null);
+  const oppositeTyping = currentSide === "customer" ? typing?.staff_users ?? [] : typing?.customer_users ?? [];
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) {
       return;
     }
-    const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 96;
-    if (nearBottom) {
-      bottomRef.current?.scrollIntoView({ block: "end" });
+    const updateStickState = () => {
+      const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      shouldStickToBottomRef.current = distanceToBottom < 96;
+    };
+    updateStickState();
+    container.addEventListener("scroll", updateStickState, { passive: true });
+    return () => {
+      container.removeEventListener("scroll", updateStickState);
+    };
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
     }
-  }, [messages, typing]);
+
+    const currentThreadId = messages[0]?.thread_id ?? null;
+    const currentLastMessageId = messages[messages.length - 1]?.id ?? null;
+    const threadChanged = prevThreadIdRef.current !== currentThreadId;
+    const newMessageAppended = prevLastMessageIdRef.current !== currentLastMessageId;
+
+    prevThreadIdRef.current = currentThreadId;
+    prevLastMessageIdRef.current = currentLastMessageId;
+
+    if (threadChanged) {
+      shouldStickToBottomRef.current = true;
+      container.scrollTop = container.scrollHeight;
+      return;
+    }
+
+    if (newMessageAppended && shouldStickToBottomRef.current) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (!oppositeTyping.length) {
+      return;
+    }
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+    shouldStickToBottomRef.current = true;
+    container.scrollTop = container.scrollHeight;
+  }, [oppositeTyping.length]);
 
   if (!messages.length) {
     return (
@@ -80,8 +126,6 @@ export function SupportThreadFeed({
       </div>
     );
   }
-
-  const oppositeTyping = currentSide === "customer" ? typing?.staff_users ?? [] : typing?.customer_users ?? [];
 
   return (
     <div ref={containerRef} className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto rounded-xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
@@ -120,7 +164,7 @@ export function SupportThreadFeed({
           {t("typing", { users: oppositeTyping.map((user) => user.full_name).join(", ") })}
         </div>
       ) : null}
-      <div ref={bottomRef} />
+      <div ref={bottomRef} aria-hidden="true" />
     </div>
   );
 }

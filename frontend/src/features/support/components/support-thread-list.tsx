@@ -12,18 +12,20 @@ export function SupportThreadList({
   selectedThreadId,
   onSelect,
   emptyLabel,
+  heightClassName = "h-[680px]",
 }: {
   mode: "customer" | "staff";
   items: SupportThread[];
   selectedThreadId: string | null;
   onSelect: (threadId: string) => void;
   emptyLabel: string;
+  heightClassName?: string;
 }) {
   const t = useTranslations("backoffice.common.support.shared");
 
   if (!items.length) {
     return (
-      <div className="h-[680px] min-w-0 overflow-y-auto text-sm" style={{ color: "var(--muted)" }}>
+      <div className={`${heightClassName} min-w-0 overflow-y-auto text-sm`} style={{ color: "var(--muted)" }}>
         <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
           {emptyLabel}
         </div>
@@ -32,7 +34,7 @@ export function SupportThreadList({
   }
 
   return (
-    <div className="h-[680px] min-w-0 overflow-y-auto">
+    <div className={`${heightClassName} min-w-0 overflow-y-auto`}>
       <div className="grid min-w-0 gap-2">
         {items.map((thread) => {
           const isSelected = thread.id === selectedThreadId;

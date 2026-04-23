@@ -49,6 +49,7 @@ export function SupportPage() {
   const [unassignedOnly, setUnassignedOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   const selectedThread = useMemo(
     () => threads.find((thread) => thread.id === selectedThreadId) ?? null,
@@ -79,6 +80,10 @@ export function SupportPage() {
       setIsLoading(false);
     }
   }, [assignedToMe, search, selectedThreadId, showApiError, t, token, unassignedOnly, waitingOnly]);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   useEffect(() => {
     void loadThreads();
@@ -193,6 +198,7 @@ export function SupportPage() {
   const isRealtimeConnected = userSocket.connectionState === "open"
     && queueSocket.connectionState === "open"
     && (!selectedThreadId || threadSocket.connectionState === "open");
+  const canManageSelectedThread = isHydrated && Boolean(selectedThreadId);
 
   async function handleSend(body: string) {
     if (!token || !selectedThreadId) {
@@ -296,8 +302,15 @@ export function SupportPage() {
       </div>
 
       <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(280px,340px)_minmax(0,1fr)_minmax(260px,300px)]">
-        <SupportThreadList mode="staff" items={threads} selectedThreadId={selectedThreadId} onSelect={setSelectedThreadId} emptyLabel={isLoading ? t("states.loading") : t("states.emptyThreads")} />
-        <div className="flex min-h-[680px] min-w-0 flex-col gap-4">
+        <SupportThreadList
+          mode="staff"
+          items={threads}
+          selectedThreadId={selectedThreadId}
+          onSelect={setSelectedThreadId}
+          emptyLabel={isLoading ? t("states.loading") : t("states.emptyThreads")}
+          heightClassName="h-[360px] sm:h-[400px] lg:h-[440px]"
+        />
+        <div className="flex h-[580px] min-w-0 flex-col gap-4 sm:h-[640px] lg:h-[720px]">
           <SupportThreadFeed currentSide="staff" messages={messages} typing={typing} emptyLabel={t("states.emptyMessages")} />
           <SupportComposer
             disabled={!selectedThreadId || !threadSocket.isConnected}
@@ -314,7 +327,7 @@ export function SupportPage() {
             onSend={handleSend}
           />
         </div>
-        <div className="grid min-w-0 gap-4">
+        <div className="grid h-[450px] min-w-0 gap-4 sm:h-[510px] lg:h-[570px]">
           <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
             <p className="text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>{t("details.actions")}</p>
             <div className="mt-3 grid gap-3">
@@ -325,7 +338,7 @@ export function SupportPage() {
                 }}
                 className="h-10 rounded-lg border px-3 text-sm"
                 style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-                disabled={!selectedThreadId}
+                disabled={!canManageSelectedThread}
               >
                 <option value="">{t("details.selectStatus")}</option>
                 {STATUS_OPTIONS.map((status) => (
@@ -344,14 +357,16 @@ export function SupportPage() {
                 }}
                 className="h-10 rounded-lg border px-3 text-sm"
                 style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-                disabled={!selectedThreadId}
+                disabled={!canManageSelectedThread}
               >
                 <option value="">{t("details.selectAssignee")}</option>
                 {staffOptions.map((user) => <option key={user.id} value={user.id}>{user.full_name}</option>)}
               </select>
             </div>
           </div>
-          <SupportThreadDetails thread={selectedThread} />
+          <div className="min-h-0 overflow-y-auto">
+            <SupportThreadDetails thread={selectedThread} />
+          </div>
         </div>
       </div>
     </section>

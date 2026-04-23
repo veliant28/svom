@@ -228,8 +228,15 @@ export function AccountSupportPage() {
       </div>
 
       <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)_minmax(240px,280px)]">
-        <SupportThreadList mode="customer" items={threads} selectedThreadId={selectedThreadId} onSelect={setSelectedThreadId} emptyLabel={isLoading ? t("states.loading") : t("states.emptyThreads")} />
-        <div className="flex min-h-[560px] min-w-0 flex-col gap-4">
+        <SupportThreadList
+          mode="customer"
+          items={threads}
+          selectedThreadId={selectedThreadId}
+          onSelect={setSelectedThreadId}
+          emptyLabel={isLoading ? t("states.loading") : t("states.emptyThreads")}
+          heightClassName="h-[380px] sm:h-[420px] lg:h-[460px]"
+        />
+        <div className="flex h-[370px] min-w-0 flex-col gap-4 sm:h-[410px] lg:h-[450px]">
           <SupportThreadFeed currentSide="customer" messages={messages} typing={typing} emptyLabel={t("states.emptyMessages")} />
           <SupportComposer
             disabled={!selectedThreadId || !threadSocket.isConnected}
@@ -246,7 +253,9 @@ export function AccountSupportPage() {
             onSend={handleSend}
           />
         </div>
-        <SupportThreadDetails thread={selectedThread} />
+        <div className="h-[380px] min-w-0 overflow-y-auto sm:h-[420px] lg:h-[460px]">
+          <SupportThreadDetails thread={selectedThread} />
+        </div>
       </div>
     </section>
   );
