@@ -85,6 +85,7 @@ This starts:
 - `svom_elasticsearch`
 - `svom_backend`
 - `svom_celery_worker`
+- `svom_celery_beat`
 
 Backend is exposed at:
 
