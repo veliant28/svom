@@ -1,0 +1,242 @@
+Пакетний пошук деталей дозволяє виконати пошук декількох деталей одним запитом
+Для пакетного пошуку деталей потрібно відправляти нступний запит:
+
+POST https://order24-api.utr.ua/api/search
+додавши при цьому в headers
+
+Authorization: Bearer eyJ0eXAiOiJKV1Q...
+
+
+Де в Authorization після ключового слова Bearer потрібно передати отриманий при проходженні аутентифікації token
+
+
+Body:
+{
+    "details": [
+        {"someKey": "some value"},
+        {"oem": "OC90", "brand": "KYB"},
+        {"oem": "OC90", "brand": "MAHLE ORIGINAL"},
+        {"id": 123},
+        ...
+    ]
+}
+у елемента масиву details повинен бути ключ(і)
+id - в цьому випадку шукається деталь по коду деталі (внутреннему идентификатору)
+або
+oem і brand - в цьому випадку відбувається пошук деталі по парі значеннь актикул + бренд
+
+
+В результаті ви отримуєте одну із настпуних відповідей:
+
+Помилка аутентифікації
+Можливі відповіді API при опомилці аутентифікації приведено в розділі Помилка аутентифікації
+
+Результат пошуку
+Результат представляє собою масив, кожен элемент якого - результат пошуку відповідного елемента масиву тіла запиту. В прикладі: перший елемент - не вірно задані поля для пошуку, другий - деталі не знайдено, третій - детали знайдено (результат пошуку по "oem"+"brand"), четвертий - деталі не знайдено (результат пошуку по "id")
+
+Status Code: 200 OK
+Body:
+[
+    {
+        "error": "No search fields found"
+    },
+    {
+        "details": []
+    },
+    {
+        "details": [
+            {
+                "detailCard": {
+                    "description": "",
+                    "images": [
+                    ],
+                    "title": "Фильтр масляный Mahle Lanos/Aveo (в карт. коробке)"
+                },
+                "multiplicity": 1,
+                "isDiscount": false,
+                "productCode": "0095421",
+                "totalRemains": 10,
+                "id": 58023,
+                "brand": {
+                    "id": 64,
+                    "name": "MAHLE ORIGINAL",
+                    "externalCode": "00169"
+                },
+                "displayBrand": "MAHLE - KNECHT",
+                "article": "OC90",
+                "title": "Фільтр оливи",
+                "quantity": 1,
+                "yourPrice": {
+                    "amount": 127.89,
+                    "currency": {
+                        "numberCode": 980,
+                        "code": "UAH",
+                        "title": "Гривна"
+                    }
+                },
+                "yourPriceUAH": {
+                    "amount": 127.89,
+                    "currency": {
+                        "numberCode": 980,
+                        "code": "UAH",
+                        "title": "Гривна"
+                    }
+                },
+                "yourPriceEUR": {
+                    "amount": 3.15,
+                    "currency": {
+                        "numberCode": 978,
+                        "code": "EUR",
+                        "title": "Евро"
+                    }
+                },
+                "remains": [
+                    {
+                        "storage": {
+                            "id": 6,
+                            "name": "Миколаїв",
+                            "originalName": "Николаев",
+                            "type": "wholesale"
+                        },
+                        "remain": "4"
+                    },
+                    ...
+                ],
+                "remainsAll": [
+                    {
+                        "storage": {
+                            "id": 6,
+                            "name": "Миколаїв",
+                            "originalName": "Николаев",
+                            "type": "wholesale"
+                        },
+                        "remain": "4"
+                    },
+                    ...
+                ],
+
+"detailInfo": [],
+                "detailScanCodes": [
+                    {
+                        "id": 37160,
+                        "scanCode": "2043236217369"
+                    },
+                    {
+                        "id": 27238,
+                        "scanCode": "4009026037935"
+                    }
+                ],
+                "images": [
+                    {
+                        "imagePath": "/images/base/brand/mahle_original/OC90/OC90-pic01.jpg",
+                        "fullImagePath": "https://order24-file.utr.ua//images/base/brand/mahle_original/OC90/OC90-pic01.jpg",
+                        "thumbnail": "https://order24-file.utr.ua/thumbnail/base/brand/mahle_original/OC90/OC90-pic01.jpg",
+                        "fileSystemType": "akeneo",
+                        "baseUrl": "https://order24-file.utr.ua/",
+                        "fileserverHost": "http://10.1.4.30/"
+                    }
+                ],
+                "isSale": false,
+                "hasImage": true,
+                "hasApplicability": false,
+                "hasRemain": true,
+                "category": {
+                    "id": 197,
+                    "name": "Фильтр масляный",
+                    "parentId": 35,
+                    "promId": 12021001
+                },
+                "units": [
+                    {
+                        "id": 21987,
+                        "unit": {
+                            "id": 8,
+                            "name": "шт",
+                            "externalCode": "2009"
+                        },
+                        "weight": 0.298,
+                        "volume": 0.506
+                    }
+                ],
+                "modifier": 0,
+                "isDisabled": false,
+                "forecast": [],
+                "hasPartnerRemain": false,
+                "tooltipPriceUAH": {
+                    "amount": 127.89,
+                    "currency": {
+                        "numberCode": 980,
+                        "code": "UAH",
+                        "title": "Гривна"
+                    }
+                },
+                "tooltipPriceEUR": {
+                    "amount": 3.15,
+                    "currency": {
+                        "numberCode": 978,
+                        "code": "EUR",
+                        "title": "Евро"
+                    }
+                },
+                "oem": "OC90",
+                "isNotSupplied": false,
+                "visibleBrand": {
+                    "id": 219,
+                    "title": "MAHLE ORIGINAL",
+                    "isOriginal": false,
+                    "synonyms": [
+                        {
+                            "id": 79,
+                            "title": "MAHLE"
+                        },
+                        ...
+                    ],
+                    "aliases": [],
+                    "isUtr": false,
+                    "parent": {
+                        "id": 45,
+                        "parent": {
+                            "id": 626,
+                            "title": "MAHLE - KNECHT",
+                            "isOriginal": false,
+                            "synonyms": [
+                                {
+                                    "id": 343,
+                                    "title": "KNECHT/MAHLE"
+                                }
+                            ],
+                            "aliases": [
+                                {
+                                    "id": 46,
+                                    "alias": {
+                                        "id": 188,
+                                        "title": "KNECHT",
+                                        "isOriginal": false,
+                                        "synonyms": [],
+                                        "aliases": [],
+                                        "isUtr": false
+                                    }
+                                }
+                            ],
+                            "isUtr": false
+                        }
+                    }
+                },
+                "pdf": [],
+                "isBoschPromotion": false,
+                "isIlliquid": false,
+                "isTracked": false,
+                "modifierWithRate": 0,
+                "inGarage": {
+                    "isInGarage": false,
+                    "rootGroupQuantity": "0",
+                    "groups": []
+                },
+                "isInGarage": false
+            }
+        ]
+    },
+    {
+        "details": []
+    }
+]

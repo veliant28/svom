@@ -5,6 +5,26 @@ import type { BackofficeSupplierPriceList } from "@/features/backoffice/types/su
 
 type Translator = (key: string, values?: Record<string, string | number>) => string;
 
+const ALL_BRANDS_MARKERS = new Set([
+  "all",
+  "all brands",
+  "все бренды",
+  "усі бренди",
+  "всі бренди",
+]);
+
+function getVisibleBrandsCount(item: BackofficeSupplierPriceList): number {
+  if (item.supplier_code !== "utr") {
+    return item.visible_brands.length;
+  }
+
+  const normalized = item.visible_brands
+    .map((value) => String(value).trim())
+    .filter(Boolean)
+    .filter((value) => !ALL_BRANDS_MARKERS.has(value.toLowerCase()));
+  return normalized.length;
+}
+
 export function createSupplierImportColumns({
   t,
   tokenReady,
@@ -59,6 +79,7 @@ export function createSupplierImportColumns({
       className: "min-w-[280px]",
       render: (item) => {
         const isGplRow = item.supplier_code === "gpl";
+        const visibleBrandsCount = getVisibleBrandsCount(item);
 
         return (
           <div className="space-y-1.5 text-xs">
@@ -114,8 +135,8 @@ export function createSupplierImportColumns({
               <>
                 <p>{item.is_in_stock ? t("priceLifecycle.table.paramInStock") : t("priceLifecycle.table.paramAll")}</p>
                 <p>{item.show_scancode ? t("priceLifecycle.table.paramScancodeOn") : t("priceLifecycle.table.paramScancodeOff")}</p>
-                {item.visible_brands.length ? (
-                  <p>{t("priceLifecycle.table.paramBrands", { count: item.visible_brands.length })}</p>
+                {visibleBrandsCount ? (
+                  <p>{t("priceLifecycle.table.paramBrands", { count: visibleBrandsCount })}</p>
                 ) : null}
                 {item.categories.length ? (
                   <p>{t("priceLifecycle.table.paramCategories", { count: item.categories.length })}</p>

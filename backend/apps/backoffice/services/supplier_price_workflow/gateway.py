@@ -53,7 +53,7 @@ def sync_utr_remote_price_lists(service, *, source, integration) -> None:
         else:
             file_size_bytes = 0
 
-        visible_brands = [str(value) for value in (item.get("visibleBrands", []) or [])]
+        visible_brands = _normalize_remote_visible_brands(item.get("visibleBrands", []) or [])
         categories = [str(value) for value in (item.get("categories", []) or [])]
         models_filter = [str(value) for value in (item.get("models", []) or [])]
 
@@ -164,6 +164,7 @@ def enrich_request_params_from_utr(
     try:
         api_payload = service.utr_client.get_pricelist_export_params(access_token=integration.access_token)
         formats = [str(item).strip() for item in api_payload.get("supportedFormats", []) if str(item).strip()]
+        xlsx_formats = [item for item in formats if item.lower() == "xlsx"] or ["xlsx"]
         format_options = [
             {
                 "format": str(item.get("format", "")).strip(),
@@ -172,6 +173,11 @@ def enrich_request_params_from_utr(
             for item in (api_payload.get("supportedFormatsExt", []) or [])
             if isinstance(item, dict) and str(item.get("format", "")).strip()
         ]
+        xlsx_format_options = [
+            item
+            for item in format_options
+            if str(item.get("format", "")).strip().lower() == "xlsx"
+        ] or [{"format": "xlsx", "caption": "xlsx"}]
 
         visible_brands_raw = [item for item in (api_payload.get("visibleBrands", []) or []) if isinstance(item, dict)]
         categories_raw = [item for item in (api_payload.get("categories", []) or []) if isinstance(item, dict)]
@@ -202,8 +208,8 @@ def enrich_request_params_from_utr(
         payload.update(
             {
                 "source": "utr_api",
-                "formats": formats or default_formats,
-                "format_options": format_options or [{"format": item, "caption": item} for item in (formats or default_formats)],
+                "formats": xlsx_formats,
+                "format_options": xlsx_format_options,
                 "visible_brands_count": len(visible_brands_values),
                 "categories_count": len(categories_values),
                 "models_count": len(models_values),
@@ -310,3 +316,14 @@ def hydrate_utr_remote_fields(service, *, row: SupplierPriceList, access_token: 
             )
         )
         return
+
+
+def _normalize_remote_visible_brands(raw_values: list[Any]) -> list[str]:
+    values = [str(value).strip() for value in raw_values if str(value).strip()]
+    if len(values) != 1:
+        return values
+
+    single = values[0].lower()
+    if single in {"all", "all brands", "все бренды", "усі бренди", "всі бренди"}:
+        return []
+    return values

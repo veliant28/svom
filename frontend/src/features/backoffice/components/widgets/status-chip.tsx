@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { AlertTriangle, ArrowDown, CheckCircle2, CircleHelp, Clock3, LoaderCircle, MinusCircle, XCircle } from "lucide-react";
+import { AlertTriangle, ArrowDown, CheckCircle2, CircleHelp, Clock3, LoaderCircle, MinusCircle, PackageCheck, Truck, XCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { normalizeStatusKey, normalizeStatusLabel } from "@/features/backoffice/lib/status";
@@ -89,7 +89,21 @@ const NEUTRAL_STATUSES = new Set([
   "other",
 ]);
 
+const ORDER_STATUS_META: Record<string, { tone: BackofficeStatusChipTone; icon: LucideIcon }> = {
+  new: { tone: "info", icon: Clock3 },
+  processing: { tone: "blue", icon: LoaderCircle },
+  ready_for_shipment: { tone: "orange", icon: PackageCheck },
+  ready_to_ship: { tone: "orange", icon: PackageCheck },
+  shipped: { tone: "brown", icon: Truck },
+  completed: { tone: "success", icon: CheckCircle2 },
+  cancelled: { tone: "error", icon: XCircle },
+};
+
 function resolveStatusTone(statusKey: string): BackofficeStatusChipTone {
+  if (ORDER_STATUS_META[statusKey]) {
+    return ORDER_STATUS_META[statusKey].tone;
+  }
+
   if (statusKey === "pending") {
     return "orange";
   }
@@ -122,6 +136,10 @@ function resolveStatusTone(statusKey: string): BackofficeStatusChipTone {
 }
 
 function resolveStatusIcon(statusKey: string): LucideIcon {
+  if (ORDER_STATUS_META[statusKey]) {
+    return ORDER_STATUS_META[statusKey].icon;
+  }
+
   if (statusKey === "downloaded") {
     return ArrowDown;
   }

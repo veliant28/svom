@@ -127,17 +127,23 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
   }
 
   const canProcess = data?.status === "new";
-  const canReadyForShipment = data?.status === "processing";
-  const canShip = data?.status === "ready_for_shipment";
-  const canComplete = data?.status === "shipped";
+  const canManageAnyStatus = Boolean(
+    user?.is_superuser
+    || user?.system_role === "administrator"
+    || user?.system_role === "manager",
+  );
+  const canReadyForShipment = canManageAnyStatus ? Boolean(data) : data?.status === "processing";
+  const canShip = canManageAnyStatus ? Boolean(data) : data?.status === "ready_for_shipment";
+  const canComplete = canManageAnyStatus ? Boolean(data) : data?.status === "shipped";
+  const canProcessByRole = canManageAnyStatus ? Boolean(data) : canProcess;
   const canResetToNew = Boolean(
     data
       && data.status !== "new"
-      && user?.groups.some(
-        (group) => group.name === "Backoffice Role: administrator" || group.name === "Backoffice Role: manager",
-      ),
+      && canManageAnyStatus,
   );
-  const canCancel = Boolean(data && data.status !== "completed" && data.status !== "cancelled");
+  const canCancel = canManageAnyStatus
+    ? Boolean(data && data.status !== "cancelled")
+    : Boolean(data && (data.status === "new" || data.status === "processing" || data.status === "ready_for_shipment"));
 
   return (
     <section>
@@ -157,7 +163,7 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
               type="button"
               className="h-9 rounded-md border px-3 text-xs font-semibold"
               style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
-              disabled={!canProcess}
+              disabled={!canProcessByRole}
               onClick={() => {
                 void runConfirm();
               }}

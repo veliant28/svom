@@ -43,8 +43,8 @@
         "awaiting_procurement": "Ожидает закупки",
         "reserved": "Зарезервирован",
         "partially_reserved": "Частично зарезервирован",
-        "ready_for_shipment": "Готов к отправке",
-        "ready_to_ship": "Готов к отправке",
+        "ready_for_shipment": "К отправке",
+        "ready_to_ship": "К отправке",
         "shipped": "Отправлен",
         "completed": "Завершен",
         "cancelled": "Отменен",
@@ -63,10 +63,10 @@
         "lead_time_too_long": "Слишком долгий срок поставки",
         "unmapped": "Не сопоставлен",
         "unmatched": "Не сопоставлен",
-        "auto_matched": "Сопоставлен автоматически",
+        "auto_matched": "Автоматически",
         "manual_match_required": "Требуется ручное сопоставление",
         "manually_matched": "Сопоставлен вручную",
-        "auto_mapped": "Сопоставлен автоматически",
+        "auto_mapped": "Автоматически",
         "manual_mapped": "Вручную",
         "needs_review": "Проверка",
         "ignored": "Игнорирован",
@@ -186,12 +186,17 @@
           "enableSchedule": "Вкл расписание",
           "disableSchedule": "Выкл расписание",
           "saveSchedule": "Сохранить расписание",
+          "runNow": "Запустить сценарий",
+          "runningNow": "Выполняется...",
           "saveDefaults": "Сохранить значения по умолчанию"
         },
         "messages": {
           "scheduleUpdated": "Состояние расписания обновлено для {source}.",
           "scheduleSaved": "Настройки расписания сохранены для {source}.",
           "scheduleDefaultsApplied": "Настройки по умолчанию применены для {source}.",
+          "runQueued": "Сценарий для {source} поставлен в очередь.",
+          "runCompleted": "Сценарий для {source} выполнен.",
+          "runFailed": "Не удалось запустить сценарий импорта.",
           "actionFailed": "Не удалось обновить расписание."
         },
         "table": {
@@ -205,7 +210,9 @@
             "actions": "Действия"
           },
           "pipelineScenario": "Проверка/обновление токена -> Запрос/Скачивание/Импорт прайса -> Публикация -> Наценка -> Переиндексация",
-          "lastRunSummary": "строк: {rows} / ошибок: {errors}"
+          "lastRunSummary": "строк: {rows} / пропущено: {skipped}",
+          "lastRunStarted": "Старт: {value}",
+          "lastRunFinished": "Финиш: {value}"
         }
       },
       "brandAliases": {
@@ -819,7 +826,7 @@
         },
         "messages": {
           "detailFailed": "Не удалось загрузить заказ.",
-          "processing": "Заказ переведен в работу.",
+          "processing": "Заказ переведен в обработку.",
           "confirmed": "Заказ подтвержден.",
           "awaiting": "Заказ переведен в ожидание закупки.",
           "reserved": "Позиции заказа зарезервированы.",
@@ -864,11 +871,12 @@
           "paymentInvoiceRemoved": "Инвойс Monobank деактивирован.",
           "paymentFiscalChecksLoaded": "Фискальные чеки загружены: {count}.",
           "monobankActionFailed": "Не удалось выполнить действие Monobank.",
-          "monobankActionNotAvailable": "Действие доступно только для оплаты Monobank."
+          "monobankActionNotAvailable": "Действие доступно только для оплаты Monobank.",
+          "statusChangeNoPermission": "Нет прав на изменение статуса в обратном направлении."
         },
         "statusDescriptions": {
           "new": "Новый заказ. Можно подтвердить и передать в обработку.",
-          "processing": "Заказ принят в работу и проходит обработку.",
+          "processing": "Заказ в обработке.",
           "confirmed": "Заказ подтвержден оператором и готов к следующему этапу.",
           "awaiting_procurement": "Заказ ожидает закупку у поставщиков.",
           "reserved": "Все позиции зарезервированы.",
@@ -926,7 +934,7 @@
               "empty": "Дополнительных комментариев нет."
             },
             "actions": {
-              "processing": "В работу",
+              "processing": "В обработке",
               "confirm": "Подтвердить",
               "readyForShipment": "Готов к отправке",
               "awaiting": "В ожидание закупки",
@@ -939,7 +947,7 @@
               "openSupplierOrder": "Заказ у поставщика"
             },
             "tooltips": {
-              "processing": "Перевести заказ в работу",
+              "processing": "Перевести заказ в обработку",
               "confirm": "Подтвердить заказ",
               "readyForShipment": "Отметить заказ готовым к отправке",
               "awaiting": "Перевести заказ в ожидание закупки",
@@ -1267,7 +1275,7 @@
         "subtitle": "Операции по заказу, оплате, доставке и позициям заказа.",
         "actions": {
           "backToOrders": "Назад к заказам",
-          "processing": "В работу",
+          "processing": "В обработке",
           "readyForShipment": "Готов к отправке",
           "ship": "Отправлен",
           "complete": "Завершить",
@@ -1484,6 +1492,65 @@
           "loadFailed": "Не удалось загрузить настройки футера.",
           "saveFailed": "Не удалось сохранить настройки футера.",
           "saved": "Настройки футера сохранены."
+        }
+      },
+      "heroBlock": {
+        "title": "Hero-Блок",
+        "subtitle": "Управление главным hero-блоком: до 10 слайдов со спорткарами, локализованные тексты и плавная анимация смены.",
+        "actions": {
+          "refresh": "Обновить",
+          "saving": "Сохраняем...",
+          "saveSettings": "Сохранить",
+          "creating": "Создаём...",
+          "createSlide": "Добавить слайд",
+          "saveSlide": "Сохранить",
+          "deleteSlide": "Удалить"
+        },
+        "settings": {
+          "title": "Настройки показа",
+          "limitLabel": "Слайдов: {count} / {max}",
+          "effect": "Тип анимации",
+          "intervalSeconds": "Время показа (сек)",
+          "speedMs": "Скорость смены (мс)",
+          "maxActive": "Активных слайдов",
+          "autoplay": "Автосмена"
+        },
+        "effects": {
+          "crossfade": "Плавный кроссфейд",
+          "panLeft": "Кинопанорама влево",
+          "liftUp": "Плавный подъём",
+          "cinematicZoom": "Кинематографичный зум",
+          "revealRight": "Проявление справа"
+        },
+        "create": {
+          "title": "Новый hero-слайд",
+          "subtitle": "Добавьте локализованные тексты и два изображения. Изменения на сайте появляются сразу.",
+          "desktopImageHint": "Desktop: рекомендуется 1920x880 px, JPG/PNG/WebP.",
+          "mobileImageHint": "Mobile: рекомендуется 900x1200 px, JPG/PNG/WebP."
+        },
+        "fields": {
+          "title": "Заголовок",
+          "subtitle": "Подзаголовок",
+          "link": "Ссылка CTA (https://... или /catalog)",
+          "sortOrder": "Порядок",
+          "active": "Включен",
+          "desktopImage": "Desktop-изображение",
+          "mobileImage": "Mobile-изображение",
+          "localizationHint": "Для публикации достаточно одного языка, но лучше заполнить все три для корректного storefront i18n."
+        },
+        "states": {
+          "empty": "Hero-слайды пока не добавлены."
+        },
+        "messages": {
+          "loadFailed": "Не удалось загрузить hero-блок.",
+          "settingsSaved": "Настройки hero-блока сохранены.",
+          "settingsSaveFailed": "Не удалось сохранить настройки hero-блока.",
+          "slideCreated": "Hero-слайд добавлен.",
+          "slideCreateFailed": "Не удалось добавить hero-слайд.",
+          "slideSaved": "Hero-слайд сохранён.",
+          "slideSaveFailed": "Не удалось сохранить hero-слайд.",
+          "slideDeleted": "Hero-слайд удалён.",
+          "slideDeleteFailed": "Не удалось удалить hero-слайд."
         }
       },
       "promoBanners": {
@@ -1743,7 +1810,7 @@
           },
           "columns": {
             "email": "Пользователь",
-            "role": "Системная роль",
+            "role": "Сист. Роль",
             "groups": "Группы",
             "status": "Статус",
             "actions": "Действия"
@@ -1757,7 +1824,8 @@
             "hidePassword": "Скрыть пароль",
             "save": "Сохранить",
             "saving": "Сохраняем...",
-            "reset": "Сбросить"
+            "reset": "Сбросить",
+            "delete": "Удалить"
           },
           "fields": {
             "email": "Email",
@@ -1785,7 +1853,10 @@
             "activated": "Пользователь активирован.",
             "deactivated": "Пользователь деактивирован.",
             "saveFailed": "Не удалось сохранить пользователя.",
-            "toggleFailed": "Не удалось изменить статус пользователя."
+            "toggleFailed": "Не удалось изменить статус пользователя.",
+            "deleted": "Пользователь удален.",
+            "deleteFailed": "Не удалось удалить пользователя.",
+            "deleteConfirm": "Удалить пользователя {email}?"
           }
         },
         "groups": {

@@ -5,10 +5,12 @@ from dataclasses import dataclass
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
+from rest_framework.exceptions import ValidationError as DRFValidationError
 
 from apps.backoffice.services.procurement_service import ProcurementService
 from apps.commerce.models import Order, OrderItem
 from apps.pricing.models import SupplierOffer
+from apps.users.rbac import get_user_system_role
 
 
 @dataclass(frozen=True)
@@ -18,29 +20,42 @@ class OrderActionResult:
 
 
 class OrderOperationsService:
+    PRIVILEGED_STATUS_ROLES = {"administrator", "manager"}
+
+    OPERATOR_NEXT_STATUS: dict[str, set[str]] = {
+        Order.STATUS_NEW: {Order.STATUS_PROCESSING, Order.STATUS_CANCELLED},
+        Order.STATUS_PROCESSING: {Order.STATUS_READY_FOR_SHIPMENT, Order.STATUS_CANCELLED},
+        Order.STATUS_READY_FOR_SHIPMENT: {Order.STATUS_SHIPPED, Order.STATUS_CANCELLED},
+        Order.STATUS_SHIPPED: {Order.STATUS_COMPLETED},
+        Order.STATUS_COMPLETED: set(),
+        Order.STATUS_CANCELLED: set(),
+    }
+
     def __init__(self) -> None:
         self.procurement_service = ProcurementService()
 
     @transaction.atomic
-    def confirm_order(self, *, order: Order, operator_note: str = "") -> OrderActionResult:
-        order.status = Order.STATUS_PROCESSING
-        if operator_note:
-            order.operator_notes = self._merge_note(order.operator_notes, operator_note)
-        order.save(update_fields=("status", "operator_notes", "updated_at"))
-        return OrderActionResult(order_id=str(order.id), status=order.status)
+    def confirm_order(self, *, order: Order, operator_note: str = "", actor=None) -> OrderActionResult:
+        return self.set_status(
+            order=order,
+            target_status=Order.STATUS_PROCESSING,
+            actor=actor,
+            operator_note=operator_note,
+        )
 
     @transaction.atomic
-    def mark_awaiting_procurement(self, *, order: Order, operator_note: str = "") -> OrderActionResult:
+    def mark_awaiting_procurement(self, *, order: Order, operator_note: str = "", actor=None) -> OrderActionResult:
         for item in order.items.all():
             if item.procurement_status == OrderItem.PROCUREMENT_PENDING:
                 item.procurement_status = OrderItem.PROCUREMENT_AWAITING
                 item.save(update_fields=("procurement_status", "updated_at"))
 
-        order.status = Order.STATUS_PROCESSING
-        if operator_note:
-            order.operator_notes = self._merge_note(order.operator_notes, operator_note)
-        order.save(update_fields=("status", "operator_notes", "updated_at"))
-        return OrderActionResult(order_id=str(order.id), status=order.status)
+        return self.set_status(
+            order=order,
+            target_status=Order.STATUS_PROCESSING,
+            actor=actor,
+            operator_note=operator_note,
+        )
 
     @transaction.atomic
     def reserve_items(
@@ -115,56 +130,40 @@ class OrderOperationsService:
         return self.procurement_service.build_item_recommendation(item)
 
     @transaction.atomic
-    def mark_ready_to_ship(self, *, order: Order, operator_note: str = "") -> OrderActionResult:
-        if order.items.filter(procurement_status=OrderItem.PROCUREMENT_UNAVAILABLE).exists():
-            raise ValidationError({"order": _("Cannot mark as ready to ship while unavailable items exist.")})
-
-        order.status = Order.STATUS_READY_FOR_SHIPMENT
-        if operator_note:
-            order.operator_notes = self._merge_note(order.operator_notes, operator_note)
-        order.save(update_fields=("status", "operator_notes", "updated_at"))
-        return OrderActionResult(order_id=str(order.id), status=order.status)
-
-    @transaction.atomic
-    def mark_shipped(self, *, order: Order, operator_note: str = "") -> OrderActionResult:
-        if order.status not in {Order.STATUS_READY_FOR_SHIPMENT, Order.STATUS_SHIPPED}:
-            raise ValidationError({"order": _("Cannot mark order as shipped before it is ready for shipment.")})
-
-        order.status = Order.STATUS_SHIPPED
-        if operator_note:
-            order.operator_notes = self._merge_note(order.operator_notes, operator_note)
-        order.save(update_fields=("status", "operator_notes", "updated_at"))
-        return OrderActionResult(order_id=str(order.id), status=order.status)
-
-    @transaction.atomic
-    def mark_completed(self, *, order: Order, operator_note: str = "") -> OrderActionResult:
-        if order.status not in {Order.STATUS_READY_FOR_SHIPMENT, Order.STATUS_SHIPPED, Order.STATUS_COMPLETED}:
-            raise ValidationError({"order": _("Cannot complete order before shipment stage.")})
-
-        order.status = Order.STATUS_COMPLETED
-        if operator_note:
-            order.operator_notes = self._merge_note(order.operator_notes, operator_note)
-        order.save(update_fields=("status", "operator_notes", "updated_at"))
-        return OrderActionResult(order_id=str(order.id), status=order.status)
-
-    @transaction.atomic
-    def reset_to_new(self, *, order: Order, operator_note: str = "") -> OrderActionResult:
-        order.status = Order.STATUS_NEW
-        order.cancellation_reason_code = ""
-        order.cancellation_reason_note = ""
-        if operator_note:
-            order.operator_notes = self._merge_note(order.operator_notes, operator_note)
-
-        order.save(
-            update_fields=(
-                "status",
-                "cancellation_reason_code",
-                "cancellation_reason_note",
-                "operator_notes",
-                "updated_at",
-            )
+    def mark_ready_to_ship(self, *, order: Order, operator_note: str = "", actor=None) -> OrderActionResult:
+        return self.set_status(
+            order=order,
+            target_status=Order.STATUS_READY_FOR_SHIPMENT,
+            actor=actor,
+            operator_note=operator_note,
         )
-        return OrderActionResult(order_id=str(order.id), status=order.status)
+
+    @transaction.atomic
+    def mark_shipped(self, *, order: Order, operator_note: str = "", actor=None) -> OrderActionResult:
+        return self.set_status(
+            order=order,
+            target_status=Order.STATUS_SHIPPED,
+            actor=actor,
+            operator_note=operator_note,
+        )
+
+    @transaction.atomic
+    def mark_completed(self, *, order: Order, operator_note: str = "", actor=None) -> OrderActionResult:
+        return self.set_status(
+            order=order,
+            target_status=Order.STATUS_COMPLETED,
+            actor=actor,
+            operator_note=operator_note,
+        )
+
+    @transaction.atomic
+    def reset_to_new(self, *, order: Order, operator_note: str = "", actor=None) -> OrderActionResult:
+        return self.set_status(
+            order=order,
+            target_status=Order.STATUS_NEW,
+            actor=actor,
+            operator_note=operator_note,
+        )
 
     @transaction.atomic
     def cancel_order(
@@ -174,10 +173,38 @@ class OrderOperationsService:
         reason_code: str,
         reason_note: str = "",
         operator_note: str = "",
+        actor=None,
     ) -> OrderActionResult:
-        order.status = Order.STATUS_CANCELLED
-        order.cancellation_reason_code = reason_code
-        order.cancellation_reason_note = reason_note
+        return self.set_status(
+            order=order,
+            target_status=Order.STATUS_CANCELLED,
+            actor=actor,
+            operator_note=operator_note,
+            reason_code=reason_code,
+            reason_note=reason_note,
+        )
+
+    @transaction.atomic
+    def set_status(
+        self,
+        *,
+        order: Order,
+        target_status: str,
+        actor=None,
+        operator_note: str = "",
+        reason_code: str = "",
+        reason_note: str = "",
+    ) -> OrderActionResult:
+        self._ensure_transition_allowed(order=order, target_status=target_status, actor=actor)
+
+        order.status = target_status
+        if target_status == Order.STATUS_CANCELLED:
+            order.cancellation_reason_code = reason_code or Order.CANCELLATION_OPERATOR_DECISION
+            order.cancellation_reason_note = reason_note
+        else:
+            order.cancellation_reason_code = ""
+            order.cancellation_reason_note = ""
+
         if operator_note:
             order.operator_notes = self._merge_note(order.operator_notes, operator_note)
 
@@ -191,7 +218,9 @@ class OrderOperationsService:
             )
         )
 
-        order.items.update(procurement_status=OrderItem.PROCUREMENT_CANCELLED)
+        if target_status == Order.STATUS_CANCELLED:
+            order.items.update(procurement_status=OrderItem.PROCUREMENT_CANCELLED)
+
         return OrderActionResult(order_id=str(order.id), status=order.status)
 
     @transaction.atomic
@@ -271,6 +300,29 @@ class OrderOperationsService:
         if not existing:
             return note
         return f"{existing}\n{note}"
+
+    def _is_privileged_actor(self, actor) -> bool:
+        if actor is None:
+            return False
+        if getattr(actor, "is_superuser", False):
+            return True
+        role = get_user_system_role(actor)
+        return role in self.PRIVILEGED_STATUS_ROLES
+
+    def _ensure_transition_allowed(self, *, order: Order, target_status: str, actor) -> None:
+        allowed_statuses = {value for value, _label in Order.STATUS_CHOICES}
+        if target_status not in allowed_statuses:
+            raise DRFValidationError({"order": _("Unsupported status transition target.")})
+
+        if order.status == target_status:
+            return
+
+        if self._is_privileged_actor(actor):
+            return
+
+        allowed_next = self.OPERATOR_NEXT_STATUS.get(order.status, set())
+        if target_status not in allowed_next:
+            raise DRFValidationError({"order": _("Operator can change status only in sequence.")})
 
     def _extract_validation_reason(self, error: ValidationError) -> str:
         if hasattr(error, "message_dict"):

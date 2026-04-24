@@ -1,6 +1,7 @@
 from .article_normalization_rule_serializer import ArticleNormalizationRuleSerializer
 from .autocatalog_car_serializer import BackofficeAutocatalogCarSerializer
 from .backoffice_summary_serializer import BackofficeSummarySerializer
+from .hero_block_serializer import BackofficeHeroBlockSettingsSerializer, BackofficeHeroSlideSerializer
 from .catalog_brand_serializer import BackofficeCatalogBrandSerializer
 from .catalog_category_serializer import BackofficeCatalogCategorySerializer
 from .catalog_product_serializer import BackofficeCatalogProductSerializer
@@ -111,6 +112,8 @@ __all__ = [
     "ArticleNormalizationRuleSerializer",
     "BackofficeAutocatalogCarSerializer",
     "BackofficeSummarySerializer",
+    "BackofficeHeroBlockSettingsSerializer",
+    "BackofficeHeroSlideSerializer",
     "BackofficeCatalogBrandSerializer",
     "BackofficeCatalogCategorySerializer",
     "BackofficeCatalogProductSerializer",

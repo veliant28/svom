@@ -120,7 +120,11 @@
       "subtitle": "Storefront skeleton ready for further development",
       "featured": "Featured products",
       "heroPlaceholder": "Hero slider placeholder. Add slides in Django admin.",
-      "performanceTagline": "SVOM Performance"
+      "performanceTagline": "SVOM Performance",
+      "fallbackSlogan": "Drive without compromise",
+      "fallbackPhrasePrimary": "Night visibility",
+      "fallbackPhraseSecondary": "Precision at speed",
+      "fallbackPhraseTertiary": "Power in every detail"
     },
     "footer": {
       "navigation": "Navigation",

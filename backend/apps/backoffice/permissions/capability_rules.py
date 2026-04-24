@@ -18,6 +18,7 @@ RULES: tuple[BackofficeCapabilityRule, ...] = (
     BackofficeCapabilityRule("groups/", ("groups.view",), ("groups.manage",)),
     BackofficeCapabilityRule("summary/", ("backoffice.access",), ("backoffice.access",)),
     BackofficeCapabilityRule("payments/", ("payments.view",), ("payments.view",)),
+    BackofficeCapabilityRule("settings/hero-block/", ("promo_banners.manage",), ("promo_banners.manage",)),
     BackofficeCapabilityRule("settings/promo-banners/", ("promo_banners.manage",), ("promo_banners.manage",)),
     BackofficeCapabilityRule("settings/footer/", ("footer.settings",), ("footer.settings",)),
     BackofficeCapabilityRule("procurement/", ("procurement.manage",), ("procurement.manage",)),

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from decimal import Decimal
+
 from django.db import transaction
 from django.utils import timezone
 
@@ -54,6 +56,15 @@ def persist_parsed_rows(
             supplier=source.supplier,
         )
         product = decision.matched_product
+        mapped_category = product.category if product is not None and product.category_id else None
+        if mapped_category is not None:
+            category_mapping_status = SupplierRawOffer.CATEGORY_MAPPING_STATUS_AUTO_MAPPED
+            category_mapping_reason = SupplierRawOffer.CATEGORY_MAPPING_REASON_FROM_PRODUCT
+            category_mapping_confidence = Decimal("1.000")
+        else:
+            category_mapping_status = SupplierRawOffer.CATEGORY_MAPPING_STATUS_UNMAPPED
+            category_mapping_reason = SupplierRawOffer.CATEGORY_MAPPING_REASON_NO_CATEGORY_SIGNAL
+            category_mapping_confidence = None
         candidate_product_ids = [str(item.id) for item in decision.candidate_products]
         skip_reason = ""
         is_valid = True
@@ -86,6 +97,11 @@ def persist_parsed_rows(
             stock_qty=offer.stock_qty,
             lead_time_days=offer.lead_time_days,
             matched_product=product,
+            mapped_category=mapped_category,
+            category_mapping_status=category_mapping_status,
+            category_mapping_reason=category_mapping_reason,
+            category_mapping_confidence=category_mapping_confidence,
+            category_mapped_at=now if mapped_category is not None else None,
             match_status=decision.status,
             match_reason=decision.reason,
             match_candidate_product_ids=candidate_product_ids,

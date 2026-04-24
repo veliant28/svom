@@ -39,13 +39,11 @@ export function resolveParamsSourceLabel(source: string | undefined, t: Translat
 
 export function buildRequestPayloadFromRow({
   item,
-  fallbackFormat,
 }: {
   item: BackofficeSupplierPriceList;
-  fallbackFormat: string;
 }) {
   return {
-    format: item.requested_format || fallbackFormat,
+    format: "xlsx",
     in_stock: item.is_in_stock,
     show_scancode: item.supplier_code === "utr" ? item.show_scancode : false,
     utr_article: item.utr_article,

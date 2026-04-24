@@ -1,0 +1,145 @@
+Для пошуку аналогів по артикулу і бренду потрібно відправити настпуний запит:
+
+GET http://order24-api.utr.ua/api/analogs/{brand}/{oem}
+де: {oem} - артикул деталі, {brand} - наийменування бренду
+додавши при цьому в headers
+
+Authorization: Bearer eyJ0eXAiOiJKV1Q...<br>
+Де в Authorization післе ключового слова Bearer потрібно передати отриманий при проходженні аутентифікації token
+
+В результаті ви отримаєте одну із наступних відповідей:
+
+Аналоги не знайдено
+Status Code: 200 OK
+Body:
+[]
+Поимлка аутентифікації
+Можливі відповіді API при помилці аутентифікації приведено в розділі Помилка аутентифікації
+
+Аналоги
+Status Code: 200 OK
+Body:
+[
+    {
+        "multiplicity": 1,
+        "id": 4106,
+        "brand": {
+            "name": "BOSCH",
+            "externalCode": "00007"
+        },
+        "displayBrand": "BOSCH",
+        "article": "0451103079",
+        "title": "Фільтр масляний",
+        "quantity": 1,
+        "yourPrice": {
+            "amount": 95.4,
+            "currency": {
+                "code": "UAH"
+            }
+        },
+        "yourPriceUAH": {
+            "amount": 95.4,
+            "currency": {
+                "code": "UAH"
+            }
+        },
+        "yourPriceEUR": {
+            "amount": 2.35,
+            "currency": {
+                "code": "EUR"
+            }
+        },
+        "remains": [
+            {
+                "storage": {
+                    "id": 6,
+                    "name": "Миколаїв",
+                    "originalName": "Николаев"
+                },
+                "remain": "10"
+            },
+            {
+                "storage": {
+                    "id": 15,
+                    "name": "Kиїв Правий",
+                    "originalName": "Kиев Правый"
+                },
+                "remain": "> 10"
+            },
+            ...
+        ],
+        "detailScanCodes": [
+            {
+                "scanCode": "3165141016017"
+            }
+        ],
+        "category": {
+            "name": "Фильтр масляный"
+        },
+        "modifier": 0,
+        "isDisabled": false,
+        "hasPartnerRemain": false
+    },
+    {
+        "multiplicity": 1,
+        "id": 58023,
+        "brand": {
+            "name": "MAHLE ORIGINAL",
+            "externalCode": "00169"
+        },
+        "displayBrand": "MAHLE - KNECHT",
+        "article": "OC90",
+        "title": "Фільтр оливи",
+        "quantity": 1,
+        "yourPrice": {
+            "amount": 127.89,
+            "currency": {
+                "code": "UAH"
+            }
+        },
+        "yourPriceUAH": {
+            "amount": 127.89,
+            "currency": {
+                "code": "UAH"
+            }
+        },
+        "yourPriceEUR": {
+            "amount": 3.15,
+            "currency": {
+                "code": "EUR"
+            }
+        },
+        "remains": [
+            {
+                "storage": {
+                    "id": 6,
+                    "name": "Миколаїв",
+                    "originalName": "Николаев"
+                },
+                "remain": "4"
+            },
+            {
+                "storage": {
+                    "id": 15,
+                    "name": "Kиїв Правий",
+                    "originalName": "Kиев Правый"
+                },
+                "remain": "> 10"
+            },
+            ...
+        ],
+        "detailScanCodes": [
+            {
+                "scanCode": "2043236217369"
+            },
+            ...
+        ],
+        "category": {
+            "name": "Фильтр масляный"
+        },
+        "modifier": 0,
+        "isDisabled": false,
+        "hasPartnerRemain": false
+    },
+    ...
+]

@@ -120,7 +120,11 @@
       "subtitle": "Каркас storefront для дальнейшего развития",
       "featured": "Популярные товары",
       "heroPlaceholder": "Плейсхолдер hero-слайдера. Добавьте слайды в Django admin.",
-      "performanceTagline": "SVOM Performance"
+      "performanceTagline": "SVOM Performance",
+      "fallbackSlogan": "Движение без компромиссов",
+      "fallbackPhrasePrimary": "Ночная видимость",
+      "fallbackPhraseSecondary": "Точность на скорости",
+      "fallbackPhraseTertiary": "Характер в каждой детали"
     },
     "footer": {
       "navigation": "Навигация",

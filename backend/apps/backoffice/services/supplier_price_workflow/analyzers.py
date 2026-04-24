@@ -89,19 +89,44 @@ def detect_warehouse_columns(*, headers: list[str], supplier_code: str, price_co
     ]
 
 
-def resolve_source_file_path(raw_path: str) -> Path | None:
+def resolve_source_file_path(raw_path: str, *, preferred_extension: str | None = None) -> Path | None:
     if not raw_path.strip():
         return None
     path = Path(raw_path).expanduser()
     if not path.exists():
         return None
+    preferred_suffix = ""
+    if preferred_extension:
+        normalized = preferred_extension.strip().lower()
+        if normalized:
+            preferred_suffix = normalized if normalized.startswith(".") else f".{normalized}"
     if path.is_file():
-        return path.resolve()
-    if path.is_dir():
+        if not preferred_suffix or path.suffix.lower() == preferred_suffix:
+            return path.resolve()
         candidates = sorted(
-            [item for item in path.rglob("*") if item.is_file()],
+            [
+                item
+                for item in path.parent.rglob(f"*{preferred_suffix}")
+                if item.is_file()
+            ],
             key=lambda item: item.stat().st_mtime,
         )
+        return candidates[-1].resolve() if candidates else None
+    if path.is_dir():
+        if preferred_suffix:
+            candidates = sorted(
+                [
+                    item
+                    for item in path.rglob(f"*{preferred_suffix}")
+                    if item.is_file()
+                ],
+                key=lambda item: item.stat().st_mtime,
+            )
+        else:
+            candidates = sorted(
+                [item for item in path.rglob("*") if item.is_file()],
+                key=lambda item: item.stat().st_mtime,
+            )
         return candidates[-1].resolve() if candidates else None
     return None
 

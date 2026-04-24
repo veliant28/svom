@@ -9,7 +9,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 
 from apps.catalog.models import Brand, Category, Product
-from apps.pricing.models import ProductPrice, Supplier, SupplierOffer
+from apps.pricing.models import PriceHistory, ProductPrice, Supplier, SupplierOffer
 from apps.supplier_imports.models import ImportRowError, ImportRun, ImportSource, SupplierRawOffer
 from apps.users.models import User
 
@@ -110,6 +110,13 @@ class BackofficeAPISmokeTests(APITestCase):
             raw_sale_price="120.00",
             final_price="120.00",
         )
+        PriceHistory.objects.create(
+            product=self.product,
+            old_price="110.00",
+            new_price="120.00",
+            source=PriceHistory.SOURCE_IMPORT,
+            comment="publish_mapped:gpl",
+        )
 
     def _auth(self, token: str) -> dict[str, str]:
         return {"HTTP_AUTHORIZATION": f"Token {token}"}
@@ -118,6 +125,8 @@ class BackofficeAPISmokeTests(APITestCase):
         summary = self.client.get(reverse("backoffice_api:summary"), **self._auth(self.staff_token.key))
         self.assertEqual(summary.status_code, status.HTTP_200_OK)
         self.assertIn("totals", summary.data)
+        self.assertEqual(summary.data["totals"]["repriced_products_total"], 1)
+        self.assertEqual(summary.data["totals"]["repriced_products_24h"], 1)
 
         import_sources = self.client.get(reverse("backoffice_api:import-source-list"), **self._auth(self.staff_token.key))
         self.assertEqual(import_sources.status_code, status.HTTP_200_OK)

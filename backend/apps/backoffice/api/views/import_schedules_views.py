@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from datetime import time
 
+from django.shortcuts import get_object_or_404
 from django.db.models import Q
 from rest_framework.authentication import TokenAuthentication
-from rest_framework import serializers
+from rest_framework import serializers, status
 from rest_framework.generics import ListAPIView, UpdateAPIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from apps.backoffice.api.serializers import ImportSourceSerializer
 from apps.backoffice.permissions import IsStaffOrSuperuser
@@ -108,6 +110,49 @@ class ImportScheduleUpdateAPIView(UpdateAPIView):
 
     def get_queryset(self):
         return get_import_schedule_sources_queryset()
+
+
+class ImportScheduleRunSerializer(serializers.Serializer):
+    dispatch_async = serializers.BooleanField(required=False, default=True)
+
+
+class ImportScheduleRunAPIView(UpdateAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, IsStaffOrSuperuser]
+    serializer_class = ImportScheduleRunSerializer
+    lookup_field = "id"
+
+    def get_queryset(self):
+        return get_import_schedule_sources_queryset()
+
+    def post(self, request, id):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        source = get_object_or_404(self.get_queryset(), id=id)
+        dispatch_async = serializer.validated_data.get("dispatch_async", True)
+
+        from apps.supplier_imports.tasks.run_scheduled_supplier_pipeline import run_scheduled_supplier_pipeline_task
+
+        if dispatch_async:
+            task = run_scheduled_supplier_pipeline_task.delay(source_code=source.code)
+            return Response(
+                {
+                    "mode": "async",
+                    "source_code": source.code,
+                    "task_id": task.id,
+                },
+                status=status.HTTP_202_ACCEPTED,
+            )
+
+        result = run_scheduled_supplier_pipeline_task(source_code=source.code)
+        return Response(
+            {
+                "mode": "sync",
+                "source_code": source.code,
+                "result": result,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 def _extract_schedule_time_from_cron(cron_expression: str) -> time:

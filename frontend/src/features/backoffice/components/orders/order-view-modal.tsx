@@ -314,12 +314,8 @@ function formatNovaPoshtaDestination(rawDestination: string, city: string, t: Tr
 
 function selectedActionForStatus(status: string, canResetToNew = false): ActionKind {
   const normalized = status.trim().toLowerCase();
-
-  if (normalized === "new" && canResetToNew) {
-    return "reset";
-  }
   if (normalized === "new") {
-    return "confirm";
+    return "reset";
   }
   if (normalized === "processing") {
     return "confirm";
@@ -336,8 +332,29 @@ function selectedActionForStatus(status: string, canResetToNew = false): ActionK
   if (normalized === "cancelled") {
     return "cancel";
   }
+  const [first] = availableActionsForStatus(status, canResetToNew);
+  return first ?? "confirm";
+}
 
-  return "confirm";
+function availableActionsForStatus(status: string, canResetToNew = false): ActionKind[] {
+  if (canResetToNew) {
+    return ["reset", "confirm", "ready", "ship", "complete", "cancel"];
+  }
+
+  const normalized = status.trim().toLowerCase();
+  if (normalized === "new") {
+    return ["confirm", "cancel"];
+  }
+  if (normalized === "processing") {
+    return ["ready", "cancel"];
+  }
+  if (normalized === "ready_for_shipment") {
+    return ["ship", "cancel"];
+  }
+  if (normalized === "shipped") {
+    return ["complete"];
+  }
+  return [];
 }
 
 export function OrderViewModal({
@@ -384,18 +401,30 @@ export function OrderViewModal({
   }, [canResetToNew, order]);
 
   const actionOptions = useMemo(() => {
-    const options: Array<{ value: ActionKind; label: string }> = [
-      { value: "confirm" as const, label: t("orders.modals.view.actions.processing") },
-      { value: "ready" as const, label: t("orders.modals.view.actions.readyForShipment") },
-      { value: "ship" as const, label: t("orders.modals.view.actions.ship") },
-      { value: "complete" as const, label: t("orders.modals.view.actions.complete") },
-      { value: "cancel" as const, label: t("orders.modals.view.actions.cancel") },
-    ];
-    if (canResetToNew) {
-      options.unshift({ value: "reset" as const, label: t("statuses.new") });
+    if (!order) {
+      return [] as Array<{ value: ActionKind; label: string }>;
     }
-    return options;
-  }, [canResetToNew, t]);
+
+    const labels: Record<ActionKind, string> = {
+      confirm: t("orders.modals.view.actions.processing"),
+      ready: t("orders.modals.view.actions.readyForShipment"),
+      ship: t("orders.modals.view.actions.ship"),
+      complete: t("orders.modals.view.actions.complete"),
+      reset: t("statuses.new"),
+      cancel: t("orders.modals.view.actions.cancel"),
+    };
+    const values: ActionKind[] = ["reset", "confirm", "ready", "ship", "complete", "cancel"];
+    return values.map((value) => ({ value, label: labels[value] }));
+  }, [order, t]);
+
+  useEffect(() => {
+    if (!actionOptions.length) {
+      return;
+    }
+    if (!actionOptions.some((option) => option.value === selectedAction)) {
+      setSelectedAction(actionOptions[0].value);
+    }
+  }, [actionOptions, selectedAction]);
   const parsedMonobankAmountMinor = useMemo(() => {
     const normalized = monobankAmountMinorInput.trim();
     if (!normalized) {
@@ -720,7 +749,7 @@ export function OrderViewModal({
                           className="inline-flex h-9 w-9 items-center justify-center rounded-md border"
                           style={applyButtonStyle}
                           onClick={() => onRunAction(selectedAction)}
-                          disabled={Boolean(actionLoading)}
+                          disabled={Boolean(actionLoading) || !actionOptions.length}
                           aria-label={activeActionLabel}
                         >
                           <RefreshCw className="h-4 w-4 animate-spin" style={{ animationDuration: "2.2s" }} />

@@ -8,6 +8,26 @@ export type HeroSlide = {
   sort_order: number;
 };
 
+export type HeroSlideEffect =
+  | "crossfade"
+  | "pan_left"
+  | "lift_up"
+  | "cinematic_zoom"
+  | "reveal_right";
+
+export type HeroSlideSettings = {
+  autoplay_enabled: boolean;
+  transition_interval_ms: number;
+  transition_speed_ms: number;
+  transition_effect: HeroSlideEffect;
+  max_active_slides: number;
+};
+
+export type HeroSlideConfig = {
+  settings: HeroSlideSettings;
+  slides: HeroSlide[];
+};
+
 export type PromoBanner = {
   id: string;
   title: string;

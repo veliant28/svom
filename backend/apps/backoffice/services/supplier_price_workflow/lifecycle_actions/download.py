@@ -29,18 +29,23 @@ def download_price_list(service, *, supplier_code: str, price_list_id: str) -> d
         )
     if row.status == SupplierPriceList.STATUS_FAILED:
         raise SupplierIntegrationError("Прайс находится в статусе ошибки. Выполните новый запрос.")
+    if (row.requested_format or "").strip().lower() not in {"", "xlsx"}:
+        raise SupplierIntegrationError("Разрешено скачивание только прайсов в формате XLSX.")
 
     target_dir = Path(settings.MEDIA_ROOT) / "supplier_price_lists" / supplier_code
     target_dir.mkdir(parents=True, exist_ok=True)
 
-    file_ext = resolve_extension(
-        requested_format=row.requested_format,
-        source_file_name=row.source_file_name,
-    )
     timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
-    target_file = target_dir / f"{supplier_code}_price_{timestamp}_{str(row.id)[:8]}.{file_ext}"
+    target_file: Path
 
     if row.request_mode == "utr_api" and row.remote_id and integration.access_token:
+        file_ext = resolve_extension(
+            requested_format=row.requested_format,
+            source_file_name=row.source_file_name,
+        )
+        if file_ext.lower() != "xlsx":
+            file_ext = "xlsx"
+        target_file = target_dir / f"{supplier_code}_price_{timestamp}_{str(row.id)[:8]}.{file_ext}"
         hydrate_utr_remote_fields(service, row=row, access_token=integration.access_token)
         if not row.remote_token:
             raise SupplierIntegrationError("UTR еще не выдал export token для скачивания прайса.")
@@ -52,16 +57,28 @@ def download_price_list(service, *, supplier_code: str, price_list_id: str) -> d
             target_file.write_bytes(body)
         else:
             raise SupplierIntegrationError("UTR вернул пустой файл прайса.")
+        if target_file.suffix.lower() != ".xlsx":
+            corrected = target_file.with_suffix(".xlsx")
+            target_file.rename(corrected)
+            target_file = corrected
         if row.requested_format == "" and content_type:
             guessed = mimetypes.guess_extension(content_type.split(";")[0].strip())
             if guessed and guessed != target_file.suffix:
                 corrected = target_file.with_suffix(guessed)
                 target_file.rename(corrected)
                 target_file = corrected
+        if target_file.suffix.lower() != ".xlsx":
+            raise SupplierIntegrationError("UTR вернул не-XLSX файл. Разрешен только XLSX.")
     else:
-        source_file = Path(row.source_file_path) if row.source_file_path else resolve_source_file_path(source.input_path)
+        source_file = Path(row.source_file_path) if row.source_file_path else None
+        if source_file is None or not source_file.exists() or source_file.suffix.lower() != ".xlsx":
+            source_file = resolve_source_file_path(source.input_path, preferred_extension="xlsx")
         if not source_file or not source_file.exists():
             raise SupplierIntegrationError("Не найден локальный файл прайса для скачивания.")
+        if source_file.suffix.lower() != ".xlsx":
+            raise SupplierIntegrationError("Локальный прайс должен быть в формате XLSX.")
+        file_ext = "xlsx"
+        target_file = target_dir / f"{supplier_code}_price_{timestamp}_{str(row.id)[:8]}.{file_ext}"
         shutil.copy2(source_file, target_file)
 
     downloaded_meta = extract_file_metadata(source_file=target_file, supplier_code=supplier_code)

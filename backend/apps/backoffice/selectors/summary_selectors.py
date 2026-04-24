@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from apps.catalog.models import Product
 from apps.commerce.models import Order
-from apps.pricing.models import ProductPrice, SupplierOffer
+from apps.pricing.models import PriceHistory, ProductPrice, SupplierOffer
 from apps.supplier_imports.models import ImportRowError, ImportRun, ImportRunQuality, ImportSource, SupplierRawOffer
 
 
@@ -35,7 +35,9 @@ def build_backoffice_summary_payload() -> dict:
     ]
 
     status_buckets = ImportRun.objects.values("status").annotate(total=Count("id")).order_by("status")
-    repriced_24h = ImportRun.objects.filter(created_at__gte=since_24h).aggregate(total=Sum("repriced_products")).get("total") or 0
+    repriced_history_qs = PriceHistory.objects.filter(source=PriceHistory.SOURCE_IMPORT)
+    repriced_total = repriced_history_qs.values("product_id").distinct().count()
+    repriced_24h = repriced_history_qs.filter(created_at__gte=since_24h).values("product_id").distinct().count()
     unprocessed_statuses = (
         Order.STATUS_NEW,
         Order.STATUS_PROCESSING,
@@ -58,7 +60,7 @@ def build_backoffice_summary_payload() -> dict:
         "supplier_offers": SupplierOffer.objects.count(),
         "published_products": Product.objects.filter(is_active=True).count(),
         "product_prices": ProductPrice.objects.count(),
-        "repriced_products_total": ImportRun.objects.aggregate(total=Sum("repriced_products")).get("total") or 0,
+        "repriced_products_total": repriced_total,
         "repriced_products_24h": repriced_24h,
     }
 

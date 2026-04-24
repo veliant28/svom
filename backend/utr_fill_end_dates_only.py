@@ -85,42 +85,79 @@ class UtrHttpError(RuntimeError):
 
 
 class UtrApiClient:
-    def __init__(self, *, token: str, sleep_seconds: float, base_url: str = "https://order24-api.utr.ua"):
+    def __init__(
+        self,
+        *,
+        token: str,
+        sleep_seconds: float,
+        request_timeout: float,
+        max_retries: int,
+        retry_backoff_seconds: float,
+        base_url: str = "https://order24-api.utr.ua",
+    ):
         self.token = token
         self.sleep_seconds = max(float(sleep_seconds), 0.0)
+        self.request_timeout = max(float(request_timeout), 1.0)
+        self.max_retries = max(int(max_retries), 0)
+        self.retry_backoff_seconds = max(float(retry_backoff_seconds), 0.0)
         self.base_url = base_url.rstrip("/")
         self._last_request_at: float | None = None
         self.request_count = 0
 
+    def _respect_rate_limit(self) -> None:
+        if self._last_request_at is None or self.sleep_seconds <= 0:
+            return
+        elapsed = time.monotonic() - self._last_request_at
+        if elapsed < self.sleep_seconds:
+            wait_for = self.sleep_seconds - elapsed
+            print(f"[rate-limit] sleep {wait_for:.1f}s before next UTR request")
+            time.sleep(wait_for)
+
     def get_json(self, path: str) -> Any:
-        if self._last_request_at is not None and self.sleep_seconds > 0:
-            elapsed = time.monotonic() - self._last_request_at
-            if elapsed < self.sleep_seconds:
-                wait_for = self.sleep_seconds - elapsed
-                print(f"[rate-limit] sleep {wait_for:.1f}s before next UTR request")
-                time.sleep(wait_for)
-
         url = path if path.startswith("http") else f"{self.base_url}/{path.lstrip('/')}"
-        print(f"[request #{self.request_count + 1}] GET {url}")
-
         req = Request(url, headers={"Authorization": f"Bearer {self.token}"})
-        try:
-            with urlopen(req, timeout=30) as response:
-                payload = response.read().decode("utf-8", "ignore")
-                status = response.status
-        except HTTPError as exc:
-            body = exc.read().decode("utf-8", "ignore") if hasattr(exc, "read") else ""
-            raise UtrHttpError(code=exc.code, url=url, body=body) from exc
-        except URLError as exc:
-            raise RuntimeError(f"UTR URLError for {url}: {exc}") from exc
 
-        self._last_request_at = time.monotonic()
-        self.request_count += 1
+        for attempt in range(1, self.max_retries + 2):
+            self._respect_rate_limit()
+            print(f"[request #{self.request_count + 1}] GET {url} (attempt {attempt}/{self.max_retries + 1})")
 
-        try:
-            return json.loads(payload)
-        except json.JSONDecodeError as exc:
-            raise RuntimeError(f"UTR returned non-JSON response for {url} (status={status})") from exc
+            try:
+                with urlopen(req, timeout=self.request_timeout) as response:
+                    payload = response.read().decode("utf-8", "ignore")
+                    status = response.status
+            except HTTPError as exc:
+                self._last_request_at = time.monotonic()
+                body = exc.read().decode("utf-8", "ignore") if hasattr(exc, "read") else ""
+                raise UtrHttpError(code=exc.code, url=url, body=body) from exc
+            except TimeoutError as exc:
+                self._last_request_at = time.monotonic()
+                if attempt > self.max_retries:
+                    raise RuntimeError(
+                        f"UTR request timed out for {url} after {attempt} attempt(s); "
+                        f"timeout={self.request_timeout:.0f}s"
+                    ) from exc
+                wait_for = max(self.retry_backoff_seconds * attempt, self.sleep_seconds)
+                print(f"[timeout] {url} -> sleep {wait_for:.1f}s before conservative retry")
+                time.sleep(wait_for)
+                continue
+            except URLError as exc:
+                self._last_request_at = time.monotonic()
+                if attempt > self.max_retries:
+                    raise RuntimeError(f"UTR URLError for {url}: {exc}") from exc
+                wait_for = max(self.retry_backoff_seconds * attempt, self.sleep_seconds)
+                print(f"[network] {url} -> sleep {wait_for:.1f}s before conservative retry: {exc}")
+                time.sleep(wait_for)
+                continue
+
+            self._last_request_at = time.monotonic()
+            self.request_count += 1
+
+            try:
+                return json.loads(payload)
+            except json.JSONDecodeError as exc:
+                raise RuntimeError(f"UTR returned non-JSON response for {url} (status={status})") from exc
+
+        raise RuntimeError(f"UTR request failed unexpectedly for {url}")
 
 
 @dataclass
@@ -231,6 +268,24 @@ def parse_args() -> argparse.Namespace:
         help="When --resume-make is set, resume from this model name within that make (inclusive).",
     )
     parser.add_argument("--sleep-seconds", type=float, default=30.0, help="Pause between UTR requests (default: 30).")
+    parser.add_argument(
+        "--request-timeout",
+        type=float,
+        default=60.0,
+        help="Per-request read timeout in seconds (default: 60, conservative to reduce retries).",
+    )
+    parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=2,
+        help="Maximum retries for timeout/network errors (default: 2, conservative).",
+    )
+    parser.add_argument(
+        "--retry-backoff-seconds",
+        type=float,
+        default=90.0,
+        help="Base sleep before retry after timeout/network errors (default: 90, conservative).",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Do not write DB changes.")
     parser.add_argument(
         "--all-rows",
@@ -279,7 +334,13 @@ def main() -> int:
     if args.max_makes and args.max_makes > 0:
         make_names = make_names[: args.max_makes]
 
-    client = UtrApiClient(token=token, sleep_seconds=args.sleep_seconds)
+    client = UtrApiClient(
+        token=token,
+        sleep_seconds=args.sleep_seconds,
+        request_timeout=args.request_timeout,
+        max_retries=args.max_retries,
+        retry_backoff_seconds=args.retry_backoff_seconds,
+    )
     stats = Stats(makes_total=len(make_names))
 
     manufacturers_payload = client.get_json("/tecdoc/manufacturers")

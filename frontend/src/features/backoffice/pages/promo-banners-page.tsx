@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Save, Trash2, Upload } from "lucide-react";
+import { RefreshCw, Save, Trash2, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import {
@@ -295,15 +295,16 @@ export function PromoBannersPage() {
         <PageHeader
           title={t("promoBanners.title")}
           description={t("promoBanners.subtitle")}
-          actions={(
+          actionsBeforeLogout={(
             <button
               type="button"
-              className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-xs font-semibold"
-              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+              className="inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold transition-colors"
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
               onClick={() => {
                 void load();
               }}
             >
+              <RefreshCw size={16} className="animate-spin" style={{ animationDuration: "2.2s" }} />
               {t("promoBanners.actions.refresh")}
             </button>
           )}

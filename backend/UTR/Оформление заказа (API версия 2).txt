@@ -1,0 +1,159 @@
+Для оформлення замовлення потрібно відправити настпуний запит:
+
+POST http://order24-api.utr.ua/api/order/accept
+додавши при цьому в headers
+
+Authorization: Bearer eyJ0eXAiOiJKV1Q...
+
+Де в Authorization після ключового слова Bearer потрібно передати отриманий при проходженні аутентифікації token
+
+
+Body:
+[
+	{
+		"comment":"test4",
+		"delivery":2109,
+		"deliveryDate":"2024-02-15",
+		"deliveryPoint":8195,
+		"items":[
+			{
+				"detail":1022206,
+				"quantity":1,
+				"storage":15
+			}
+		],
+		"paymentType":"beznal",
+		"withoutDocument":false
+	}
+]
+де:
+deliveryDate - Дата відправки замовлення. Текстове поле в форматі РРРР-ММ-ДД. Наприклад: 2016-09-30.
+delivery - Код варіанта доставки. Значення поля можна отримати з сервісу Отримання варіантів доставки
+comment - Коментар до замовлення.
+deliveryPoint – код точки доставки. Значення поля можна отримати з сервісу Отримання точок доставки
+items - Список позицій замовлення.
+detail - Код товару. Значення поля можна отримати з поля id результату пошуку товару.
+quantity - Кількість позицій.
+storage - Код склада.
+paymentType - Варіант оплати замовлення. nal - готівковий розрахунок, beznal - безготівковий розрахунок.
+
+
+В результаті ви отримаєте одну із наступних відповідей:
+
+
+
+
+Содержание
+1	Поимлка аутентифікації
+2	Замовлення не створено – помилка підключення
+3	Замовлення не створено – неприпустиме значення одного із параметрів
+4	Замовлення створено
+Поимлка аутентифікації
+Можливі відповіді API при помилці аутентифікації наведені в розділі Помилка аутентификації
+
+
+
+Замовлення не створено – помилка підключення
+Status Code: 504 gateway timeout
+Body:
+{
+    "code": 504,
+    "message": "Ошибка обработки запроса. Нет соединения."
+}
+
+
+Замовлення не створено – неприпустиме значення одного із параметрів
+Status Code: 400 bad request
+Body:
+{
+    "code": 400,
+    "message": "Значение недопустимо.\r\n"
+}
+
+
+Замовлення створено
+Status Code: 201 OK
+Body:
+[
+    {
+        "id": 6802274,
+        "externalCode": "УЭТ000008",
+        "date": "2024-02-13T08:31:22+02:00",
+        "orderItems": [
+            {
+                "detail": {
+                    "multiplicity": 1,
+                    "id": 1022206,
+                    "brand": {
+                        "name": "SACHS",
+                        "externalCode": "00005"
+                    },
+                    "displayBrand": "SACHS",
+                    "article": "317 577",
+                    "title": "Амортизатор",
+                    "quantity": 1,
+                    "yourPrice": {
+                        "amount": 0,
+                        "currency": {
+                            "code": "UAH"
+                        }
+                    },
+                    "remains": [
+                        {
+                            "storage": {
+                                "id": 15,
+                                "name": "Kиїв Правий",
+                                "originalName": "Kиев Правый"
+                            },
+                            "remain": "6"
+                        },
+                        {
+                            "storage": {
+                                "id": 23,
+                                "name": "Дніпро",
+                                "originalName": "Днепр"
+                            },
+                            "remain": "2"
+                        },
+                        ...
+                    ],
+                    "detailScanCodes": [
+                        {
+                            "scanCode": "4013872967957"
+                        }
+                    ],
+                    "category": {
+                        "name": "Амортизатор"
+                    },
+                    "modifier": 0,
+                    "isDisabled": false,
+                    "hasPartnerRemain": false
+                },
+                "storage": {
+                    "id": 15,
+                    "name": "Kиїв Правий",
+                    "originalName": "Kиев Правый"
+                },
+                "quantity": 1,
+                "price": {
+                    "amount": 2158.3,
+                    "currency": {
+                        "code": "UAH"
+                    }
+                }
+            }
+        ],
+        "status": "processing",
+        "delivery": {
+            "name": "Курьер Киев Розничный Магазин 9:00"
+        },
+        "paymentType": "nal",
+        "comment": "test4",
+        "amount": {
+            "amount": 2158.3,
+            "currency": {
+                "code": "UAH"
+            }
+        }
+    }
+]

@@ -1,4 +1,5 @@
 import os
+from importlib.util import find_spec
 from pathlib import Path
 
 from celery.schedules import crontab
@@ -37,15 +38,17 @@ DEBUG = False
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
+HAS_DAPHNE = find_spec("daphne") is not None
+HAS_CHANNELS = find_spec("channels") is not None
+HAS_CHANNELS_REDIS = find_spec("channels_redis") is not None
+
 INSTALLED_APPS = [
-    "daphne",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.humanize",
-    "channels",
     "corsheaders",
     "rest_framework",
     "rest_framework.authtoken",
@@ -65,6 +68,13 @@ INSTALLED_APPS = [
     "apps.commerce.apps.CommerceConfig",
     "apps.support.apps.SupportConfig",
 ]
+
+# Celery workers do not require ASGI dependencies, so avoid failing on
+# settings import when the worker environment is built without them.
+if HAS_DAPHNE:
+    INSTALLED_APPS.insert(0, "daphne")
+if HAS_CHANNELS:
+    INSTALLED_APPS.insert(7, "channels")
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -119,14 +129,15 @@ CACHES = {
     }
 }
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [REDIS_CHANNEL_LAYER_URL],
-        },
+if HAS_CHANNELS and HAS_CHANNELS_REDIS:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [REDIS_CHANNEL_LAYER_URL],
+            },
+        }
     }
-}
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

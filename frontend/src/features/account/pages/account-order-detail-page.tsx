@@ -5,7 +5,7 @@ import Script from "next/script";
 import { useLocale, useTranslations } from "next-intl";
 
 import { AccountAuthRequired } from "@/features/account/components/account-auth-required";
-import { formatDateTime, formatMoney, resolveOrderStatusChipTone } from "@/features/account/lib/account-formatters";
+import { formatDateTime, formatMoney, resolveOrderStatusChipIcon, resolveOrderStatusChipTone } from "@/features/account/lib/account-formatters";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
 import { getCheckoutMonobankWidget } from "@/features/checkout/api/monobank-payment";
@@ -351,6 +351,7 @@ export function AccountOrderDetailPage({ orderId }: { orderId: string }) {
 
   const statusLabel = t(`status.${order.status}`);
   const statusTone = resolveOrderStatusChipTone(order.status);
+  const statusIcon = resolveOrderStatusChipIcon(order.status);
   const paymentLabel = resolvePaymentMethodLabel(order.payment_method, locale);
   const monobankPageUrl = order.payment_method === "monobank" ? (order.payment?.page_url || "").trim() : "";
   const liqpayPageUrl = order.payment_method === "liqpay" ? (order.payment?.page_url || "").trim() : "";
@@ -374,7 +375,7 @@ export function AccountOrderDetailPage({ orderId }: { orderId: string }) {
           </div>
           <div className="flex items-center gap-2">
             <p className="text-base font-semibold">{formatMoney(order.total, order.currency, locale)}</p>
-            <BackofficeStatusChip tone={statusTone}>{statusLabel}</BackofficeStatusChip>
+            <BackofficeStatusChip tone={statusTone} icon={statusIcon}>{statusLabel}</BackofficeStatusChip>
           </div>
         </div>
 

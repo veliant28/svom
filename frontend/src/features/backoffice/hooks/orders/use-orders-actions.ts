@@ -30,6 +30,46 @@ type OrdersActionsFeedback = {
 
 const PAYMENT_REFRESH_COOLDOWN_SECONDS = 10;
 
+function statusByAction(action: OrderViewAction): string {
+  if (action === "reset") {
+    return "new";
+  }
+  if (action === "confirm") {
+    return "processing";
+  }
+  if (action === "ready") {
+    return "ready_for_shipment";
+  }
+  if (action === "ship") {
+    return "shipped";
+  }
+  if (action === "complete") {
+    return "completed";
+  }
+  return "cancelled";
+}
+
+function isOperatorSequentialTransitionAllowed(fromStatus: string, toStatus: string): boolean {
+  const from = (fromStatus || "").trim().toLowerCase();
+  const to = (toStatus || "").trim().toLowerCase();
+  if (!from || !to || from === to) {
+    return true;
+  }
+  if (from === "new") {
+    return to === "processing" || to === "cancelled";
+  }
+  if (from === "processing") {
+    return to === "ready_for_shipment" || to === "cancelled";
+  }
+  if (from === "ready_for_shipment") {
+    return to === "shipped" || to === "cancelled";
+  }
+  if (from === "shipped") {
+    return to === "completed";
+  }
+  return false;
+}
+
 function extractCooldownSecondsFromMessage(message: string): number | null {
   const match = message.match(/(\d{1,6})\s*(sec|secs|second|seconds|сек|секунд|с)\b/i);
   if (!match) {
@@ -75,8 +115,11 @@ export function useOrdersActions({
   const [deleteTarget, setDeleteTarget] = useState<BackofficeOrderOperational | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const canResetToNew = Boolean(
-    user && user.groups.some(
-      (group) => group.name === "Backoffice Role: administrator" || group.name === "Backoffice Role: manager",
+    user
+    && (
+      user.is_superuser
+      || user.system_role === "administrator"
+      || user.system_role === "manager"
     ),
   );
 
@@ -142,6 +185,17 @@ export function useOrdersActions({
       return;
     }
 
+    if (!canResetToNew && action === "reset") {
+      feedback.showInfo?.(t("orders.messages.statusChangeNoPermission"));
+      return;
+    }
+
+    const targetStatus = statusByAction(action);
+    if (!canResetToNew && !isOperatorSequentialTransitionAllowed(viewOrder.status, targetStatus)) {
+      feedback.showInfo?.(t("orders.messages.statusChangeNoPermission"));
+      return;
+    }
+
     setViewActionLoading(action);
     try {
       if (action === "confirm") {
@@ -174,7 +228,7 @@ export function useOrdersActions({
     } finally {
       setViewActionLoading(null);
     }
-  }, [feedback, loadOrderDetail, onAfterAction, refetch, t, token, viewActionLoading, viewOrder]);
+  }, [canResetToNew, feedback, loadOrderDetail, onAfterAction, refetch, t, token, viewActionLoading, viewOrder]);
 
   const requestDelete = useCallback((item: BackofficeOrderOperational) => {
     setDeleteTarget(item);

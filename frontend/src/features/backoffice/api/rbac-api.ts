@@ -1,4 +1,4 @@
-import { getJson, patchJson, postJson } from "@/shared/api/http-client";
+import { deleteJson, getJson, patchJson, postJson } from "@/shared/api/http-client";
 
 import type {
   BackofficeGroupItem,
@@ -45,6 +45,10 @@ export async function activateBackofficeUser(token: string, id: number): Promise
 
 export async function deactivateBackofficeUser(token: string, id: number): Promise<BackofficeManagedUserDetail> {
   return postJson<BackofficeManagedUserDetail, Record<string, never>>(`/backoffice/users/${id}/deactivate/`, {}, undefined, { token });
+}
+
+export async function deleteBackofficeUser(token: string, id: number): Promise<void> {
+  return deleteJson<void>(`/backoffice/users/${id}/`, undefined, { token });
 }
 
 export async function listBackofficeGroups(

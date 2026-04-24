@@ -63,10 +63,10 @@
         "lead_time_too_long": "Lead time too long",
         "unmapped": "Unmapped",
         "unmatched": "Unmatched",
-        "auto_matched": "Auto matched",
+        "auto_matched": "Automatically",
         "manual_match_required": "Manual match required",
         "manually_matched": "Manually matched",
-        "auto_mapped": "Auto mapped",
+        "auto_mapped": "Automatically",
         "manual_mapped": "Manually mapped",
         "needs_review": "Review",
         "ignored": "Ignored",
@@ -186,12 +186,17 @@
           "enableSchedule": "Enable schedule",
           "disableSchedule": "Disable schedule",
           "saveSchedule": "Save schedule",
+          "runNow": "Run scenario",
+          "runningNow": "Running...",
           "saveDefaults": "Save defaults"
         },
         "messages": {
           "scheduleUpdated": "Schedule state updated for {source}.",
           "scheduleSaved": "Schedule settings saved for {source}.",
           "scheduleDefaultsApplied": "Default schedule applied for {source}.",
+          "runQueued": "Scenario for {source} has been queued.",
+          "runCompleted": "Scenario for {source} completed.",
+          "runFailed": "Failed to run import scenario.",
           "actionFailed": "Unable to update the import schedule."
         },
         "table": {
@@ -205,7 +210,9 @@
             "actions": "Actions"
           },
           "pipelineScenario": "Token check/update -> Price request/download/import -> Publish -> Markup -> Reindex",
-          "lastRunSummary": "rows: {rows} / errors: {errors}"
+          "lastRunSummary": "rows: {rows} / skipped: {skipped}",
+          "lastRunStarted": "Started: {value}",
+          "lastRunFinished": "Finished: {value}"
         }
       },
       "brandAliases": {
@@ -864,7 +871,8 @@
           "paymentInvoiceRemoved": "Monobank invoice invalidated.",
           "paymentFiscalChecksLoaded": "Fiscal checks loaded: {count}.",
           "monobankActionFailed": "Unable to run Monobank action.",
-          "monobankActionNotAvailable": "This action is available only for Monobank payments."
+          "monobankActionNotAvailable": "This action is available only for Monobank payments.",
+          "statusChangeNoPermission": "No permission to change status backward."
         },
         "statusDescriptions": {
           "new": "New order. Confirm it to continue processing.",
@@ -1486,6 +1494,65 @@
           "saved": "Footer settings saved."
         }
       },
+      "heroBlock": {
+        "title": "Hero Block",
+        "subtitle": "Manage the main storefront hero: up to 10 sports-car slides, localized copy, and smooth transition animation.",
+        "actions": {
+          "refresh": "Refresh",
+          "saving": "Saving...",
+          "saveSettings": "Save",
+          "creating": "Creating...",
+          "createSlide": "Add slide",
+          "saveSlide": "Save",
+          "deleteSlide": "Delete"
+        },
+        "settings": {
+          "title": "Display settings",
+          "limitLabel": "Slides: {count} / {max}",
+          "effect": "Animation type",
+          "intervalSeconds": "Display time (sec)",
+          "speedMs": "Transition speed (ms)",
+          "maxActive": "Active slides",
+          "autoplay": "Autoplay"
+        },
+        "effects": {
+          "crossfade": "Crossfade",
+          "panLeft": "Cinematic pan left",
+          "liftUp": "Soft lift up",
+          "cinematicZoom": "Cinematic zoom",
+          "revealRight": "Reveal from right"
+        },
+        "create": {
+          "title": "New hero slide",
+          "subtitle": "Add localized copy and two images. Updates appear on the storefront immediately.",
+          "desktopImageHint": "Desktop: recommended 1920x880 px, JPG/PNG/WebP.",
+          "mobileImageHint": "Mobile: recommended 900x1200 px, JPG/PNG/WebP."
+        },
+        "fields": {
+          "title": "Title",
+          "subtitle": "Subtitle",
+          "link": "CTA link (https://... or /catalog)",
+          "sortOrder": "Order",
+          "active": "Enabled",
+          "desktopImage": "Desktop image",
+          "mobileImage": "Mobile image",
+          "localizationHint": "One language is enough to publish, but filling all three keeps storefront i18n correct."
+        },
+        "states": {
+          "empty": "No hero slides added yet."
+        },
+        "messages": {
+          "loadFailed": "Failed to load hero block.",
+          "settingsSaved": "Hero block settings saved.",
+          "settingsSaveFailed": "Failed to save hero block settings.",
+          "slideCreated": "Hero slide created.",
+          "slideCreateFailed": "Failed to create hero slide.",
+          "slideSaved": "Hero slide saved.",
+          "slideSaveFailed": "Failed to save hero slide.",
+          "slideDeleted": "Hero slide deleted.",
+          "slideDeleteFailed": "Failed to delete hero slide."
+        }
+      },
       "promoBanners": {
         "title": "Ad Banner",
         "subtitle": "Manage storefront banners: up to 10 items, schedule window, and transition animation.",
@@ -1757,7 +1824,8 @@
             "hidePassword": "Hide password",
             "save": "Save",
             "saving": "Saving...",
-            "reset": "Reset"
+            "reset": "Reset",
+            "delete": "Delete"
           },
           "fields": {
             "email": "Email",
@@ -1785,7 +1853,10 @@
             "activated": "User activated.",
             "deactivated": "User deactivated.",
             "saveFailed": "Failed to save user.",
-            "toggleFailed": "Failed to change user status."
+            "toggleFailed": "Failed to change user status.",
+            "deleted": "User deleted.",
+            "deleteFailed": "Unable to delete user.",
+            "deleteConfirm": "Delete user {email}?"
           }
         },
         "groups": {

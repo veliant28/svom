@@ -235,7 +235,15 @@ class BackofficeOrderOperationsAPISmokeTests(APITestCase):
             format="json",
             **superuser_auth,
         )
-        self.assertEqual(superuser_response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(superuser_response.status_code, status.HTTP_200_OK)
+
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, Order.STATUS_NEW)
+
+        self.order.status = Order.STATUS_SHIPPED
+        self.order.cancellation_reason_code = "supplier_shortage"
+        self.order.cancellation_reason_note = "legacy note"
+        self.order.save(update_fields=("status", "cancellation_reason_code", "cancellation_reason_note", "updated_at"))
 
         manager_response = self.client.post(
             reverse("backoffice_api:order-action-reset-to-new"),
@@ -249,3 +257,43 @@ class BackofficeOrderOperationsAPISmokeTests(APITestCase):
         self.assertEqual(self.order.status, Order.STATUS_NEW)
         self.assertEqual(self.order.cancellation_reason_code, "")
         self.assertEqual(self.order.cancellation_reason_note, "")
+
+    def test_operator_status_flow_is_sequential_but_manager_can_change_freely(self):
+        manager = User.objects.create_user(
+            email="ops-manager-seq@test.local",
+            first_name="ops-manager-seq",
+            password="demo12345",
+        )
+        operator = User.objects.create_user(
+            email="ops-operator-seq@test.local",
+            first_name="ops-operator-seq",
+            password="demo12345",
+        )
+        set_user_system_role(user=manager, role_code="manager")
+        set_user_system_role(user=operator, role_code="operator")
+
+        manager_token = Token.objects.create(user=manager)
+        operator_token = Token.objects.create(user=operator)
+        manager_auth = {"HTTP_AUTHORIZATION": f"Token {manager_token.key}"}
+        operator_auth = {"HTTP_AUTHORIZATION": f"Token {operator_token.key}"}
+
+        self.order.status = Order.STATUS_COMPLETED
+        self.order.save(update_fields=("status", "updated_at"))
+
+        operator_response = self.client.post(
+            reverse("backoffice_api:order-action-confirm"),
+            {"order_id": str(self.order.id)},
+            format="json",
+            **operator_auth,
+        )
+        self.assertEqual(operator_response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        manager_response = self.client.post(
+            reverse("backoffice_api:order-action-confirm"),
+            {"order_id": str(self.order.id)},
+            format="json",
+            **manager_auth,
+        )
+        self.assertEqual(manager_response.status_code, status.HTTP_200_OK)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, Order.STATUS_PROCESSING)

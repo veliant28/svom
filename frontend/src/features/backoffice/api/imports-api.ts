@@ -43,6 +43,21 @@ export async function updateBackofficeImportSchedule(
   return patchJson<BackofficeImportSource, typeof payload>(`/backoffice/import-schedules/${sourceId}/`, payload, undefined, { token });
 }
 
+export async function runBackofficeImportSchedule(
+  token: string,
+  sourceId: string,
+  payload?: {
+    dispatch_async?: boolean;
+  },
+): Promise<{
+  mode: "async" | "sync";
+  source_code: string;
+  task_id?: string;
+  result?: Record<string, unknown>;
+}> {
+  return postJson(`/backoffice/import-schedules/${sourceId}/run/`, payload ?? { dispatch_async: true }, undefined, { token });
+}
+
 export async function getBackofficeImportRuns(token: string, params?: BackofficeListQuery) {
   const data = await getJson<BackofficeImportRun[] | { results: BackofficeImportRun[]; count: number }>(
     "/backoffice/import-runs/",

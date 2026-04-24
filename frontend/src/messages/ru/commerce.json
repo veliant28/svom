@@ -243,8 +243,8 @@
         "awaiting_procurement": "Ожидает закупки",
         "reserved": "Зарезервирован",
         "partially_reserved": "Частично зарезервирован",
-        "ready_for_shipment": "Готов к отправке",
-        "ready_to_ship": "Готов к отправке",
+        "ready_for_shipment": "К отправке",
+        "ready_to_ship": "К отправке",
         "shipped": "Отправлен",
         "completed": "Выполнен",
         "cancelled": "Отменен"

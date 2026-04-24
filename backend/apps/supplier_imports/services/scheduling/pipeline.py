@@ -29,6 +29,7 @@ class ScheduledSupplierImportPipelineService:
     DOWNLOAD_POLL_SECONDS = 12
     DOWNLOAD_MAX_WAIT_SECONDS = 240
     REQUEST_MAX_ATTEMPTS = 3
+    UTR_PRICE_COOLDOWN_SECONDS = 61
 
     def run(self, *, source_code: str) -> ScheduledPipelineResult:
         from apps.backoffice.services.supplier_price_workflow_service import SupplierPriceWorkflowService
@@ -74,7 +75,7 @@ class ScheduledSupplierImportPipelineService:
         requested = self._request_with_cooldown_retry(
             price_workflow=price_workflow,
             source_code=source_code,
-            requested_format=str(defaults.get("format", "xlsx") or "xlsx"),
+            requested_format="xlsx",
             in_stock=bool(defaults.get("in_stock", True)),
             show_scancode=bool(defaults.get("show_scancode", False)),
             utr_article=bool(defaults.get("utr_article", source_code == "utr")),
@@ -83,12 +84,14 @@ class ScheduledSupplierImportPipelineService:
         if not price_list_id:
             raise SupplierIntegrationError("Не удалось получить идентификатор запрошенного прайса.")
 
+        self._wait_utr_price_cooldown(source_code=source_code)
         downloaded = self._download_with_polling(
             price_workflow=price_workflow,
             source_code=source_code,
             price_list_id=price_list_id,
         )
 
+        self._wait_utr_price_cooldown(source_code=source_code)
         imported = self._import_with_cooldown_retry(
             price_workflow=price_workflow,
             source_code=source_code,
@@ -100,6 +103,7 @@ class ScheduledSupplierImportPipelineService:
 
         published = workspace_service.publish_mapped_products(
             supplier_code=source_code,
+            run_id=run_id,
             include_needs_review=False,
             dry_run=False,
             reprice_after_publish=True,
@@ -139,6 +143,7 @@ class ScheduledSupplierImportPipelineService:
         price_list_id: str,
     ) -> dict[str, Any]:
         attempts = max(1, self.DOWNLOAD_MAX_WAIT_SECONDS // self.DOWNLOAD_POLL_SECONDS)
+        poll_delay_seconds = self.UTR_PRICE_COOLDOWN_SECONDS if source_code == "utr" else self.DOWNLOAD_POLL_SECONDS
         last_error: Exception | None = None
         for attempt in range(attempts):
             try:
@@ -146,11 +151,17 @@ class ScheduledSupplierImportPipelineService:
                     supplier_code=source_code,
                     price_list_id=price_list_id,
                 )
+            except SupplierCooldownError as exc:
+                last_error = exc
+                if attempt < attempts - 1:
+                    time.sleep(exc.retry_after_seconds + 1)
+                    continue
+                raise
             except SupplierIntegrationError as exc:
                 last_error = exc
                 message = str(exc).lower()
                 if "формируется" in message and attempt < attempts - 1:
-                    time.sleep(self.DOWNLOAD_POLL_SECONDS)
+                    time.sleep(poll_delay_seconds)
                     continue
                 raise
         if last_error is not None:
@@ -175,6 +186,11 @@ class ScheduledSupplierImportPipelineService:
                     raise
                 time.sleep(exc.retry_after_seconds + 1)
         raise SupplierIntegrationError("Не удалось импортировать прайс после повторных попыток.")
+
+    def _wait_utr_price_cooldown(self, *, source_code: str) -> None:
+        if source_code != "utr":
+            return
+        time.sleep(self.UTR_PRICE_COOLDOWN_SECONDS)
 
     def _request_with_cooldown_retry(
         self,

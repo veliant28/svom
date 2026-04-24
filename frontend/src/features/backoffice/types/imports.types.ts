@@ -28,6 +28,7 @@ export type BackofficeImportSource = {
     status: string;
     processed_rows: number;
     errors_count: number;
+    offers_skipped: number;
     offers_created: number;
     offers_updated: number;
     finished_at: string | null;

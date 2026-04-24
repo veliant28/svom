@@ -5,8 +5,12 @@ from django.db.models import QuerySet
 from apps.supplier_imports.models import SupplierRawOffer
 
 
-def get_supplier_raw_offers_publish_queryset(*, supplier_code: str) -> QuerySet[SupplierRawOffer]:
-    return (
+def get_supplier_raw_offers_publish_queryset(
+    *,
+    supplier_code: str,
+    run_id: str | None = None,
+) -> QuerySet[SupplierRawOffer]:
+    queryset = (
         SupplierRawOffer.objects.select_related(
             "supplier",
             "mapped_category",
@@ -17,4 +21,6 @@ def get_supplier_raw_offers_publish_queryset(*, supplier_code: str) -> QuerySet[
         .filter(supplier__code=supplier_code)
         .order_by("-updated_at", "-created_at")
     )
-
+    if run_id:
+        queryset = queryset.filter(run_id=run_id)
+    return queryset

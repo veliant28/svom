@@ -23,7 +23,6 @@ export function useSupplierImportActions({
   tokenReady,
   activeCode,
   requestPayload,
-  format,
   feedback,
   t,
   tErrors,
@@ -42,7 +41,6 @@ export function useSupplierImportActions({
     categories: string[];
     models_filter: string[];
   };
-  format: string;
   feedback: BackofficeFeedback;
   t: Translator;
   tErrors: Translator;
@@ -126,7 +124,7 @@ export function useSupplierImportActions({
       () => requestBackofficeSupplierPriceList(
         token,
         activeCode,
-        buildRequestPayloadFromRow({ item, fallbackFormat: format }),
+        buildRequestPayloadFromRow({ item }),
       ),
       {
         successMessage: t("priceLifecycle.messages.requested"),
@@ -134,7 +132,7 @@ export function useSupplierImportActions({
         refreshPriceLists: true,
       },
     );
-  }, [activeCode, format, runAction, t, token, tokenReady]);
+  }, [activeCode, runAction, t, token, tokenReady]);
 
   const downloadFromRow = useCallback(async (item: BackofficeSupplierPriceList) => {
     await downloadById(item.id, true);

@@ -33,6 +33,7 @@ export function useSupplierProductsPage() {
     (token: string) =>
       getBackofficeRawOffers(token, {
         supplier: scope.activeCode,
+        latest_only: true,
         q: filters.q,
         locale,
         page: filters.page,

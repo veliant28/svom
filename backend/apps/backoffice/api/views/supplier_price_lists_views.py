@@ -31,6 +31,12 @@ class SupplierPriceListRequestSerializer(serializers.Serializer):
         child=serializers.CharField(max_length=120),
     )
 
+    def validate_format(self, value: str) -> str:
+        normalized = (value or "").strip().lower()
+        if normalized in {"", "xlsx"}:
+            return "xlsx"
+        raise serializers.ValidationError("Разрешен только формат XLSX.")
+
 
 class SupplierPriceListListAPIView(BackofficeAPIView):
     def get(self, request, code: str):

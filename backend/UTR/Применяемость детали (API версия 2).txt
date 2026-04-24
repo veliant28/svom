@@ -1,0 +1,48 @@
+Для отримання інформації про застосовуваність деталі по ідентифікатору потрібно відправляти наступний запит:
+
+GET https://order24-api.utr.ua/api/applicability/{detail_id}
+де: {detail_id} - id деталі (може бути отримано, наприклад, із результату пошуку елементу масива details поле id)
+додав при цьому в headers
+
+Authorization: Bearer eyJ0eXAiOiJKV1Q...
+
+Де в Authorization після ключового слова Bearer потрібно передати отриманий при проходженні аутентифікації token
+
+В результаті ви отримаєте одну із наступних відповідей:
+
+Товар не знайдено
+Status Code: 404 OK
+Body:
+{
+    "code": 404,
+    "message": "Detail ... not found."
+}
+Помилка аутентифікації
+Можливі відповіді API при помилці аутентифікації приведено в розділі Помилка аутентифікації
+
+Товар знайдено
+Status Code: 200 OK
+Body:
+[
+    {
+        "manufacturer": "CHEVROLET",
+        "models": [
+            {
+                "model": "AGILE",
+                "cars": [
+                    {
+                        "car": "1.4 LTZ Flex",
+                        "startDateAt": "2009-10-01 00:00:00",
+                        "engine": "N 14 YF",
+                        "capacity": "1.4",
+                        "capacityHpFrom": "102",
+                        "capacityKwFrom": "75"
+                    },
+                    ...
+                ]
+            },
+        ...
+        ]
+    },
+    ...
+]

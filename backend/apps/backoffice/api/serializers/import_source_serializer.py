@@ -60,6 +60,7 @@ class ImportSourceSerializer(serializers.ModelSerializer):
             "status": run.status,
             "processed_rows": run.processed_rows,
             "errors_count": run.errors_count,
+            "offers_skipped": run.offers_skipped,
             "offers_created": run.offers_created,
             "offers_updated": run.offers_updated,
             "finished_at": run.finished_at,

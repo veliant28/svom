@@ -14,6 +14,7 @@ def seed_marketing_demo() -> dict[str, int]:
             "autoplay_enabled": True,
             "transition_interval_ms": 5000,
             "transition_speed_ms": 700,
+            "transition_effect": "crossfade",
             "max_active_slides": 10,
         },
     )
@@ -39,9 +40,33 @@ def seed_marketing_demo() -> dict[str, int]:
 
 def _seed_hero_slides() -> int:
     payload = [
-        {"sort_order": 1, "title": "Track Precision", "subtitle": "Performance parts for sport builds."},
-        {"sort_order": 2, "title": "Daily Reliability", "subtitle": "Trusted consumables for every day."},
-        {"sort_order": 3, "title": "Night Visibility", "subtitle": "Lighting upgrades for safer driving."},
+        {
+            "sort_order": 1,
+            "title_uk": "Нічна видимість",
+            "title_ru": "Ночная видимость",
+            "title_en": "Night visibility",
+            "subtitle_uk": "Рух без компромісів",
+            "subtitle_ru": "Движение без компромиссов",
+            "subtitle_en": "Drive without compromise",
+        },
+        {
+            "sort_order": 2,
+            "title_uk": "Точність на швидкості",
+            "title_ru": "Точность на скорости",
+            "title_en": "Precision at speed",
+            "subtitle_uk": "Рух без компромісів",
+            "subtitle_ru": "Движение без компромиссов",
+            "subtitle_en": "Drive without compromise",
+        },
+        {
+            "sort_order": 3,
+            "title_uk": "Характер у кожній деталі",
+            "title_ru": "Характер в каждой детали",
+            "title_en": "Power in every detail",
+            "subtitle_uk": "Рух без компромісів",
+            "subtitle_ru": "Движение без компромиссов",
+            "subtitle_en": "Drive without compromise",
+        },
     ]
 
     created_or_updated = 0
@@ -54,13 +79,13 @@ def _seed_hero_slides() -> int:
         )
 
         HeroSlide.objects.update_or_create(
-            title_en=item["title"],
+            title_en=item["title_en"],
             defaults={
-                "title_uk": item["title"],
-                "title_ru": item["title"],
-                "subtitle_uk": item["subtitle"],
-                "subtitle_ru": item["subtitle"],
-                "subtitle_en": item["subtitle"],
+                "title_uk": item["title_uk"],
+                "title_ru": item["title_ru"],
+                "subtitle_uk": item["subtitle_uk"],
+                "subtitle_ru": item["subtitle_ru"],
+                "subtitle_en": item["subtitle_en"],
                 "desktop_image": desktop_path,
                 "mobile_image": mobile_path,
                 "sort_order": item["sort_order"],

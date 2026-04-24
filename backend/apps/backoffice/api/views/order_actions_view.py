@@ -19,17 +19,17 @@ from apps.backoffice.api.views.supplier_workspace_views import supplier_action_e
 from apps.backoffice.services import OrderOperationsService, OrderSupplierService
 from apps.commerce.models import Order, OrderItem
 from apps.pricing.models import SupplierOffer
-from apps.users.rbac.roles import SYSTEM_ROLE_DEFINITIONS
+from apps.users.rbac import get_user_system_role
 
 
-RESET_TO_NEW_ALLOWED_GROUPS = {
-    SYSTEM_ROLE_DEFINITIONS["administrator"].group_name,
-    SYSTEM_ROLE_DEFINITIONS["manager"].group_name,
-}
+RESET_TO_NEW_ALLOWED_ROLES = {"administrator", "manager"}
 
 
 def _ensure_reset_to_new_allowed(user) -> None:
-    if user.groups.filter(name__in=RESET_TO_NEW_ALLOWED_GROUPS).exists():
+    if getattr(user, "is_superuser", False):
+        return
+    role = get_user_system_role(user)
+    if role in RESET_TO_NEW_ALLOWED_ROLES:
         return
     raise PermissionDenied("Only administrators and managers can reset orders to new.")
 
@@ -43,6 +43,7 @@ class ConfirmOrderActionAPIView(BackofficeAPIView):
         result = OrderOperationsService().confirm_order(
             order=order,
             operator_note=serializer.validated_data.get("operator_note", ""),
+            actor=request.user,
         )
         return Response({"order_id": result.order_id, "status": result.status})
 
@@ -56,6 +57,7 @@ class MarkAwaitingProcurementActionAPIView(BackofficeAPIView):
         result = OrderOperationsService().mark_awaiting_procurement(
             order=order,
             operator_note=serializer.validated_data.get("operator_note", ""),
+            actor=request.user,
         )
         return Response({"order_id": result.order_id, "status": result.status})
 
@@ -83,6 +85,7 @@ class ReadyToShipOrderActionAPIView(BackofficeAPIView):
         result = OrderOperationsService().mark_ready_to_ship(
             order=order,
             operator_note=serializer.validated_data.get("operator_note", ""),
+            actor=request.user,
         )
         return Response({"order_id": result.order_id, "status": result.status})
 
@@ -96,6 +99,7 @@ class ShippedOrderActionAPIView(BackofficeAPIView):
         result = OrderOperationsService().mark_shipped(
             order=order,
             operator_note=serializer.validated_data.get("operator_note", ""),
+            actor=request.user,
         )
         return Response({"order_id": result.order_id, "status": result.status})
 
@@ -109,6 +113,7 @@ class CompleteOrderActionAPIView(BackofficeAPIView):
         result = OrderOperationsService().mark_completed(
             order=order,
             operator_note=serializer.validated_data.get("operator_note", ""),
+            actor=request.user,
         )
         return Response({"order_id": result.order_id, "status": result.status})
 
@@ -124,6 +129,7 @@ class ResetOrderToNewActionAPIView(BackofficeAPIView):
         result = OrderOperationsService().reset_to_new(
             order=order,
             operator_note=serializer.validated_data.get("operator_note", ""),
+            actor=request.user,
         )
         return Response({"order_id": result.order_id, "status": result.status})
 
@@ -139,6 +145,7 @@ class CancelOrderActionAPIView(BackofficeAPIView):
             reason_code=serializer.validated_data["reason_code"],
             reason_note=serializer.validated_data.get("reason_note", ""),
             operator_note=serializer.validated_data.get("operator_note", ""),
+            actor=request.user,
         )
         return Response({"order_id": result.order_id, "status": result.status})
 

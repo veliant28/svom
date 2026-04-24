@@ -38,10 +38,10 @@ def list_price_lists(service, *, supplier_code: str) -> list[dict]:
 
 def get_request_params(service, *, supplier_code: str) -> dict[str, Any]:
     source, integration = resolve_source_and_integration(supplier_code=supplier_code)
-    source_file = resolve_source_file_path(source.input_path)
+    source_file = resolve_source_file_path(source.input_path, preferred_extension="xlsx")
     file_meta = extract_file_metadata(source_file=source_file, supplier_code=supplier_code)
 
-    default_formats = ["xlsx", "csv", "txt"] if supplier_code == "utr" else ["xlsx"]
+    default_formats = ["xlsx"]
     payload: dict[str, Any] = {
         "supplier_code": supplier_code,
         "source": "fallback",
@@ -101,15 +101,23 @@ def request_price_list(
     if not integration.is_enabled:
         raise SupplierIntegrationError("Интеграция поставщика отключена.")
 
+    normalized_format = "xlsx"
+    if requested_format.strip().lower() not in {"", "xlsx"}:
+        raise SupplierIntegrationError("Разрешен только формат XLSX.")
+
     if supplier_code == "utr":
         service.guard.acquire_or_raise(integration_id=str(integration.id), action_key="price_request")
+        if not integration.access_token:
+            raise SupplierIntegrationError("UTR access token отсутствует. Выполните проверку/обновление токена.")
 
     now = timezone.now()
-    source_file = resolve_source_file_path(source.input_path)
+    source_file = resolve_source_file_path(source.input_path, preferred_extension="xlsx")
+    if supplier_code == "gpl" and source_file is None:
+        raise SupplierIntegrationError("Для GPL источник прайса должен быть XLSX-файлом.")
     metadata = extract_file_metadata(source_file=source_file, supplier_code=supplier_code)
 
     request_payload = {
-        "format": requested_format,
+        "format": normalized_format,
         "inStock": bool(in_stock),
         "showScancode": bool(show_scancode),
         "utrArticle": bool(utr_article),
@@ -130,7 +138,7 @@ def request_price_list(
     remote_id = ""
     remote_status = ""
     remote_token = ""
-    original_format = requested_format
+    original_format = normalized_format
     locale = ""
     expected_ready_at = None
     generated_at = None
@@ -140,29 +148,28 @@ def request_price_list(
 
     if supplier_code == "utr":
         expected_ready_at = now + timedelta(seconds=service.UTR_EXPECTED_GENERATION_SECONDS)
-        if integration.access_token:
-            try:
-                api_payload = service.utr_client.request_pricelist_export(
-                    access_token=integration.access_token,
-                    payload=request_payload,
-                )
-                response_payload = api_payload
-                request_mode = "utr_api"
-                remote_id = str(api_payload.get("id", "")).strip()
-                remote_status = normalize_status_value(api_payload.get("status", ""))
-                original_format = str(api_payload.get("originalFormat", requested_format)).strip() or requested_format
-                locale = str(api_payload.get("locale", "")).strip()
-                remote_token = str(api_payload.get("token", "")).strip()
-                if is_ready_status(remote_status):
-                    status = SupplierPriceList.STATUS_READY
-                    generated_at = now
-                    expected_ready_at = now
-                else:
-                    status = SupplierPriceList.STATUS_GENERATING
-            except SupplierClientError as exc:
-                # Keep the operator flow usable with local root files even when remote API is unavailable.
-                last_error_message = str(exc)
-                last_error_at = now
+        try:
+            api_payload = service.utr_client.request_pricelist_export(
+                access_token=integration.access_token,
+                payload=request_payload,
+            )
+            response_payload = api_payload
+            request_mode = "utr_api"
+            remote_id = str(api_payload.get("id", "")).strip()
+            remote_status = normalize_status_value(api_payload.get("status", ""))
+            original_format = str(api_payload.get("originalFormat", normalized_format)).strip() or normalized_format
+            locale = str(api_payload.get("locale", "")).strip()
+            remote_token = str(api_payload.get("token", "")).strip()
+            if original_format.lower() != "xlsx":
+                raise SupplierIntegrationError("UTR вернул не-XLSX прайс. Разрешен только XLSX.")
+            if is_ready_status(remote_status):
+                status = SupplierPriceList.STATUS_READY
+                generated_at = now
+                expected_ready_at = now
+            else:
+                status = SupplierPriceList.STATUS_GENERATING
+        except SupplierClientError as exc:
+            raise SupplierIntegrationError(str(exc)) from exc
     else:
         generated_at = now
         expected_ready_at = now
@@ -176,7 +183,7 @@ def request_price_list(
         remote_id=remote_id,
         remote_token=remote_token,
         remote_status=remote_status,
-        requested_format=requested_format,
+        requested_format=normalized_format,
         original_format=original_format,
         locale=locale,
         is_in_stock=bool(in_stock),

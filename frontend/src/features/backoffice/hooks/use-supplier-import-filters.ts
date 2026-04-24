@@ -28,18 +28,22 @@ export function useSupplierImportFilters({
   }, []);
 
   const isUtr = activeCode === "utr";
-  const formats = supplierParams?.formats?.length ? supplierParams.formats : ["xlsx", "csv", "txt"];
+  const formats = ["xlsx"];
   const formatOptions = supplierParams?.format_options?.length
-    ? supplierParams.format_options
+    ? (
+      supplierParams.format_options
+        .filter((item) => String(item.format || "").toLowerCase() === "xlsx")
+    )
     : formats.map((item) => ({ format: item, caption: item }));
+  const normalizedFormatOptions = formatOptions.length
+    ? formatOptions
+    : [{ format: "xlsx", caption: "xlsx" }];
 
   useEffect(() => {
     if (!supplierParams) {
       return;
     }
-    if (supplierParams.defaults?.format) {
-      setFormat(supplierParams.defaults.format);
-    }
+    setFormat("xlsx");
     setInStockOnly(Boolean(supplierParams.defaults?.in_stock));
     setShowScancode(Boolean(supplierParams.defaults?.show_scancode));
     setUtrArticle(Boolean(supplierParams.defaults?.utr_article));
@@ -195,6 +199,6 @@ export function useSupplierImportFilters({
     requestPayload,
     selectedCount,
     formats,
-    formatOptions,
+    formatOptions: normalizedFormatOptions,
   };
 }

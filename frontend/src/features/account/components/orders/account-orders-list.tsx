@@ -4,7 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 
 import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
 import type { Order } from "@/features/commerce/types";
-import { formatDateTime, formatMoney, resolveOrderStatusChipTone } from "@/features/account/lib/account-formatters";
+import { formatDateTime, formatMoney, resolveOrderStatusChipIcon, resolveOrderStatusChipTone } from "@/features/account/lib/account-formatters";
 import { Link } from "@/i18n/navigation";
 
 type AccountOrdersListProps = {
@@ -36,6 +36,7 @@ export function AccountOrdersList({ orders, isLoading }: AccountOrdersListProps)
     <div className="space-y-3">
       {orders.map((order) => {
         const tone = resolveOrderStatusChipTone(order.status);
+        const icon = resolveOrderStatusChipIcon(order.status);
         const statusLabel = t(`status.${order.status}`);
 
         return (
@@ -60,7 +61,7 @@ export function AccountOrdersList({ orders, isLoading }: AccountOrdersListProps)
               <p className="text-base font-semibold leading-[1.05]">{formatMoney(order.total, order.currency, locale)}</p>
 
               <div className="sm:justify-self-start">
-                <BackofficeStatusChip tone={tone} className="whitespace-nowrap">{statusLabel}</BackofficeStatusChip>
+                <BackofficeStatusChip tone={tone} icon={icon} className="whitespace-nowrap">{statusLabel}</BackofficeStatusChip>
               </div>
             </article>
           </Link>

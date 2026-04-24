@@ -27,6 +27,8 @@ def import_price_list_to_raw(service, *, supplier_code: str, price_list_id: str)
     file_path = Path(row.downloaded_file_path)
     if not file_path.exists() or not file_path.is_file():
         raise SupplierIntegrationError("Скачанный файл прайса не найден на диске.")
+    if file_path.suffix.lower() != ".xlsx":
+        raise SupplierIntegrationError("Разрешен импорт только XLSX-прайса.")
 
     result = SupplierImportRunner().run_source(
         source=source,

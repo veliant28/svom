@@ -10,7 +10,10 @@ export type BackofficeStatusChipTone =
   | "gray"
   | "black"
   | "red"
-  | "blue";
+  | "blue"
+  | "violet"
+  | "teal"
+  | "brown";
 export type BackofficeStatusChipPalette = "default" | "countdown";
 
 export const BACKOFFICE_STATUS_CHIP_BASE_CLASS =
@@ -26,6 +29,9 @@ const BACKOFFICE_STATUS_CHIP_TONE_CLASSES: Record<BackofficeStatusChipTone, stri
   black: "border-neutral-900/70 bg-neutral-900/20 text-neutral-950 dark:border-neutral-100/70 dark:bg-neutral-100/12 dark:text-neutral-50",
   red: "border-red-700/45 bg-red-700/16 text-red-900 dark:border-red-300/70 dark:bg-red-500/24 dark:text-red-50",
   blue: "border-blue-700/45 bg-blue-700/16 text-blue-900 dark:border-blue-300/70 dark:bg-blue-500/24 dark:text-blue-50",
+  violet: "border-violet-700/45 bg-violet-700/16 text-violet-900 dark:border-violet-300/70 dark:bg-violet-500/24 dark:text-violet-50",
+  teal: "border-teal-700/45 bg-teal-700/16 text-teal-900 dark:border-teal-300/70 dark:bg-teal-500/24 dark:text-teal-50",
+  brown: "border-amber-950/70 bg-amber-950/24 text-amber-950 dark:border-amber-300/65 dark:bg-amber-900/42 dark:text-amber-50",
 };
 
 const BACKOFFICE_STATUS_CHIP_COUNTDOWN_CLASSES: Record<BackofficeStatusChipTone, string> = {
@@ -38,6 +44,9 @@ const BACKOFFICE_STATUS_CHIP_COUNTDOWN_CLASSES: Record<BackofficeStatusChipTone,
   black: BACKOFFICE_STATUS_CHIP_TONE_CLASSES.black,
   red: BACKOFFICE_STATUS_CHIP_TONE_CLASSES.red,
   blue: BACKOFFICE_STATUS_CHIP_TONE_CLASSES.blue,
+  violet: BACKOFFICE_STATUS_CHIP_TONE_CLASSES.violet,
+  teal: BACKOFFICE_STATUS_CHIP_TONE_CLASSES.teal,
+  brown: BACKOFFICE_STATUS_CHIP_TONE_CLASSES.brown,
 };
 
 function resolveToneClass(tone: BackofficeStatusChipTone, palette: BackofficeStatusChipPalette): string {

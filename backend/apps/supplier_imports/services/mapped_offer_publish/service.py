@@ -16,6 +16,7 @@ class SupplierMappedOffersPublishService:
         self,
         *,
         supplier_code: str,
+        run_id: str | None = None,
         include_needs_review: bool = False,
         dry_run: bool = False,
         reprice_after_publish: bool = True,
@@ -28,6 +29,7 @@ class SupplierMappedOffersPublishService:
                 result = self._publish(
                     supplier=supplier,
                     supplier_code=supplier_code,
+                    run_id=run_id,
                     include_needs_review=include_needs_review,
                     reprice_after_publish=reprice_after_publish,
                 )
@@ -37,6 +39,7 @@ class SupplierMappedOffersPublishService:
         return self._publish(
             supplier=supplier,
             supplier_code=supplier_code,
+            run_id=run_id,
             include_needs_review=include_needs_review,
             reprice_after_publish=reprice_after_publish,
         )
@@ -46,6 +49,7 @@ class SupplierMappedOffersPublishService:
         *,
         supplier: Supplier,
         supplier_code: str,
+        run_id: str | None,
         include_needs_review: bool,
         reprice_after_publish: bool,
     ) -> SupplierMappedPublishResult:
@@ -58,7 +62,7 @@ class SupplierMappedOffersPublishService:
         product_cache = self._build_product_cache()
         supplier_offer_cache = self._build_supplier_offer_cache(supplier=supplier)
 
-        queryset = selection.get_publish_queryset(supplier_code=supplier_code)
+        queryset = selection.get_publish_queryset(supplier_code=supplier_code, run_id=run_id)
         for raw_offer in queryset.iterator(chunk_size=1000):
             counters.raw_rows_scanned += 1
             supplier_sku = self._resolve_supplier_sku(raw_offer=raw_offer)

@@ -1,0 +1,92 @@
+Для отримання інформації про деталі по ідентифікатору потрібно відправляти наступний запит:
+
+GET https://order24-api.utr.ua/api/detail/{detail_id}
+де: {detail_id} - id деталі (может бути отриманий, наприклад, із результата поиска элемента массива details поле id)
+додавши при цьому в headers
+
+Authorization: Bearer eyJ0eXAiOiJKV1Q...
+
+Де в Authorization після ключового слова Bearer потрібно передати отриманний при проходженні аутентифікації token
+
+В результаті ви отримаєте одну із наступних відповідей:
+
+Товар не знайдено
+Status Code: 404 OK
+Body:
+{
+    "code": 404,
+    "message": "Detail ... not found."
+}
+Поимлка аутентифікації
+Можливі відповіді API при помилці аутентифікації приведено в розділі Помилка аутентифікації
+
+Товар знайдено
+Status Code: 200 OK
+Body:
+{
+    "multiplicity": 1,
+    "id": 58023,
+    "brand": {
+        "name": "MAHLE ORIGINAL",
+        "externalCode": "00169"
+    },
+    "displayBrand": "MAHLE - KNECHT",
+    "article": "OC90",
+    "title": "Фільтр оливи",
+    "quantity": 1,
+    "yourPrice": {
+        "amount": 127.89,
+        "currency": {
+            "code": "UAH"
+        }
+    },
+    "yourPriceUAH": {
+        "amount": 127.89,
+        "currency": {
+            "code": "UAH"
+        }
+    },
+    "yourPriceEUR": {
+        "amount": 3.15,
+        "currency": {
+            "code": "EUR"
+        }
+    },
+    "remains": [
+        {
+            "storage": {
+                "id": 6,
+                "name": "Миколаїв",
+                "originalName": "Николаев"
+            },
+            "remain": "4"
+        },
+        {
+            "storage": {
+                "id": 15,
+                "name": "Kиїв Правий",
+                "originalName": "Kиев Правый"
+            },
+            "remain": "> 10"
+        }
+    ],
+    "detailInfo": [],
+    "detailScanCodes": [
+        {
+            "scanCode": "4009026037935"
+        }
+    ],
+    "images": [
+        {
+            "imagePath": "/images/base/brand/mahle_original/OC90/OC90-pic01.jpg",
+            "fullImagePath": "https://order24-file.utr.ua//images/base/brand/mahle_original/OC90/OC90-pic01.jpg",
+            "thumbnail": "https://order24-file.utr.ua/thumbnail/base/brand/mahle_original/OC90/OC90-pic01.jpg"
+        }
+    ],
+    "category": {
+        "name": "Фильтр масляный"
+    },
+    "modifier": 0,
+    "isDisabled": false,
+    "hasPartnerRemain": false
+}

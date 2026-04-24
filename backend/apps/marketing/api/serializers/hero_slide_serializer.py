@@ -30,10 +30,11 @@ class HeroSlideSerializer(serializers.ModelSerializer):
 
     def _localized(self, obj: HeroSlide, prefix: str) -> str:
         lang = self._lang()
-        value = getattr(obj, f"{prefix}_{lang}", "")
-        if value:
-            return value
-        return obj.title_uk if prefix == "title" else obj.subtitle_uk
+        for candidate in (lang, "uk", "en", "ru"):
+            value = getattr(obj, f"{prefix}_{candidate}", "")
+            if value:
+                return value
+        return ""
 
     def get_title(self, obj: HeroSlide) -> str:
         return self._localized(obj, "title")

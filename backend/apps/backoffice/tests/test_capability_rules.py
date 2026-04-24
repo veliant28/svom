@@ -44,6 +44,10 @@ class BackofficeCapabilityRulesTest(SimpleTestCase):
             ("footer.settings",),
         )
         self.assertEqual(
+            resolve_required_capabilities_for_request("/api/backoffice/settings/hero-block/", "GET"),
+            ("promo_banners.manage",),
+        )
+        self.assertEqual(
             resolve_required_capabilities_for_request("/api/backoffice/settings/promo-banners/", "GET"),
             ("promo_banners.manage",),
         )

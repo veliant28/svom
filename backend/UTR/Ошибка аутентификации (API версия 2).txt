@@ -1,0 +1,23 @@
+Status Code: 401 Unauthorized
+Body:
+{
+    "code": 401,
+    "message": "Invalid JWT Token"
+}
+или
+
+Status Code: 401 Unauthorized
+Body:
+{
+    "code": 401,
+    "message": "JWT Token not found"
+}
+В случае окончания срока действия token-а, вы получите следующий ответ
+
+Status Code: 401 Unauthorized
+Body:
+{
+    "code": 401,
+    "message": "Expired JWT Token"
+}
+Для обновления значения просроченного token-а необходимо выполнить действия, описанные в разделе Аутентификация и авторизация - Обновление просроченного token-а

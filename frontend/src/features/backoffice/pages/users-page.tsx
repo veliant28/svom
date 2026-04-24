@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { CheckCircle2, Eye, EyeOff, Pencil, UserCheck, UserX, XCircle, type LucideIcon } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, Pencil, Trash2, UserCheck, UserX, XCircle, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import {
   activateBackofficeUser,
   createBackofficeUser,
+  deleteBackofficeUser,
   deactivateBackofficeUser,
   getBackofficeRbacMeta,
   listBackofficeGroups,
@@ -88,6 +89,7 @@ export function UsersPage() {
   const currentRole = user?.system_role ?? null;
   const isAdministratorRole = currentRole === "administrator";
   const isManagerRole = currentRole === "manager";
+  const canDeleteUsers = Boolean(user?.is_superuser || isAdministratorRole);
 
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -98,6 +100,7 @@ export function UsersPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showManagerPassword, setShowManagerPassword] = useState(false);
   const [form, setForm] = useState<BackofficeManagedUserWritePayload>(EMPTY_FORM);
+  const [deletingUserId, setDeletingUserId] = useState<number | null>(null);
 
   const usersQuery = useCallback(
     (token: string) =>
@@ -232,6 +235,34 @@ export function UsersPage() {
     [canManageUsers, showApiError, showSuccess, t, usersState],
   );
 
+  const removeUser = useCallback(
+    async (target: BackofficeManagedUser) => {
+      if (!usersState.token || !canDeleteUsers || deletingUserId) {
+        return;
+      }
+
+      const confirmed = window.confirm(t("rbac.users.messages.deleteConfirm", { email: target.email }));
+      if (!confirmed) {
+        return;
+      }
+
+      setDeletingUserId(target.id);
+      try {
+        await deleteBackofficeUser(usersState.token, target.id);
+        showSuccess(t("rbac.users.messages.deleted"));
+        if (editingUser?.id === target.id) {
+          closeEditor();
+        }
+        await usersState.refetch();
+      } catch (error) {
+        showApiError(error, t("rbac.users.messages.deleteFailed"));
+      } finally {
+        setDeletingUserId(null);
+      }
+    },
+    [canDeleteUsers, closeEditor, deletingUserId, editingUser?.id, showApiError, showSuccess, t, usersState],
+  );
+
   const asyncError = usersState.error || metaState.error || groupsState.error;
 
   return (
@@ -327,6 +358,7 @@ export function UsersPage() {
             {
               key: "actions",
               label: t("rbac.users.columns.actions"),
+              className: "w-[8.5rem] min-w-[8.5rem]",
               render: (item) => (
                 <div className="flex gap-2">
                   <ActionIconButton
@@ -341,6 +373,17 @@ export function UsersPage() {
                       tone={item.is_active ? "danger" : "default"}
                       onClick={() => {
                         void toggleActive(item);
+                      }}
+                    />
+                  ) : null}
+                  {canDeleteUsers ? (
+                    <ActionIconButton
+                      label={t("rbac.users.actions.delete")}
+                      icon={Trash2}
+                      tone="danger"
+                      disabled={Boolean(deletingUserId === item.id || user?.id === String(item.id))}
+                      onClick={() => {
+                        void removeUser(item);
                       }}
                     />
                   ) : null}

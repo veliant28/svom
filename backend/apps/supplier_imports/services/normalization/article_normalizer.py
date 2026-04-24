@@ -14,6 +14,9 @@ class ArticleNormalizationResult:
 
 
 class ArticleNormalizerService:
+    def __init__(self) -> None:
+        self._rules_cache: dict[str, list[ArticleNormalizationRule]] = {}
+
     def normalize(self, *, article: str, source: ImportSource | None = None) -> ArticleNormalizationResult:
         original = (article or "").strip()
         current = original
@@ -55,6 +58,11 @@ class ArticleNormalizerService:
         )
 
     def _get_rules(self, *, source: ImportSource | None) -> list[ArticleNormalizationRule]:
+        cache_key = str(source.id) if source is not None else "__global__"
+        cached = self._rules_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
         queryset = ArticleNormalizationRule.objects.filter(is_active=True).select_related("source")
         if source is not None:
             queryset = queryset.filter(source__in=[source, None])
@@ -64,6 +72,7 @@ class ArticleNormalizerService:
         rules = list(queryset)
         if source is None:
             rules.sort(key=lambda item: (-item.priority, item.name.lower()))
+            self._rules_cache[cache_key] = rules
             return rules
 
         source_id = str(source.id)
@@ -73,4 +82,5 @@ class ArticleNormalizerService:
             return (scope, -item.priority, item.name.lower())
 
         rules.sort(key=rank)
+        self._rules_cache[cache_key] = rules
         return rules

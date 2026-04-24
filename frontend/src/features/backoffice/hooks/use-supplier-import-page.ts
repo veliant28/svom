@@ -89,7 +89,6 @@ export function useSupplierImportPage() {
     tokenReady,
     activeCode: scope.activeCode,
     requestPayload: filters.requestPayload,
-    format: filters.format,
     feedback,
     t,
     tErrors,

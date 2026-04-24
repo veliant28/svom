@@ -19,6 +19,9 @@ class BrandNormalizationResult:
 
 
 class BrandAliasResolverService:
+    def __init__(self) -> None:
+        self._alias_cache: dict[tuple[str, str, str], SupplierBrandAlias | None] = {}
+
     def resolve(
         self,
         *,
@@ -81,6 +84,14 @@ class BrandAliasResolverService:
         source: ImportSource | None,
         supplier: Supplier | None,
     ) -> SupplierBrandAlias | None:
+        cache_key = (
+            normalized_alias,
+            str(source.id) if source is not None else "",
+            str(supplier.id) if supplier is not None else "",
+        )
+        if cache_key in self._alias_cache:
+            return self._alias_cache[cache_key]
+
         queryset = SupplierBrandAlias.objects.filter(is_active=True, normalized_alias=normalized_alias)
         if source is not None:
             queryset = queryset.filter(
@@ -95,6 +106,7 @@ class BrandAliasResolverService:
 
         aliases = list(queryset.select_related("canonical_brand", "supplier", "source"))
         if not aliases:
+            self._alias_cache[cache_key] = None
             return None
 
         if source is not None:
@@ -114,4 +126,6 @@ class BrandAliasResolverService:
             return scope, -item.priority
 
         aliases.sort(key=rank)
-        return aliases[0]
+        chosen = aliases[0]
+        self._alias_cache[cache_key] = chosen
+        return chosen

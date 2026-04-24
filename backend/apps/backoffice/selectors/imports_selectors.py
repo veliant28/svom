@@ -99,6 +99,7 @@ def apply_import_raw_offer_filters(queryset: QuerySet[SupplierRawOffer], *, para
     source_code = params.get("source", "").strip()
     supplier_code = params.get("supplier", "").strip()
     run_id = params.get("run_id", "").strip()
+    latest_only = params.get("latest_only", "true").strip().lower() not in {"0", "false", "no"}
     validity = params.get("is_valid", "").strip().lower()
     match_status = params.get("match_status", "").strip()
     match_reason = params.get("match_reason", "").strip()
@@ -116,6 +117,16 @@ def apply_import_raw_offer_filters(queryset: QuerySet[SupplierRawOffer], *, para
         queryset = queryset.filter(supplier__code=supplier_code)
     if run_id:
         queryset = queryset.filter(run_id=run_id)
+    elif latest_only and (source_code or supplier_code):
+        runs = ImportRun.objects.all()
+        if source_code:
+            runs = runs.filter(source__code=source_code)
+        if supplier_code:
+            runs = runs.filter(source__supplier__code=supplier_code)
+        latest_run = runs.order_by("-created_at").values_list("id", flat=True).first()
+        if latest_run is None:
+            return queryset.none()
+        queryset = queryset.filter(run_id=latest_run)
     if match_status:
         queryset = queryset.filter(match_status=match_status)
     if match_reason:

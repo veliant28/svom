@@ -1,0 +1,107 @@
+Для получения доступа к API, необходимо выполнить вход в свою учетную запись, выполнив POST запрос на URI
+
+https://order24-api.utr.ua/api/login_check
+Передав в теле запроса логин, пароль и подпись браузера, например:
+
+{
+  "email":"test@mail.ua",
+  "password":"mysecretpassword",
+  "browser_fingerprint": "some-unique-key-here"
+}
+Где:
+email – логин пользователя
+password – пароль пользователя
+browser_fingerprint – подпись браузера, для API используйте любую уникальную строку длиной не более 128 символов. Мы, например, используем хеш md5();
+
+
+Обязательно отправляйте заголовок Content-Type:
+
+Content-Type: application/json
+
+На отправленный запрос будет получен ответ в json-формате:
+
+{
+    "token": "eyJ0eXAiOiJKV1Q...",
+    "expires_at": "2020-01-17 15:04:50",
+    "refresh_token": "2a3bb84af9a3..."
+}
+из которого необходимо извлечь поля
+token – токен, потребуется для авторизации при выполнении последующих запросов, имеет срок действия
+refresh_token – токен, который потребуется потребуется для последующего обновления поля token, после окончания его срока действия
+
+
+Например, для поиска детали по артикулу OC90, посылаем следующий запрос:
+
+https://order24-api.utr.ua/api/search/oc90 
+добавив при этом в headers
+
+Authorization: Bearer eyJ0eXAiOiJKV1Q...
+Где в Authorization после ключевого слова Bearer нужно передать полученный выше token.
+
+
+
+Ошибка аутентификации
+В случае указания неправильного имени пользователя или пароля, вы получите следующий ответ
+
+Status Code: 412 Precondition Failed
+Body:
+{
+    "code": 412,
+    "message": "Некорректные данные пользователя. Проверьте корректность введенных данных и повторите попытку."
+}
+В случае отсутствия Authorization или отсутствия ключевого слова Bearer, вы получите следующий ответ
+
+Status Code: 401 Unauthorized
+Body:
+{
+    "code": 401,
+    "message": "JWT Token not found"
+}
+В случае указания неправильного Authorization вы получите следующий ответ
+
+Status Code: 401 Unauthorized
+Body:
+{
+    "code": 401,
+    "message": "Invalid JWT Token"
+}
+Обновление просроченного token-а
+В случае окончания срока действия token-а, вы получите следующий ответ
+
+Status Code: 401 Unauthorized
+Body:
+{
+    "code": 401,
+    "message": "Expired JWT Token"
+}
+Для обновления значения просроченного token-а необходимо выполнить запрос POST запрос на URI
+
+https://order24-api.utr.ua/api/token/refresh
+передав в теле запроса значение refresh_token, полученный ранее:
+
+{
+    "refresh_token": "2a3bb84af9a3...",
+    "browser_fingerprint": "some-unique-key-here"
+}
+Где:
+refresh_token – рефреш токен полученный ранее.
+browser_fingerprint – подпись браузера, строка должна быть аналогичная той которая использовалась при авторизации.
+
+На отправленный запрос будет получен ответ в json-формате:
+
+{
+    "token": "eyJ0eXAiOiJKV1Q...",
+    "expires_at": "2020-01-17 15:14:50",
+    "refresh_token": "2a3bb84af9a3..."
+}
+При отсутствии или указании неверного значения refresh_token, вы получите следующий ответ
+
+Status Code: 401 Unauthorized
+Body:
+{
+    "code": 401,
+    "message": {
+        "status": "401 Unauthorized",
+        "message": "Bad credentials, please verify that your login/password are correctly set"
+    }
+}

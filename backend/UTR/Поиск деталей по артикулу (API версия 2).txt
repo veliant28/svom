@@ -1,0 +1,107 @@
+Для пошуку деталі по артикулу потрібно відправляти наступний запит:
+
+GET https://order24-api.utr.ua/api/search/{oem}
+де: oem - артикул деталі
+додавши при цьому в headers
+
+Authorization: Bearer eyJ0eXAiOiJKV1Q...
+
+Де в Authorization після ключевого слова Bearer потрібно передати отриманий при проходженні аутентифікації token
+
+В результаті ви отримаєте одну із наступних відповідей:
+
+Товар не знайдено
+Status Code: 200 OK
+Body:
+{
+    "details": []
+}
+Помилка аутентифікації
+Можливі відповіді API при помилці аутентифікації наведено в розділі Помилка аутентифікації
+
+Товар знайдено
+Status Code: 200 OK
+Body:
+{
+    "details": [
+        {
+            "multiplicity": 1,
+            "id": 45623,
+            "brand": {
+                "name": "WIX FILTERS",
+                "externalCode": "00116"
+            },
+            "displayBrand": "WIX FILTERS",
+            "article": "WL7129-12",
+            "title": "Фільтр оливи (уп. 12шт) Aveo/Lanos (OP 570T)",
+            "quantity": 1,
+            "yourPrice": {
+                "amount": 88.03,
+                "currency": {
+                    "code": "UAH"
+                }
+            },
+            "yourPriceUAH": {
+                "amount": 88.03,
+                "currency": {
+                    "code": "UAH"
+                }
+            },
+            "yourPriceEUR": {
+                "amount": 2.17,
+                "currency": {
+                    "code": "EUR"
+                }
+            },
+            "remains": [
+                {
+                    "storage": {
+                        "id": 6,
+                        "name": "Миколаїв",
+                        "originalName": "Николаев"
+                    },
+                    "remain": "4"
+                },
+                {
+                    "storage": {
+                        "id": 15,
+                        "name": "Kиїв Правий",
+                        "originalName": "Kиев Правый"
+                    },
+                    "remain": "> 10"
+                }
+            ],
+            "detailScanCodes": [
+                {
+                    "scanCode": "258362823682"
+                }
+            ],
+            "category": {
+                "name": "Фильтр масляный"
+            },
+            "modifier": 0,
+            "isDisabled": false,
+            "hasPartnerRemain": false
+        }
+    ]
+}
+Для отримання додаткової інформациії про картинки та характеристики деталей в результатах пошуку, необхідно передати в параметри заприту "info=1":
+
+GET https://order24-api.utr.ua/api/search/{oem}?info=1
+В результаті в элемент масива "details" додатково буде передана властивість "images"
+
+{
+  "details": [
+   {
+    ... 
+    "images": [
+		{
+			"imagePath": "/images/base/brand/mahle_original/OC90/OC90-pic01.jpg",
+			"fullImagePath": "https://order24-api.utr.ua/images/base/brand/mahle_original/OC90/OC90-pic01.jpg",
+			"thumbnail": "https://order24-api.utr.ua/media/cache/thumbnail/images/base/brand/mahle_original/OC90/OC90-pic01.jpg"
+		}
+	],
+   ...
+   }
+  ],
+}

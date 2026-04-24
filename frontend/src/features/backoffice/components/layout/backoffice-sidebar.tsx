@@ -47,6 +47,7 @@ type SidebarNavItem = {
     | "promoBanners"
     | "users"
     | "groups"
+    | "heroBlock"
     | "importSchedules";
   requiredCapability: BackofficeCapabilityCode | BackofficeCapabilityCode[];
 };
@@ -72,6 +73,12 @@ const NAV_ITEMS: SidebarNavItem[] = [
   { href: "/backoffice/categories", icon: Shapes, key: "categories", requiredCapability: BACKOFFICE_CAPABILITIES.categoriesView },
   { href: "/backoffice/users", icon: UsersRound, key: "users", requiredCapability: BACKOFFICE_CAPABILITIES.usersView },
   { href: "/backoffice/groups", icon: ShieldCheck, key: "groups", requiredCapability: BACKOFFICE_CAPABILITIES.groupsView },
+  {
+    href: "/backoffice/hero-block",
+    icon: ImageUp,
+    key: "heroBlock",
+    requiredCapability: BACKOFFICE_CAPABILITIES.promoBannersManage,
+  },
   {
     href: "/backoffice/promo-banners",
     icon: ImageUp,

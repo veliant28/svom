@@ -13,7 +13,7 @@ from .import_errors_list_view import ImportRowErrorListAPIView
 from .import_raw_offers_list_view import SupplierRawOfferListAPIView
 from .import_runs_detail_view import ImportRunDetailAPIView
 from .import_runs_list_view import ImportRunListAPIView
-from .import_schedules_views import ImportScheduleListAPIView, ImportScheduleUpdateAPIView
+from .import_schedules_views import ImportScheduleListAPIView, ImportScheduleRunAPIView, ImportScheduleUpdateAPIView
 from .import_sources_list_view import ImportSourceListAPIView
 from .import_quality_views import (
     ImportQualityCompareAPIView,
@@ -143,6 +143,11 @@ from .support_views import (
 )
 from .summary_view import BackofficeSummaryAPIView
 from .staff_activity_view import BackofficeStaffActivityAPIView
+from .hero_block_views import (
+    BackofficeHeroBlockSettingsAPIView,
+    BackofficeHeroSlideListCreateAPIView,
+    BackofficeHeroSlideRetrieveUpdateDestroyAPIView,
+)
 from .promo_banner_views import (
     BackofficePromoBannerListCreateAPIView,
     BackofficePromoBannerRetrieveUpdateDestroyAPIView,
@@ -178,6 +183,7 @@ __all__ = [
     "BackofficeStaffActivityAPIView",
     "ImportSourceListAPIView",
     "ImportScheduleListAPIView",
+    "ImportScheduleRunAPIView",
     "ImportScheduleUpdateAPIView",
     "ImportRunListAPIView",
     "ImportRunDetailAPIView",
@@ -301,6 +307,9 @@ __all__ = [
     "BackofficeSupportThreadReadAPIView",
     "BackofficeSupportThreadStatusAPIView",
     "BackofficeSupportWallboardAPIView",
+    "BackofficeHeroBlockSettingsAPIView",
+    "BackofficeHeroSlideListCreateAPIView",
+    "BackofficeHeroSlideRetrieveUpdateDestroyAPIView",
     "BackofficePromoBannerSettingsAPIView",
     "BackofficePromoBannerListCreateAPIView",
     "BackofficePromoBannerRetrieveUpdateDestroyAPIView",

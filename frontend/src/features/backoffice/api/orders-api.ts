@@ -49,25 +49,6 @@ export async function confirmBackofficeOrder(
   return postJson<{ order_id: string; status: string }, typeof payload>("/backoffice/orders/actions/confirm/", payload, undefined, { token });
 }
 
-export async function markBackofficeOrderAwaitingProcurement(
-  token: string,
-  payload: { order_id: string; operator_note?: string },
-): Promise<{ order_id: string; status: string }> {
-  return postJson<{ order_id: string; status: string }, typeof payload>(
-    "/backoffice/orders/actions/awaiting-procurement/",
-    payload,
-    undefined,
-    { token },
-  );
-}
-
-export async function reserveBackofficeOrder(
-  token: string,
-  payload: { order_id: string; item_ids?: string[]; operator_note?: string },
-): Promise<{ order_id: string; status: string }> {
-  return postJson<{ order_id: string; status: string }, typeof payload>("/backoffice/orders/actions/reserve/", payload, undefined, { token });
-}
-
 export async function markBackofficeOrderReadyToShip(
   token: string,
   payload: { order_id: string; operator_note?: string },
@@ -113,18 +94,6 @@ export async function bulkConfirmBackofficeOrders(
   payload: { order_ids: string[]; operator_note?: string },
 ): Promise<{ updated: number }> {
   return postJson<{ updated: number }, typeof payload>("/backoffice/orders/actions/bulk-confirm/", payload, undefined, { token });
-}
-
-export async function bulkMarkAwaitingProcurementBackofficeOrders(
-  token: string,
-  payload: { order_ids: string[]; operator_note?: string },
-): Promise<{ updated: number }> {
-  return postJson<{ updated: number }, typeof payload>(
-    "/backoffice/orders/actions/bulk-awaiting-procurement/",
-    payload,
-    undefined,
-    { token },
-  );
 }
 
 export async function deleteBackofficeOrder(

@@ -4,15 +4,15 @@ import { Fragment, useCallback, useMemo, useState } from "react";
 import { Check, Power, RotateCcw } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { getBackofficeImportSchedules, updateBackofficeImportSchedule } from "@/features/backoffice/api/backoffice-api";
+import { getBackofficeImportSchedules, runBackofficeImportSchedule, updateBackofficeImportSchedule } from "@/features/backoffice/api/backoffice-api";
 import { BackofficeTable } from "@/features/backoffice/components/table/backoffice-table";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { ActionIconButton } from "@/features/backoffice/components/widgets/action-icon-button";
-import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
 import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
 import { useBackofficeQuery } from "@/features/backoffice/hooks/use-backoffice-query";
+import { formatBackofficeDate } from "@/features/backoffice/lib/supplier-workspace";
 import type { BackofficeImportSource } from "@/features/backoffice/types/backoffice";
 import { useTheme } from "@/shared/components/theme/theme-provider";
 
@@ -27,8 +27,6 @@ type ScenarioStep = {
   order: number;
 };
 
-const SCENARIO_TONES: BackofficeStatusChipTone[] = ["blue", "success", "orange", "red", "info", "warning"];
-
 function splitScenarioSteps(raw: string): ScenarioStep[] {
   return raw
     .split(/\s*->\s*/g)
@@ -37,12 +35,19 @@ function splitScenarioSteps(raw: string): ScenarioStep[] {
     .map((label, index) => ({ label, order: index }));
 }
 
-function chunkScenarioRows(steps: ScenarioStep[], rowSize = 3): ScenarioStep[][] {
-  const rows: ScenarioStep[][] = [];
-  for (let index = 0; index < steps.length; index += rowSize) {
-    rows.push(steps.slice(index, index + rowSize));
+function normalizeScenarioStepLabel(raw: string): string {
+  return raw
+    .replace(/[_\s]+/g, " ")
+    .trim();
+}
+
+function splitScenarioStepParts(label: string): string[] {
+  const normalized = normalizeScenarioStepLabel(label);
+  const parts = normalized.split("/").map((part) => part.trim()).filter(Boolean);
+  if (!parts.length) {
+    return [];
   }
-  return rows;
+  return parts.map((part, index) => (index < parts.length - 1 ? `${part}/` : part));
 }
 
 function buildDraft(item: BackofficeImportSource): ScheduleDraft {
@@ -61,6 +66,7 @@ export function ImportSchedulesPage() {
   const monoActiveText = isDark ? "#111111" : "#ffffff";
   const [q, setQ] = useState("");
   const [drafts, setDrafts] = useState<Record<string, ScheduleDraft>>({});
+  const [runningBySource, setRunningBySource] = useState<Record<string, boolean>>({});
   const { showApiError, showSuccess } = useBackofficeFeedback();
 
   const queryFn = useCallback(
@@ -78,12 +84,13 @@ export function ImportSchedulesPage() {
     [drafts],
   );
 
-  async function saveScheduleTime(item: BackofficeImportSource, runTime: string) {
+  async function saveScheduleTime(item: BackofficeImportSource, runTime: string, options?: { silent?: boolean }) {
     if (!token) return;
+    const silent = options?.silent === true;
     const sourceLabel = item.code.toUpperCase();
     const normalizedRunTime = runTime || "01:00";
     if (normalizedRunTime === (item.schedule_run_time || "01:00")) {
-      return;
+      return true;
     }
 
     try {
@@ -95,10 +102,46 @@ export function ImportSchedulesPage() {
         auto_reprice_after_import: item.auto_reprice_after_import,
         auto_reindex_after_import: item.auto_reindex_after_import,
       });
-      showSuccess(t("importSchedules.messages.scheduleSaved", { source: sourceLabel }));
+      if (!silent) {
+        showSuccess(t("importSchedules.messages.scheduleSaved", { source: sourceLabel }));
+      }
       await refetch();
+      return true;
     } catch (error: unknown) {
       showApiError(error, t("importSchedules.messages.actionFailed"));
+      return false;
+    }
+  }
+
+  async function runScenario(item: BackofficeImportSource) {
+    if (!token) return;
+    if (runningBySource[item.id]) return;
+    const sourceLabel = item.code.toUpperCase();
+    const draft = getDraft(item);
+    const scheduleSaved = await saveScheduleTime(item, draft.schedule_run_time, { silent: true });
+    if (!scheduleSaved) {
+      return;
+    }
+
+    try {
+      setRunningBySource((prev) => ({ ...prev, [item.id]: true }));
+      const response = await runBackofficeImportSchedule(token, item.id, { dispatch_async: false });
+      if (response.mode === "async") {
+        showSuccess(t("importSchedules.messages.runQueued", { source: sourceLabel }));
+      } else {
+        const result = (response.result ?? {}) as { status?: string; detail?: string };
+        const status = String(result.status || "").toLowerCase();
+        if (status && !["success", "partial"].includes(status)) {
+          showApiError(result.detail || t("importSchedules.messages.runFailed"), t("importSchedules.messages.runFailed"));
+          return;
+        }
+        showSuccess(t("importSchedules.messages.runCompleted", { source: sourceLabel }));
+      }
+      await refetch();
+    } catch (error: unknown) {
+      showApiError(error, t("importSchedules.messages.runFailed"));
+    } finally {
+      setRunningBySource((prev) => ({ ...prev, [item.id]: false }));
     }
   }
 
@@ -124,9 +167,9 @@ export function ImportSchedulesPage() {
   }
 
   const scenarioLabel = t("importSchedules.table.pipelineScenario");
-  const scenarioRows = useMemo(() => chunkScenarioRows(splitScenarioSteps(scenarioLabel), 3), [scenarioLabel]);
+  const scenarioSteps = useMemo(() => splitScenarioSteps(scenarioLabel), [scenarioLabel]);
   const scenarioView = useMemo(() => {
-    if (!scenarioRows.length) {
+    if (!scenarioSteps.length) {
       return (
         <p className="text-xs" style={{ color: "var(--muted)" }}>
           {scenarioLabel}
@@ -135,45 +178,34 @@ export function ImportSchedulesPage() {
     }
 
     return (
-      <div className="grid gap-1.5">
-        {scenarioRows.map((row, rowIndex) => {
-          const isReverseRow = rowIndex % 2 === 1;
-          const displaySteps = isReverseRow ? [...row].reverse() : row;
-          const flowArrow = isReverseRow ? "←" : "→";
-          const turnArrow = isReverseRow ? "↙" : "↘";
-          return (
-            <div key={`scenario-row-${rowIndex}`} className="grid gap-1">
-              <div className={`flex flex-wrap items-center gap-1 ${isReverseRow ? "justify-end" : "justify-start"}`}>
-                {displaySteps.map((step, stepIndex) => (
-                  <Fragment key={`${rowIndex}-${step.order}`}>
-                    <BackofficeStatusChip tone={SCENARIO_TONES[step.order % SCENARIO_TONES.length]}>{step.label}</BackofficeStatusChip>
-                    {stepIndex < displaySteps.length - 1 ? (
-                      <BackofficeStatusChip
-                        tone={SCENARIO_TONES[(step.order + 1) % SCENARIO_TONES.length]}
-                        className="min-w-[1.85rem] justify-center px-1.5 py-0.5 leading-none"
-                      >
-                        {flowArrow}
-                      </BackofficeStatusChip>
-                    ) : null}
-                  </Fragment>
-                ))}
-              </div>
-              {rowIndex < scenarioRows.length - 1 ? (
-                <div className={`flex ${isReverseRow ? "justify-start" : "justify-end"}`}>
-                  <BackofficeStatusChip
-                    tone={SCENARIO_TONES[(displaySteps[displaySteps.length - 1]?.order ?? rowIndex) % SCENARIO_TONES.length]}
-                    className="min-w-[1.85rem] justify-center px-1.5 py-0.5 leading-none"
-                  >
-                    {turnArrow}
-                  </BackofficeStatusChip>
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
+      <div
+        className="inline-flex max-w-full flex-wrap items-center gap-px rounded-[6px] border p-px"
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+      >
+        {scenarioSteps.map((step, stepIndex) => (
+          <Fragment key={`scenario-step-${step.order}`}>
+            {splitScenarioStepParts(step.label).map((part) => (
+              <span
+                key={`scenario-step-${step.order}-${part}`}
+                className="inline-flex h-6 items-center justify-center rounded-[3px] border px-1.5 text-[11px] font-semibold leading-none whitespace-nowrap"
+                style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", color: "var(--text)" }}
+              >
+                {part}
+              </span>
+            ))}
+            {stepIndex < scenarioSteps.length - 1 ? (
+              <span
+                className="inline-flex h-6 min-w-6 items-center justify-center rounded-[3px] border px-1 text-[11px] font-semibold leading-none"
+                style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", color: "var(--muted)" }}
+              >
+                →
+              </span>
+            ) : null}
+          </Fragment>
+        ))}
       </div>
     );
-  }, [scenarioLabel, scenarioRows]);
+  }, [scenarioLabel, scenarioSteps]);
 
   return (
     <section>
@@ -257,7 +289,7 @@ export function ImportSchedulesPage() {
             {
               key: "nextRun",
               label: t("importSchedules.table.columns.nextRun"),
-              render: (item) => item.next_run || "-",
+              render: (item) => formatBackofficeDate(item.next_run),
             },
             {
               key: "lastResult",
@@ -269,9 +301,17 @@ export function ImportSchedulesPage() {
                     <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
                       {t("importSchedules.table.lastRunSummary", {
                         rows: item.last_run.processed_rows,
-                        errors: item.last_run.errors_count,
+                        skipped: item.last_run.offers_skipped,
                       })}
                     </p>
+                    <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
+                      {t("importSchedules.table.lastRunStarted", { value: formatBackofficeDate(item.last_run.created_at) })}
+                    </p>
+                    {item.last_run.finished_at ? (
+                      <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
+                        {t("importSchedules.table.lastRunFinished", { value: formatBackofficeDate(item.last_run.finished_at) })}
+                      </p>
+                    ) : null}
                   </div>
                 ) : (
                   "-"
@@ -303,10 +343,11 @@ export function ImportSchedulesPage() {
                     <Power className="h-4 w-4" />
                   </button>
                   <ActionIconButton
-                    label={t("importSchedules.actions.saveSchedule")}
+                    label={runningBySource[item.id] ? t("importSchedules.actions.runningNow") : t("importSchedules.actions.runNow")}
                     icon={Check}
+                    disabled={Boolean(runningBySource[item.id])}
                     onClick={() => {
-                      void saveScheduleTime(item, getDraft(item).schedule_run_time);
+                      void runScenario(item);
                     }}
                   />
                   <ActionIconButton

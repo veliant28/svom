@@ -21,6 +21,20 @@
   --status-info-bg: #eff6ff;
   --status-info-border: #bfdbfe;
   --status-info-text: #1e3a8a;
+  --hero-underlay:
+    radial-gradient(circle at top left, rgba(249, 115, 22, 0.16), transparent 38%),
+    linear-gradient(120deg, rgba(236, 244, 250, 0.9), rgba(213, 226, 238, 0.52) 40%, rgba(170, 190, 207, 0.92));
+  --hero-overlay: linear-gradient(90deg, rgba(17, 24, 39, 0.42) 0%, rgba(17, 24, 39, 0.12) 42%, rgba(59, 74, 94, 0.4) 100%);
+  --hero-glow:
+    radial-gradient(circle at 78% 50%, rgba(255, 255, 255, 0.18), transparent 22%),
+    radial-gradient(circle at 74% 52%, rgba(14, 165, 233, 0.14), transparent 34%);
+  --hero-fallback-overlay: linear-gradient(90deg, rgba(15, 23, 42, 0.46) 0%, rgba(15, 23, 42, 0.14) 44%, rgba(51, 65, 85, 0.38) 100%);
+  --hero-fallback-glow:
+    radial-gradient(circle at 78% 50%, rgba(255, 255, 255, 0.16), transparent 22%),
+    radial-gradient(circle at 74% 52%, rgba(59, 130, 246, 0.1), transparent 34%);
+  --hero-fallback-text: #f8fafc;
+  --hero-slide-text: #f8fafc;
+  --hero-subtitle-text: rgba(226, 232, 240, 0.88);
 }
 
 .theme-dark {
@@ -43,6 +57,20 @@
   --status-info-bg: #132740;
   --status-info-border: #2b4f7f;
   --status-info-text: #bcd7ff;
+  --hero-underlay:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 42%),
+    linear-gradient(120deg, rgba(6, 12, 20, 0.82), rgba(9, 15, 25, 0.36) 40%, rgba(2, 8, 18, 0.88));
+  --hero-overlay: linear-gradient(90deg, rgba(3, 7, 18, 0.82) 0%, rgba(3, 7, 18, 0.44) 45%, rgba(3, 7, 18, 0.78) 100%);
+  --hero-glow:
+    radial-gradient(circle at 78% 50%, rgba(255, 255, 255, 0.16), transparent 24%),
+    radial-gradient(circle at 74% 52%, rgba(56, 189, 248, 0.2), transparent 36%);
+  --hero-fallback-overlay: linear-gradient(90deg, rgba(3, 7, 18, 0.78) 0%, rgba(3, 7, 18, 0.36) 45%, rgba(3, 7, 18, 0.74) 100%);
+  --hero-fallback-glow:
+    radial-gradient(circle at 78% 50%, rgba(255, 255, 255, 0.14), transparent 24%),
+    radial-gradient(circle at 74% 52%, rgba(56, 189, 248, 0.18), transparent 36%);
+  --hero-fallback-text: #f8fafc;
+  --hero-slide-text: #f8fafc;
+  --hero-subtitle-text: rgba(226, 232, 240, 0.9);
 }
 
 * {
@@ -438,6 +466,186 @@ label:has(select:disabled) {
   animation-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1);
   transform-origin: left center;
   backface-visibility: hidden;
+}
+
+@keyframes heroCopyEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroPerformanceHueShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes heroFallbackShift {
+  0% {
+    background-position: 0% 18%, 100% 82%, 0% 50%;
+  }
+  50% {
+    background-position: 100% 82%, 0% 18%, 100% 50%;
+  }
+  100% {
+    background-position: 0% 18%, 100% 82%, 0% 50%;
+  }
+}
+
+@keyframes heroCrossfade {
+  from {
+    transform: scale(1.06);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes heroPanLeft {
+  from {
+    transform: scale(1.05) translateX(2.5%);
+  }
+  to {
+    transform: scale(1.01) translateX(-1.5%);
+  }
+}
+
+@keyframes heroLiftUp {
+  from {
+    transform: scale(1.04) translateY(2.5%);
+  }
+  to {
+    transform: scale(1) translateY(-1.5%);
+  }
+}
+
+@keyframes heroCinematicZoom {
+  from {
+    transform: scale(1.12);
+    filter: saturate(0.95);
+  }
+  to {
+    transform: scale(1.01);
+    filter: saturate(1.02);
+  }
+}
+
+@keyframes heroRevealRight {
+  from {
+    opacity: 0.6;
+    transform: scale(1.03) translateX(4%);
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.hero-slide-image-layer {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  transform-origin: center center;
+  will-change: transform, opacity, clip-path, filter;
+}
+
+.hero-slide-image-active {
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.hero-slide-effect-crossfade.hero-slide-image-active {
+  animation-name: heroCrossfade;
+}
+
+.hero-slide-effect-pan_left.hero-slide-image-active {
+  animation-name: heroPanLeft;
+}
+
+.hero-slide-effect-lift_up.hero-slide-image-active {
+  animation-name: heroLiftUp;
+}
+
+.hero-slide-effect-cinematic_zoom.hero-slide-image-active {
+  animation-name: heroCinematicZoom;
+}
+
+.hero-slide-effect-reveal_right.hero-slide-image-active {
+  animation-name: heroRevealRight;
+}
+
+.hero-copy-enter {
+  animation-name: heroCopyEnter;
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hero-performance-tagline {
+  width: fit-content;
+  margin: 0;
+  font-family: "Segoe UI", "Helvetica Neue", "Arial Narrow", Arial, sans-serif;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  background-image: linear-gradient(90deg, #f8fafc 0%, #f59e0b 24%, #fb7185 48%, #38bdf8 74%, #f8fafc 100%);
+  background-size: 220% 220%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 20px rgba(248, 250, 252, 0.18);
+  animation: heroPerformanceHueShift 8s linear infinite;
+}
+
+.hero-fallback-surface {
+  background-image:
+    radial-gradient(135% 180% at 0% 0%, rgba(249, 115, 22, 0.2) 0%, rgba(249, 115, 22, 0) 58%),
+    radial-gradient(135% 180% at 100% 100%, rgba(14, 165, 233, 0.14) 0%, rgba(14, 165, 233, 0) 58%),
+    linear-gradient(120deg, #d8e3ee 0%, #b8c9d9 48%, #8ea4ba 100%);
+  background-size: 220% 220%, 220% 220%, 180% 180%;
+  animation: heroFallbackShift 13s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.theme-dark .hero-fallback-surface {
+  background-image:
+    radial-gradient(135% 180% at 0% 0%, rgba(245, 158, 11, 0.22) 0%, rgba(245, 158, 11, 0) 58%),
+    radial-gradient(135% 180% at 100% 100%, rgba(56, 189, 248, 0.22) 0%, rgba(56, 189, 248, 0) 58%),
+    linear-gradient(120deg, #0f1723 0%, #233445 48%, #314a60 100%);
+}
+
+.hero-theme-underlay {
+  background-image: var(--hero-underlay);
+}
+
+.hero-theme-overlay {
+  background-image: var(--hero-overlay);
+}
+
+.hero-theme-glow {
+  background-image: var(--hero-glow);
+}
+
+.hero-fallback-overlay {
+  background-image: var(--hero-fallback-overlay);
+}
+
+.hero-fallback-glow {
+  background-image: var(--hero-fallback-glow);
 }
 
 @keyframes footerHeroShift {

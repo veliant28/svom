@@ -63,10 +63,10 @@
         "lead_time_too_long": "Занадто довгий термін постачання",
         "unmapped": "Не зіставлено",
         "unmatched": "Не зіставлено",
-        "auto_matched": "Зіставлено автоматично",
+        "auto_matched": "Автоматично",
         "manual_match_required": "Потрібне ручне зіставлення",
         "manually_matched": "Зіставлено вручну",
-        "auto_mapped": "Зіставлено автоматично",
+        "auto_mapped": "Автоматично",
         "manual_mapped": "Зіставлено вручну",
         "needs_review": "Перевірка",
         "ignored": "Ігноровано",
@@ -186,12 +186,17 @@
           "enableSchedule": "Увімкнути розклад",
           "disableSchedule": "Вимкнути розклад",
           "saveSchedule": "Зберегти розклад",
+          "runNow": "Запустити сценарій",
+          "runningNow": "Виконується...",
           "saveDefaults": "Зберегти типові значення"
         },
         "messages": {
           "scheduleUpdated": "Стан розкладу оновлено для {source}.",
           "scheduleSaved": "Налаштування розкладу збережено для {source}.",
           "scheduleDefaultsApplied": "Типові налаштування застосовано для {source}.",
+          "runQueued": "Сценарій для {source} поставлено в чергу.",
+          "runCompleted": "Сценарій для {source} виконано.",
+          "runFailed": "Не вдалося запустити сценарій імпорту.",
           "actionFailed": "Не вдалося оновити розклад імпорту."
         },
         "table": {
@@ -205,7 +210,9 @@
             "actions": "Дії"
           },
           "pipelineScenario": "Перевірка/оновлення токена -> Запит/Завантаження/Імпорт прайсу -> Публікація -> Націнка -> Переіндексація",
-          "lastRunSummary": "рядків: {rows} / помилок: {errors}"
+          "lastRunSummary": "рядків: {rows} / пропущено: {skipped}",
+          "lastRunStarted": "Старт: {value}",
+          "lastRunFinished": "Фініш: {value}"
         }
       },
       "brandAliases": {
@@ -864,7 +871,8 @@
           "paymentInvoiceRemoved": "Інвойс Monobank інвалідовано.",
           "paymentFiscalChecksLoaded": "Фіскальні чеки завантажено: {count}.",
           "monobankActionFailed": "Не вдалося виконати дію Monobank.",
-          "monobankActionNotAvailable": "Дія доступна лише для оплати Monobank."
+          "monobankActionNotAvailable": "Дія доступна лише для оплати Monobank.",
+          "statusChangeNoPermission": "Немає прав на зміну статусу у зворотному напрямку."
         },
         "statusDescriptions": {
           "new": "Нове замовлення. Можна підтвердити та передати в обробку.",
@@ -1486,6 +1494,65 @@
           "saved": "Налаштування футера збережено."
         }
       },
+      "heroBlock": {
+        "title": "Hero-Блок",
+        "subtitle": "Керування головним hero-блоком: до 10 слайдів зі спорткарами, локалізовані тексти та плавна анімація зміни.",
+        "actions": {
+          "refresh": "Оновити",
+          "saving": "Зберігаємо...",
+          "saveSettings": "Зберегти",
+          "creating": "Створюємо...",
+          "createSlide": "Додати слайд",
+          "saveSlide": "Зберегти",
+          "deleteSlide": "Видалити"
+        },
+        "settings": {
+          "title": "Налаштування показу",
+          "limitLabel": "Слайдів: {count} / {max}",
+          "effect": "Тип анімації",
+          "intervalSeconds": "Час показу (сек)",
+          "speedMs": "Швидкість зміни (мс)",
+          "maxActive": "Активних слайдів",
+          "autoplay": "Автозміна"
+        },
+        "effects": {
+          "crossfade": "Плавний кросфейд",
+          "panLeft": "Кінопанорама ліворуч",
+          "liftUp": "Плавний підйом",
+          "cinematicZoom": "Кінематографічний зум",
+          "revealRight": "Проявлення справа"
+        },
+        "create": {
+          "title": "Новий hero-слайд",
+          "subtitle": "Додайте локалізовані тексти та два зображення. Оновлення з'являються на сайті одразу.",
+          "desktopImageHint": "Desktop: рекомендовано 1920x880 px, JPG/PNG/WebP.",
+          "mobileImageHint": "Mobile: рекомендовано 900x1200 px, JPG/PNG/WebP."
+        },
+        "fields": {
+          "title": "Заголовок",
+          "subtitle": "Підзаголовок",
+          "link": "Посилання CTA (https://... або /catalog)",
+          "sortOrder": "Порядок",
+          "active": "Увімкнено",
+          "desktopImage": "Desktop-зображення",
+          "mobileImage": "Mobile-зображення",
+          "localizationHint": "Достатньо заповнити одну мову, але краще вказати всі три для коректного storefront i18n."
+        },
+        "states": {
+          "empty": "Hero-слайди ще не додані."
+        },
+        "messages": {
+          "loadFailed": "Не вдалося завантажити hero-блок.",
+          "settingsSaved": "Налаштування hero-блоку збережено.",
+          "settingsSaveFailed": "Не вдалося зберегти налаштування hero-блоку.",
+          "slideCreated": "Hero-слайд додано.",
+          "slideCreateFailed": "Не вдалося додати hero-слайд.",
+          "slideSaved": "Hero-слайд збережено.",
+          "slideSaveFailed": "Не вдалося зберегти hero-слайд.",
+          "slideDeleted": "Hero-слайд видалено.",
+          "slideDeleteFailed": "Не вдалося видалити hero-слайд."
+        }
+      },
       "promoBanners": {
         "title": "Рекламний банер",
         "subtitle": "Керування банерами на сайті: до 10 штук, розклад показу та анімація зміни.",
@@ -1743,7 +1810,7 @@
           },
           "columns": {
             "email": "Користувач",
-            "role": "Системна роль",
+            "role": "Сист. Роль",
             "groups": "Групи",
             "status": "Статус",
             "actions": "Дії"
@@ -1757,7 +1824,8 @@
             "hidePassword": "Сховати пароль",
             "save": "Зберегти",
             "saving": "Зберігаємо...",
-            "reset": "Скинути"
+            "reset": "Скинути",
+            "delete": "Видалити"
           },
           "fields": {
             "email": "Email",
@@ -1785,7 +1853,10 @@
             "activated": "Користувача активовано.",
             "deactivated": "Користувача деактивовано.",
             "saveFailed": "Не вдалося зберегти користувача.",
-            "toggleFailed": "Не вдалося змінити статус користувача."
+            "toggleFailed": "Не вдалося змінити статус користувача.",
+            "deleted": "Користувача видалено.",
+            "deleteFailed": "Не вдалося видалити користувача.",
+            "deleteConfirm": "Видалити користувача {email}?"
           }
         },
         "groups": {

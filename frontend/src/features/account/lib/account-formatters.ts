@@ -1,3 +1,7 @@
+import type { LucideIcon } from "lucide-react";
+import { CheckCircle2, CircleHelp, Clock3, LoaderCircle, PackageCheck, Truck, XCircle } from "lucide-react";
+import type { BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+
 export function formatMoney(value: string, currency: string, locale: string): string {
   const amount = Number(value);
   if (Number.isNaN(amount)) {
@@ -38,16 +42,48 @@ export function resolveOrderStatusTone(status: string): "success" | "warning" | 
   return "neutral";
 }
 
-export function resolveOrderStatusChipTone(status: string): "success" | "warning" | "error" | "info" {
-  const tone = resolveOrderStatusTone(status);
-  if (tone === "success") {
+export function resolveOrderStatusChipTone(status: string): BackofficeStatusChipTone {
+  const normalized = String(status || "").trim().toLowerCase();
+  if (normalized === "new") {
+    return "info";
+  }
+  if (normalized === "processing") {
+    return "blue";
+  }
+  if (normalized === "ready_for_shipment" || normalized === "ready_to_ship") {
+    return "orange";
+  }
+  if (normalized === "shipped") {
+    return "brown";
+  }
+  if (normalized === "completed") {
     return "success";
   }
-  if (tone === "warning") {
-    return "warning";
-  }
-  if (tone === "danger") {
+  if (normalized === "cancelled") {
     return "error";
   }
   return "info";
+}
+
+export function resolveOrderStatusChipIcon(status: string): LucideIcon {
+  const normalized = String(status || "").trim().toLowerCase();
+  if (normalized === "new") {
+    return Clock3;
+  }
+  if (normalized === "processing") {
+    return LoaderCircle;
+  }
+  if (normalized === "ready_for_shipment" || normalized === "ready_to_ship") {
+    return PackageCheck;
+  }
+  if (normalized === "shipped") {
+    return Truck;
+  }
+  if (normalized === "completed") {
+    return CheckCircle2;
+  }
+  if (normalized === "cancelled") {
+    return XCircle;
+  }
+  return CircleHelp;
 }

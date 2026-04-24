@@ -6,7 +6,8 @@ from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -43,6 +44,12 @@ def _parse_bool_param(value: str) -> bool | None:
     if normalized in {"0", "false", "no", "off"}:
         return False
     return None
+
+
+def _is_administrator_user(user) -> bool:
+    if getattr(user, "is_superuser", False):
+        return True
+    return get_user_system_role(user) == "administrator"
 
 
 class BackofficeRbacMetaAPIView(APIView):
@@ -107,7 +114,7 @@ class BackofficeUserListCreateAPIView(ListCreateAPIView):
         return Response(payload, status=status.HTTP_201_CREATED)
 
 
-class BackofficeUserRetrieveUpdateAPIView(RetrieveUpdateAPIView):
+class BackofficeUserRetrieveUpdateAPIView(RetrieveUpdateDestroyAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, IsStaffOrSuperuser]
     lookup_field = "id"
@@ -127,6 +134,17 @@ class BackofficeUserRetrieveUpdateAPIView(RetrieveUpdateAPIView):
         serializer.save()
         payload = BackofficeUserDetailSerializer(instance).data
         return Response(payload, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        if not _is_administrator_user(request.user):
+            raise PermissionDenied("Only administrator can delete users.")
+
+        instance = self.get_object()
+        if instance.id == request.user.id:
+            return Response({"detail": "You cannot delete your own user."}, status=status.HTTP_400_BAD_REQUEST)
+
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class BackofficeUserActivateAPIView(APIView):
