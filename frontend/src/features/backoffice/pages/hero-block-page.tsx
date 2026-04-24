@@ -431,9 +431,11 @@ export function HeroBlockPage() {
               onChange={setNewSlide}
             />
 
-            <div className="grid gap-3 lg:grid-cols-2">
+            <div className="grid gap-3 lg:grid-cols-3">
               <TextField
                 label={t("heroBlock.fields.link")}
+                wrapperClassName="grid-rows-[1.1rem_2.25rem]"
+                labelClassName="whitespace-nowrap overflow-hidden text-ellipsis"
                 value={newSlide.cta_url}
                 onChange={(next) => {
                   setNewSlide((prev) => ({ ...prev, cta_url: next }));
@@ -441,6 +443,8 @@ export function HeroBlockPage() {
               />
               <FileField
                 label={t("heroBlock.fields.desktopImage")}
+                wrapperClassName="grid-rows-[1.1rem_2.25rem_auto]"
+                labelClassName="whitespace-nowrap overflow-hidden text-ellipsis"
                 selectedFile={newSlide.desktop_image_file}
                 onChange={(file) => {
                   setNewSlide((prev) => ({ ...prev, desktop_image_file: file }));
@@ -448,6 +452,8 @@ export function HeroBlockPage() {
               />
               <FileField
                 label={t("heroBlock.fields.mobileImage")}
+                wrapperClassName="grid-rows-[1.1rem_2.25rem_auto]"
+                labelClassName="whitespace-nowrap overflow-hidden text-ellipsis"
                 selectedFile={newSlide.mobile_image_file}
                 onChange={(file) => {
                   setNewSlide((prev) => ({ ...prev, mobile_image_file: file }));
@@ -456,6 +462,16 @@ export function HeroBlockPage() {
             </div>
 
             <div className="flex flex-wrap items-end gap-3">
+              <ToggleField
+                label={t("heroBlock.fields.active")}
+                widthClassName="w-[118px]"
+                value={newSlide.is_active}
+                onToggle={() => {
+                  setNewSlide((prev) => ({ ...prev, is_active: !prev.is_active }));
+                }}
+                yesLabel={t("yes")}
+                noLabel={t("no")}
+              />
               <NumberStepper
                 label={t("heroBlock.fields.sortOrder")}
                 value={newSlide.sort_order}
@@ -465,19 +481,10 @@ export function HeroBlockPage() {
                   setNewSlide((prev) => ({ ...prev, sort_order: next }));
                 }}
               />
-              <ToggleField
-                label={t("heroBlock.fields.active")}
-                value={newSlide.is_active}
-                onToggle={() => {
-                  setNewSlide((prev) => ({ ...prev, is_active: !prev.is_active }));
-                }}
-                yesLabel={t("yes")}
-                noLabel={t("no")}
-              />
               <button
                 type="button"
                 disabled={!canCreate || isCreating || !newSlide.desktop_image_file || !newSlide.mobile_image_file || !hasTitle(newSlide)}
-                className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+                className="ml-auto inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
                 style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
                 onClick={() => {
                   void createSlide();
@@ -516,25 +523,20 @@ export function HeroBlockPage() {
                     }}
                   />
 
-                  <div className="grid gap-3 lg:grid-cols-2">
+                  <div className="grid gap-3 lg:grid-cols-3">
                     <TextField
                       label={t("heroBlock.fields.link")}
+                      wrapperClassName="grid-rows-[1.1rem_2.25rem]"
+                      labelClassName="whitespace-nowrap overflow-hidden text-ellipsis"
                       value={draft.cta_url}
                       onChange={(next) => {
                         setDrafts((prev) => ({ ...prev, [item.id]: { ...getDraft(item), cta_url: next } }));
                       }}
                     />
-                    <NumberStepper
-                      label={t("heroBlock.fields.sortOrder")}
-                      value={draft.sort_order}
-                      min={1}
-                      max={999}
-                      onChange={(next) => {
-                        setDrafts((prev) => ({ ...prev, [item.id]: { ...getDraft(item), sort_order: next } }));
-                      }}
-                    />
                     <FileField
                       label={t("heroBlock.fields.desktopImage")}
+                      wrapperClassName="grid-rows-[1.1rem_2.25rem_auto]"
+                      labelClassName="whitespace-nowrap overflow-hidden text-ellipsis"
                       currentImageUrl={item.desktop_image_url}
                       selectedFile={draft.desktop_image_file}
                       onChange={(file) => {
@@ -543,6 +545,8 @@ export function HeroBlockPage() {
                     />
                     <FileField
                       label={t("heroBlock.fields.mobileImage")}
+                      wrapperClassName="grid-rows-[1.1rem_2.25rem_auto]"
+                      labelClassName="whitespace-nowrap overflow-hidden text-ellipsis"
                       currentImageUrl={item.mobile_image_url}
                       selectedFile={draft.mobile_image_file}
                       onChange={(file) => {
@@ -554,6 +558,7 @@ export function HeroBlockPage() {
                   <div className="flex flex-wrap items-end gap-3">
                     <ToggleField
                       label={t("heroBlock.fields.active")}
+                      widthClassName="w-[118px]"
                       value={draft.is_active}
                       onToggle={() => {
                         setDrafts((prev) => ({ ...prev, [item.id]: { ...getDraft(item), is_active: !getDraft(item).is_active } }));
@@ -561,34 +566,40 @@ export function HeroBlockPage() {
                       yesLabel={t("yes")}
                       noLabel={t("no")}
                     />
+                    <NumberStepper
+                      label={t("heroBlock.fields.sortOrder")}
+                      value={draft.sort_order}
+                      min={1}
+                      max={999}
+                      onChange={(next) => {
+                        setDrafts((prev) => ({ ...prev, [item.id]: { ...getDraft(item), sort_order: next } }));
+                      }}
+                    />
+                    <button
+                      type="button"
+                      disabled={isBusy}
+                      className="ml-auto inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+                      style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                      onClick={() => {
+                        void saveSlide(item);
+                      }}
+                    >
+                      <Save size={14} />
+                      {t("heroBlock.actions.saveSlide")}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isBusy}
+                      className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+                      style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                      onClick={() => {
+                        void removeSlide(item);
+                      }}
+                    >
+                      <Trash2 size={14} />
+                      {t("heroBlock.actions.deleteSlide")}
+                    </button>
                   </div>
-                </div>
-
-                <div className="mt-3 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    disabled={isBusy}
-                    className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-xs font-semibold disabled:opacity-60"
-                    style={{ borderColor: "#2563eb", backgroundColor: "#2563eb", color: "#fff" }}
-                    onClick={() => {
-                      void saveSlide(item);
-                    }}
-                  >
-                    <Save size={14} />
-                    {t("heroBlock.actions.saveSlide")}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isBusy}
-                    className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-xs font-semibold disabled:opacity-60"
-                    style={{ borderColor: "#dc2626", backgroundColor: "#dc2626", color: "#fff" }}
-                    onClick={() => {
-                      void removeSlide(item);
-                    }}
-                  >
-                    <Trash2 size={14} />
-                    {t("heroBlock.actions.deleteSlide")}
-                  </button>
                 </div>
               </article>
             );
@@ -637,10 +648,22 @@ function LocaleFields({
   );
 }
 
-function TextField({ label, value, onChange }: { label: string; value: string; onChange: (next: string) => void }) {
+function TextField({
+  label,
+  labelClassName,
+  wrapperClassName,
+  value,
+  onChange,
+}: {
+  label: string;
+  labelClassName?: string;
+  wrapperClassName?: string;
+  value: string;
+  onChange: (next: string) => void;
+}) {
   return (
-    <label className="min-w-0 grid gap-1">
-      <span className="text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>
+    <label className={`min-w-0 grid gap-1 ${wrapperClassName ?? ""}`.trim()}>
+      <span className={`text-xs font-semibold uppercase leading-tight tracking-[0.08em] ${labelClassName ?? ""}`.trim()} style={{ color: "var(--muted)" }}>
         {label}
       </span>
       <input
@@ -676,11 +699,15 @@ function TextAreaField({ label, value, onChange }: { label: string; value: strin
 
 function FileField({
   label,
+  labelClassName,
+  wrapperClassName,
   onChange,
   currentImageUrl,
   selectedFile,
 }: {
   label: string;
+  labelClassName?: string;
+  wrapperClassName?: string;
   onChange: (file: File | null) => void;
   currentImageUrl?: string;
   selectedFile?: File | null;
@@ -690,14 +717,14 @@ function FileField({
   const selectedFileName = (selectedFile?.name || "").trim();
 
   return (
-    <label className="min-w-0 grid gap-1">
-      <span className="text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>
+    <label className={`min-w-0 grid gap-1 ${wrapperClassName ?? ""}`.trim()}>
+      <span className={`text-xs font-semibold uppercase leading-tight tracking-[0.08em] ${labelClassName ?? ""}`.trim()} style={{ color: "var(--muted)" }}>
         {label}
       </span>
       <input
         type="file"
         accept="image/*"
-        className="h-9 rounded-md border px-2 text-xs leading-9 file:mr-2 file:h-7 file:rounded file:border-0 file:px-2 file:text-xs file:leading-7"
+        className="h-9 w-full min-w-0 overflow-hidden rounded-md border px-2 text-xs leading-9 file:mr-2 file:h-7 file:max-w-full file:rounded file:border-0 file:px-2 file:text-xs file:leading-7"
         style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)", lineHeight: "2.25rem" }}
         onChange={(event) => {
           onChange(event.target.files?.[0] || null);
@@ -730,19 +757,23 @@ function getFileNameFromUrl(value: string): string {
 
 function ToggleField({
   label,
+  widthClassName,
   value,
   onToggle,
   yesLabel,
   noLabel,
 }: {
   label: string;
+  widthClassName?: string;
   value: boolean;
   onToggle: () => void;
   yesLabel: string;
   noLabel: string;
 }) {
+  const wrapperClassName = widthClassName ? `grid gap-1 ${widthClassName}` : "grid min-w-[140px] gap-1";
+
   return (
-    <label className="grid min-w-[140px] gap-1">
+    <label className={wrapperClassName}>
       <span className="text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>
         {label}
       </span>

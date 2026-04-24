@@ -573,15 +573,25 @@ export function PromoBannersPage() {
                         setDrafts((prev) => ({ ...prev, [item.id]: { ...getDraft(item), starts_at: next } }));
                       }}
                     />
-                    <NumberStepper
-                      label={t("promoBanners.fields.sortOrder")}
-                      value={draft.sort_order}
-                      min={1}
-                      max={999}
-                      onChange={(next) => {
-                        setDrafts((prev) => ({ ...prev, [item.id]: { ...getDraft(item), sort_order: next } }));
-                      }}
-                    />
+                    <label className="grid w-[118px] gap-1 justify-self-end">
+                      <span className="text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>
+                        {t("promoBanners.fields.active")}
+                      </span>
+                      <button
+                        type="button"
+                        className="h-9 rounded-md border px-3 text-sm font-semibold"
+                        style={{
+                          borderColor: draft.is_active ? "var(--text)" : "var(--border)",
+                          backgroundColor: draft.is_active ? "var(--text)" : "var(--surface)",
+                          color: draft.is_active ? "var(--surface)" : "var(--text)",
+                        }}
+                        onClick={() => {
+                          setDrafts((prev) => ({ ...prev, [item.id]: { ...getDraft(item), is_active: !getDraft(item).is_active } }));
+                        }}
+                      >
+                        {draft.is_active ? t("yes") : t("no")}
+                      </button>
+                    </label>
                     <TextField
                       label={t("promoBanners.fields.description")}
                       value={draft.description}
@@ -613,25 +623,15 @@ export function PromoBannersPage() {
                         setDrafts((prev) => ({ ...prev, [item.id]: { ...getDraft(item), ends_at: next } }));
                       }}
                     />
-                    <label className="grid w-[118px] gap-1">
-                      <span className="text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>
-                        {t("promoBanners.fields.active")}
-                      </span>
-                      <button
-                        type="button"
-                        className="h-9 rounded-md border px-3 text-sm font-semibold"
-                        style={{
-                          borderColor: draft.is_active ? "var(--text)" : "var(--border)",
-                          backgroundColor: draft.is_active ? "var(--text)" : "var(--surface)",
-                          color: draft.is_active ? "var(--surface)" : "var(--text)",
-                        }}
-                        onClick={() => {
-                          setDrafts((prev) => ({ ...prev, [item.id]: { ...getDraft(item), is_active: !getDraft(item).is_active } }));
-                        }}
-                      >
-                        {draft.is_active ? t("yes") : t("no")}
-                      </button>
-                    </label>
+                    <NumberStepper
+                      label={t("promoBanners.fields.sortOrder")}
+                      value={draft.sort_order}
+                      min={1}
+                      max={999}
+                      onChange={(next) => {
+                        setDrafts((prev) => ({ ...prev, [item.id]: { ...getDraft(item), sort_order: next } }));
+                      }}
+                    />
                   </div>
                 </div>
 

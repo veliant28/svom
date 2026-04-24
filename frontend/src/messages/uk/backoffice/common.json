@@ -1600,7 +1600,7 @@
           "saving": "Зберігаємо...",
           "saveSettings": "Зберегти",
           "creating": "Створюємо...",
-          "createSlide": "Додати слайд",
+          "createSlide": "Додати",
           "saveSlide": "Зберегти",
           "deleteSlide": "Видалити"
         },
@@ -1629,7 +1629,7 @@
         "fields": {
           "title": "Заголовок",
           "subtitle": "Підзаголовок",
-          "link": "Посилання CTA (https://... або /catalog)",
+          "link": "(https://... або /catalog)",
           "sortOrder": "Порядок",
           "active": "Увімкнено",
           "desktopImage": "Desktop-зображення",
