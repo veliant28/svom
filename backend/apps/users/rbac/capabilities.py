@@ -139,6 +139,18 @@ BACKOFFICE_CAPABILITIES: tuple[BackofficeCapabilityDefinition, ...] = (
         description="Read and manage catalog categories in backoffice.",
     ),
     BackofficeCapabilityDefinition(
+        code="seo.view",
+        permission_codename="bo_cap_seo_view",
+        title="SEO view",
+        description="Read SEO dashboard and SEO/Google settings.",
+    ),
+    BackofficeCapabilityDefinition(
+        code="seo.manage",
+        permission_codename="bo_cap_seo_manage",
+        title="SEO manage",
+        description="Manage SEO settings, templates, overrides and Google integration.",
+    ),
+    BackofficeCapabilityDefinition(
         code="autocatalog.view",
         permission_codename="bo_cap_autocatalog_view",
         title="Autocatalog view",

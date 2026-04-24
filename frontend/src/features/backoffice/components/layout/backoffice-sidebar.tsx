@@ -20,6 +20,7 @@ import {
   Headset,
   Settings2,
   ImageUp,
+  Globe2,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -42,6 +43,7 @@ type SidebarNavItem = {
     | "vchasnoKasa"
     | "brands"
     | "categories"
+    | "seo"
     | "autocatalog"
     | "orders"
     | "novaPoshtaSenders"
@@ -74,6 +76,7 @@ const NAV_ITEMS: SidebarNavItem[] = [
   { href: "/backoffice/vchasno-kasa", icon: BadgeDollarSign, key: "vchasnoKasa", requiredCapability: BACKOFFICE_CAPABILITIES.vchasnoKasaManage },
   { href: "/backoffice/brands", icon: Tags, key: "brands", requiredCapability: BACKOFFICE_CAPABILITIES.brandsView },
   { href: "/backoffice/categories", icon: Shapes, key: "categories", requiredCapability: BACKOFFICE_CAPABILITIES.categoriesView },
+  { href: "/backoffice/seo", icon: Globe2, key: "seo", requiredCapability: BACKOFFICE_CAPABILITIES.seoView },
   { href: "/backoffice/users", icon: UsersRound, key: "users", requiredCapability: BACKOFFICE_CAPABILITIES.usersView },
   { href: "/backoffice/groups", icon: ShieldCheck, key: "groups", requiredCapability: BACKOFFICE_CAPABILITIES.groupsView },
   {

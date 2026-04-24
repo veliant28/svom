@@ -24,6 +24,8 @@ export const BACKOFFICE_CAPABILITIES = {
   schedulesView: "schedules.view",
   brandsView: "brands.view",
   categoriesView: "categories.view",
+  seoView: "seo.view",
+  seoManage: "seo.manage",
   autocatalogView: "autocatalog.view",
   paymentsView: "payments.view",
   vchasnoKasaManage: "vchasno_kasa.manage",

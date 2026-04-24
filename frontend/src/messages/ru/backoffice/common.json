@@ -1462,6 +1462,168 @@
           "rroRequired": "Укажите фискальный номер РРО/ПРРО."
         }
       },
+      "seo": {
+        "title": "SEO и Google",
+        "subtitle": "Управление мета-данными, индексированием, sitemap и Google-интеграциями.",
+        "switcherAria": "Выбор рабочего пространства SEO",
+        "switcher": {
+          "seo": "SEO",
+          "google": "Google"
+        },
+        "actions": {
+          "refresh": "Обновить",
+          "save": "Сохранить",
+          "saving": "Сохраняем...",
+          "create": "Создать",
+          "delete": "Удалить",
+          "rebuildSitemap": "Перегенерировать sitemap"
+        },
+        "summary": {
+          "seoEnabled": "SEO",
+          "sitemap": "Sitemap",
+          "robots": "Robots",
+          "templates": "Шаблоны",
+          "overrides": "Overrides",
+          "missingMeta": "Проблемы meta",
+          "googleEnabled": "Google",
+          "ga4": "GA4",
+          "gtm": "GTM",
+          "searchConsole": "Search Console",
+          "ecommerceEvents": "E-commerce events"
+        },
+        "status": {
+          "configured": "Настроено",
+          "notConfigured": "Не настроено",
+          "enabled": "Включено",
+          "disabled": "Выключено"
+        },
+        "sections": {
+          "globalSettings": "Глобальные SEO настройки",
+          "globalSettingsHint": "Default title/description/OG и robots на уровне всего сайта.",
+          "sitemap": "Sitemap",
+          "sitemapHint": "Управление публикацией sitemap для сущностей каталога.",
+          "robots": "robots.txt",
+          "robotsHint": "Редактор robots.txt с предпросмотром итогового содержимого.",
+          "templates": "Шаблоны meta",
+          "templatesHint": "Шаблоны для product/category/brand/page с плейсхолдерами.",
+          "overrides": "Ручные overrides",
+          "overridesHint": "Точечные мета-настройки по path и locale."
+        },
+        "fields": {
+          "enabled": "Включено",
+          "canonicalBaseUrl": "Canonical base URL",
+          "defaultRobotsDirective": "Robots directive по умолчанию",
+          "defaultMetaTitle": "Meta title по умолчанию",
+          "defaultMetaDescription": "Meta description по умолчанию",
+          "defaultOgTitle": "OG title по умолчанию",
+          "defaultOgDescription": "OG description по умолчанию",
+          "entityType": "Тип сущности",
+          "locale": "Locale",
+          "active": "Активно",
+          "titleTemplate": "Title template",
+          "descriptionTemplate": "Description template",
+          "h1Template": "H1 template",
+          "ogTitleTemplate": "OG title template",
+          "ogDescriptionTemplate": "OG description template",
+          "path": "Path",
+          "metaTitle": "Meta title",
+          "metaDescription": "Meta description",
+          "h1": "H1",
+          "canonicalUrl": "Canonical URL",
+          "robotsDirective": "Robots directive",
+          "robotsTxt": "robots.txt",
+          "ogTitle": "OG title",
+          "ogDescription": "OG description",
+          "ogImageUrl": "OG image URL",
+          "preview": "Предпросмотр",
+          "sitemapEnabled": "Включить sitemap",
+          "productSitemapEnabled": "Товары",
+          "categorySitemapEnabled": "Категории",
+          "brandSitemapEnabled": "Бренды",
+          "consentModeEnabled": "Consent mode",
+          "ecommerceEventsEnabled": "Включить e-commerce events",
+          "debugMode": "Debug mode",
+          "anonymizeIp": "Anonymize IP",
+          "ga4MeasurementId": "GA4 Measurement ID",
+          "gtmContainerId": "GTM Container ID",
+          "searchConsoleVerificationToken": "Search Console verification token",
+          "googleSiteVerificationMeta": "google-site-verification meta content"
+        },
+        "placeholders": {
+          "canonicalBaseUrl": "https://svom.com.ua",
+          "robotsDirective": "index,follow"
+        },
+        "entities": {
+          "product": "Товары",
+          "category": "Категории",
+          "brand": "Бренды",
+          "page": "Страницы",
+          "override": "Overrides",
+          "template": "Templates"
+        },
+        "charts": {
+          "healthTitle": "SEO здоровье каталога",
+          "ok": "OK",
+          "missingTitle": "Нет title",
+          "missingDescription": "Нет description"
+        },
+        "sitemap": {
+          "lastRebuilt": "Последняя перегенерация: {datetime}"
+        },
+        "google": {
+          "settingsTitle": "Google Analytics / GA4 и GTM",
+          "settingsHint": "Безопасные идентификаторы интеграций, без произвольных script-tag.",
+          "verificationTitle": "Search Console verification",
+          "verificationHint": "Токен/мета-контент для meta name=\"google-site-verification\".",
+          "eventsTitle": "E-commerce events",
+          "eventsHint": "Локальные переключатели событий трекинга.",
+          "chartTitle": "Состояние Google-событий",
+          "chartSubtitle": "Диаграмма построена по локальной конфигурации интеграции.",
+          "externalMetricsHint": "Google API метрики еще не подключены, показаны только локальные статусы.",
+          "events": "Events",
+          "enabledEvents": "Включенные",
+          "disabledEvents": "Выключенные",
+          "eventLabels": {
+            "view_item": "Просмотр товара",
+            "add_to_cart": "Добавление в корзину",
+            "begin_checkout": "Начало оформления",
+            "purchase": "Покупка",
+            "refund": "Возврат",
+            "search": "Поиск",
+            "view_item_list": "Просмотр списка товаров"
+          },
+          "eventDescriptions": {
+            "view_item": "Событие просмотра карточки товара.",
+            "add_to_cart": "Событие добавления товара в корзину.",
+            "begin_checkout": "Событие начала оформления заказа.",
+            "purchase": "Событие успешной оплаты/покупки заказа.",
+            "refund": "Событие возврата заказа.",
+            "search": "Событие поиска по каталогу.",
+            "view_item_list": "Событие просмотра категории или списка товаров."
+          }
+        },
+        "states": {
+          "metaChecksUnavailable": "Проверка missing meta недоступна: в текущей модели каталога нет отдельных meta-полей.",
+          "chartEmpty": "Данные для графика отсутствуют.",
+          "emptyTemplates": "Шаблоны еще не добавлены.",
+          "emptyOverrides": "Overrides еще не добавлены."
+        },
+        "messages": {
+          "loadFailed": "Не удалось загрузить SEO-раздел.",
+          "settingsSaved": "SEO-настройки сохранены.",
+          "googleSettingsSaved": "Google-настройки сохранены.",
+          "templateCreated": "Шаблон создан.",
+          "templateUpdated": "Шаблон обновлен.",
+          "templateDeleted": "Шаблон удален.",
+          "overrideCreated": "Override создан.",
+          "overrideUpdated": "Override обновлен.",
+          "overrideDeleted": "Override удален.",
+          "sitemapRebuilt": "Sitemap перегенерирован.",
+          "actionFailed": "Не удалось выполнить действие.",
+          "invalidGa4Id": "Некорректный GA4 ID. Ожидается формат G-XXXXXXXX.",
+          "invalidGtmId": "Некорректный GTM ID. Ожидается формат GTM-XXXXXXX."
+        }
+      },
       "payments": {
         "title": "Оплата",
         "subtitle": "Операционные настройки Monobank, проверка соединения и курсы валют.",

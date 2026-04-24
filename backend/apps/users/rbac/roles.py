@@ -60,6 +60,8 @@ SYSTEM_ROLE_DEFINITIONS: dict[str, BackofficeSystemRoleDefinition] = {
             "suppliers.view",
             "imports.view",
             "autocatalog.view",
+            "seo.view",
+            "seo.manage",
             "promo_banners.manage",
             "vchasno_kasa.manage",
             "loyalty.issue",

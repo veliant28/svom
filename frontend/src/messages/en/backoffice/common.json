@@ -1462,6 +1462,168 @@
           "rroRequired": "Enter the fiscal RRO/PRRO number."
         }
       },
+      "seo": {
+        "title": "SEO and Google",
+        "subtitle": "Manage meta data, indexing, sitemap, and Google integrations.",
+        "switcherAria": "SEO workspace selector",
+        "switcher": {
+          "seo": "SEO",
+          "google": "Google"
+        },
+        "actions": {
+          "refresh": "Refresh",
+          "save": "Save",
+          "saving": "Saving...",
+          "create": "Create",
+          "delete": "Delete",
+          "rebuildSitemap": "Rebuild sitemap"
+        },
+        "summary": {
+          "seoEnabled": "SEO",
+          "sitemap": "Sitemap",
+          "robots": "Robots",
+          "templates": "Templates",
+          "overrides": "Overrides",
+          "missingMeta": "Missing meta",
+          "googleEnabled": "Google",
+          "ga4": "GA4",
+          "gtm": "GTM",
+          "searchConsole": "Search Console",
+          "ecommerceEvents": "E-commerce events"
+        },
+        "status": {
+          "configured": "Configured",
+          "notConfigured": "Not configured",
+          "enabled": "Enabled",
+          "disabled": "Disabled"
+        },
+        "sections": {
+          "globalSettings": "Global SEO settings",
+          "globalSettingsHint": "Site-wide default title/description/OG and robots settings.",
+          "sitemap": "Sitemap",
+          "sitemapHint": "Control sitemap publishing for catalog entities.",
+          "robots": "robots.txt",
+          "robotsHint": "robots.txt editor with final preview output.",
+          "templates": "Meta templates",
+          "templatesHint": "Templates for product/category/brand/page with placeholders.",
+          "overrides": "Manual overrides",
+          "overridesHint": "Targeted meta settings by path and locale."
+        },
+        "fields": {
+          "enabled": "Enabled",
+          "canonicalBaseUrl": "Canonical base URL",
+          "defaultRobotsDirective": "Default robots directive",
+          "defaultMetaTitle": "Default meta title",
+          "defaultMetaDescription": "Default meta description",
+          "defaultOgTitle": "Default OG title",
+          "defaultOgDescription": "Default OG description",
+          "entityType": "Entity type",
+          "locale": "Locale",
+          "active": "Active",
+          "titleTemplate": "Title template",
+          "descriptionTemplate": "Description template",
+          "h1Template": "H1 template",
+          "ogTitleTemplate": "OG title template",
+          "ogDescriptionTemplate": "OG description template",
+          "path": "Path",
+          "metaTitle": "Meta title",
+          "metaDescription": "Meta description",
+          "h1": "H1",
+          "canonicalUrl": "Canonical URL",
+          "robotsDirective": "Robots directive",
+          "robotsTxt": "robots.txt",
+          "ogTitle": "OG title",
+          "ogDescription": "OG description",
+          "ogImageUrl": "OG image URL",
+          "preview": "Preview",
+          "sitemapEnabled": "Enable sitemap",
+          "productSitemapEnabled": "Products",
+          "categorySitemapEnabled": "Categories",
+          "brandSitemapEnabled": "Brands",
+          "consentModeEnabled": "Consent mode",
+          "ecommerceEventsEnabled": "Enable e-commerce events",
+          "debugMode": "Debug mode",
+          "anonymizeIp": "Anonymize IP",
+          "ga4MeasurementId": "GA4 Measurement ID",
+          "gtmContainerId": "GTM Container ID",
+          "searchConsoleVerificationToken": "Search Console verification token",
+          "googleSiteVerificationMeta": "google-site-verification meta content"
+        },
+        "placeholders": {
+          "canonicalBaseUrl": "https://svom.com.ua",
+          "robotsDirective": "index,follow"
+        },
+        "entities": {
+          "product": "Products",
+          "category": "Categories",
+          "brand": "Brands",
+          "page": "Pages",
+          "override": "Overrides",
+          "template": "Templates"
+        },
+        "charts": {
+          "healthTitle": "Catalog SEO health",
+          "ok": "OK",
+          "missingTitle": "Missing title",
+          "missingDescription": "Missing description"
+        },
+        "sitemap": {
+          "lastRebuilt": "Last rebuild: {datetime}"
+        },
+        "google": {
+          "settingsTitle": "Google Analytics / GA4 and GTM",
+          "settingsHint": "Safe integration IDs only, no arbitrary script tags.",
+          "verificationTitle": "Search Console verification",
+          "verificationHint": "Token/meta content for meta name=\"google-site-verification\".",
+          "eventsTitle": "E-commerce events",
+          "eventsHint": "Local toggles for tracking events.",
+          "chartTitle": "Google events status",
+          "chartSubtitle": "The chart is based on local integration configuration.",
+          "externalMetricsHint": "Google API metrics are not connected yet; only local statuses are shown.",
+          "events": "Events",
+          "enabledEvents": "Enabled",
+          "disabledEvents": "Disabled",
+          "eventLabels": {
+            "view_item": "View item",
+            "add_to_cart": "Add to cart",
+            "begin_checkout": "Begin checkout",
+            "purchase": "Purchase",
+            "refund": "Refund",
+            "search": "Search",
+            "view_item_list": "View item list"
+          },
+          "eventDescriptions": {
+            "view_item": "Product page view event.",
+            "add_to_cart": "Add-to-cart interaction event.",
+            "begin_checkout": "Checkout started event.",
+            "purchase": "Successful order purchase event.",
+            "refund": "Order refund event.",
+            "search": "Catalog search event.",
+            "view_item_list": "Category/listing view event."
+          }
+        },
+        "states": {
+          "metaChecksUnavailable": "Missing-meta checks are unavailable: current catalog models do not expose dedicated meta fields.",
+          "chartEmpty": "No data available for the chart.",
+          "emptyTemplates": "No templates yet.",
+          "emptyOverrides": "No overrides yet."
+        },
+        "messages": {
+          "loadFailed": "Failed to load SEO workspace.",
+          "settingsSaved": "SEO settings saved.",
+          "googleSettingsSaved": "Google settings saved.",
+          "templateCreated": "Template created.",
+          "templateUpdated": "Template updated.",
+          "templateDeleted": "Template deleted.",
+          "overrideCreated": "Override created.",
+          "overrideUpdated": "Override updated.",
+          "overrideDeleted": "Override deleted.",
+          "sitemapRebuilt": "Sitemap rebuilt.",
+          "actionFailed": "Failed to perform action.",
+          "invalidGa4Id": "Invalid GA4 ID. Expected format: G-XXXXXXXX.",
+          "invalidGtmId": "Invalid GTM ID. Expected format: GTM-XXXXXXX."
+        }
+      },
       "payments": {
         "title": "Payments",
         "subtitle": "Monobank operational settings, health checks and currency rates.",

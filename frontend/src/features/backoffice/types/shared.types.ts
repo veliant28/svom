@@ -21,6 +21,8 @@ export type BackofficeCapabilityCode =
   | "schedules.view"
   | "brands.view"
   | "categories.view"
+  | "seo.view"
+  | "seo.manage"
   | "autocatalog.view"
   | "payments.view"
   | "vchasno_kasa.manage"
