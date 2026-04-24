@@ -140,6 +140,17 @@ export type OrderPayment = {
   last_sync_at: string | null;
 };
 
+export type OrderReceipt = {
+  provider: string;
+  available: boolean;
+  status_code: number | null;
+  status_key: string;
+  status_label: string;
+  check_fn: string;
+  can_open: boolean;
+  error_message: string;
+};
+
 export type OrderDeliveryWaybillSeed = {
   delivery_type: "warehouse" | "postomat" | "address";
   recipient_city_ref: string;
@@ -173,6 +184,7 @@ export type Order = {
   delivery_waybill_seed: OrderDeliveryWaybillSeed;
   payment_method: "cash_on_delivery" | "monobank" | "liqpay" | "card_placeholder";
   payment?: OrderPayment | null;
+  receipt: OrderReceipt;
   subtotal: string;
   delivery_fee: string;
   discount_total: string;

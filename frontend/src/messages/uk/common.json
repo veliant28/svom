@@ -124,7 +124,8 @@
       "fallbackSlogan": "Рух без компромісів",
       "fallbackPhrasePrimary": "Нічна видимість",
       "fallbackPhraseSecondary": "Точність на швидкості",
-      "fallbackPhraseTertiary": "Характер у кожній деталі"
+      "fallbackPhraseTertiary": "Характер у кожній деталі",
+      "heroSlideIndicator": "Відкрити слайд {index}"
     },
     "footer": {
       "navigation": "Навігація",

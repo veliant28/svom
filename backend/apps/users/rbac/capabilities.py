@@ -151,6 +151,12 @@ BACKOFFICE_CAPABILITIES: tuple[BackofficeCapabilityDefinition, ...] = (
         description="Read and manage payment provider settings.",
     ),
     BackofficeCapabilityDefinition(
+        code="vchasno_kasa.manage",
+        permission_codename="bo_cap_vchasno_kasa_manage",
+        title="Vchasno Kasa manage",
+        description="Read and manage Vchasno.Kasa integration and receipts.",
+    ),
+    BackofficeCapabilityDefinition(
         code="nova_poshta.settings",
         permission_codename="bo_cap_nova_poshta_settings",
         title="Nova Poshta settings",

@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from apps.commerce.models import Order, OrderItem
 from apps.commerce.services.delivery_snapshot import resolve_delivery_display, resolve_waybill_seed
+from apps.commerce.services.vchasno_kasa import serialize_receipt_summary
 
 from .product_summary_serializer import CommerceProductSummarySerializer
 from .order_payment_serializer import OrderPaymentSerializer
@@ -45,6 +46,7 @@ class OrderSerializer(serializers.ModelSerializer):
     delivery_city_label = serializers.SerializerMethodField()
     delivery_destination_label = serializers.SerializerMethodField()
     delivery_waybill_seed = serializers.SerializerMethodField()
+    receipt = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -63,6 +65,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "delivery_waybill_seed",
             "payment_method",
             "payment",
+            "receipt",
             "subtotal",
             "delivery_fee",
             "discount_total",
@@ -101,3 +104,16 @@ class OrderSerializer(serializers.ModelSerializer):
             delivery_address=obj.delivery_address,
             delivery_snapshot=obj.delivery_snapshot,
         )
+
+    def get_receipt(self, obj: Order) -> dict:
+        summary = serialize_receipt_summary(order=obj)
+        return {
+            "provider": summary["provider"],
+            "available": summary["available"],
+            "status_code": summary["status_code"],
+            "status_key": summary["status_key"],
+            "status_label": summary["status_label"],
+            "check_fn": summary["check_fn"],
+            "can_open": summary["can_open"],
+            "error_message": summary["error_message"],
+        }

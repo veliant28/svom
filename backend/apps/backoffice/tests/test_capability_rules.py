@@ -48,6 +48,10 @@ class BackofficeCapabilityRulesTest(SimpleTestCase):
             ("promo_banners.manage",),
         )
         self.assertEqual(
+            resolve_required_capabilities_for_request("/api/backoffice/vchasno-kasa/settings/", "GET"),
+            ("vchasno_kasa.manage",),
+        )
+        self.assertEqual(
             resolve_required_capabilities_for_request("/api/backoffice/settings/promo-banners/", "GET"),
             ("promo_banners.manage",),
         )

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 
 import type { ActiveVehicleSource } from "@/features/garage/hooks/active-vehicle/active-vehicle-context";
@@ -74,6 +74,7 @@ export function useActiveVehicleStorage({
   setIsManualSelection: BoolSetter;
 }): { hasHydratedFromStorage: MutableRefObject<boolean> } {
   const hasHydratedFromStorage = useRef(false);
+  const [hasCompletedStorageHydration, setHasCompletedStorageHydration] = useState(false);
 
   useEffect(() => {
     const persisted = readPersistedActiveVehicle();
@@ -97,10 +98,11 @@ export function useActiveVehicleStorage({
     }
 
     hasHydratedFromStorage.current = true;
+    setHasCompletedStorageHydration(true);
   }, [setActiveGarageVehicleId, setActiveTemporaryCarModificationId, setActiveVehicleSource, setIsManualSelection]);
 
   useEffect(() => {
-    if (!hasHydratedFromStorage.current) {
+    if (!hasCompletedStorageHydration) {
       return;
     }
 
@@ -116,7 +118,7 @@ export function useActiveVehicleStorage({
       value,
       manual: isManualSelection,
     });
-  }, [activeGarageVehicleId, activeTemporaryCarModificationId, activeVehicleSource, isManualSelection]);
+  }, [activeGarageVehicleId, activeTemporaryCarModificationId, activeVehicleSource, hasCompletedStorageHydration, isManualSelection]);
 
   return { hasHydratedFromStorage };
 }

@@ -6,7 +6,7 @@ from django.db import connection
 from django.db.models import Prefetch, Q, QuerySet
 from django.db.utils import DatabaseError, OperationalError, ProgrammingError
 
-from apps.commerce.models import Order, OrderItem, OrderNovaPoshtaWaybill
+from apps.commerce.models import Order, OrderItem, OrderNovaPoshtaWaybill, OrderReceipt
 from apps.pricing.models import SupplierOffer
 
 
@@ -35,6 +35,17 @@ def get_operational_orders_queryset() -> QuerySet[Order]:
     queryset = Order.objects.select_related("user")
     if _order_payment_table_exists():
         queryset = queryset.select_related("payment")
+    if _order_receipt_table_exists():
+        queryset = queryset.prefetch_related(
+            Prefetch(
+                "receipts",
+                queryset=OrderReceipt.objects.filter(
+                    provider=OrderReceipt.PROVIDER_VCHASNO_KASA,
+                    receipt_type=OrderReceipt.TYPE_SALE,
+                ).order_by("-updated_at", "-created_at"),
+                to_attr="vchasno_receipts",
+            )
+        )
 
     return (
         queryset
@@ -84,5 +95,13 @@ def get_procurement_supplier_offers_queryset() -> QuerySet[SupplierOffer]:
 def _order_payment_table_exists() -> bool:
     try:
         return "commerce_orderpayment" in set(connection.introspection.table_names())
+    except (DatabaseError, OperationalError, ProgrammingError):
+        return False
+
+
+@lru_cache(maxsize=1)
+def _order_receipt_table_exists() -> bool:
+    try:
+        return "commerce_orderreceipt" in set(connection.introspection.table_names())
     except (DatabaseError, OperationalError, ProgrammingError):
         return False

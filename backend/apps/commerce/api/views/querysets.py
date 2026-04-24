@@ -1,7 +1,8 @@
+from django.db import DatabaseError, OperationalError, ProgrammingError, connection
 from django.db.models import Prefetch, QuerySet
 
 from apps.catalog.models import ProductImage
-from apps.commerce.models import Cart, CartItem, Order, OrderItem, WishlistItem
+from apps.commerce.models import Cart, CartItem, Order, OrderItem, OrderReceipt, WishlistItem
 from apps.pricing.models import SupplierOffer
 
 
@@ -55,7 +56,7 @@ def get_cart_queryset(*, user_id) -> QuerySet[Cart]:
 def get_orders_queryset(*, user_id) -> QuerySet[Order]:
     image_prefetches = _product_image_prefetches()
     supplier_offer_prefetch = _supplier_offer_prefetch()
-    return (
+    queryset = (
         Order.objects.filter(user_id=user_id)
         .select_related("payment")
         .prefetch_related(
@@ -68,7 +69,26 @@ def get_orders_queryset(*, user_id) -> QuerySet[Order]:
                         "product__product_price",
                     ).prefetch_related(*image_prefetches, supplier_offer_prefetch)
                 ),
-            )
+            ),
         )
         .order_by("-placed_at")
     )
+    if _order_receipt_table_exists():
+        queryset = queryset.prefetch_related(
+            Prefetch(
+                "receipts",
+                queryset=OrderReceipt.objects.filter(
+                    provider=OrderReceipt.PROVIDER_VCHASNO_KASA,
+                    receipt_type=OrderReceipt.TYPE_SALE,
+                ).order_by("-updated_at", "-created_at"),
+                to_attr="vchasno_receipts",
+            ),
+        )
+    return queryset
+
+
+def _order_receipt_table_exists() -> bool:
+    try:
+        return OrderReceipt._meta.db_table in set(connection.introspection.table_names())
+    except (DatabaseError, OperationalError, ProgrammingError):
+        return False

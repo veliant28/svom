@@ -38,6 +38,19 @@ export type BackofficeOrderPayment = {
   last_sync_at: string | null;
 };
 
+export type BackofficeOrderReceipt = {
+  provider: string;
+  available: boolean;
+  status_code: number | null;
+  status_key: string;
+  status_label: string;
+  check_fn: string;
+  can_issue: boolean;
+  can_open: boolean;
+  can_sync: boolean;
+  error_message: string;
+};
+
 export type BackofficeMonobankPaymentAction = "refresh" | "cancel" | "remove" | "finalize" | "fiscal_checks";
 
 export type BackofficeMonobankFiscalCheck = {
@@ -86,6 +99,7 @@ export type BackofficeOrderOperational = {
   delivery_waybill_seed: BackofficeOrderDeliveryWaybillSeed;
   payment_method: string;
   payment: BackofficeOrderPayment;
+  receipt: BackofficeOrderReceipt;
   subtotal: string;
   delivery_fee: string;
   total: string;

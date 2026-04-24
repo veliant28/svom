@@ -6,9 +6,11 @@ from .nova_poshta_sender_profile import NovaPoshtaSenderProfile
 from .novapay_settings import NovaPaySettings
 from .order import Order
 from .order_payment import OrderPayment
+from .order_receipt import OrderReceipt
 from .monobank_settings import MonobankSettings
 from .order_item import OrderItem
 from .order_nova_poshta_waybill import OrderNovaPoshtaWaybill, OrderNovaPoshtaWaybillEvent
+from .vchasno_kasa_settings import VchasnoKasaSettings
 from .wishlist_item import WishlistItem
 
 __all__ = [
@@ -17,8 +19,10 @@ __all__ = [
     "CartItem",
     "Order",
     "OrderPayment",
+    "OrderReceipt",
     "MonobankSettings",
     "NovaPaySettings",
+    "VchasnoKasaSettings",
     "LiqPaySettings",
     "OrderItem",
     "NovaPoshtaSenderProfile",

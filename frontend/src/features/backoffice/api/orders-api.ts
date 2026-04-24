@@ -66,8 +66,13 @@ export async function markBackofficeOrderShipped(
 export async function markBackofficeOrderCompleted(
   token: string,
   payload: { order_id: string; operator_note?: string },
-): Promise<{ order_id: string; status: string }> {
-  return postJson<{ order_id: string; status: string }, typeof payload>("/backoffice/orders/actions/complete/", payload, undefined, { token });
+): Promise<{ order_id: string; status: string; receipt_notice_code?: string }> {
+  return postJson<{ order_id: string; status: string; receipt_notice_code?: string }, typeof payload>(
+    "/backoffice/orders/actions/complete/",
+    payload,
+    undefined,
+    { token },
+  );
 }
 
 export async function resetBackofficeOrderToNew(

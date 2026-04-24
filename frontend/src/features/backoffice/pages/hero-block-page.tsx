@@ -441,12 +441,14 @@ export function HeroBlockPage() {
               />
               <FileField
                 label={t("heroBlock.fields.desktopImage")}
+                selectedFile={newSlide.desktop_image_file}
                 onChange={(file) => {
                   setNewSlide((prev) => ({ ...prev, desktop_image_file: file }));
                 }}
               />
               <FileField
                 label={t("heroBlock.fields.mobileImage")}
+                selectedFile={newSlide.mobile_image_file}
                 onChange={(file) => {
                   setNewSlide((prev) => ({ ...prev, mobile_image_file: file }));
                 }}
@@ -533,12 +535,16 @@ export function HeroBlockPage() {
                     />
                     <FileField
                       label={t("heroBlock.fields.desktopImage")}
+                      currentImageUrl={item.desktop_image_url}
+                      selectedFile={draft.desktop_image_file}
                       onChange={(file) => {
                         setDrafts((prev) => ({ ...prev, [item.id]: { ...getDraft(item), desktop_image_file: file } }));
                       }}
                     />
                     <FileField
                       label={t("heroBlock.fields.mobileImage")}
+                      currentImageUrl={item.mobile_image_url}
+                      selectedFile={draft.mobile_image_file}
                       onChange={(file) => {
                         setDrafts((prev) => ({ ...prev, [item.id]: { ...getDraft(item), mobile_image_file: file } }));
                       }}
@@ -668,7 +674,21 @@ function TextAreaField({ label, value, onChange }: { label: string; value: strin
   );
 }
 
-function FileField({ label, onChange }: { label: string; onChange: (file: File | null) => void }) {
+function FileField({
+  label,
+  onChange,
+  currentImageUrl,
+  selectedFile,
+}: {
+  label: string;
+  onChange: (file: File | null) => void;
+  currentImageUrl?: string;
+  selectedFile?: File | null;
+}) {
+  const t = useTranslations("backoffice.common");
+  const currentFileName = getFileNameFromUrl(currentImageUrl || "");
+  const selectedFileName = (selectedFile?.name || "").trim();
+
   return (
     <label className="min-w-0 grid gap-1">
       <span className="text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>
@@ -683,8 +703,29 @@ function FileField({ label, onChange }: { label: string; onChange: (file: File |
           onChange(event.target.files?.[0] || null);
         }}
       />
+      {currentFileName ? (
+        <span className="text-xs" style={{ color: "var(--muted)" }}>
+          {t("heroBlock.fields.currentImageSaved", { name: currentFileName })}
+        </span>
+      ) : null}
+      <span className="text-xs" style={{ color: "var(--muted)" }}>
+        {selectedFileName
+          ? t("heroBlock.fields.newFileSelected", { name: selectedFileName })
+          : currentFileName
+            ? t("heroBlock.fields.replaceImageHint")
+            : t("heroBlock.fields.noFileSelected")}
+      </span>
     </label>
   );
+}
+
+function getFileNameFromUrl(value: string): string {
+  const normalized = String(value || "").trim();
+  if (!normalized) {
+    return "";
+  }
+  const pathname = normalized.split("?")[0].split("#")[0];
+  return pathname.split("/").filter(Boolean).pop() || "";
 }
 
 function ToggleField({

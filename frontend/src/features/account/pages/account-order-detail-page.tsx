@@ -13,6 +13,7 @@ import { MonobankFallbackButton } from "@/features/checkout/components/payment/m
 import { MONOBANK_OFFICIAL_WIDGETS_ENABLED } from "@/features/checkout/lib/monobank-widget-flags";
 import type { MonobankWidgetInit } from "@/features/checkout/types/payment";
 import { getOrder } from "@/features/commerce/api/get-order";
+import { getOrderReceiptOpenUrl } from "@/features/commerce/api/get-order-receipt-open-url";
 import type { Order } from "@/features/commerce/types";
 import { Link } from "@/i18n/navigation";
 import { useTheme } from "@/shared/components/theme/theme-provider";
@@ -284,9 +285,10 @@ export function AccountOrderDetailPage({ orderId }: { orderId: string }) {
   const locale = useLocale();
   const { theme } = useTheme();
   const { token, isAuthenticated } = useAuth();
-  const { showApiError } = useStorefrontFeedback();
+  const { showApiError, showError, showWarning } = useStorefrontFeedback();
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [receiptOpening, setReceiptOpening] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -355,6 +357,29 @@ export function AccountOrderDetailPage({ orderId }: { orderId: string }) {
   const paymentLabel = resolvePaymentMethodLabel(order.payment_method, locale);
   const monobankPageUrl = order.payment_method === "monobank" ? (order.payment?.page_url || "").trim() : "";
   const liqpayPageUrl = order.payment_method === "liqpay" ? (order.payment?.page_url || "").trim() : "";
+  const currentOrder = order;
+
+  async function handleOpenReceipt() {
+    if (!token || receiptOpening) {
+      return;
+    }
+    if (!currentOrder.receipt?.can_open) {
+      showWarning(currentOrder.receipt?.available ? t("labels.receiptUnavailable") : t("labels.receiptNotCreated"));
+      return;
+    }
+    setReceiptOpening(true);
+    try {
+      const { url } = await getOrderReceiptOpenUrl(token, currentOrder.id);
+      const opened = window.open(url, "_blank", "noopener,noreferrer");
+      if (!opened) {
+        showError(t("labels.receiptPopupBlocked"));
+      }
+    } catch (error) {
+      showApiError(error, t("labels.receiptOpenFailed"));
+    } finally {
+      setReceiptOpening(false);
+    }
+  }
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-8">
@@ -431,15 +456,31 @@ export function AccountOrderDetailPage({ orderId }: { orderId: string }) {
                     <th className="px-3 py-2 text-left font-medium">{t("table.sku")}</th>
                     <th className="px-3 py-2 text-left font-medium">{t("table.product")}</th>
                     <th className="px-3 py-2 text-right font-medium">{t("table.qty")}</th>
+                    <th className="px-3 py-2 text-center font-medium">{t("table.receipt")}</th>
                     <th className="px-3 py-2 text-right font-medium">{t("table.total")}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {order.items.map((item) => (
+                  {order.items.map((item, index) => (
                     <tr key={item.id} style={{ borderTop: "1px solid var(--border)" }}>
                       <td className="px-3 py-2">{item.product_sku || "-"}</td>
                       <td className="px-3 py-2">{item.product_name}</td>
                       <td className="px-3 py-2 text-right">{item.quantity}</td>
+                      <td className="px-3 py-2 text-center">
+                        {index === 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void handleOpenReceipt();
+                            }}
+                            disabled={!order.receipt?.can_open || receiptOpening}
+                            className="inline-flex h-8 items-center justify-center rounded-md border px-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+                            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                          >
+                            {receiptOpening ? t("labels.receiptOpening") : order.receipt?.can_open ? t("labels.receiptOpen") : t("labels.receiptNotCreated")}
+                          </button>
+                        ) : null}
+                      </td>
                       <td className="px-3 py-2 text-right">{formatMoney(item.line_total, order.currency, locale)}</td>
                     </tr>
                   ))}

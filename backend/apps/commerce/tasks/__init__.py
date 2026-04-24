@@ -1,3 +1,4 @@
 from .sync_nova_poshta_waybill_statuses import sync_nova_poshta_waybill_statuses_task
+from .vchasno_kasa import issue_vchasno_kasa_receipt_task
 
-__all__ = ["sync_nova_poshta_waybill_statuses_task"]
+__all__ = ["sync_nova_poshta_waybill_statuses_task", "issue_vchasno_kasa_receipt_task"]

@@ -138,13 +138,19 @@ export function HeroBackgroundSlider({ slides, settings }: HeroBackgroundSliderP
         </div>
       </div>
       {slides.length > 1 ? (
-        <div className="pointer-events-none absolute bottom-5 left-4 right-4 mx-auto flex max-w-6xl gap-2">
+        <div className="absolute bottom-5 left-4 right-4 mx-auto flex max-w-6xl gap-2">
           {slides.map((slide, index) => (
-            <span
+            <button
+              type="button"
               key={slide.id}
-              className="h-1.5 flex-1 rounded-full transition-all"
+              className="h-1.5 flex-1 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-white/70 focus:ring-offset-2 focus:ring-offset-transparent"
               style={{
                 backgroundColor: index === activeIndex ? "rgba(255,255,255,0.88)" : "rgba(255,255,255,0.28)",
+              }}
+              aria-label={t("heroSlideIndicator", { index: index + 1 })}
+              aria-pressed={index === activeIndex}
+              onClick={() => {
+                setActiveIndex(index);
               }}
             />
           ))}

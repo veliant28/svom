@@ -872,7 +872,37 @@
           "paymentFiscalChecksLoaded": "Фіскальні чеки завантажено: {count}.",
           "monobankActionFailed": "Не вдалося виконати дію Monobank.",
           "monobankActionNotAvailable": "Дія доступна лише для оплати Monobank.",
-          "statusChangeNoPermission": "Немає прав на зміну статусу у зворотному напрямку."
+          "statusChangeNoPermission": "Немає прав на зміну статусу у зворотному напрямку.",
+          "completedReceiptStarted": "Статус замовлення оновлено. Створення чека запущено.",
+          "completedReceiptSettingsWarning": "Статус замовлення оновлено, але чек не створено: перевірте налаштування Вчасно.Каса."
+        },
+        "receipt": {
+          "label": "Чек",
+          "actions": {
+            "issue": "Створити чек",
+            "sync": "Синхронізувати",
+            "open": "Відкрити чек"
+          },
+          "messages": {
+            "created": "Чек створено.",
+            "alreadyCreated": "Чек уже створено.",
+            "createFailed": "Не вдалося створити чек.",
+            "synced": "Чек синхронізовано.",
+            "syncFailed": "Не вдалося синхронізувати чек.",
+            "openFailed": "Не вдалося відкрити чек.",
+            "popupBlocked": "Браузер заблокував нову вкладку. Дозвольте popup і повторіть.",
+            "notCreated": "Чек ще не створено.",
+            "unavailable": "Чек поки що не можна відкрити."
+          },
+          "status": {
+            "pending": "Не створено",
+            "notCreated": "Не створено",
+            "created": "Створено",
+            "delivered": "Доставлено",
+            "fiscalized": "Фіскалізовано",
+            "cancelled": "Скасовано",
+            "error": "Помилка фіскалізації"
+          }
         },
         "statusDescriptions": {
           "new": "Нове замовлення. Можна підтвердити та передати в обробку.",
@@ -1364,6 +1394,74 @@
           "empty": "Рекомендації із закупівлі відсутні."
         }
       },
+      "vchasnoKasa": {
+        "title": "Вчасно.Каса",
+        "subtitle": "Налаштування фіскалізації чеків і останні чеки по замовленнях.",
+        "form": {
+          "title": "Налаштування Вчасно.Каса",
+          "helper": "Токен зберігається тільки на backend і після збереження показується у маскованому вигляді.",
+          "enabled": "Увімкнути інтеграцію",
+          "apiToken": "Токен каси",
+          "apiTokenMasked": "Збережений токен",
+          "rroFn": "Фіскальний номер РРО/ПРРО",
+          "defaultPaymentType": "Тип оплати за замовчуванням",
+          "defaultTaxGroup": "Податкова група за замовчуванням",
+          "autoIssueOnCompleted": "Автоматично створювати чек при статусі \"Завершено\"",
+          "sendCustomerEmail": "Передавати email клієнта для відправки чека",
+          "save": "Зберегти",
+          "saving": "Зберігаємо...",
+          "testConnection": "Перевірити підключення",
+          "testing": "Перевіряємо..."
+        },
+        "status": {
+          "title": "Статус інтеграції",
+          "enabled": "Інтеграція",
+          "rroFn": "РРО/ПРРО",
+          "lastCheck": "Остання перевірка",
+          "lastCheckState": "Результат перевірки",
+          "lastCheckMessage": "Повідомлення",
+          "ok": "Успішно",
+          "failed": "Помилка"
+        },
+        "latest": {
+          "title": "Останні чеки",
+          "subtitle": "Останні чеки Вчасно.Каса по замовленнях SVOM.",
+          "refresh": "Оновити",
+          "order": "Замовлення",
+          "customer": "Клієнт",
+          "amount": "Сума",
+          "status": "Статус",
+          "checkFn": "Фіскальний номер",
+          "date": "Дата",
+          "actions": "Дії",
+          "sync": "Sync",
+          "open": "Відкрити",
+          "empty": "Чеки ще не створювалися."
+        },
+        "receiptStatus": {
+          "pending": "Не створено",
+          "created": "Створено",
+          "delivered": "Доставлено",
+          "fiscalized": "Фіскалізовано",
+          "cancelled": "Скасовано",
+          "error": "Помилка"
+        },
+        "messages": {
+          "loadFailed": "Не вдалося завантажити налаштування Вчасно.Каса",
+          "settingsSaved": "Налаштування збережено.",
+          "settingsSaveFailed": "Не вдалося зберегти налаштування.",
+          "connectionOk": "Перевірка підключення успішна.",
+          "connectionFailed": "Не вдалося перевірити підключення.",
+          "receiptSynced": "Чек синхронізовано.",
+          "receiptSyncFailed": "Не вдалося синхронізувати чек.",
+          "receiptOpenFailed": "Не вдалося відкрити чек.",
+          "popupBlocked": "Браузер заблокував нову вкладку. Дозвольте popup і повторіть."
+        },
+        "validation": {
+          "tokenRequired": "Вкажіть токен каси.",
+          "rroRequired": "Вкажіть фіскальний номер РРО/ПРРО."
+        }
+      },
       "payments": {
         "title": "Оплата",
         "subtitle": "Операційні налаштування Monobank, перевірка з’єднання та курси валют.",
@@ -1526,7 +1624,7 @@
           "title": "Новий hero-слайд",
           "subtitle": "Додайте локалізовані тексти та два зображення. Оновлення з'являються на сайті одразу.",
           "desktopImageHint": "Desktop: рекомендовано 1920x880 px, JPG/PNG/WebP.",
-          "mobileImageHint": "Mobile: рекомендовано 900x1200 px, JPG/PNG/WebP."
+          "mobileImageHint": "Mobile: рекомендовано 900x1200 px, JPG/PNG/WebP, портретна орієнтація."
         },
         "fields": {
           "title": "Заголовок",
@@ -1536,6 +1634,10 @@
           "active": "Увімкнено",
           "desktopImage": "Desktop-зображення",
           "mobileImage": "Mobile-зображення",
+          "currentImageSaved": "Зараз збережено: {name}",
+          "newFileSelected": "Новий файл: {name}",
+          "replaceImageHint": "Новий файл не вибрано, поточне зображення залишиться",
+          "noFileSelected": "Файл не вибрано",
           "localizationHint": "Достатньо заповнити одну мову, але краще вказати всі три для коректного storefront i18n."
         },
         "states": {

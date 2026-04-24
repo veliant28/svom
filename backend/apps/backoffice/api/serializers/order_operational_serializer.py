@@ -10,6 +10,7 @@ from rest_framework import serializers
 from apps.commerce.models import Order, OrderItem
 from apps.commerce.services.delivery_snapshot import resolve_delivery_display, resolve_waybill_seed
 from apps.commerce.services.nova_poshta.tracking_status_catalog import resolve_tracking_status_text
+from apps.commerce.services.vchasno_kasa import serialize_receipt_summary
 
 
 class BackofficeOrderItemOperationalSerializer(serializers.ModelSerializer):
@@ -61,6 +62,7 @@ class BackofficeOrderOperationalListSerializer(serializers.ModelSerializer):
     delivery_destination_label = serializers.SerializerMethodField()
     delivery_waybill_seed = serializers.SerializerMethodField()
     payment = serializers.SerializerMethodField()
+    receipt = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -81,6 +83,7 @@ class BackofficeOrderOperationalListSerializer(serializers.ModelSerializer):
             "delivery_waybill_seed",
             "payment_method",
             "payment",
+            "receipt",
             "subtotal",
             "delivery_fee",
             "total",
@@ -289,6 +292,9 @@ class BackofficeOrderOperationalListSerializer(serializers.ModelSerializer):
             "last_webhook_received_at": payment.last_webhook_received_at,
             "last_sync_at": payment.last_sync_at,
         }
+
+    def get_receipt(self, obj: Order) -> dict:
+        return serialize_receipt_summary(order=obj)
 
 
 class BackofficeOrderOperationalDetailSerializer(BackofficeOrderOperationalListSerializer):

@@ -124,7 +124,8 @@
       "fallbackSlogan": "Движение без компромиссов",
       "fallbackPhrasePrimary": "Ночная видимость",
       "fallbackPhraseSecondary": "Точность на скорости",
-      "fallbackPhraseTertiary": "Характер в каждой детали"
+      "fallbackPhraseTertiary": "Характер в каждой детали",
+      "heroSlideIndicator": "Открыть слайд {index}"
     },
     "footer": {
       "navigation": "Навигация",

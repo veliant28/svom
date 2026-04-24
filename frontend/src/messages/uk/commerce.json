@@ -226,12 +226,19 @@
         "client": "Клієнт: {fullName}",
         "delivery": "Доставка: {city} · {destination}",
         "deliveryCity": "Місто доставки: {value}",
-        "deliveryDestination": "Відділення / поштомат / адреса: {value}"
+        "deliveryDestination": "Відділення / поштомат / адреса: {value}",
+        "receiptOpen": "Відкрити чек",
+        "receiptOpening": "Відкриваємо...",
+        "receiptNotCreated": "Чек ще не створено",
+        "receiptUnavailable": "Чек поки що не можна відкрити",
+        "receiptOpenFailed": "Не вдалося відкрити чек",
+        "receiptPopupBlocked": "Браузер заблокував нову вкладку. Дозвольте popup і повторіть."
       },
       "table": {
         "sku": "Артикул",
         "product": "Товар",
         "qty": "К-сть",
+        "receipt": "Чек",
         "total": "Сума"
       },
       "status": {

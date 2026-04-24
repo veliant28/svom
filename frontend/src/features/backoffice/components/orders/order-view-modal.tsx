@@ -2,6 +2,7 @@ import { Ban, Check, FileX, Receipt, RefreshCw, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 
+import { OrderReceiptField } from "@/features/backoffice/components/orders/order-receipt-field";
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { formatOrderDate, resolveOrderStatusDescription } from "@/features/backoffice/lib/orders/order-formatters";
@@ -367,7 +368,11 @@ export function OrderViewModal({
   paymentRefreshDisabled,
   monobankActionLoading,
   monobankFiscalChecks,
+  receiptActionLoading,
   onRunAction,
+  onIssueReceipt,
+  onSyncReceipt,
+  onOpenReceipt,
   onRefreshPayment,
   onRunMonobankAction,
   onClose,
@@ -382,7 +387,11 @@ export function OrderViewModal({
   paymentRefreshDisabled?: boolean;
   monobankActionLoading?: BackofficeMonobankPaymentAction | null;
   monobankFiscalChecks?: BackofficeMonobankFiscalCheck[];
+  receiptActionLoading?: "issue" | "sync" | "open" | null;
   onRunAction: (action: ActionKind) => void;
+  onIssueReceipt?: () => void;
+  onSyncReceipt?: () => void;
+  onOpenReceipt?: () => void;
   onRefreshPayment?: () => void;
   onRunMonobankAction?: (action: BackofficeMonobankPaymentAction, options?: { amountMinor?: number }) => void;
   onClose: () => void;
@@ -773,6 +782,14 @@ export function OrderViewModal({
                     <ValueField label={deliveryMethodLabel} value={resolveDeliveryMethodLabel(order.delivery_method, t)} />
                     <ValueField label={paymentMethodLabel} value={resolveOrderPaymentMethodLabel(order.payment_method, t)} />
                     <ValueField label={t("orders.table.columns.created")} value={formatOrderDate(order.placed_at)} />
+                    <OrderReceiptField
+                      receipt={order.receipt}
+                      isLoading={receiptActionLoading ?? null}
+                      onIssue={() => onIssueReceipt?.()}
+                      onSync={() => onSyncReceipt?.()}
+                      onOpen={() => onOpenReceipt?.()}
+                      t={t}
+                    />
                   </div>
                 </section>
 

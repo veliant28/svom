@@ -115,7 +115,13 @@ class CompleteOrderActionAPIView(BackofficeAPIView):
             operator_note=serializer.validated_data.get("operator_note", ""),
             actor=request.user,
         )
-        return Response({"order_id": result.order_id, "status": result.status})
+        return Response(
+            {
+                "order_id": result.order_id,
+                "status": result.status,
+                "receipt_notice_code": result.receipt_notice_code,
+            }
+        )
 
 
 class ResetOrderToNewActionAPIView(BackofficeAPIView):

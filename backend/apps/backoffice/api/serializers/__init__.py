@@ -69,6 +69,15 @@ from .payment_serializer import (
     NovaPaySettingsSerializer,
     PaymentConnectionCheckSerializer,
 )
+from .vchasno_kasa_serializer import (
+    AccountOrderReceiptSummarySerializer,
+    BackofficeOrderReceiptActionSerializer,
+    BackofficeOrderReceiptSummarySerializer,
+    BackofficeVchasnoKasaConnectionCheckSerializer,
+    BackofficeVchasnoKasaSettingsSerializer,
+    BackofficeVchasnoReceiptListSerializer,
+    BackofficeVchasnoReceiptRowSerializer,
+)
 from .promo_banner_serializer import BackofficePromoBannerSerializer, BackofficePromoBannerSettingsSerializer
 from .product_price_operational_serializer import ProductPriceOperationalSerializer
 from .procurement_suggestion_serializer import (
@@ -167,6 +176,13 @@ __all__ = [
     "BackofficeOrderPaymentSerializer",
     "NovaPaySettingsSerializer",
     "LiqPaySettingsSerializer",
+    "BackofficeVchasnoKasaSettingsSerializer",
+    "BackofficeVchasnoKasaConnectionCheckSerializer",
+    "BackofficeOrderReceiptSummarySerializer",
+    "BackofficeOrderReceiptActionSerializer",
+    "BackofficeVchasnoReceiptRowSerializer",
+    "BackofficeVchasnoReceiptListSerializer",
+    "AccountOrderReceiptSummarySerializer",
     "ProcurementOfferBriefSerializer",
     "ProcurementItemRecommendationSerializer",
     "ProcurementSupplierGroupSerializer",

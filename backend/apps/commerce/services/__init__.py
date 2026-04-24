@@ -41,6 +41,24 @@ from .nova_poshta import (
     NovaPoshtaWaybillService,
 )
 from .novapay import get_novapay_settings, test_novapay_connection
+from .vchasno_kasa import (
+    VchasnoKasaApiError,
+    VchasnoKasaConfigError,
+    VchasnoKasaDisabledError,
+    VchasnoKasaError,
+    get_open_receipt_url,
+    get_order_sale_receipt,
+    get_vchasno_kasa_settings,
+    has_order_receipt_table,
+    has_vchasno_kasa_settings_table,
+    is_vchasno_auto_issue_enabled,
+    issue_or_sync_order_receipt,
+    issue_order_receipt,
+    serialize_receipt_row,
+    serialize_receipt_summary,
+    sync_order_receipt,
+    test_vchasno_kasa_connection,
+)
 from .sellable_state import build_cart_item_warning, get_cart_item_sellable_snapshot, get_product_sellable_snapshot
 
 __all__ = [
@@ -88,6 +106,22 @@ __all__ = [
     "NovaPoshtaWaybillService",
     "get_novapay_settings",
     "test_novapay_connection",
+    "VchasnoKasaError",
+    "VchasnoKasaApiError",
+    "VchasnoKasaConfigError",
+    "VchasnoKasaDisabledError",
+    "get_vchasno_kasa_settings",
+    "has_vchasno_kasa_settings_table",
+    "has_order_receipt_table",
+    "test_vchasno_kasa_connection",
+    "is_vchasno_auto_issue_enabled",
+    "get_order_sale_receipt",
+    "issue_order_receipt",
+    "sync_order_receipt",
+    "issue_or_sync_order_receipt",
+    "get_open_receipt_url",
+    "serialize_receipt_summary",
+    "serialize_receipt_row",
     "get_product_sellable_snapshot",
     "get_cart_item_sellable_snapshot",
     "build_cart_item_warning",

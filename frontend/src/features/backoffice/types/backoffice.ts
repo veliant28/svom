@@ -9,6 +9,7 @@ export type * from "./payment.types";
 export type * from "./footer-settings.types";
 export type * from "./hero-block.types";
 export type * from "./promo-banners.types";
+export type * from "./vchasno-kasa.types";
 export type * from "./vehicles.types";
 export type * from "./nova-poshta.types";
 export type * from "./rbac.types";

@@ -15,6 +15,7 @@ import {
   Tags,
   Truck,
   Wallet2,
+  BadgeDollarSign,
   Clock3,
   Headset,
   Settings2,
@@ -38,6 +39,7 @@ type SidebarNavItem = {
     | "support"
     | "loyalty"
     | "payments"
+    | "vchasnoKasa"
     | "brands"
     | "categories"
     | "autocatalog"
@@ -69,6 +71,7 @@ const NAV_ITEMS: SidebarNavItem[] = [
     requiredCapability: BACKOFFICE_CAPABILITIES.novaPoshtaSettings,
   },
   { href: "/backoffice/payments", icon: Wallet2, key: "payments", requiredCapability: BACKOFFICE_CAPABILITIES.paymentsView },
+  { href: "/backoffice/vchasno-kasa", icon: BadgeDollarSign, key: "vchasnoKasa", requiredCapability: BACKOFFICE_CAPABILITIES.vchasnoKasaManage },
   { href: "/backoffice/brands", icon: Tags, key: "brands", requiredCapability: BACKOFFICE_CAPABILITIES.brandsView },
   { href: "/backoffice/categories", icon: Shapes, key: "categories", requiredCapability: BACKOFFICE_CAPABILITIES.categoriesView },
   { href: "/backoffice/users", icon: UsersRound, key: "users", requiredCapability: BACKOFFICE_CAPABILITIES.usersView },

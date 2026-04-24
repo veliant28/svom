@@ -872,7 +872,37 @@
           "paymentFiscalChecksLoaded": "Fiscal checks loaded: {count}.",
           "monobankActionFailed": "Unable to run Monobank action.",
           "monobankActionNotAvailable": "This action is available only for Monobank payments.",
-          "statusChangeNoPermission": "No permission to change status backward."
+          "statusChangeNoPermission": "No permission to change status backward.",
+          "completedReceiptStarted": "Order status updated. Receipt creation has started.",
+          "completedReceiptSettingsWarning": "Order status updated, but receipt was not created: check Vchasno.Kasa settings."
+        },
+        "receipt": {
+          "label": "Receipt",
+          "actions": {
+            "issue": "Create receipt",
+            "sync": "Sync",
+            "open": "Open receipt"
+          },
+          "messages": {
+            "created": "Receipt created.",
+            "alreadyCreated": "Receipt already created.",
+            "createFailed": "Failed to create receipt.",
+            "synced": "Receipt synced.",
+            "syncFailed": "Failed to sync receipt.",
+            "openFailed": "Failed to open receipt.",
+            "popupBlocked": "The browser blocked the new tab. Allow popups and try again.",
+            "notCreated": "Receipt has not been created yet.",
+            "unavailable": "Receipt cannot be opened yet."
+          },
+          "status": {
+            "pending": "Not created",
+            "notCreated": "Not created",
+            "created": "Created",
+            "delivered": "Delivered",
+            "fiscalized": "Fiscalized",
+            "cancelled": "Cancelled",
+            "error": "Fiscalization error"
+          }
         },
         "statusDescriptions": {
           "new": "New order. Confirm it to continue processing.",
@@ -1364,6 +1394,74 @@
           "empty": "No procurement suggestions."
         }
       },
+      "vchasnoKasa": {
+        "title": "Vchasno.Kasa",
+        "subtitle": "Receipt fiscalization settings and latest receipts for orders.",
+        "form": {
+          "title": "Vchasno.Kasa settings",
+          "helper": "The token is stored only on the backend and shown masked after save.",
+          "enabled": "Enable integration",
+          "apiToken": "Cash register token",
+          "apiTokenMasked": "Saved token",
+          "rroFn": "Fiscal RRO/PRRO number",
+          "defaultPaymentType": "Default payment type",
+          "defaultTaxGroup": "Default tax group",
+          "autoIssueOnCompleted": "Automatically create receipt when status becomes \"Completed\"",
+          "sendCustomerEmail": "Send customer email to receipt delivery",
+          "save": "Save",
+          "saving": "Saving...",
+          "testConnection": "Test connection",
+          "testing": "Testing..."
+        },
+        "status": {
+          "title": "Integration status",
+          "enabled": "Integration",
+          "rroFn": "RRO/PRRO",
+          "lastCheck": "Last check",
+          "lastCheckState": "Check result",
+          "lastCheckMessage": "Message",
+          "ok": "Successful",
+          "failed": "Failed"
+        },
+        "latest": {
+          "title": "Latest receipts",
+          "subtitle": "Latest Vchasno.Kasa receipts for SVOM orders.",
+          "refresh": "Refresh",
+          "order": "Order",
+          "customer": "Customer",
+          "amount": "Amount",
+          "status": "Status",
+          "checkFn": "Fiscal number",
+          "date": "Date",
+          "actions": "Actions",
+          "sync": "Sync",
+          "open": "Open",
+          "empty": "No receipts created yet."
+        },
+        "receiptStatus": {
+          "pending": "Not created",
+          "created": "Created",
+          "delivered": "Delivered",
+          "fiscalized": "Fiscalized",
+          "cancelled": "Cancelled",
+          "error": "Error"
+        },
+        "messages": {
+          "loadFailed": "Failed to load Vchasno.Kasa settings",
+          "settingsSaved": "Settings saved.",
+          "settingsSaveFailed": "Failed to save settings.",
+          "connectionOk": "Connection test successful.",
+          "connectionFailed": "Failed to test connection.",
+          "receiptSynced": "Receipt synced.",
+          "receiptSyncFailed": "Failed to sync receipt.",
+          "receiptOpenFailed": "Failed to open receipt.",
+          "popupBlocked": "The browser blocked the new tab. Allow popups and try again."
+        },
+        "validation": {
+          "tokenRequired": "Enter the cash register token.",
+          "rroRequired": "Enter the fiscal RRO/PRRO number."
+        }
+      },
       "payments": {
         "title": "Payments",
         "subtitle": "Monobank operational settings, health checks and currency rates.",
@@ -1526,7 +1624,7 @@
           "title": "New hero slide",
           "subtitle": "Add localized copy and two images. Updates appear on the storefront immediately.",
           "desktopImageHint": "Desktop: recommended 1920x880 px, JPG/PNG/WebP.",
-          "mobileImageHint": "Mobile: recommended 900x1200 px, JPG/PNG/WebP."
+          "mobileImageHint": "Mobile: recommended 900x1200 px, JPG/PNG/WebP, portrait orientation."
         },
         "fields": {
           "title": "Title",
@@ -1536,6 +1634,10 @@
           "active": "Enabled",
           "desktopImage": "Desktop image",
           "mobileImage": "Mobile image",
+          "currentImageSaved": "Currently saved: {name}",
+          "newFileSelected": "New file: {name}",
+          "replaceImageHint": "No new file selected, current image will stay",
+          "noFileSelected": "No file selected",
           "localizationHint": "One language is enough to publish, but filling all three keeps storefront i18n correct."
         },
         "states": {

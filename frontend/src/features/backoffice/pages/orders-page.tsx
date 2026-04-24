@@ -33,6 +33,7 @@ export function OrdersPage() {
     viewPaymentCooldown,
     viewMonobankActionLoading,
     viewMonobankFiscalChecks,
+    viewReceiptActionLoading,
     canResetToNew,
     supplierOpen,
     supplierTarget,
@@ -52,6 +53,9 @@ export function OrdersPage() {
     openOrderView,
     closeOrderView,
     runOrderAction,
+    issueReceipt,
+    syncReceipt,
+    openReceipt,
     refreshOrderPayment,
     runMonobankPaymentAction,
     openSupplierModalFromRow,
@@ -130,8 +134,18 @@ export function OrdersPage() {
         paymentRefreshDisabled={viewPaymentCooldown}
         monobankActionLoading={viewMonobankActionLoading}
         monobankFiscalChecks={viewMonobankFiscalChecks}
+        receiptActionLoading={viewReceiptActionLoading}
         onRunAction={(action) => {
           void runOrderAction(action);
+        }}
+        onIssueReceipt={() => {
+          void issueReceipt();
+        }}
+        onSyncReceipt={() => {
+          void syncReceipt();
+        }}
+        onOpenReceipt={() => {
+          void openReceipt();
         }}
         onRefreshPayment={() => {
           void refreshOrderPayment();

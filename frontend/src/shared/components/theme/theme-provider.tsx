@@ -33,6 +33,7 @@ function nextThemeMode(current: ThemeMode): ThemeMode {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>("light");
   const [themeMode, setThemeMode] = useState<ThemeMode>("system");
+  const [hasHydratedThemeMode, setHasHydratedThemeMode] = useState(false);
 
   useEffect(() => {
     const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
@@ -41,6 +42,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } else {
       setThemeMode("system");
     }
+    setHasHydratedThemeMode(true);
   }, []);
 
   useEffect(() => {
@@ -69,8 +71,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [theme]);
 
   useEffect(() => {
+    if (!hasHydratedThemeMode) {
+      return;
+    }
     window.localStorage.setItem(THEME_STORAGE_KEY, themeMode);
-  }, [themeMode]);
+  }, [hasHydratedThemeMode, themeMode]);
 
   const value = useMemo(
     () => ({

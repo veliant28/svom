@@ -12,6 +12,11 @@ import {
   resetBackofficeOrderToNew,
 } from "@/features/backoffice/api/orders-api";
 import { refreshBackofficeOrderPayment, runBackofficeOrderMonobankPaymentAction } from "@/features/backoffice/api/payment-api";
+import {
+  getBackofficeOrderReceiptOpenUrl,
+  issueBackofficeOrderReceipt,
+  syncBackofficeOrderReceipt,
+} from "@/features/backoffice/api/vchasno-kasa-api";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import type {
   BackofficeMonobankFiscalCheck,
@@ -110,6 +115,7 @@ export function useOrdersActions({
   const [viewPaymentCooldown, setViewPaymentCooldown] = useState(false);
   const [viewMonobankActionLoading, setViewMonobankActionLoading] = useState<BackofficeMonobankPaymentAction | null>(null);
   const [viewMonobankFiscalChecks, setViewMonobankFiscalChecks] = useState<BackofficeMonobankFiscalCheck[]>([]);
+  const [viewReceiptActionLoading, setViewReceiptActionLoading] = useState<"issue" | "sync" | "open" | null>(null);
   const cooldownTimeoutRef = useRef<number | null>(null);
 
   const [deleteTarget, setDeleteTarget] = useState<BackofficeOrderOperational | null>(null);
@@ -178,6 +184,7 @@ export function useOrdersActions({
     setViewActionLoading(null);
     setViewMonobankActionLoading(null);
     setViewMonobankFiscalChecks([]);
+    setViewReceiptActionLoading(null);
   }, []);
 
   const runOrderAction = useCallback(async (action: OrderViewAction) => {
@@ -208,8 +215,13 @@ export function useOrdersActions({
         await markBackofficeOrderShipped(token, { order_id: viewOrder.id });
         feedback.showSuccess(t("orders.messages.shipped"));
       } else if (action === "complete") {
-        await markBackofficeOrderCompleted(token, { order_id: viewOrder.id });
+        const result = await markBackofficeOrderCompleted(token, { order_id: viewOrder.id });
         feedback.showSuccess(t("orders.messages.completed"));
+        if (result.receipt_notice_code === "vchasno_issue_started") {
+          feedback.showInfo?.(t("orders.messages.completedReceiptStarted"));
+        } else if (result.receipt_notice_code === "vchasno_incomplete_settings") {
+          feedback.showWarning?.(t("orders.messages.completedReceiptSettingsWarning"));
+        }
       } else if (action === "reset") {
         await resetBackofficeOrderToNew(token, { order_id: viewOrder.id });
         feedback.showSuccess(t("orders.messages.resetToNew"));
@@ -229,6 +241,70 @@ export function useOrdersActions({
       setViewActionLoading(null);
     }
   }, [canResetToNew, feedback, loadOrderDetail, onAfterAction, refetch, t, token, viewActionLoading, viewOrder]);
+
+  const issueReceipt = useCallback(async () => {
+    if (!token || !viewOrder || viewReceiptActionLoading) {
+      return;
+    }
+    setViewReceiptActionLoading("issue");
+    try {
+      const result = await issueBackofficeOrderReceipt(token, viewOrder.id);
+      if (result.already_exists) {
+        feedback.showInfo?.(t("orders.receipt.messages.alreadyCreated"));
+      } else {
+        feedback.showSuccess(t("orders.receipt.messages.created"));
+      }
+      await refetch();
+      await loadOrderDetail(viewOrder.id);
+    } catch (error) {
+      feedback.showApiError(error, t("orders.receipt.messages.createFailed"));
+    } finally {
+      setViewReceiptActionLoading(null);
+    }
+  }, [feedback, loadOrderDetail, refetch, t, token, viewOrder, viewReceiptActionLoading]);
+
+  const syncReceipt = useCallback(async () => {
+    if (!token || !viewOrder || viewReceiptActionLoading) {
+      return;
+    }
+    setViewReceiptActionLoading("sync");
+    try {
+      await syncBackofficeOrderReceipt(token, viewOrder.id);
+      feedback.showSuccess(t("orders.receipt.messages.synced"));
+      await refetch();
+      await loadOrderDetail(viewOrder.id);
+    } catch (error) {
+      feedback.showApiError(error, t("orders.receipt.messages.syncFailed"));
+    } finally {
+      setViewReceiptActionLoading(null);
+    }
+  }, [feedback, loadOrderDetail, refetch, t, token, viewOrder, viewReceiptActionLoading]);
+
+  const openReceipt = useCallback(async () => {
+    if (!token || !viewOrder || viewReceiptActionLoading) {
+      return;
+    }
+    if (!viewOrder.receipt?.can_open) {
+      feedback.showWarning?.(
+        viewOrder.receipt?.available
+          ? t("orders.receipt.messages.unavailable")
+          : t("orders.receipt.messages.notCreated"),
+      );
+      return;
+    }
+    setViewReceiptActionLoading("open");
+    try {
+      const { url } = await getBackofficeOrderReceiptOpenUrl(token, viewOrder.id);
+      const opened = window.open(url, "_blank", "noopener,noreferrer");
+      if (!opened) {
+        feedback.showApiError(new Error("popup-blocked"), t("orders.receipt.messages.popupBlocked"));
+      }
+    } catch (error) {
+      feedback.showApiError(error, t("orders.receipt.messages.openFailed"));
+    } finally {
+      setViewReceiptActionLoading(null);
+    }
+  }, [feedback, t, token, viewOrder, viewReceiptActionLoading]);
 
   const requestDelete = useCallback((item: BackofficeOrderOperational) => {
     setDeleteTarget(item);
@@ -368,6 +444,7 @@ export function useOrdersActions({
     viewPaymentCooldown,
     viewMonobankActionLoading,
     viewMonobankFiscalChecks,
+    viewReceiptActionLoading,
     canResetToNew,
     deleteTarget,
     deletingId,
@@ -375,6 +452,9 @@ export function useOrdersActions({
     openOrderView,
     closeOrderView,
     runOrderAction,
+    issueReceipt,
+    syncReceipt,
+    openReceipt,
     requestDelete,
     closeDelete,
     handleDeletedOrders,

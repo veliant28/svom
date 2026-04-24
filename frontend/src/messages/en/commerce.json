@@ -226,12 +226,19 @@
         "client": "Customer: {fullName}",
         "delivery": "Delivery: {city} · {destination}",
         "deliveryCity": "Delivery city: {value}",
-        "deliveryDestination": "Branch / parcel locker / address: {value}"
+        "deliveryDestination": "Branch / parcel locker / address: {value}",
+        "receiptOpen": "Open receipt",
+        "receiptOpening": "Opening...",
+        "receiptNotCreated": "Receipt not created yet",
+        "receiptUnavailable": "Receipt cannot be opened yet",
+        "receiptOpenFailed": "Failed to open receipt",
+        "receiptPopupBlocked": "The browser blocked the new tab. Allow popups and try again."
       },
       "table": {
         "sku": "SKU",
         "product": "Product",
         "qty": "Qty",
+        "receipt": "Receipt",
         "total": "Total"
       },
       "status": {

@@ -148,6 +148,14 @@ from .hero_block_views import (
     BackofficeHeroSlideListCreateAPIView,
     BackofficeHeroSlideRetrieveUpdateDestroyAPIView,
 )
+from .vchasno_kasa_views import (
+    BackofficeOrderVchasnoKasaIssueAPIView,
+    BackofficeOrderVchasnoKasaOpenAPIView,
+    BackofficeOrderVchasnoKasaSyncAPIView,
+    BackofficeVchasnoKasaReceiptListAPIView,
+    BackofficeVchasnoKasaSettingsAPIView,
+    BackofficeVchasnoKasaTestConnectionAPIView,
+)
 from .promo_banner_views import (
     BackofficePromoBannerListCreateAPIView,
     BackofficePromoBannerRetrieveUpdateDestroyAPIView,
@@ -310,6 +318,12 @@ __all__ = [
     "BackofficeHeroBlockSettingsAPIView",
     "BackofficeHeroSlideListCreateAPIView",
     "BackofficeHeroSlideRetrieveUpdateDestroyAPIView",
+    "BackofficeVchasnoKasaSettingsAPIView",
+    "BackofficeVchasnoKasaTestConnectionAPIView",
+    "BackofficeVchasnoKasaReceiptListAPIView",
+    "BackofficeOrderVchasnoKasaIssueAPIView",
+    "BackofficeOrderVchasnoKasaSyncAPIView",
+    "BackofficeOrderVchasnoKasaOpenAPIView",
     "BackofficePromoBannerSettingsAPIView",
     "BackofficePromoBannerListCreateAPIView",
     "BackofficePromoBannerRetrieveUpdateDestroyAPIView",

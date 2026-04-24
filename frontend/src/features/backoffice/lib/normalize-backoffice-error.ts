@@ -1,5 +1,7 @@
 import { isApiRequestError } from "@/shared/api/http-client";
 
+const CYRILLIC_REGEX = /[А-Яа-яЁёІіЇїЄєҐґ]/;
+
 type BackofficeErrorTranslator = (key: string, values?: Record<string, string | number>) => string;
 
 export type NormalizedBackofficeError = {
@@ -87,6 +89,21 @@ function looksTechnical(text: string): boolean {
   }
 
   if (/^\s*api request failed with\s+\d{3}\s*$/i.test(text)) {
+    return true;
+  }
+
+  return false;
+}
+
+function shouldUseFallback(rawMessage: string, fallbackMessage: string): boolean {
+  const sanitized = sanitizeErrorMessage(rawMessage);
+  if (!sanitized || looksTechnical(sanitized)) {
+    return true;
+  }
+
+  const fallbackHasCyrillic = CYRILLIC_REGEX.test(fallbackMessage);
+  const messageHasCyrillic = CYRILLIC_REGEX.test(sanitized);
+  if (fallbackHasCyrillic !== messageHasCyrillic) {
     return true;
   }
 
@@ -205,7 +222,11 @@ export function normalizeBackofficeApiError(
       };
     }
 
-    if (sanitizedMessage && !looksTechnical(sanitizedMessage) && sanitizedMessage.length <= 220) {
+    if (
+      sanitizedMessage
+      && sanitizedMessage.length <= 220
+      && !shouldUseFallback(sanitizedMessage, fallbackMessage)
+    ) {
       return {
         variant: "error",
         message: sanitizedMessage,
@@ -235,7 +256,11 @@ export function normalizeBackofficeApiError(
       };
     }
 
-    if (sanitizedMessage && !looksTechnical(sanitizedMessage) && sanitizedMessage.length <= 220) {
+    if (
+      sanitizedMessage
+      && sanitizedMessage.length <= 220
+      && !shouldUseFallback(sanitizedMessage, fallbackMessage)
+    ) {
       return { variant: "error", message: sanitizedMessage };
     }
   }

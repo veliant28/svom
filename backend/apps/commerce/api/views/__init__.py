@@ -13,6 +13,7 @@ from .checkout_views import (
     MonobankWebhookAPIView,
 )
 from .order_views import OrderDetailAPIView, OrderListAPIView
+from .order_receipt_views import AccountOrderReceiptOpenAPIView
 from .loyalty_views import LoyaltyMyPromoCodesAPIView
 from .support_views import (
     SupportBootstrapAPIView,
@@ -43,6 +44,7 @@ __all__ = [
     "CheckoutNovaPoshtaStreetsLookupAPIView",
     "OrderListAPIView",
     "OrderDetailAPIView",
+    "AccountOrderReceiptOpenAPIView",
     "LoyaltyMyPromoCodesAPIView",
     "SupportBootstrapAPIView",
     "SupportThreadListCreateAPIView",

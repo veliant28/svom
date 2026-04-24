@@ -872,7 +872,37 @@
           "paymentFiscalChecksLoaded": "Фискальные чеки загружены: {count}.",
           "monobankActionFailed": "Не удалось выполнить действие Monobank.",
           "monobankActionNotAvailable": "Действие доступно только для оплаты Monobank.",
-          "statusChangeNoPermission": "Нет прав на изменение статуса в обратном направлении."
+          "statusChangeNoPermission": "Нет прав на изменение статуса в обратном направлении.",
+          "completedReceiptStarted": "Статус заказа обновлен. Создание чека запущено.",
+          "completedReceiptSettingsWarning": "Статус заказа обновлен, но чек не создан: проверьте настройки Вчасно.Каса."
+        },
+        "receipt": {
+          "label": "Чек",
+          "actions": {
+            "issue": "Создать чек",
+            "sync": "Синхронизировать",
+            "open": "Открыть чек"
+          },
+          "messages": {
+            "created": "Чек создан.",
+            "alreadyCreated": "Чек уже создан.",
+            "createFailed": "Не удалось создать чек.",
+            "synced": "Чек синхронизирован.",
+            "syncFailed": "Не удалось синхронизировать чек.",
+            "openFailed": "Не удалось открыть чек.",
+            "popupBlocked": "Браузер заблокировал новую вкладку. Разрешите всплывающие окна и повторите.",
+            "notCreated": "Чек еще не создан.",
+            "unavailable": "Чек пока нельзя открыть."
+          },
+          "status": {
+            "pending": "Не создан",
+            "notCreated": "Не создан",
+            "created": "Создан",
+            "delivered": "Доставлен",
+            "fiscalized": "Фискализирован",
+            "cancelled": "Отменен",
+            "error": "Ошибка фискализации"
+          }
         },
         "statusDescriptions": {
           "new": "Новый заказ. Можно подтвердить и передать в обработку.",
@@ -1364,6 +1394,74 @@
           "empty": "Рекомендации по закупке отсутствуют."
         }
       },
+      "vchasnoKasa": {
+        "title": "Вчасно.Каса",
+        "subtitle": "Настройки фискализации чеков и последние чеки по заказам.",
+        "form": {
+          "title": "Настройки Вчасно.Каса",
+          "helper": "Токен хранится только на backend и после сохранения отображается в маскированном виде.",
+          "enabled": "Включить интеграцию",
+          "apiToken": "Токен кассы",
+          "apiTokenMasked": "Сохраненный токен",
+          "rroFn": "Фискальный номер РРО/ПРРО",
+          "defaultPaymentType": "Тип оплаты по умолчанию",
+          "defaultTaxGroup": "Налоговая группа по умолчанию",
+          "autoIssueOnCompleted": "Автоматически создавать чек при статусе \"Завершено\"",
+          "sendCustomerEmail": "Передавать email клиента для отправки чека",
+          "save": "Сохранить",
+          "saving": "Сохраняем...",
+          "testConnection": "Проверить подключение",
+          "testing": "Проверяем..."
+        },
+        "status": {
+          "title": "Статус интеграции",
+          "enabled": "Интеграция",
+          "rroFn": "РРО/ПРРО",
+          "lastCheck": "Последняя проверка",
+          "lastCheckState": "Результат проверки",
+          "lastCheckMessage": "Сообщение",
+          "ok": "Успешно",
+          "failed": "Ошибка"
+        },
+        "latest": {
+          "title": "Последние чеки",
+          "subtitle": "Последние чеки Вчасно.Каса по заказам SVOM.",
+          "refresh": "Обновить",
+          "order": "Заказ",
+          "customer": "Клиент",
+          "amount": "Сумма",
+          "status": "Статус",
+          "checkFn": "Фискальный номер",
+          "date": "Дата",
+          "actions": "Действия",
+          "sync": "Sync",
+          "open": "Открыть",
+          "empty": "Чеки еще не создавались."
+        },
+        "receiptStatus": {
+          "pending": "Не создан",
+          "created": "Создан",
+          "delivered": "Доставлен",
+          "fiscalized": "Фискализирован",
+          "cancelled": "Отменен",
+          "error": "Ошибка"
+        },
+        "messages": {
+          "loadFailed": "Не удалось загрузить настройки Вчасно.Каса",
+          "settingsSaved": "Настройки сохранены.",
+          "settingsSaveFailed": "Не удалось сохранить настройки.",
+          "connectionOk": "Проверка подключения успешна.",
+          "connectionFailed": "Не удалось проверить подключение.",
+          "receiptSynced": "Чек синхронизирован.",
+          "receiptSyncFailed": "Не удалось синхронизировать чек.",
+          "receiptOpenFailed": "Не удалось открыть чек.",
+          "popupBlocked": "Браузер заблокировал новую вкладку. Разрешите всплывающие окна и повторите."
+        },
+        "validation": {
+          "tokenRequired": "Укажите токен кассы.",
+          "rroRequired": "Укажите фискальный номер РРО/ПРРО."
+        }
+      },
       "payments": {
         "title": "Оплата",
         "subtitle": "Операционные настройки Monobank, проверка соединения и курсы валют.",
@@ -1526,7 +1624,7 @@
           "title": "Новый hero-слайд",
           "subtitle": "Добавьте локализованные тексты и два изображения. Изменения на сайте появляются сразу.",
           "desktopImageHint": "Desktop: рекомендуется 1920x880 px, JPG/PNG/WebP.",
-          "mobileImageHint": "Mobile: рекомендуется 900x1200 px, JPG/PNG/WebP."
+          "mobileImageHint": "Mobile: рекомендуется 900x1200 px, JPG/PNG/WebP, портретная ориентация."
         },
         "fields": {
           "title": "Заголовок",
@@ -1536,6 +1634,10 @@
           "active": "Включен",
           "desktopImage": "Desktop-изображение",
           "mobileImage": "Mobile-изображение",
+          "currentImageSaved": "Сейчас сохранено: {name}",
+          "newFileSelected": "Новый файл: {name}",
+          "replaceImageHint": "Новый файл не выбран, текущее изображение останется",
+          "noFileSelected": "Файл не выбран",
           "localizationHint": "Для публикации достаточно одного языка, но лучше заполнить все три для корректного storefront i18n."
         },
         "states": {

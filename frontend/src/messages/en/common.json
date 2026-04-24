@@ -124,7 +124,8 @@
       "fallbackSlogan": "Drive without compromise",
       "fallbackPhrasePrimary": "Night visibility",
       "fallbackPhraseSecondary": "Precision at speed",
-      "fallbackPhraseTertiary": "Power in every detail"
+      "fallbackPhraseTertiary": "Power in every detail",
+      "heroSlideIndicator": "Open slide {index}"
     },
     "footer": {
       "navigation": "Navigation",
