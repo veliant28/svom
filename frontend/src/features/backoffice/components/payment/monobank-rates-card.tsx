@@ -31,11 +31,17 @@ export function MonobankRatesCard({
   const normalizedLoading = isLoading !== false;
   const normalizedRefreshDisabled = refreshDisabled === true;
   const isRefreshButtonDisabled = isHydrated ? (normalizedLoading || normalizedRefreshDisabled) : undefined;
+  const lastFetchedLabel = rates?.last_fetched_at ? formatBackofficeDate(rates.last_fetched_at) : "-";
 
   return (
     <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-semibold">{t("payments.monobank.currencyRates")}</p>
+        <div>
+          <p className="text-sm font-semibold">{t("payments.monobank.currencyRates")}</p>
+          <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
+            {t("payments.monobank.lastFetchedAt")}: {lastFetchedLabel}
+          </p>
+        </div>
         <BackofficeTooltip content={t("payments.monobank.refreshRates")} placement="top" align="center" wrapperClassName="inline-flex">
           <button
             type="button"

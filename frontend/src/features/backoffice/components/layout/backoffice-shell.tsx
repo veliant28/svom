@@ -100,7 +100,6 @@ export function BackofficeShell({ children, user }: { children: ReactNode; user:
 
           <BackofficeHeaderProvider>
             <BackofficeTopbar
-              user={user}
               onToggleSidebar={() => {
                 setSidebarOpen((prev) => !prev);
               }}

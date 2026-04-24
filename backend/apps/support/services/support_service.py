@@ -282,12 +282,12 @@ def create_support_thread(*, customer, subject: str, body: str) -> tuple[Support
 
 def send_support_message(*, thread: SupportThread, author, body: str) -> list[SupportMessage]:
     normalized_body = _validate_body(body)
-    if thread.status == SupportThread.STATUS_CLOSED:
-        raise ValidationError({"detail": "Closed threads cannot receive new messages."})
     if not can_access_thread(user=author, thread=thread):
         raise ValidationError({"detail": "You cannot access this thread."})
 
     author_side = SupportMessage.SIDE_STAFF if user_has_capability(author, "customers.support") else SupportMessage.SIDE_CUSTOMER
+    if thread.status == SupportThread.STATUS_CLOSED and author_side == SupportMessage.SIDE_CUSTOMER:
+        raise ValidationError({"detail": "Closed threads cannot receive new messages."})
     if author_side == SupportMessage.SIDE_CUSTOMER and thread.customer_id != author.id:
         raise ValidationError({"detail": "You cannot post into another customer's thread."})
 

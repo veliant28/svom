@@ -3,6 +3,13 @@ from .availability_calculator import AvailabilityCalculator, AvailabilityResult,
 from .history_writer import PriceHistoryWriter
 from .offer_selector import OfferSelector
 from .policy_resolver import PolicyResolver
+from .product_activity import (
+    DEFAULT_PRICE_FRESHNESS_HOURS,
+    ProductActivitySyncResult,
+    build_price_freshness_cutoff,
+    ensure_product_active_on_price_update,
+    sync_products_activity_by_price_freshness,
+)
 from .repricer import ProductRepricer, RepriceResult
 from .rounding import apply_psychological_rounding, apply_step_rounding, quantize_money, to_decimal
 from .sellable_snapshot import ProductSellableSnapshotService, SellableSnapshot
@@ -21,6 +28,11 @@ __all__ = [
     "ProductSellableSnapshotService",
     "SellableSnapshot",
     "PolicyResolver",
+    "DEFAULT_PRICE_FRESHNESS_HOURS",
+    "ProductActivitySyncResult",
+    "build_price_freshness_cutoff",
+    "ensure_product_active_on_price_update",
+    "sync_products_activity_by_price_freshness",
     "PriceHistoryWriter",
     "ProductRepricer",
     "RepriceResult",

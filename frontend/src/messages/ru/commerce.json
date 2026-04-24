@@ -281,7 +281,9 @@
       "messages": {
         "threadCreated": "Обращение создано.",
         "createFailed": "Не удалось создать обращение.",
-        "sendFailed": "Не удалось отправить сообщение."
+        "sendFailed": "Не удалось отправить сообщение.",
+        "replyReceived": "Новый ответ техподдержки",
+        "replyReceivedWithSubject": "Новый ответ техподдержки: {subject}"
       },
       "composer": {
         "placeholder": "Введите сообщение",

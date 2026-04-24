@@ -199,6 +199,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "support.rebuild_wallboard_snapshots",
         "schedule": crontab(minute="*/5"),
     },
+    "pricing-sync-products-activity-by-price-freshness": {
+        "task": "pricing.sync_products_activity_by_price_freshness",
+        "schedule": crontab(minute="*/15"),
+    },
 }
 
 ELASTICSEARCH = {

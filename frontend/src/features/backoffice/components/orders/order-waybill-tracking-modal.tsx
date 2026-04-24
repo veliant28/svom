@@ -230,16 +230,6 @@ function buildTrackingTimeline(waybill: BackofficeOrderNovaPoshtaWaybill, t: Tra
   return steps;
 }
 
-function resolveProgressDotStyle(state: TrackingProgressState): CSSProperties {
-  if (state === "completed") {
-    return { backgroundColor: "#10b981" };
-  }
-  if (state === "current") {
-    return { backgroundColor: "#3b82f6" };
-  }
-  return { backgroundColor: "#cbd5e1" };
-}
-
 function resolveConnectorStyle(current: TrackingProgressState, next: TrackingProgressState | null): CSSProperties {
   if (current === "completed" && next && next !== "upcoming") {
     return { backgroundColor: "#10b981" };

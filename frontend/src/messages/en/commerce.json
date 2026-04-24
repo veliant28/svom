@@ -281,7 +281,9 @@
       "messages": {
         "threadCreated": "Support thread created.",
         "createFailed": "Failed to create support thread.",
-        "sendFailed": "Failed to send message."
+        "sendFailed": "Failed to send message.",
+        "replyReceived": "New support reply",
+        "replyReceivedWithSubject": "New support reply: {subject}"
       },
       "composer": {
         "placeholder": "Write a message",

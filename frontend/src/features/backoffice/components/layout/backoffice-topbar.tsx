@@ -6,11 +6,10 @@ import { useLocale, useTranslations } from "next-intl";
 
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useBackofficeHeaderConfig } from "@/features/backoffice/components/layout/backoffice-header-context";
-import type { BackofficeUser } from "@/features/backoffice/types/backoffice";
 import { LocaleSwitcher } from "@/shared/components/layout/locale-switcher";
 import { useTheme } from "@/shared/components/theme/theme-provider";
 
-export function BackofficeTopbar({ onToggleSidebar, user }: { onToggleSidebar: () => void; user: BackofficeUser }) {
+export function BackofficeTopbar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const t = useTranslations("backoffice.common");
   const tNavigation = useTranslations("backoffice.navigation");
   const locale = useLocale();

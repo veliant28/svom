@@ -1653,6 +1653,7 @@
           "lastConnectionState": "Connection state",
           "lastConnectionMessage": "Connection message",
           "currencyRates": "Monobank currency rates",
+          "lastFetchedAt": "Last synced",
           "refreshRates": "Refresh rates",
           "rateLabels": {
             "buy": "buy",
@@ -2011,6 +2012,16 @@
             "view": {
               "title": "View categories",
               "description": "Allows viewing and managing catalog categories."
+            }
+          },
+          "seo": {
+            "view": {
+              "title": "View SEO",
+              "description": "Allows reading SEO dashboard and SEO/Google settings."
+            },
+            "manage": {
+              "title": "Manage SEO",
+              "description": "Allows managing SEO settings, templates, overrides and Google integration."
             }
           },
           "autocatalog": {

@@ -40,6 +40,7 @@ export function AccountSupportPage() {
     () => threads.find((thread) => thread.id === selectedThreadId) ?? null,
     [selectedThreadId, threads],
   );
+  const isSelectedThreadClosed = selectedThread?.status === "closed";
 
   const loadBootstrap = useCallback(async () => {
     if (!token || !isAuthenticated) {
@@ -154,7 +155,7 @@ export function AccountSupportPage() {
   }
 
   async function handleSend(body: string) {
-    if (!token || !selectedThreadId) {
+    if (!token || !selectedThreadId || isSelectedThreadClosed) {
       return;
     }
     const optimistic: SupportMessage = {
@@ -238,20 +239,22 @@ export function AccountSupportPage() {
         />
         <div className="flex h-[370px] min-w-0 flex-col gap-4 sm:h-[410px] lg:h-[450px]">
           <SupportThreadFeed currentSide="customer" messages={messages} typing={typing} emptyLabel={t("states.emptyMessages")} />
-          <SupportComposer
-            disabled={!selectedThreadId || !threadSocket.isConnected}
-            isSending={isSending}
-            placeholder={t("composer.placeholder")}
-            sendLabel={t("composer.send")}
-            sendingLabel={t("composer.sending")}
-            onTypingStart={() => {
-              threadSocket.send({ type: "support.typing.start" });
-            }}
-            onTypingStop={() => {
-              threadSocket.send({ type: "support.typing.stop" });
-            }}
-            onSend={handleSend}
-          />
+          {!isSelectedThreadClosed ? (
+            <SupportComposer
+              disabled={!selectedThreadId || !threadSocket.isConnected}
+              isSending={isSending}
+              placeholder={t("composer.placeholder")}
+              sendLabel={t("composer.send")}
+              sendingLabel={t("composer.sending")}
+              onTypingStart={() => {
+                threadSocket.send({ type: "support.typing.start" });
+              }}
+              onTypingStop={() => {
+                threadSocket.send({ type: "support.typing.stop" });
+              }}
+              onSend={handleSend}
+            />
+          ) : null}
         </div>
         <div className="h-[380px] min-w-0 overflow-y-auto sm:h-[420px] lg:h-[460px]">
           <SupportThreadDetails thread={selectedThread} />

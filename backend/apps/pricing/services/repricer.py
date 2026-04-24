@@ -10,6 +10,7 @@ from apps.pricing.services.calculator import PricingCalculator
 from apps.pricing.services.history_writer import PriceHistoryWriter
 from apps.pricing.services.offer_selector import OfferSelector
 from apps.pricing.services.policy_resolver import PolicyResolver
+from apps.pricing.services.product_activity import ensure_product_active_on_price_update
 from apps.pricing.services.rounding import quantize_money
 
 User = get_user_model()
@@ -85,6 +86,7 @@ class ProductRepricer:
                 "updated_at",
             )
         )
+        ensure_product_active_on_price_update(product=product)
 
         self.history_writer.write(
             product=product,
@@ -152,6 +154,7 @@ class ProductRepricer:
                 "updated_at",
             )
         )
+        ensure_product_active_on_price_update(product=product)
 
         self.history_writer.write(
             product=product,

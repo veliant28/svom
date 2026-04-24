@@ -1653,6 +1653,7 @@
           "lastConnectionState": "Состояние соединения",
           "lastConnectionMessage": "Сообщение проверки",
           "currencyRates": "Курсы валют Monobank",
+          "lastFetchedAt": "Последняя синхронизация",
           "refreshRates": "Обновить курсы",
           "rateLabels": {
             "buy": "покупка",
@@ -2011,6 +2012,16 @@
             "view": {
               "title": "Просмотр категорий",
               "description": "Разрешает просматривать и управлять категориями каталога."
+            }
+          },
+          "seo": {
+            "view": {
+              "title": "Просмотр SEO",
+              "description": "Разрешает просматривать SEO-дашборд и настройки SEO/Google."
+            },
+            "manage": {
+              "title": "Управление SEO",
+              "description": "Разрешает управлять SEO-настройками, шаблонами, overrides и Google-интеграцией."
             }
           },
           "autocatalog": {

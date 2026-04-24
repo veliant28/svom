@@ -120,7 +120,7 @@ export function LoyaltyPage() {
       mounted = false;
       window.clearTimeout(timeoutId);
     };
-  }, [customerQuery, issuances.token]);
+  }, [customerQuery, issuances.token, showApiError, t]);
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {

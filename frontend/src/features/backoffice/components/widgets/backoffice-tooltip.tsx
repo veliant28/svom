@@ -98,6 +98,15 @@ export function BackofficeTooltip({
     };
   }, [isOpen, updatePosition]);
 
+  const tooltipStyle: CSSProperties = {
+    left: `${position?.left ?? VIEWPORT_GAP}px`,
+    top: `${position?.top ?? VIEWPORT_GAP}px`,
+    visibility: position ? "visible" : "hidden",
+    borderColor: "color-mix(in srgb, var(--border) 82%, #0f172a 18%)",
+    backgroundColor: "var(--surface)",
+    color: "var(--text)",
+  };
+
   return (
     <span
       ref={triggerRef}
@@ -114,14 +123,7 @@ export function BackofficeTooltip({
             ref={tooltipRef}
             role="tooltip"
             className={`pointer-events-none fixed z-[260] rounded-md border px-2 py-1.5 text-xs shadow-md ${tooltipClassName}`}
-            style={{
-              left: `${position?.left ?? VIEWPORT_GAP}px`,
-              top: `${position?.top ?? VIEWPORT_GAP}px`,
-              visibility: position ? "visible" : "hidden",
-              borderColor: "color-mix(in srgb, var(--border) 82%, #0f172a 18%)",
-              backgroundColor: "var(--surface)",
-              color: "var(--text)",
-            } satisfies CSSProperties}
+            style={tooltipStyle}
           >
             {content}
           </span>,

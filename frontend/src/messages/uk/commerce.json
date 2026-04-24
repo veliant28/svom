@@ -281,7 +281,9 @@
       "messages": {
         "threadCreated": "Звернення створено.",
         "createFailed": "Не вдалося створити звернення.",
-        "sendFailed": "Не вдалося надіслати повідомлення."
+        "sendFailed": "Не вдалося надіслати повідомлення.",
+        "replyReceived": "Нова відповідь техпідтримки",
+        "replyReceivedWithSubject": "Нова відповідь техпідтримки: {subject}"
       },
       "composer": {
         "placeholder": "Введіть повідомлення",

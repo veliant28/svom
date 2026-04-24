@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 
 import { useFooterSettings } from "@/features/marketing/hooks/use-footer-settings";
@@ -15,7 +16,14 @@ export function HeaderContactSticker() {
   return (
     <div className="header-contact-sticker-anchor hidden xl:flex">
       <a href={phoneHref} className="header-contact-sticker" aria-label={`${t("footer.phone")}: ${phoneValue}`}>
-        <img src="/images/header-note-sticker.png" alt="" aria-hidden className="header-contact-sticker-art" />
+        <Image
+          src="/images/header-note-sticker.png"
+          alt=""
+          aria-hidden
+          width={994}
+          height={870}
+          className="header-contact-sticker-art"
+        />
         <span className="header-contact-sticker-overlay">
           <span className="header-contact-sticker-item">
             <span className="header-contact-sticker-label">{t("footer.workingHours")}:</span>

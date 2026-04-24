@@ -25,7 +25,7 @@ import { useAuth } from "@/features/auth/hooks/use-auth";
 import { canEditBackofficeUserCard } from "@/features/backoffice/lib/capabilities";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
 import { useBackofficeQuery } from "@/features/backoffice/hooks/use-backoffice-query";
-import type { BackofficeManagedUser, BackofficeManagedUserWritePayload } from "@/features/backoffice/types/rbac.types";
+import type { BackofficeManagedUser, BackofficeManagedUserWritePayload, BackofficeRbacMeta } from "@/features/backoffice/types/rbac.types";
 import { PHONE_INPUT_MAX_LENGTH, PHONE_INPUT_PLACEHOLDER, formatPhoneInput } from "@/shared/lib/phone-input";
 
 const EMPTY_FORM: BackofficeManagedUserWritePayload = {
@@ -40,6 +40,7 @@ const EMPTY_FORM: BackofficeManagedUserWritePayload = {
   group_ids: [],
   system_role: null,
 };
+const EMPTY_ROLE_OPTIONS: BackofficeRbacMeta["roles"] = [];
 
 function StatusIconChip({
   label,
@@ -132,7 +133,10 @@ export function UsersPage() {
       ),
     [groupsState.data],
   );
-  const roleOptions = metaState.data?.roles ?? [];
+  const roleOptions = useMemo(
+    () => metaState.data?.roles ?? EMPTY_ROLE_OPTIONS,
+    [metaState.data?.roles],
+  );
 
   const selectedRole = useMemo(
     () => roleOptions.find((item) => item.code === (form.system_role ?? "")) ?? null,

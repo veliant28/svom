@@ -19,7 +19,7 @@ import { useAuth } from "@/features/auth/hooks/use-auth";
 import { BACKOFFICE_CAPABILITIES, hasBackofficeCapability } from "@/features/backoffice/lib/capabilities";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
 import { useBackofficeQuery } from "@/features/backoffice/hooks/use-backoffice-query";
-import type { BackofficeGroupItem, BackofficeGroupWritePayload } from "@/features/backoffice/types/rbac.types";
+import type { BackofficeGroupItem, BackofficeGroupWritePayload, BackofficeRbacMeta } from "@/features/backoffice/types/rbac.types";
 import type { BackofficeCapabilityCode } from "@/features/backoffice/types/shared.types";
 
 const USERS_MANAGEMENT_BUNDLE_CODE = "users.management.bundle";
@@ -40,6 +40,7 @@ const EMPTY_FORM: GroupEditorForm = {
   name: "",
   capability_codes: [],
 };
+const EMPTY_CAPABILITIES: BackofficeRbacMeta["capabilities"] = [];
 
 function hasUsersManagementCapability(codes: string[]): boolean {
   return codes.some((code) => USERS_MANAGEMENT_CAPABILITY_CODES.includes(code as BackofficeCapabilityCode));
@@ -110,7 +111,10 @@ export function GroupsPage() {
   const groupsCount = useMemo(() => normalizeListPayload<BackofficeGroupItem>(groupsState.data).count, [groupsState.data]);
   const pagesCount = Math.max(1, Math.ceil(groupsCount / 20));
 
-  const capabilities = metaState.data?.capabilities ?? [];
+  const capabilities = useMemo(
+    () => metaState.data?.capabilities ?? EMPTY_CAPABILITIES,
+    [metaState.data?.capabilities],
+  );
   const collator = useMemo(() => new Intl.Collator(undefined, { sensitivity: "base" }), []);
   const capabilitiesByCode = useMemo(
     () => new Map(capabilities.map((capability) => [capability.code, capability])),
@@ -125,22 +129,22 @@ export function GroupsPage() {
     if (code === USERS_MANAGEMENT_BUNDLE_CODE) {
       return fallback || t("rbac.groups.capabilityBundles.usersManagement.title");
     }
-    try {
-      return t(`rbac.capabilities.${code}.title` as never);
-    } catch {
-      return fallback || code;
+    const key = `rbac.capabilities.${code}.title` as never;
+    if (t.has(key)) {
+      return t(key);
     }
+    return fallback || code;
   }, [t]);
 
   const getCapabilityDescription = useCallback((code: string, fallback?: string) => {
     if (code === USERS_MANAGEMENT_BUNDLE_CODE) {
       return fallback || t("rbac.groups.capabilityBundles.usersManagement.description");
     }
-    try {
-      return t(`rbac.capabilities.${code}.description` as never);
-    } catch {
-      return fallback || "";
+    const key = `rbac.capabilities.${code}.description` as never;
+    if (t.has(key)) {
+      return t(key);
     }
+    return fallback || "";
   }, [t]);
 
   const sortCapabilityCodes = useCallback((codes: string[]) => {
