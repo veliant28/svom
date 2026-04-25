@@ -13,11 +13,6 @@ from apps.catalog.models import Category
 
 DATA_ROOT = Path(__file__).resolve().parents[2] / "data" / "category_remaps"
 DEFAULT_WAVE = "wave34_36_gbc_cleanup"
-RULE_FILE_NAMES = (
-    "wave34_manual_rules.json",
-    "wave35_manual_rules.json",
-    "wave36_manual_rules.json",
-)
 
 
 class Command(BaseCommand):
@@ -61,10 +56,9 @@ class Command(BaseCommand):
         if not categories_json.exists():
             raise CommandError(f"Missing categories.json: {categories_json}")
 
-        rule_paths = [wave_dir / file_name for file_name in RULE_FILE_NAMES]
-        missing_rule_paths = [str(path) for path in rule_paths if not path.exists()]
-        if missing_rule_paths:
-            raise CommandError(f"Missing curated rule files: {missing_rule_paths}")
+        rule_paths = sorted(wave_dir.glob("*_manual_rules.json"))
+        if not rule_paths:
+            raise CommandError(f"No *_manual_rules.json files found in curated wave: {wave_dir}")
 
         is_apply = bool(options["apply"])
         report_dir = Path(str(options["report_dir"])).expanduser().resolve()
@@ -118,8 +112,8 @@ class Command(BaseCommand):
     def _load_categories(path: Path) -> list[dict]:
         payload = json.loads(path.read_text(encoding="utf-8"))
         categories = payload.get("categories")
-        if not isinstance(categories, list) or not categories:
-            raise CommandError(f"No categories found in {path}")
+        if not isinstance(categories, list):
+            raise CommandError(f"categories must be a list in {path}")
 
         result: list[dict] = []
         required_fields = {"id", "parent_id", "slug", "name", "name_uk", "name_ru", "name_en"}
