@@ -15,14 +15,10 @@ import { useOrderWaybillOutsideClick } from "@/features/backoffice/components/or
 import { useOrderWaybillPaymentState } from "@/features/backoffice/components/orders/use-order-waybill-payment-state";
 import { useOrderWaybillRecipientCounterpartySelection } from "@/features/backoffice/components/orders/use-order-waybill-recipient-counterparty-selection";
 import { useOrderWaybillSeatState } from "@/features/backoffice/components/orders/use-order-waybill-seat-state";
+import { useOrderWaybillShipmentActions } from "@/features/backoffice/components/orders/use-order-waybill-shipment-actions";
 import {
-  buildWaybillSavePayload,
-  formatDimensionCmFromMm,
   formatKgDisplay,
   normalizePreferredDeliveryDate,
-  normalizeSeatOptionPayload,
-  parsePositiveNumber,
-  resolveSeatOptionFromPayload,
   type Translator,
   type WaybillAddressSuggestion,
 } from "@/features/backoffice/components/orders/order-waybill-modal.helpers";
@@ -33,7 +29,6 @@ import {
 } from "@/features/backoffice/components/orders/order-waybill-party.helpers";
 import {
   buildWaybillInitialPayload,
-  type WaybillSeatOptionPayload,
   type WaybillFormPayload,
 } from "@/features/backoffice/lib/orders/waybill-form";
 import type { BackofficeOrderOperational } from "@/features/backoffice/types/orders.types";
@@ -432,6 +427,43 @@ export function OrderWaybillModal({
     setWarehouses,
     setActiveWarehouseIndex,
   });
+  const normalizedSeatsAmount = Math.max(1, seatOptions.length || payload.seats_amount || 1);
+  const {
+    activeSeat,
+    cargoTypeUi,
+    volumetricWeight,
+    payloadForSave,
+    updateSeatOptions,
+    applyCargoTypeSelection,
+    enterPackagingMode,
+    leavePackagingMode,
+    enterSeatListMode,
+    openSeatForEditing,
+    addSeat,
+    removeSeat,
+    togglePackagingSelection,
+  } = useOrderWaybillShipmentActions({
+    payload,
+    setPayload,
+    waybill,
+    seatOptions,
+    selectedSeatIndex,
+    selectedPackRefs,
+    normalizedPreferredDeliveryDate,
+    packagingWidth,
+    packagingLength,
+    packagingHeight,
+    normalizedSeatsAmount,
+    setSelectedSeatIndex,
+    setPackagingWidth,
+    setPackagingLength,
+    setPackagingHeight,
+    setIsPackagingEnabled,
+    setIsSeatListMode,
+    setIsPackagingMode,
+    setPackingsDropdownOpen,
+    setSeatMenuOpen,
+  });
 
   if (!isOpen) {
     return null;
@@ -440,50 +472,12 @@ export function OrderWaybillModal({
   const senderCounterpartyDisplay = getSenderMetaLabel(sender, "counterparty_label");
   const senderCityDisplay = getSenderMetaLabel(sender, "city_label");
   const senderAddressDisplay = getSenderMetaLabel(sender, "address_label");
-  const activeSeat = seatOptions[selectedSeatIndex] || seatOptions[0] || resolveSeatOptionFromPayload(payload);
-  const cargoTypeUi = (activeSeat.cargo_type || payload.cargo_type || waybill?.cargo_type || "Parcel") as "Cargo" | "Parcel" | "Documents" | "Pallet" | "TiresWheels";
   const handleTrackWaybill = async () => {
     if (!waybill) {
       return;
     }
     setTrackingModalOpen(true);
     await onSync();
-  };
-  const normalizedSeatsAmount = Math.max(1, seatOptions.length || payload.seats_amount || 1);
-  const width = parsePositiveNumber(packagingWidth);
-  const length = parsePositiveNumber(packagingLength);
-  const height = parsePositiveNumber(packagingHeight);
-  const volumetricWeight =
-    width <= 0 || length <= 0 || height <= 0
-      ? formatKgDisplay(activeSeat.weight || payload.weight || "0")
-      : formatKgDisplay((width * length * height) / 4000);
-  const updateSeatOptions = (
-    updater: (seats: WaybillSeatOptionPayload[], activeIndex: number) => WaybillSeatOptionPayload[],
-  ) => {
-    setPayload((prev) => {
-      const fallback = resolveSeatOptionFromPayload(prev);
-      const currentSeats = Array.isArray(prev.options_seat) && prev.options_seat.length > 0
-        ? prev.options_seat.map((seat) => normalizeSeatOptionPayload(seat, fallback))
-        : [fallback];
-      const activeIndex = Math.min(Math.max(0, selectedSeatIndex), Math.max(0, currentSeats.length - 1));
-      const nextSeatsRaw = updater(currentSeats, activeIndex);
-      const nextSeats = nextSeatsRaw.length > 0
-        ? nextSeatsRaw.map((seat) => normalizeSeatOptionPayload(seat, fallback))
-        : [fallback];
-      return {
-        ...prev,
-        seats_amount: nextSeats.length,
-        options_seat: nextSeats,
-      };
-    });
-  };
-  const applyCargoTypeSelection = (nextType: "Cargo" | "Parcel" | "Documents" | "Pallet") => {
-    updateSeatOptions((seats, activeIndex) => seats.map((seat, index) => (
-      index === activeIndex
-        ? { ...seat, cargo_type: nextType }
-        : seat
-    )));
-    setPayload((prev) => ({ ...prev, cargo_type: nextType }));
   };
   const applyPayerTypeSelection = (nextType: "Sender" | "Recipient" | "ThirdPerson") => {
     if (nextType === "ThirdPerson" && !thirdPersonSupported) {
@@ -513,129 +507,12 @@ export function OrderWaybillModal({
       return { ...prev, payment_method: nextMethod };
     });
   };
-  const enterPackagingMode = () => {
-    setIsSeatListMode(false);
-    setIsPackagingMode(true);
-    setPackingsDropdownOpen(true);
-    setSeatMenuOpen(false);
-  };
-  const leavePackagingMode = () => {
-    setIsPackagingMode(false);
-    setPackingsDropdownOpen(false);
-    setSeatMenuOpen(false);
-  };
   const enterAdditionalServicesMode = () => {
     setIsAdditionalServicesMode(true);
   };
   const leaveAdditionalServicesMode = () => {
     setIsAdditionalServicesMode(false);
   };
-  const enterSeatListMode = () => {
-    if (normalizedSeatsAmount <= 1) {
-      return;
-    }
-    setIsPackagingMode(false);
-    setPackingsDropdownOpen(false);
-    setIsSeatListMode(true);
-    setSeatMenuOpen(false);
-  };
-  const openSeatForEditing = (index: number) => {
-    setSelectedSeatIndex(Math.max(0, Math.min(index, Math.max(0, seatOptions.length - 1))));
-    setIsSeatListMode(false);
-    setIsPackagingMode(false);
-    setPackingsDropdownOpen(false);
-    setSeatMenuOpen(false);
-  };
-  const addSeat = () => {
-    let nextIndex = selectedSeatIndex;
-    updateSeatOptions((seats, activeIndex) => {
-      const baseSeat = seats[activeIndex] || seats[0] || resolveSeatOptionFromPayload(payload);
-      const nextSeat: WaybillSeatOptionPayload = {
-        ...baseSeat,
-      };
-      const nextSeats = [
-        ...seats.slice(0, activeIndex + 1),
-        nextSeat,
-        ...seats.slice(activeIndex + 1),
-      ];
-      nextIndex = activeIndex + 1;
-      return nextSeats;
-    });
-    setSelectedSeatIndex(nextIndex);
-    setSeatMenuOpen(false);
-  };
-  const removeSeat = () => {
-    if (normalizedSeatsAmount <= 1) {
-      return;
-    }
-    let nextIndex = selectedSeatIndex;
-    updateSeatOptions((seats, activeIndex) => {
-      if (seats.length <= 1) {
-        return seats;
-      }
-      const nextSeats = seats.filter((_, index) => index !== activeIndex);
-      nextIndex = Math.max(0, Math.min(activeIndex, nextSeats.length - 1));
-      return nextSeats;
-    });
-    setSelectedSeatIndex(nextIndex);
-    setIsSeatListMode(false);
-    setSeatMenuOpen(false);
-  };
-  const togglePackagingSelection = (packing: BackofficeNovaPoshtaLookupPackaging) => {
-    const normalizedRef = (packing.ref || "").trim();
-    if (!normalizedRef) {
-      return;
-    }
-    const hasRef = selectedPackRefs.includes(normalizedRef);
-    const nextRefs = hasRef
-      ? selectedPackRefs.filter((ref) => ref !== normalizedRef)
-      : [...selectedPackRefs, normalizedRef];
-    updateSeatOptions((seats, activeIndex) => seats.map((seat, index) => (
-      index === activeIndex
-        ? {
-          ...seat,
-          pack_refs: nextRefs,
-          pack_ref: nextRefs[0] || "",
-        }
-        : seat
-    )));
-    const nextWidth = formatDimensionCmFromMm(packing.width_mm);
-    const nextLength = formatDimensionCmFromMm(packing.length_mm);
-    const nextHeight = formatDimensionCmFromMm(packing.height_mm);
-    if (nextWidth) {
-      setPackagingWidth(nextWidth);
-    }
-    if (nextLength) {
-      setPackagingLength(nextLength);
-    }
-    if (nextHeight) {
-      setPackagingHeight(nextHeight);
-    }
-    if (nextWidth || nextLength || nextHeight) {
-      setIsPackagingEnabled(true);
-      updateSeatOptions((seats, activeIndex) => seats.map((seat, index) => (
-        index === activeIndex
-          ? {
-            ...seat,
-            volumetric_width: nextWidth || seat.volumetric_width || "",
-            volumetric_length: nextLength || seat.volumetric_length || "",
-            volumetric_height: nextHeight || seat.volumetric_height || "",
-          }
-          : seat
-      )));
-    }
-    setPackingsDropdownOpen(false);
-  };
-  const payloadForSave = buildWaybillSavePayload({
-    payload,
-    seatOptions,
-    selectedSeatIndex,
-    activeSeat,
-    packagingWidth,
-    packagingLength,
-    packagingHeight,
-    normalizedPreferredDeliveryDate,
-  });
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
       <button type="button" className="absolute inset-0 bg-black/40" aria-label={t("orders.actions.closeModal")} onClick={onClose} />
