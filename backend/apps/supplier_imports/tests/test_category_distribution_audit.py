@@ -34,6 +34,19 @@ class CategoryDistributionAuditSuppressorTests(SimpleTestCase):
             )
         )
 
+    def test_suppresses_turbo_compressor_to_ac_compressor_trap(self):
+        self.assertTrue(
+            Command._is_suppressed_false_positive(
+                product_name="Монтажний комплект турбо-компресора",
+                assigned_category_path="Двигатель и Система выхлопа > Турбины > Ремкомплект турбины",
+                predicted_category_path=(
+                    "Охлаждение и Отопление > Кондиционер > "
+                    "Монтажный комплект компрессора кондиционера"
+                ),
+                root_changed=True,
+            )
+        )
+
     def test_keeps_non_suppressed_hard_part_candidate(self):
         self.assertFalse(
             Command._is_suppressed_false_positive(

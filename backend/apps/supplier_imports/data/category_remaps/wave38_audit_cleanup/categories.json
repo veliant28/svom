@@ -1,0 +1,37 @@
+{
+  "categories": [
+    {
+      "id": "9b80c085-4dc7-4e2d-a5cd-9bf73f8c628a",
+      "parent_id": "18f4ad7b-2e91-4c9d-87d1-1730aab6c410",
+      "slug": "hilza-tsylindra",
+      "name": "Гільза циліндра",
+      "name_uk": "Гільза циліндра",
+      "name_ru": "Гильза цилиндра",
+      "name_en": "Cylinder liner",
+      "description": "",
+      "is_active": true
+    },
+    {
+      "id": "7a84257b-05f7-493f-9170-67ec5e955d41",
+      "parent_id": "8fb20a12-41ae-459f-aa1d-866eb793e59c",
+      "slug": "montazhnyi-komplekt-kompresora-kondytsionera",
+      "name": "Монтажний комплект компресора кондиціонера",
+      "name_uk": "Монтажний комплект компресора кондиціонера",
+      "name_ru": "Монтажный комплект компрессора кондиционера",
+      "name_en": "A/C compressor mounting kit",
+      "description": "",
+      "is_active": true
+    },
+    {
+      "id": "a24c9651-3fed-4817-b364-eec086d446ff",
+      "parent_id": "6af96788-b4ba-436d-8baf-4acafe6993b1",
+      "slug": "avtomobilnyi-kompresor",
+      "name": "Автомобільний компресор",
+      "name_uk": "Автомобільний компресор",
+      "name_ru": "Автомобильный компрессор",
+      "name_en": "Portable car air compressor",
+      "description": "",
+      "is_active": true
+    }
+  ]
+}

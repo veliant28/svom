@@ -553,6 +553,13 @@ class Command(BaseCommand):
         ):
             return True
 
+        if (
+            cls._contains_any(assigned_path, ("турби", "турбо"))
+            and cls._contains_any(predicted_path, ("кондиціонер", "кондиционер"))
+            and cls._contains_any(name, ("компресор", "компрессор"))
+        ):
+            return True
+
         return False
 
     @classmethod

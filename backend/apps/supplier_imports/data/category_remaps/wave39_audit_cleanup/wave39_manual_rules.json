@@ -1,0 +1,19 @@
+{
+  "proposed_rules": [
+    {
+      "from_category_id": "f29c1c80-09b9-4417-9f4e-5f76ff0267c1",
+      "to_category_id": "9b80c085-4dc7-4e2d-a5cd-9bf73f8c628a",
+      "from_category_path": "Гальмівна система > Гідравліка > Ремкомплект головного гальмівного циліндра",
+      "to_category_path": "Двигун і Система вихлопу > Деталі двигуна > Гільза циліндра",
+      "product_ids": [
+        "2bf6e456-bea4-4f8a-8610-0f59e40881dc",
+        "cae801a6-f44a-4b37-82d9-ddf335267854",
+        "75d91e40-a265-42a0-820c-e53ac5658f86",
+        "707c4d01-de2e-45b1-84a4-b844e81b1763",
+        "b09d7dea-9e58-4bca-aa6c-dc9a0990171d",
+        "acdac895-36b2-4e92-97e9-baf1c6a25b50",
+        "253d9c0f-e994-4be4-b90b-72ab417dc9cb"
+      ]
+    }
+  ]
+}
