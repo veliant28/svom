@@ -12,113 +12,35 @@ import {
   updateBackofficeHeroBlockSettings,
   updateBackofficeHeroSlide,
 } from "@/features/backoffice/api/hero-block-api";
-import { PercentStepper } from "@/features/backoffice/components/pricing/percent-stepper";
+import {
+  FileField,
+  ImagePreview,
+  LocaleFields,
+  NumberStepper,
+  TextField,
+  ToggleField,
+} from "@/features/backoffice/components/hero-block/hero-block-form-fields";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
+import {
+  DEFAULT_SETTINGS_FORM,
+  DEFAULT_SLIDE_FORM,
+  clampNumber,
+  emitHeroBlockUpdated,
+  hasTitle,
+  sortSlides,
+  toSettingsForm,
+  toSlideForm,
+  type SettingsForm,
+  type SlideForm,
+} from "@/features/backoffice/lib/hero-block-page.helpers";
 import type {
   BackofficeHeroBlockEffect,
   BackofficeHeroBlockSettings,
   BackofficeHeroSlide,
 } from "@/features/backoffice/types/hero-block.types";
 import { useAuth } from "@/features/auth/hooks/use-auth";
-import {
-  HERO_BLOCK_UPDATED_AT_KEY,
-  HERO_BLOCK_UPDATED_EVENT,
-} from "@/shared/lib/hero-block-sync";
-
-type SettingsForm = {
-  autoplay_enabled: boolean;
-  transition_effect: BackofficeHeroBlockEffect;
-  transition_interval_seconds: number;
-  transition_speed_ms: number;
-  max_active_slides: number;
-};
-
-type SlideForm = {
-  title_uk: string;
-  title_ru: string;
-  title_en: string;
-  subtitle_uk: string;
-  subtitle_ru: string;
-  subtitle_en: string;
-  cta_url: string;
-  sort_order: number;
-  is_active: boolean;
-  desktop_image_file: File | null;
-  mobile_image_file: File | null;
-};
-
-const DEFAULT_SETTINGS_FORM: SettingsForm = {
-  autoplay_enabled: true,
-  transition_effect: "crossfade",
-  transition_interval_seconds: 5,
-  transition_speed_ms: 900,
-  max_active_slides: 10,
-};
-
-const DEFAULT_SLIDE_FORM: SlideForm = {
-  title_uk: "",
-  title_ru: "",
-  title_en: "",
-  subtitle_uk: "",
-  subtitle_ru: "",
-  subtitle_en: "",
-  cta_url: "/catalog",
-  sort_order: 1,
-  is_active: true,
-  desktop_image_file: null,
-  mobile_image_file: null,
-};
-
-function clampNumber(value: number, min: number, max: number): number {
-  if (!Number.isFinite(value)) {
-    return min;
-  }
-  return Math.max(min, Math.min(max, value));
-}
-
-function sortSlides(items: BackofficeHeroSlide[]): BackofficeHeroSlide[] {
-  return [...items].sort((left, right) => left.sort_order - right.sort_order);
-}
-
-function toSettingsForm(value: BackofficeHeroBlockSettings): SettingsForm {
-  return {
-    autoplay_enabled: Boolean(value.autoplay_enabled),
-    transition_effect: value.transition_effect,
-    transition_interval_seconds: Math.max(1, Math.round(Number(value.transition_interval_ms || 5000) / 1000)),
-    transition_speed_ms: clampNumber(Number(value.transition_speed_ms || 900), 150, 10000),
-    max_active_slides: clampNumber(Number(value.max_active_slides || 10), 1, 10),
-  };
-}
-
-function toSlideForm(item: BackofficeHeroSlide): SlideForm {
-  return {
-    title_uk: item.title_uk || "",
-    title_ru: item.title_ru || "",
-    title_en: item.title_en || "",
-    subtitle_uk: item.subtitle_uk || "",
-    subtitle_ru: item.subtitle_ru || "",
-    subtitle_en: item.subtitle_en || "",
-    cta_url: item.cta_url || "",
-    sort_order: Number(item.sort_order || 1),
-    is_active: Boolean(item.is_active),
-    desktop_image_file: null,
-    mobile_image_file: null,
-  };
-}
-
-function emitHeroBlockUpdated(): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-  window.localStorage.setItem(HERO_BLOCK_UPDATED_AT_KEY, String(Date.now()));
-  window.dispatchEvent(new CustomEvent(HERO_BLOCK_UPDATED_EVENT));
-}
-
-function hasTitle(form: SlideForm): boolean {
-  return Boolean(form.title_uk.trim() || form.title_ru.trim() || form.title_en.trim());
-}
 
 export function HeroBlockPage() {
   const t = useTranslations("backoffice.common");
@@ -607,239 +529,5 @@ export function HeroBlockPage() {
         </div>
       </section>
     </AsyncState>
-  );
-}
-
-function LocaleFields({
-  titleLabel,
-  subtitleLabel,
-  form,
-  onChange,
-}: {
-  titleLabel: string;
-  subtitleLabel: string;
-  form: SlideForm;
-  onChange: (updater: (prev: SlideForm) => SlideForm) => void;
-}) {
-  const t = useTranslations("backoffice.common");
-
-  function updateField(key: keyof SlideForm, value: string) {
-    onChange((prev: SlideForm) => ({ ...prev, [key]: value }));
-  }
-
-  return (
-    <div className="grid gap-3 lg:grid-cols-3">
-      <div className="min-w-0 grid gap-3">
-        <TextField label={`${titleLabel} (uk)`} value={form.title_uk} onChange={(next) => updateField("title_uk", next)} />
-        <TextAreaField label={`${subtitleLabel} (uk)`} value={form.subtitle_uk} onChange={(next) => updateField("subtitle_uk", next)} />
-      </div>
-      <div className="min-w-0 grid gap-3">
-        <TextField label={`${titleLabel} (ru)`} value={form.title_ru} onChange={(next) => updateField("title_ru", next)} />
-        <TextAreaField label={`${subtitleLabel} (ru)`} value={form.subtitle_ru} onChange={(next) => updateField("subtitle_ru", next)} />
-      </div>
-      <div className="min-w-0 grid gap-3">
-        <TextField label={`${titleLabel} (en)`} value={form.title_en} onChange={(next) => updateField("title_en", next)} />
-        <TextAreaField label={`${subtitleLabel} (en)`} value={form.subtitle_en} onChange={(next) => updateField("subtitle_en", next)} />
-      </div>
-      <p className="lg:col-span-3 text-xs" style={{ color: "var(--muted)" }}>
-        {t("heroBlock.fields.localizationHint")}
-      </p>
-    </div>
-  );
-}
-
-function TextField({
-  label,
-  labelClassName,
-  wrapperClassName,
-  value,
-  onChange,
-}: {
-  label: string;
-  labelClassName?: string;
-  wrapperClassName?: string;
-  value: string;
-  onChange: (next: string) => void;
-}) {
-  return (
-    <label className={`min-w-0 grid gap-1 ${wrapperClassName ?? ""}`.trim()}>
-      <span className={`text-xs font-semibold uppercase leading-tight tracking-[0.08em] ${labelClassName ?? ""}`.trim()} style={{ color: "var(--muted)" }}>
-        {label}
-      </span>
-      <input
-        value={value}
-        onChange={(event) => {
-          onChange(event.target.value);
-        }}
-        className="h-9 rounded-md border px-2 text-sm"
-        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-      />
-    </label>
-  );
-}
-
-function TextAreaField({ label, value, onChange }: { label: string; value: string; onChange: (next: string) => void }) {
-  return (
-    <label className="min-w-0 grid gap-1">
-      <span className="text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>
-        {label}
-      </span>
-      <textarea
-        value={value}
-        onChange={(event) => {
-          onChange(event.target.value);
-        }}
-        rows={4}
-        className="rounded-md border px-2 py-2 text-sm"
-        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-      />
-    </label>
-  );
-}
-
-function FileField({
-  label,
-  labelClassName,
-  wrapperClassName,
-  onChange,
-  currentImageUrl,
-  selectedFile,
-}: {
-  label: string;
-  labelClassName?: string;
-  wrapperClassName?: string;
-  onChange: (file: File | null) => void;
-  currentImageUrl?: string;
-  selectedFile?: File | null;
-}) {
-  const t = useTranslations("backoffice.common");
-  const currentFileName = getFileNameFromUrl(currentImageUrl || "");
-  const selectedFileName = (selectedFile?.name || "").trim();
-
-  return (
-    <label className={`min-w-0 grid gap-1 ${wrapperClassName ?? ""}`.trim()}>
-      <span className={`text-xs font-semibold uppercase leading-tight tracking-[0.08em] ${labelClassName ?? ""}`.trim()} style={{ color: "var(--muted)" }}>
-        {label}
-      </span>
-      <input
-        type="file"
-        accept="image/*"
-        className="h-9 w-full min-w-0 overflow-hidden rounded-md border px-2 text-xs leading-9 file:mr-2 file:h-7 file:max-w-full file:rounded file:border-0 file:px-2 file:text-xs file:leading-7"
-        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)", lineHeight: "2.25rem" }}
-        onChange={(event) => {
-          onChange(event.target.files?.[0] || null);
-        }}
-      />
-      {currentFileName ? (
-        <span className="text-xs" style={{ color: "var(--muted)" }}>
-          {t("heroBlock.fields.currentImageSaved", { name: currentFileName })}
-        </span>
-      ) : null}
-      <span className="text-xs" style={{ color: "var(--muted)" }}>
-        {selectedFileName
-          ? t("heroBlock.fields.newFileSelected", { name: selectedFileName })
-          : currentFileName
-            ? t("heroBlock.fields.replaceImageHint")
-            : t("heroBlock.fields.noFileSelected")}
-      </span>
-    </label>
-  );
-}
-
-function getFileNameFromUrl(value: string): string {
-  const normalized = String(value || "").trim();
-  if (!normalized) {
-    return "";
-  }
-  const pathname = normalized.split("?")[0].split("#")[0];
-  return pathname.split("/").filter(Boolean).pop() || "";
-}
-
-function ToggleField({
-  label,
-  widthClassName,
-  value,
-  onToggle,
-  yesLabel,
-  noLabel,
-}: {
-  label: string;
-  widthClassName?: string;
-  value: boolean;
-  onToggle: () => void;
-  yesLabel: string;
-  noLabel: string;
-}) {
-  const wrapperClassName = widthClassName ? `grid gap-1 ${widthClassName}` : "grid min-w-[140px] gap-1";
-
-  return (
-    <label className={wrapperClassName}>
-      <span className="text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>
-        {label}
-      </span>
-      <button
-        type="button"
-        className="h-9 rounded-md border px-3 text-sm font-semibold"
-        style={{
-          borderColor: value ? "var(--text)" : "var(--border)",
-          backgroundColor: value ? "var(--text)" : "var(--surface)",
-          color: value ? "var(--surface)" : "var(--text)",
-        }}
-        onClick={onToggle}
-      >
-        {value ? yesLabel : noLabel}
-      </button>
-    </label>
-  );
-}
-
-function ImagePreview({ imageUrl, label }: { imageUrl: string; label: string }) {
-  return (
-    <div className="grid gap-1">
-      <span className="text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>
-        {label}
-      </span>
-      <div className="min-h-[140px] rounded-lg border bg-cover bg-center" style={{ borderColor: "var(--border)", backgroundImage: `url(${imageUrl})` }} />
-    </div>
-  );
-}
-
-function NumberStepper({
-  label,
-  value,
-  onChange,
-  min,
-  max,
-  step = 1,
-}: {
-  label: string;
-  value: number;
-  onChange: (next: number) => void;
-  min: number;
-  max: number;
-  step?: number;
-}) {
-  const safeValue = clampNumber(value, min, max);
-  return (
-    <label className="grid min-w-[140px] gap-1 justify-items-start">
-      <span className="text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>
-        {label}
-      </span>
-      <PercentStepper
-        value={safeValue}
-        onChange={onChange}
-        min={min}
-        max={max}
-        step={step}
-        minusLabel={`${label} -`}
-        plusLabel={`${label} +`}
-        inputLabel={label}
-        suffix=""
-        inputMode="numeric"
-        integerOnly
-        inputWidthClassName="w-12"
-        containerClassName="w-[118px]"
-      />
-    </label>
   );
 }
