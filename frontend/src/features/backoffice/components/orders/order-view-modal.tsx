@@ -3,6 +3,18 @@ import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 
 import { OrderReceiptField } from "@/features/backoffice/components/orders/order-receipt-field";
+import {
+  extractLabel,
+  resolveDeliveryAddressParts,
+  resolveDeliveryMethodLabel,
+  resolveOrderPaymentMethodLabel,
+  resolvePaymentMethodLabel,
+  resolvePaymentStatusLabel,
+  selectedActionForStatus,
+  type ActionKind,
+  type Translator,
+} from "@/features/backoffice/components/orders/order-view-modal.helpers";
+import { OrderViewValueField } from "@/features/backoffice/components/orders/order-view-value-field";
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { formatOrderDate, resolveOrderStatusDescription } from "@/features/backoffice/lib/orders/order-formatters";
@@ -12,351 +24,6 @@ import type {
   BackofficeMonobankPaymentAction,
   BackofficeOrderOperational,
 } from "@/features/backoffice/types/orders.types";
-
-type Translator = (key: string, values?: Record<string, string | number>) => string;
-
-type ActionKind = "confirm" | "ready" | "ship" | "complete" | "reset" | "cancel";
-
-function ValueField({
-  label,
-  value,
-  mono = false,
-  bold = false,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-  bold?: boolean;
-}) {
-  return (
-    <div className="rounded-md border px-3 py-2" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}>
-      <p className="text-[11px]" style={{ color: "var(--muted)" }}>{label}</p>
-      <p className={`mt-1 text-sm ${mono ? "font-mono" : ""} ${bold ? "font-semibold" : "font-medium"} text-[var(--text)]`}>
-        {value || "-"}
-      </p>
-    </div>
-  );
-}
-
-function extractLabel(sentence: string): string {
-  const [label] = sentence.split(":");
-  return label.trim();
-}
-
-function humanizeCode(value: string): string {
-  if (!value) {
-    return "-";
-  }
-
-  return value
-    .replaceAll("_", " ")
-    .replaceAll("-", " ")
-    .trim();
-}
-
-function resolvePaymentMethodLabel(value: string, t: Translator): string {
-  const normalized = value.trim().toLowerCase();
-  if (!normalized) {
-    return "-";
-  }
-  if (normalized === "cash_on_delivery") {
-    return t("orders.payment.values.methods.cash_on_delivery");
-  }
-  if (normalized === "monobank") {
-    return t("orders.payment.values.methods.monobank");
-  }
-  if (normalized === "liqpay") {
-    return t("orders.payment.values.methods.liqpay");
-  }
-  if (normalized === "card_placeholder") {
-    return t("orders.payment.values.methods.card_placeholder");
-  }
-  return humanizeCode(value);
-}
-
-function resolvePaymentStatusLabel(value: string, t: Translator): string {
-  const normalized = value.trim().toLowerCase();
-  if (!normalized) {
-    return "-";
-  }
-  if (normalized === "pending") {
-    return t("orders.payment.values.statuses.pending");
-  }
-  if (normalized === "processing") {
-    return t("orders.payment.values.statuses.processing");
-  }
-  if (normalized === "created") {
-    return t("orders.payment.values.statuses.created");
-  }
-  if (normalized === "success") {
-    return t("orders.payment.values.statuses.success");
-  }
-  if (normalized === "paid") {
-    return t("orders.payment.values.statuses.paid");
-  }
-  if (normalized === "failed") {
-    return t("orders.payment.values.statuses.failed");
-  }
-  if (normalized === "expired") {
-    return t("orders.payment.values.statuses.expired");
-  }
-  if (normalized === "cancelled" || normalized === "canceled") {
-    return t("orders.payment.values.statuses.cancelled");
-  }
-  return humanizeCode(value);
-}
-
-function resolveDeliveryMethodLabel(value: string, t: Translator): string {
-  const normalized = value.trim().toLowerCase();
-  if (!normalized) {
-    return "-";
-  }
-  if (normalized === "pickup") {
-    return t("orders.modals.view.summary.values.deliveryMethods.pickup");
-  }
-  if (normalized === "courier") {
-    return t("orders.modals.view.summary.values.deliveryMethods.courier");
-  }
-  if (normalized === "nova_poshta") {
-    return t("orders.modals.view.summary.values.deliveryMethods.nova_poshta");
-  }
-  return humanizeCode(value);
-}
-
-function resolveOrderPaymentMethodLabel(value: string, t: Translator): string {
-  const normalized = value.trim().toLowerCase();
-  if (!normalized) {
-    return "-";
-  }
-  if (normalized === "cash_on_delivery") {
-    return t("orders.payment.values.methods.cash_on_delivery");
-  }
-  if (normalized === "monobank") {
-    return t("orders.payment.values.methods.monobank");
-  }
-  if (normalized === "liqpay") {
-    return t("orders.payment.values.methods.liqpay");
-  }
-  if (normalized === "card_placeholder") {
-    return t("orders.payment.values.methods.card_placeholder");
-  }
-  return humanizeCode(value);
-}
-
-function looksLikeRegionToken(value: string): boolean {
-  const normalized = value.trim().toLowerCase();
-  if (!normalized) {
-    return false;
-  }
-
-  if (normalized.includes("область")) {
-    return true;
-  }
-
-  return (
-    normalized.endsWith("обл")
-    || normalized.endsWith("обл.")
-    || normalized.endsWith("ская")
-    || normalized.endsWith("ська")
-    || normalized.endsWith("ский")
-    || normalized.endsWith("ський")
-  );
-}
-
-function formatCityWithRegion(city: string, region: string): string {
-  const normalizedCity = city.trim();
-  const normalizedRegion = region.trim();
-  if (!normalizedCity && !normalizedRegion) {
-    return "";
-  }
-  if (!normalizedRegion) {
-    return normalizedCity;
-  }
-  if (!normalizedCity) {
-    return normalizedRegion;
-  }
-  if (/^(г\.|м\.)\s*/i.test(normalizedCity)) {
-    return `${normalizedCity}, ${normalizedRegion}`;
-  }
-  return `г. ${normalizedCity}, ${normalizedRegion}`;
-}
-
-function splitDeliveryAddress(rawValue: string): { city: string; destination: string; region: string } {
-  const raw = rawValue.trim();
-  if (!raw) {
-    return { city: "", destination: "", region: "" };
-  }
-
-  const parts = raw
-    .split(",")
-    .map((part) => part.trim())
-    .filter(Boolean);
-  if (!parts.length) {
-    return { city: "", destination: "", region: "" };
-  }
-
-  // Common NP patterns:
-  // 1) region, city, destination...
-  // 2) city, region, destination...
-  if (parts.length >= 3) {
-    if (looksLikeRegionToken(parts[0])) {
-      return {
-        city: parts[1] || "",
-        destination: parts.slice(2).join(", ").trim(),
-        region: parts[0] || "",
-      };
-    }
-    if (looksLikeRegionToken(parts[1])) {
-      return {
-        city: parts[0] || "",
-        destination: parts.slice(2).join(", ").trim(),
-        region: parts[1] || "",
-      };
-    }
-  }
-
-  let cityIndex = 0;
-  let destinationStartIndex = 1;
-  if (parts.length > 1 && looksLikeRegionToken(parts[0])) {
-    cityIndex = 1;
-    destinationStartIndex = 2;
-  }
-
-  return {
-    city: parts[cityIndex] || "",
-    destination: parts.slice(destinationStartIndex).join(", ").trim(),
-    region: parts.length > 1 && looksLikeRegionToken(parts[0]) ? parts[0] : "",
-  };
-}
-
-function normalizeDeliveryDestination(rawDestination: string, city: string): string {
-  const raw = rawDestination.trim();
-  if (!raw) {
-    return "";
-  }
-
-  const parts = raw
-    .split(",")
-    .map((part) => part.trim())
-    .filter(Boolean);
-  if (!parts.length) {
-    return "";
-  }
-
-  const normalizedCity = city.trim().toLowerCase();
-  const normalizedCityWithoutPrefix = normalizedCity.replace(/^(г\.|м\.)\s*/i, "").trim();
-  // Drop repeated city/region tokens in any order at the beginning.
-  while (parts.length) {
-    const head = parts[0].toLowerCase();
-    const isRegionHead = looksLikeRegionToken(parts[0]);
-    const isCityHead =
-      (normalizedCity && head === normalizedCity)
-      || (normalizedCityWithoutPrefix && head === normalizedCityWithoutPrefix);
-    if (!isRegionHead && !isCityHead) {
-      break;
-    }
-    parts.shift();
-  }
-
-  return parts.join(", ").trim();
-}
-
-function looksLikeNovaPoshtaPointToken(value: string): boolean {
-  const normalized = value.trim().toLowerCase();
-  return /(відділен|отделен|поштомат|почтомат|постомат|адрес|адреса|address)/i.test(normalized);
-}
-
-function normalizeCityCandidates(value: string): string[] {
-  const raw = value.trim().toLowerCase();
-  if (!raw) {
-    return [];
-  }
-  const head = raw.split(",")[0]?.trim() || "";
-  const withoutPrefix = head.replace(/^(г\.|м\.)\s*/i, "").trim();
-  return [head, withoutPrefix].filter(Boolean);
-}
-
-function formatNovaPoshtaDestination(rawDestination: string, city: string, t: Translator): string {
-  const normalized = rawDestination.trim();
-  if (!normalized) {
-    return "";
-  }
-
-  const parts = normalized
-    .split(",")
-    .map((part) => part.trim())
-    .filter(Boolean);
-  if (!parts.length) {
-    return "";
-  }
-
-  const cityCandidates = normalizeCityCandidates(city);
-  let pointToken = "";
-  if (looksLikeNovaPoshtaPointToken(parts[0])) {
-    pointToken = parts.shift() || "";
-  }
-
-  while (parts.length && looksLikeRegionToken(parts[0])) {
-    parts.shift();
-  }
-  while (parts.length && cityCandidates.includes(parts[0].toLowerCase())) {
-    parts.shift();
-  }
-
-  if (!pointToken && parts.length && looksLikeNovaPoshtaPointToken(parts[0])) {
-    pointToken = parts.shift() || "";
-  }
-
-  const tail = parts.join(", ").trim();
-  const warehouseLabel = t("orders.modals.waybill.delivery.warehouse");
-  const resolvedPointToken = pointToken || warehouseLabel;
-  return [resolvedPointToken, tail].filter(Boolean).join(", ");
-}
-
-function selectedActionForStatus(status: string, canResetToNew = false): ActionKind {
-  const normalized = status.trim().toLowerCase();
-  if (normalized === "new") {
-    return "reset";
-  }
-  if (normalized === "processing") {
-    return "confirm";
-  }
-  if (normalized === "ready_for_shipment") {
-    return "ready";
-  }
-  if (normalized === "shipped") {
-    return "ship";
-  }
-  if (normalized === "completed") {
-    return "complete";
-  }
-  if (normalized === "cancelled") {
-    return "cancel";
-  }
-  const [first] = availableActionsForStatus(status, canResetToNew);
-  return first ?? "confirm";
-}
-
-function availableActionsForStatus(status: string, canResetToNew = false): ActionKind[] {
-  if (canResetToNew) {
-    return ["reset", "confirm", "ready", "ship", "complete", "cancel"];
-  }
-
-  const normalized = status.trim().toLowerCase();
-  if (normalized === "new") {
-    return ["confirm", "cancel"];
-  }
-  if (normalized === "processing") {
-    return ["ready", "cancel"];
-  }
-  if (normalized === "ready_for_shipment") {
-    return ["ship", "cancel"];
-  }
-  if (normalized === "shipped") {
-    return ["complete"];
-  }
-  return [];
-}
 
 export function OrderViewModal({
   isOpen,
@@ -448,32 +115,7 @@ export function OrderViewModal({
     }
     return value;
   }, [monobankAmountMinorInput]);
-  const deliveryAddressParts = useMemo(() => {
-    const deliveryMethod = (order?.delivery_method || "").trim().toLowerCase();
-    if (deliveryMethod === "pickup") {
-      return {
-        city: "",
-        destination: "",
-      };
-    }
-
-    const cityLabel = (order?.delivery_city_label || "").trim();
-    const destinationLabel = (order?.delivery_destination_label || "").trim();
-    const fallbackAddress = (order?.delivery_address || "").trim();
-    const parsed = splitDeliveryAddress(fallbackAddress);
-    const resolvedCity = formatCityWithRegion(cityLabel || parsed.city, parsed.region);
-    const rawDestination = destinationLabel || parsed.destination || fallbackAddress;
-    const normalizedDestination = normalizeDeliveryDestination(rawDestination, resolvedCity);
-
-    const resolvedDestination = deliveryMethod === "nova_poshta"
-      ? formatNovaPoshtaDestination(rawDestination, resolvedCity, t) || normalizedDestination
-      : normalizedDestination;
-
-    return {
-      city: resolvedCity || "-",
-      destination: resolvedDestination || "-",
-    };
-  }, [order?.delivery_address, order?.delivery_city_label, order?.delivery_destination_label, order?.delivery_method, t]);
+  const deliveryAddressParts = useMemo(() => resolveDeliveryAddressParts(order, t), [order, t]);
 
   if (!isOpen) {
     return null;
@@ -600,25 +242,25 @@ export function OrderViewModal({
                   </div>
 
                   <div className="mt-3 grid gap-2">
-                    <ValueField
+                    <OrderViewValueField
                       label={t("orders.payment.method")}
                       value={resolvePaymentMethodLabel(order.payment?.method || "", t)}
                     />
-                    <ValueField
+                    <OrderViewValueField
                       label={t("orders.payment.status")}
                       value={resolvePaymentStatusLabel(order.payment?.status || "", t)}
                     />
-                    <ValueField
+                    <OrderViewValueField
                       label={t("orders.payment.amount")}
                       value={order.payment ? `${order.payment.amount} ${order.payment.currency}` : "-"}
                       bold
                     />
-                    <ValueField label={t("orders.payment.lastSyncAt")} value={formatBackofficeDate(order.payment?.last_sync_at)} />
+                    <OrderViewValueField label={t("orders.payment.lastSyncAt")} value={formatBackofficeDate(order.payment?.last_sync_at)} />
                     {(isMonobankPayment || isLiqPayPayment) ? (
                       <>
-                        <ValueField label={t("orders.payment.invoiceId")} value={order.payment?.invoice_id || "-"} mono />
-                        <ValueField label={t("orders.payment.reference")} value={order.payment?.reference || "-"} />
-                        <ValueField label={t("orders.payment.failureReason")} value={order.payment?.failure_reason || "-"} />
+                        <OrderViewValueField label={t("orders.payment.invoiceId")} value={order.payment?.invoice_id || "-"} mono />
+                        <OrderViewValueField label={t("orders.payment.reference")} value={order.payment?.reference || "-"} />
+                        <OrderViewValueField label={t("orders.payment.failureReason")} value={order.payment?.failure_reason || "-"} />
                       </>
                     ) : null}
                   </div>
@@ -724,11 +366,11 @@ export function OrderViewModal({
                   <p className="text-sm font-semibold">{t("orders.modals.view.summary.customer")}</p>
 
                   <div className="mt-3 grid gap-2">
-                    <ValueField label={t("orders.modals.view.summary.fullName")} value={order.contact_full_name || "-"} bold />
-                    <ValueField label="Email" value={order.contact_email || order.user_email || "-"} />
-                    <ValueField label={t("orders.modals.view.summary.phone")} value={order.contact_phone || "-"} />
-                    <ValueField label={t("orders.modals.view.summary.deliveryCity")} value={deliveryAddressParts.city} />
-                    <ValueField label={t("orders.modals.view.summary.deliveryDestination")} value={deliveryAddressParts.destination} />
+                    <OrderViewValueField label={t("orders.modals.view.summary.fullName")} value={order.contact_full_name || "-"} bold />
+                    <OrderViewValueField label="Email" value={order.contact_email || order.user_email || "-"} />
+                    <OrderViewValueField label={t("orders.modals.view.summary.phone")} value={order.contact_phone || "-"} />
+                    <OrderViewValueField label={t("orders.modals.view.summary.deliveryCity")} value={deliveryAddressParts.city} />
+                    <OrderViewValueField label={t("orders.modals.view.summary.deliveryDestination")} value={deliveryAddressParts.destination} />
                   </div>
                 </section>
 
@@ -779,9 +421,9 @@ export function OrderViewModal({
                   </div>
 
                   <div className="mt-3 grid gap-2">
-                    <ValueField label={deliveryMethodLabel} value={resolveDeliveryMethodLabel(order.delivery_method, t)} />
-                    <ValueField label={paymentMethodLabel} value={resolveOrderPaymentMethodLabel(order.payment_method, t)} />
-                    <ValueField label={t("orders.table.columns.created")} value={formatOrderDate(order.placed_at)} />
+                    <OrderViewValueField label={deliveryMethodLabel} value={resolveDeliveryMethodLabel(order.delivery_method, t)} />
+                    <OrderViewValueField label={paymentMethodLabel} value={resolveOrderPaymentMethodLabel(order.payment_method, t)} />
+                    <OrderViewValueField label={t("orders.table.columns.created")} value={formatOrderDate(order.placed_at)} />
                     <OrderReceiptField
                       receipt={order.receipt}
                       isLoading={receiptActionLoading ?? null}
