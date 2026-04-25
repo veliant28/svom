@@ -48,6 +48,39 @@ STOPWORDS = {
     "без",
 }
 
+AUTO_ACCESSORY_ROOT_MARKERS = (
+    "автохимия и аксессуары",
+    "автохімія та аксесуари",
+)
+
+TRANSMISSION_PATH_MARKERS = (
+    "трансмиссия/кпп",
+    "трансмісія / кпп",
+)
+
+TRANSMISSION_NAME_MARKERS = (
+    "акпп",
+    "кпп",
+    "автоматичної коробки",
+    "автоматической коробки",
+)
+
+OIL_FILTER_GASKET_PATH_MARKERS = (
+    "прокладка корпуса масляного фильтра",
+    "прокладка корпусу масляного фільтра",
+)
+
+WASHER_SYSTEM_PATH_MARKERS = (
+    "система стеклоочистителя",
+    "система склоочисника",
+    "система склоочищувача",
+)
+
+COOLING_PATH_MARKERS = (
+    "охлаждение",
+    "охолодження",
+)
+
 
 @dataclass(frozen=True)
 class CandidateMove:
@@ -390,17 +423,28 @@ class Command(BaseCommand):
             root_changed = (
                 category_root_id.get(assigned_category_id) != category_root_id.get(predicted_category_id)
             )
+            assigned_category_path = category_path_title.get(assigned_category_id, "")
+            predicted_category_path = category_path_title.get(predicted_category_id, "")
+            product_name = product.get("name") or ""
+
+            if self._is_suppressed_false_positive(
+                product_name=product_name,
+                assigned_category_path=assigned_category_path,
+                predicted_category_path=predicted_category_path,
+                root_changed=root_changed,
+            ):
+                continue
 
             candidates.append(
                 CandidateMove(
                     product_id=str(product["id"]),
                     sku=product.get("sku") or "",
                     article=product.get("article") or "",
-                    name=product.get("name") or "",
+                    name=product_name,
                     assigned_category_id=assigned_category_id,
-                    assigned_category_path=category_path_title.get(assigned_category_id, ""),
+                    assigned_category_path=assigned_category_path,
                     predicted_category_id=predicted_category_id,
-                    predicted_category_path=category_path_title.get(predicted_category_id, ""),
+                    predicted_category_path=predicted_category_path,
                     assigned_score=round(assigned_score, 3),
                     predicted_score=round(predicted_score, 3),
                     delta=round(delta, 3),
@@ -413,6 +457,68 @@ class Command(BaseCommand):
 
         candidates.sort(key=lambda row: (row.delta, row.predicted_score), reverse=True)
         return candidates
+
+    @classmethod
+    def _is_suppressed_false_positive(
+        cls,
+        *,
+        product_name: str,
+        assigned_category_path: str,
+        predicted_category_path: str,
+        root_changed: bool,
+    ) -> bool:
+        """Drop known lexical traps where shared words do not imply a category error."""
+        assigned_path = cls._normalize_text(assigned_category_path)
+        predicted_path = cls._normalize_text(predicted_category_path)
+        name = cls._normalize_text(product_name)
+
+        if root_changed and cls._contains_any(assigned_path, AUTO_ACCESSORY_ROOT_MARKERS):
+            return True
+
+        if (
+            cls._contains_any(assigned_path, TRANSMISSION_PATH_MARKERS)
+            and cls._contains_any(name, TRANSMISSION_NAME_MARKERS)
+            and cls._contains_any(predicted_path, OIL_FILTER_GASKET_PATH_MARKERS)
+        ):
+            return True
+
+        if (
+            cls._contains_any(assigned_path, WASHER_SYSTEM_PATH_MARKERS)
+            and cls._contains_any(predicted_path, COOLING_PATH_MARKERS)
+            and cls._contains_any(name, ("омива", "омыва", "склоомива", "стеклоомыва"))
+        ):
+            return True
+
+        if (
+            cls._contains_any(assigned_path, ("водяной насос", "водяний насос"))
+            and cls._contains_any(predicted_path, ("датчик температуры", "датчик температури"))
+            and cls._contains_any(name, ("насос", "помпа"))
+        ):
+            return True
+
+        if (
+            cls._contains_any(assigned_path, ("воздушный клапан", "повітряний клапан"))
+            and cls._contains_any(predicted_path, COOLING_PATH_MARKERS)
+            and cls._contains_any(name, ("вторинного повітря", "вторичного воздуха"))
+        ):
+            return True
+
+        if (
+            cls._contains_any(assigned_path, ("регулятор тормозных сил", "регулятор гальмівних сил"))
+            and cls._contains_any(predicted_path, ("регулятор тиску палива", "регулятор давления топлива"))
+            and cls._contains_any(name, ("гальм", "тормоз"))
+        ):
+            return True
+
+        return False
+
+    @classmethod
+    def _normalize_text(cls, value: str) -> str:
+        return cls._normalize_token(value or "")
+
+    @staticmethod
+    def _contains_any(value: str, markers: tuple[str, ...]) -> bool:
+        return any(marker in value for marker in markers)
 
     @staticmethod
     def _build_top_rules(
