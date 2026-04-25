@@ -1,0 +1,59 @@
+{
+  "categories": [
+    {
+      "id": "bc05463a-2bee-44a2-8e0a-2b7279804029",
+      "parent_id": "679e5abc-bc43-487e-8cba-55be2c8ba024",
+      "slug": "teplozakhysnyi-ekran-kolektora",
+      "name": "Теплозахисний екран колектора",
+      "name_uk": "Теплозахисний екран колектора",
+      "name_ru": "Теплозащитный экран коллектора",
+      "name_en": "Manifold heat shield",
+      "description": "",
+      "is_active": true
+    },
+    {
+      "id": "3b8d80f8-cd5d-4258-ae05-d517d08d12b1",
+      "parent_id": "7747f44f-0bc7-4a78-b315-3060b4816e25",
+      "slug": "salnyk-rulovoho-mekhanizmu",
+      "name": "Сальник рульового механізму",
+      "name_uk": "Сальник рульового механізму",
+      "name_ru": "Сальник рулевого механизма",
+      "name_en": "Steering gear seal",
+      "description": "",
+      "is_active": true
+    },
+    {
+      "id": "be83b5f0-306a-4136-8540-12c85a1ae4be",
+      "parent_id": "c44ef8ca-af3d-435d-9d78-8b38161deb0b",
+      "slug": "ushchilnennia-dvyhuna",
+      "name": "Ущільнення двигуна",
+      "name_uk": "Ущільнення двигуна",
+      "name_ru": "Уплотнение двигателя",
+      "name_en": "Engine seal",
+      "description": "",
+      "is_active": true
+    },
+    {
+      "id": "6b3c339d-1006-4b8e-b54f-ca0d318249a0",
+      "parent_id": "c44ef8ca-af3d-435d-9d78-8b38161deb0b",
+      "slug": "komplekt-ushchilnen-dvyhuna",
+      "name": "Комплект ущільнень двигуна",
+      "name_uk": "Комплект ущільнень двигуна",
+      "name_ru": "Комплект уплотнений двигателя",
+      "name_en": "Engine seal kit",
+      "description": "",
+      "is_active": true
+    },
+    {
+      "id": "36c31527-3123-4128-8297-ad9f56eebfe8",
+      "parent_id": "7747f44f-0bc7-4a78-b315-3060b4816e25",
+      "slug": "remkomplekt-rulovoho-mekhanizmu",
+      "name": "Ремкомплект рульового механізму",
+      "name_uk": "Ремкомплект рульового механізму",
+      "name_ru": "Ремкомплект рулевого механизма",
+      "name_en": "Steering gear repair kit",
+      "description": "",
+      "is_active": true
+    }
+  ]
+}

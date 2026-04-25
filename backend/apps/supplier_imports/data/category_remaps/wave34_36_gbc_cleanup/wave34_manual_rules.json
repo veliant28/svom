@@ -1,0 +1,58 @@
+{
+  "proposed_rules": [
+    {
+      "from_category_id": "4e1fe7ac-287e-4a8d-a0ea-80aa59b5baeb",
+      "to_category_id": "1e9abb65-7472-4795-85fa-713a829bd73b",
+      "from_category_path": "Двигатель и Система выхлопа > Прокладки > Прокладка ГБЦ",
+      "to_category_path": "Охлаждение и Отопление > Охлаждение > Трубка системы охлаждения",
+      "product_ids": [
+        "6ea8c24a-fe29-41fb-a06d-6051e09bcbb7"
+      ]
+    },
+    {
+      "from_category_id": "4e1fe7ac-287e-4a8d-a0ea-80aa59b5baeb",
+      "to_category_id": "bc05463a-2bee-44a2-8e0a-2b7279804029",
+      "from_category_path": "Двигатель и Система выхлопа > Прокладки > Прокладка ГБЦ",
+      "to_category_path": "Двигатель и Система выхлопа > Система выпуска > Теплозащитный экран коллектора",
+      "product_ids": [
+        "b355f5d9-6dac-4763-8170-5ab3676d3fa0",
+        "cafd364a-0b7f-4ae0-b902-a98fd4fb6d06",
+        "cb7c7d51-d03c-4944-a9a3-ecaecda68589",
+        "eb122ef2-4dc8-4214-94b5-817f94fc5296"
+      ]
+    },
+    {
+      "from_category_id": "4e1fe7ac-287e-4a8d-a0ea-80aa59b5baeb",
+      "to_category_id": "3b8d80f8-cd5d-4258-ae05-d517d08d12b1",
+      "from_category_path": "Двигатель и Система выхлопа > Прокладки > Прокладка ГБЦ",
+      "to_category_path": "Подвеска и Рулевое > Рулевое управление > Сальник рулевого механизма",
+      "product_ids": [
+        "87dc7b1e-e19c-4d5d-8a71-55f57d4a2dc4"
+      ]
+    },
+    {
+      "from_category_id": "4e1fe7ac-287e-4a8d-a0ea-80aa59b5baeb",
+      "to_category_id": "be83b5f0-306a-4136-8540-12c85a1ae4be",
+      "from_category_path": "Двигатель и Система выхлопа > Прокладки > Прокладка ГБЦ",
+      "to_category_path": "Двигатель и Система выхлопа > Прокладки > Уплотнение двигателя",
+      "product_ids": [
+        "55d64836-2b29-4db0-bb76-cf75bbfe4a47",
+        "02ff5824-2c3f-4124-b3f0-cbdb04425f8b",
+        "61c7f728-6ea6-4ffd-8592-df9fcfaf01f3",
+        "23f43f71-9219-4b6b-8fd4-c377364181b5",
+        "13864924-609b-4c8a-ad3e-d7d2f1ed6a6e",
+        "17e134af-f49a-4314-831d-0ef0c6d42897"
+      ]
+    },
+    {
+      "from_category_id": "4e1fe7ac-287e-4a8d-a0ea-80aa59b5baeb",
+      "to_category_id": "6b3c339d-1006-4b8e-b54f-ca0d318249a0",
+      "from_category_path": "Двигатель и Система выхлопа > Прокладки > Прокладка ГБЦ",
+      "to_category_path": "Двигатель и Система выхлопа > Прокладки > Комплект уплотнений двигателя",
+      "product_ids": [
+        "cc31d34c-6f49-4e10-b31c-9e07ab5310ef",
+        "39b043f4-10a3-4b55-92b7-b957a096be59"
+      ]
+    }
+  ]
+}

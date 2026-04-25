@@ -1,0 +1,23 @@
+{
+  "proposed_rules": [
+    {
+      "from_category_id": "894ecf6f-0784-4164-a40e-39e193f8aaaf",
+      "to_category_id": "2756c5df-c66d-485a-8bb9-86066c27d385",
+      "from_category_path": "Двигатель и Система выхлопа > Детали двигателя > Масляный насос",
+      "to_category_path": "Двигатель и Система выхлопа > Ремни, цепи, натяжители > Комплект ГРМ",
+      "product_ids": [
+        "ca9ab5bf-63dc-4063-b1ce-e564cc7f6299",
+        "6afede49-f229-4f44-b115-a28941dcba00",
+        "dda3438d-44e2-4368-bf87-874a895795b8",
+        "e671ea58-1ca8-422f-80e6-427429bd702f",
+        "8cded445-330e-490f-92a7-f4fdeb2bdfd7",
+        "31d156f8-c405-4770-b950-846345494139",
+        "a998fa2d-f29b-4b69-81dd-920f7c400290",
+        "7aa76345-083a-48ec-939f-2a37adc09f13",
+        "3bb35261-776b-4dbb-8d4e-6227a4f1bb85",
+        "01c18cc0-2a6a-43b7-a5e8-ff134ec0a82c",
+        "a1dabfaa-a3e6-474b-90ec-543381bbdca5"
+      ]
+    }
+  ]
+}
