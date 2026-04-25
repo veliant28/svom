@@ -5,18 +5,25 @@ import { AUTH_TOKEN_COOKIE_KEY } from "@/features/auth/lib/auth-token-constants"
 import { hasBackofficeCapabilities, type BackofficeCapabilityCode } from "@/features/backoffice/lib/capabilities";
 import type { BackofficeUser } from "@/features/backoffice/types/backoffice";
 import { siteConfig } from "@/shared/config/site";
+import { createRequestTimingId, logServerTiming, timeServerAsync } from "@/shared/lib/server-timing";
 
-async function fetchCurrentUser(token: string): Promise<BackofficeUser | null> {
+async function fetchCurrentUser(token: string, requestId: string): Promise<BackofficeUser | null> {
   let response: Response;
   try {
-    response = await fetch(`${siteConfig.apiBaseUrl}/users/auth/current-user/`, {
-      method: "GET",
-      headers: {
-        Authorization: `Token ${token}`,
-      },
-      cache: "no-store",
-      credentials: "omit",
-    });
+    response = await timeServerAsync(
+      "backoffice.current_user.fetch",
+      () =>
+        fetch(`${siteConfig.apiBaseUrl}/users/auth/current-user/`, {
+          method: "GET",
+          headers: {
+            Authorization: `Token ${token}`,
+            "X-Request-ID": requestId,
+          },
+          cache: "no-store",
+          credentials: "omit",
+        }),
+      { request_id: requestId },
+    );
   } catch {
     return null;
   }
@@ -32,6 +39,8 @@ export async function requireBackofficeAccess(
   locale: string,
   requiredCapability: BackofficeCapabilityCode | BackofficeCapabilityCode[] = "backoffice.access",
 ): Promise<{ user: BackofficeUser; token: string }> {
+  const requestId = createRequestTimingId("backoffice-auth");
+  const startedAt = performance.now();
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_TOKEN_COOKIE_KEY)?.value;
 
@@ -39,7 +48,7 @@ export async function requireBackofficeAccess(
     redirect(`/${locale}/login?next=/${locale}/backoffice`);
   }
 
-  const user = await fetchCurrentUser(token);
+  const user = await fetchCurrentUser(token, requestId);
   if (!user || !user.has_backoffice_access) {
     redirect(`/${locale}/`);
   }
@@ -47,6 +56,12 @@ export async function requireBackofficeAccess(
   if (!hasBackofficeCapabilities(user, requiredCapability)) {
     redirect(`/${locale}/backoffice`);
   }
+
+  logServerTiming("backoffice.require_access", startedAt, {
+    locale,
+    request_id: requestId,
+    required_capability: Array.isArray(requiredCapability) ? requiredCapability.join(",") : requiredCapability,
+  });
 
   return { user, token };
 }

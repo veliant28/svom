@@ -1,4 +1,5 @@
 import { siteConfig } from "@/shared/config/site";
+import { createRequestTimingId, logServerTiming } from "@/shared/lib/server-timing";
 
 export type QueryParams = Record<string, string | number | boolean | undefined>;
 
@@ -7,6 +8,8 @@ type RequestOptions = {
   headers?: Record<string, string>;
   token?: string;
   credentials?: RequestCredentials;
+  requestId?: string;
+  timingLabel?: string;
 };
 
 type ApiErrorPayload = {
@@ -64,12 +67,20 @@ async function requestJson<T>(
   body?: unknown,
 ): Promise<T> {
   const requestUrl = `${siteConfig.apiBaseUrl}${path}${toSearchParams(options.params)}`;
+  const isServerRequest = typeof window === "undefined";
+  const requestId = isServerRequest ? (options.requestId ?? createRequestTimingId("api")) : options.requestId;
+  const startedAt = performance.now();
+  let status: number | undefined;
   const headers: Record<string, string> = {
     ...(options.headers ?? {}),
   };
 
   if (options.token) {
     headers.Authorization = `Token ${options.token}`;
+  }
+
+  if (requestId) {
+    headers["X-Request-ID"] = requestId;
   }
 
   if (body !== undefined) {
@@ -85,7 +96,14 @@ async function requestJson<T>(
       cache: "no-store",
       credentials: options.credentials ?? "omit",
     });
+    status = response.status;
   } catch {
+    logServerTiming(options.timingLabel ?? `api.${method}`, startedAt, {
+      method,
+      path,
+      request_id: requestId,
+      network_error: true,
+    });
     throw new ApiRequestError({
       message: "Network error while sending request.",
       url: requestUrl,
@@ -111,6 +129,12 @@ async function requestJson<T>(
     }
 
     const backendMessage = payload?.detail ?? payload?.message;
+    logServerTiming(options.timingLabel ?? `api.${method}`, startedAt, {
+      method,
+      path,
+      request_id: requestId,
+      status,
+    });
     throw new ApiRequestError({
       message: backendMessage ? String(backendMessage) : `API request failed with ${response.status}`,
       status: response.status,
@@ -120,10 +144,25 @@ async function requestJson<T>(
   }
 
   if (response.status === 204) {
+    logServerTiming(options.timingLabel ?? `api.${method}`, startedAt, {
+      method,
+      path,
+      request_id: requestId,
+      status,
+    });
     return undefined as T;
   }
 
-  return (await response.json()) as T;
+  try {
+    return (await response.json()) as T;
+  } finally {
+    logServerTiming(options.timingLabel ?? `api.${method}`, startedAt, {
+      method,
+      path,
+      request_id: requestId,
+      status,
+    });
+  }
 }
 
 export async function getJson<T>(path: string, params?: QueryParams, options?: Omit<RequestOptions, "params">): Promise<T> {

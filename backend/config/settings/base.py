@@ -82,6 +82,7 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "apps.core.middleware.RequestTimingMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -177,6 +178,12 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
 }
+
+REQUEST_TIMING_LOG_ENABLED = env_bool("REQUEST_TIMING_LOG_ENABLED", False)
+REQUEST_TIMING_LOG_MIN_MS = env_float("REQUEST_TIMING_LOG_MIN_MS", 0.0)
+REQUEST_TIMING_SLOW_SQL_MS = env_float("REQUEST_TIMING_SLOW_SQL_MS", 100.0)
+REQUEST_TIMING_SQL_SNIPPET_LENGTH = env_int("REQUEST_TIMING_SQL_SNIPPET_LENGTH", 240)
+REQUEST_TIMING_LOG_PATH_PREFIXES = tuple(env_list("REQUEST_TIMING_LOG_PATH_PREFIXES", "/api/"))
 
 CELERY_BROKER_URL = os.getenv("REDIS_CELERY_URL", "redis://127.0.0.1:6379/2")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
