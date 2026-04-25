@@ -1,66 +1,57 @@
 "use client";
 
-import { ExternalLink, LoaderCircle, RefreshCw, Save } from "lucide-react";
+import { ExternalLink, LoaderCircle, Play, RefreshCw, Save } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import {
+  closeBackofficeVchasnoKasaShift,
   getBackofficeOrderReceiptOpenUrl,
   getBackofficeVchasnoKasaSettings,
+  getBackofficeVchasnoKasaShiftStatus,
   listBackofficeVchasnoReceipts,
+  openBackofficeVchasnoKasaShift,
   syncBackofficeOrderReceipt,
   testBackofficeVchasnoKasaConnection,
   updateBackofficeVchasnoKasaSettings,
 } from "@/features/backoffice/api/vchasno-kasa-api";
+import { VchasnoCodesModal } from "@/features/backoffice/components/vchasno-kasa/vchasno-codes-modal";
+import { VchasnoField, VchasnoStatusRow, VchasnoToggleField } from "@/features/backoffice/components/vchasno-kasa/vchasno-form-fields";
+import { VchasnoPaymentMethodsField } from "@/features/backoffice/components/vchasno-kasa/vchasno-payment-methods-field";
+import { VchasnoTaxGroupsField } from "@/features/backoffice/components/vchasno-kasa/vchasno-tax-groups-field";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
-import type { BackofficeVchasnoKasaSettings, BackofficeVchasnoReceiptRow } from "@/features/backoffice/types/vchasno-kasa.types";
+import { VCHASNO_PAYMENT_METHOD_ENTRIES, VCHASNO_TAX_GROUP_ENTRIES } from "@/features/backoffice/lib/vchasno-kasa-dictionaries";
+import {
+  DEFAULT_FORM,
+  arraysEqual,
+  formatDateTime,
+  resolveConnectionCheckMessage,
+  resolveLastCheckMessage,
+  resolveShiftMessage,
+  resolveShiftStatusLabel,
+  resolveStatusLabel,
+  toVchasnoKasaSettingsForm,
+  type SettingsForm,
+} from "@/features/backoffice/lib/vchasno-kasa-page.helpers";
+import type {
+  BackofficeVchasnoKasaSettings,
+  BackofficeVchasnoKasaShiftStatus,
+  BackofficeVchasnoReceiptRow,
+} from "@/features/backoffice/types/vchasno-kasa.types";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { isApiRequestError } from "@/shared/api/http-client";
 
-type SettingsForm = {
-  is_enabled: boolean;
-  api_token: string;
-  rro_fn: string;
-  default_payment_type: number;
-  default_tax_group: string;
-  auto_issue_on_completed: boolean;
-  send_customer_email: boolean;
-};
-
 type FieldErrors = Partial<Record<"api_token" | "rro_fn", string>>;
-
-const DEFAULT_FORM: SettingsForm = {
-  is_enabled: false,
-  api_token: "",
-  rro_fn: "",
-  default_payment_type: 1,
-  default_tax_group: "",
-  auto_issue_on_completed: true,
-  send_customer_email: true,
-};
-
-function toForm(settings: BackofficeVchasnoKasaSettings | null): SettingsForm {
-  if (!settings) {
-    return DEFAULT_FORM;
-  }
-  return {
-    is_enabled: settings.is_enabled,
-    api_token: "",
-    rro_fn: settings.rro_fn || "",
-    default_payment_type: settings.default_payment_type || 1,
-    default_tax_group: settings.default_tax_group || "",
-    auto_issue_on_completed: settings.auto_issue_on_completed,
-    send_customer_email: settings.send_customer_email,
-  };
-}
 
 export function VchasnoKasaPage() {
   const t = useTranslations("backoffice.common");
+  const locale = useLocale();
   const { token } = useAuth();
-  const { showApiError, showSuccess, showWarning } = useBackofficeFeedback();
+  const { showApiError, showSuccess, showWarning, showInfo } = useBackofficeFeedback();
   const [settings, setSettings] = useState<BackofficeVchasnoKasaSettings | null>(null);
+  const [shiftStatus, setShiftStatus] = useState<BackofficeVchasnoKasaShiftStatus | null>(null);
   const [receipts, setReceipts] = useState<BackofficeVchasnoReceiptRow[]>([]);
   const [form, setForm] = useState<SettingsForm>(DEFAULT_FORM);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -68,13 +59,42 @@ export function VchasnoKasaPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [isRefreshingShift, setIsRefreshingShift] = useState(false);
+  const [isOpeningShift, setIsOpeningShift] = useState(false);
+  const [isClosingShift, setIsClosingShift] = useState(false);
   const [activeAction, setActiveAction] = useState<string | null>(null);
+  const [isPaymentCodesModalOpen, setIsPaymentCodesModalOpen] = useState(false);
+  const [isTaxCodesModalOpen, setIsTaxCodesModalOpen] = useState(false);
+
+  const paymentMethodOptions = useMemo(
+    () => VCHASNO_PAYMENT_METHOD_ENTRIES.map((entry) => ({
+      code: entry.code,
+      label: t(`vchasnoKasa.paymentMethods.items.${entry.code}`),
+    })),
+    [t],
+  );
+  const taxGroupOptions = useMemo(
+    () => VCHASNO_TAX_GROUP_ENTRIES.map((entry) => ({
+      code: entry.code,
+      label: t(`vchasnoKasa.taxGroups.items.${entry.code}`),
+    })),
+    [t],
+  );
+  const fiscalTokenHint = useMemo(() => {
+    if (settings?.fiscal_api_token_masked) {
+      return `${t("vchasnoKasa.form.fiscalApiTokenMasked")}: ${settings.fiscal_api_token_masked}`;
+    }
+    if (settings?.api_token_masked) {
+      return `${t("vchasnoKasa.form.fiscalApiTokenFallbackMasked")}: ${settings.api_token_masked}`;
+    }
+    return "";
+  }, [settings?.api_token_masked, settings?.fiscal_api_token_masked, t]);
 
   const load = useCallback(async () => {
     if (!token) {
       setIsLoading(false);
       setLoadError(null);
-      return;
+      return false;
     }
     setIsLoading(true);
     setLoadError(null);
@@ -84,11 +104,19 @@ export function VchasnoKasaPage() {
         listBackofficeVchasnoReceipts(token),
       ]);
       setSettings(nextSettings);
-      setForm(toForm(nextSettings));
+      setForm(toVchasnoKasaSettingsForm(nextSettings));
       setReceipts(receiptList.results || []);
+      try {
+        const nextShiftStatus = await getBackofficeVchasnoKasaShiftStatus(token);
+        setShiftStatus(nextShiftStatus);
+      } catch {
+        setShiftStatus(null);
+      }
       setFieldErrors({});
+      return true;
     } catch (error) {
       setLoadError(showApiError(error, t("vchasnoKasa.messages.loadFailed")));
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -107,9 +135,12 @@ export function VchasnoKasaPage() {
       || settings.rro_fn !== form.rro_fn
       || settings.default_payment_type !== form.default_payment_type
       || settings.default_tax_group !== form.default_tax_group
+      || !arraysEqual(settings.selected_payment_methods || [], form.selected_payment_methods)
+      || !arraysEqual(settings.selected_tax_groups || [], form.selected_tax_groups)
       || settings.auto_issue_on_completed !== form.auto_issue_on_completed
       || settings.send_customer_email !== form.send_customer_email
       || Boolean(form.api_token.trim())
+      || Boolean(form.fiscal_api_token.trim())
     );
   }, [form, settings]);
 
@@ -123,14 +154,17 @@ export function VchasnoKasaPage() {
       const next = await updateBackofficeVchasnoKasaSettings(token, {
         is_enabled: form.is_enabled,
         api_token: form.api_token.trim(),
+        fiscal_api_token: form.fiscal_api_token.trim(),
         rro_fn: form.rro_fn.trim(),
         default_payment_type: form.default_payment_type,
         default_tax_group: form.default_tax_group.trim(),
+        selected_payment_methods: form.selected_payment_methods,
+        selected_tax_groups: form.selected_tax_groups,
         auto_issue_on_completed: form.auto_issue_on_completed,
         send_customer_email: form.send_customer_email,
       });
       setSettings(next);
-      setForm(toForm(next));
+      setForm(toVchasnoKasaSettingsForm(next));
       showSuccess(t("vchasnoKasa.messages.settingsSaved"));
     } catch (error) {
       const nextFieldErrors: FieldErrors = {};
@@ -149,6 +183,60 @@ export function VchasnoKasaPage() {
     }
   }
 
+  async function handleRefreshShiftStatus() {
+    if (!token || isRefreshingShift) {
+      return;
+    }
+    setIsRefreshingShift(true);
+    try {
+      const next = await getBackofficeVchasnoKasaShiftStatus(token);
+      setShiftStatus(next);
+      const statusLabel = resolveShiftStatusLabel(next.status_key || "unknown", t);
+      const localizedMessage = resolveShiftMessage(next.message || "", t);
+      if (next.status_key === "error") {
+        showWarning(localizedMessage || t("vchasnoKasa.messages.shiftStatusFailed"));
+      } else {
+        showInfo(t("vchasnoKasa.messages.shiftStatusUpdated", { status: statusLabel }));
+      }
+    } catch (error) {
+      showApiError(error, t("vchasnoKasa.messages.shiftStatusFailed"));
+    } finally {
+      setIsRefreshingShift(false);
+    }
+  }
+
+  async function handleOpenShift() {
+    if (!token || isOpeningShift) {
+      return;
+    }
+    setIsOpeningShift(true);
+    try {
+      const next = await openBackofficeVchasnoKasaShift(token);
+      setShiftStatus(next);
+      showSuccess(resolveShiftMessage(next.message || "", t) || t("vchasnoKasa.messages.shiftOpened"));
+    } catch (error) {
+      showApiError(error, t("vchasnoKasa.messages.shiftOpenFailed"));
+    } finally {
+      setIsOpeningShift(false);
+    }
+  }
+
+  async function handleCloseShift() {
+    if (!token || isClosingShift) {
+      return;
+    }
+    setIsClosingShift(true);
+    try {
+      const next = await closeBackofficeVchasnoKasaShift(token);
+      setShiftStatus(next);
+      showSuccess(resolveShiftMessage(next.message || "", t) || t("vchasnoKasa.messages.shiftClosed"));
+    } catch (error) {
+      showApiError(error, t("vchasnoKasa.messages.shiftCloseFailed"));
+    } finally {
+      setIsClosingShift(false);
+    }
+  }
+
   async function handleTestConnection() {
     if (!token || isTesting) {
       return;
@@ -156,10 +244,11 @@ export function VchasnoKasaPage() {
     setIsTesting(true);
     try {
       const result = await testBackofficeVchasnoKasaConnection(token);
+      const localizedMessage = resolveConnectionCheckMessage(result.message || "", t);
       if (result.ok) {
         showSuccess(t("vchasnoKasa.messages.connectionOk"));
       } else {
-        showWarning(result.message || t("vchasnoKasa.messages.connectionFailed"));
+        showWarning(localizedMessage || t("vchasnoKasa.messages.connectionFailed"));
       }
       await load();
     } catch (error) {
@@ -195,11 +284,23 @@ export function VchasnoKasaPage() {
       const opened = window.open(url, "_blank", "noopener,noreferrer");
       if (!opened) {
         showWarning(t("vchasnoKasa.messages.popupBlocked"));
+      } else {
+        showInfo(t("vchasnoKasa.messages.receiptOpened"));
       }
     } catch (error) {
       showApiError(error, t("vchasnoKasa.messages.receiptOpenFailed"));
     } finally {
       setActiveAction(null);
+    }
+  }
+
+  async function handleRefreshData() {
+    if (!token || isLoading) {
+      return;
+    }
+    const ok = await load();
+    if (ok) {
+      showInfo(t("vchasnoKasa.messages.dataRefreshed"));
     }
   }
 
@@ -214,47 +315,70 @@ export function VchasnoKasaPage() {
             <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>{t("vchasnoKasa.form.helper")}</p>
 
             <div className="mt-4 grid gap-3">
-              <ToggleField label={t("vchasnoKasa.form.enabled")} value={form.is_enabled} onToggle={() => setForm((prev) => ({ ...prev, is_enabled: !prev.is_enabled }))} />
-              <Field label={t("vchasnoKasa.form.apiToken")} hint={settings?.api_token_masked ? `${t("vchasnoKasa.form.apiTokenMasked")}: ${settings.api_token_masked}` : ""} error={fieldErrors.api_token}>
+              <VchasnoToggleField
+                label={t("vchasnoKasa.form.enabled")}
+                value={form.is_enabled}
+                onToggle={() => setForm((prev) => ({ ...prev, is_enabled: !prev.is_enabled }))}
+              />
+              <VchasnoField
+                label={t("vchasnoKasa.form.apiToken")}
+                hint={settings?.api_token_masked ? `${t("vchasnoKasa.form.apiTokenMasked")}: ${settings.api_token_masked}` : ""}
+                error={fieldErrors.api_token}
+              >
                 <input
                   value={form.api_token}
                   onChange={(event) => setForm((prev) => ({ ...prev, api_token: event.target.value }))}
                   className="h-10 rounded-md border px-3 text-sm"
                   style={{ borderColor: fieldErrors.api_token ? "#fda4af" : "var(--border)", backgroundColor: "var(--surface-2)" }}
                 />
-              </Field>
-              <Field label={t("vchasnoKasa.form.rroFn")} error={fieldErrors.rro_fn}>
+              </VchasnoField>
+              <VchasnoField
+                label={t("vchasnoKasa.form.fiscalApiToken")}
+                hint={fiscalTokenHint}
+              >
+                <input
+                  value={form.fiscal_api_token}
+                  onChange={(event) => setForm((prev) => ({ ...prev, fiscal_api_token: event.target.value }))}
+                  className="h-10 rounded-md border px-3 text-sm"
+                  style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                />
+              </VchasnoField>
+              <VchasnoField label={t("vchasnoKasa.form.rroFn")} error={fieldErrors.rro_fn}>
                 <input
                   value={form.rro_fn}
                   onChange={(event) => setForm((prev) => ({ ...prev, rro_fn: event.target.value }))}
                   className="h-10 rounded-md border px-3 text-sm"
                   style={{ borderColor: fieldErrors.rro_fn ? "#fda4af" : "var(--border)", backgroundColor: "var(--surface-2)" }}
                 />
-              </Field>
+              </VchasnoField>
 
-              <div className="grid gap-3 md:grid-cols-2">
-                <Field label={t("vchasnoKasa.form.defaultPaymentType")}>
-                  <input
-                    type="number"
-                    min={1}
-                    value={form.default_payment_type}
-                    onChange={(event) => setForm((prev) => ({ ...prev, default_payment_type: Math.max(1, Number(event.target.value) || 1) }))}
-                    className="h-10 rounded-md border px-3 text-sm"
-                    style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-                  />
-                </Field>
-                <Field label={t("vchasnoKasa.form.defaultTaxGroup")}>
-                  <input
-                    value={form.default_tax_group}
-                    onChange={(event) => setForm((prev) => ({ ...prev, default_tax_group: event.target.value }))}
-                    className="h-10 rounded-md border px-3 text-sm"
-                    style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-                  />
-                </Field>
-              </div>
+              <VchasnoPaymentMethodsField
+                title={t("vchasnoKasa.paymentMethods.title")}
+                codesActionLabel={t("vchasnoKasa.paymentMethods.codes")}
+                options={paymentMethodOptions}
+                values={form.selected_payment_methods}
+                onChange={(next) => setForm((prev) => ({ ...prev, selected_payment_methods: next }))}
+                onOpenCodes={() => setIsPaymentCodesModalOpen(true)}
+              />
+              <VchasnoTaxGroupsField
+                title={t("vchasnoKasa.taxGroups.title")}
+                codesActionLabel={t("vchasnoKasa.taxGroups.codes")}
+                options={taxGroupOptions}
+                values={form.selected_tax_groups}
+                onChange={(next) => setForm((prev) => ({ ...prev, selected_tax_groups: next }))}
+                onOpenCodes={() => setIsTaxCodesModalOpen(true)}
+              />
 
-              <ToggleField label={t("vchasnoKasa.form.autoIssueOnCompleted")} value={form.auto_issue_on_completed} onToggle={() => setForm((prev) => ({ ...prev, auto_issue_on_completed: !prev.auto_issue_on_completed }))} />
-              <ToggleField label={t("vchasnoKasa.form.sendCustomerEmail")} value={form.send_customer_email} onToggle={() => setForm((prev) => ({ ...prev, send_customer_email: !prev.send_customer_email }))} />
+              <VchasnoToggleField
+                label={t("vchasnoKasa.form.autoIssueOnCompleted")}
+                value={form.auto_issue_on_completed}
+                onToggle={() => setForm((prev) => ({ ...prev, auto_issue_on_completed: !prev.auto_issue_on_completed }))}
+              />
+              <VchasnoToggleField
+                label={t("vchasnoKasa.form.sendCustomerEmail")}
+                value={form.send_customer_email}
+                onToggle={() => setForm((prev) => ({ ...prev, send_customer_email: !prev.send_customer_email }))}
+              />
 
               <div className="flex flex-wrap gap-2 pt-1">
                 <button
@@ -278,23 +402,91 @@ export function VchasnoKasaPage() {
                     void handleTestConnection();
                   }}
                 >
-                  {isTesting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  <RefreshCw className="h-4 w-4 animate-spin" style={{ animationDuration: "2.2s" }} />
                   {isTesting ? t("vchasnoKasa.form.testing") : t("vchasnoKasa.form.testConnection")}
                 </button>
               </div>
             </div>
           </section>
 
-          <section className="rounded-xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
-            <p className="text-sm font-semibold">{t("vchasnoKasa.status.title")}</p>
-            <div className="mt-4 grid gap-2">
-              <StatusRow label={t("vchasnoKasa.status.enabled")} value={settings?.is_enabled ? t("yes") : t("no")} />
-              <StatusRow label={t("vchasnoKasa.status.rroFn")} value={settings?.rro_fn || "-"} mono />
-              <StatusRow label={t("vchasnoKasa.status.lastCheck")} value={settings?.last_connection_checked_at || "-"} />
-              <StatusRow label={t("vchasnoKasa.status.lastCheckState")} value={settings?.last_connection_ok === null ? "-" : settings?.last_connection_ok ? t("vchasnoKasa.status.ok") : t("vchasnoKasa.status.failed")} />
-              <StatusRow label={t("vchasnoKasa.status.lastCheckMessage")} value={settings?.last_connection_message || "-"} />
-            </div>
-          </section>
+          <div className="grid gap-4">
+            <section className="rounded-xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
+              <p className="text-sm font-semibold">{t("vchasnoKasa.status.title")}</p>
+              <div className="mt-4 grid gap-2">
+                <VchasnoStatusRow label={t("vchasnoKasa.status.enabled")} value={settings?.is_enabled ? t("yes") : t("no")} />
+                <VchasnoStatusRow
+                  label={t("vchasnoKasa.status.lastCheckState")}
+                  value={settings?.last_connection_ok === null ? "-" : settings?.last_connection_ok ? t("vchasnoKasa.status.ok") : t("vchasnoKasa.status.failed")}
+                />
+                <VchasnoStatusRow
+                  label={t("vchasnoKasa.status.lastCheck")}
+                  value={formatDateTime(settings?.last_connection_checked_at, locale)}
+                />
+                <VchasnoStatusRow label={t("vchasnoKasa.status.rroFn")} value={settings?.rro_fn || "-"} mono />
+                <VchasnoStatusRow label={t("vchasnoKasa.status.ordersApiToken")} value={settings?.api_token_masked || "-"} mono />
+                <VchasnoStatusRow
+                  label={t("vchasnoKasa.status.fiscalApiToken")}
+                  value={settings?.fiscal_api_token_masked || settings?.api_token_masked || "-"}
+                  mono
+                />
+                <VchasnoStatusRow
+                  label={t("vchasnoKasa.status.lastCheckMessage")}
+                  value={resolveLastCheckMessage(settings?.last_connection_message || "", t)}
+                />
+              </div>
+            </section>
+
+            <section className="rounded-xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
+              <p className="text-sm font-semibold">{t("vchasnoKasa.shift.title")}</p>
+              <div className="mt-4 grid gap-2">
+                <VchasnoStatusRow label={t("vchasnoKasa.shift.state")} value={resolveShiftStatusLabel(shiftStatus?.status_key || "unknown", t)} />
+                <VchasnoStatusRow label={t("vchasnoKasa.shift.shiftId")} value={shiftStatus?.shift_id || "-"} mono />
+                <VchasnoStatusRow label={t("vchasnoKasa.shift.shiftLink")} value={shiftStatus?.shift_link || "-"} />
+                <VchasnoStatusRow label={t("vchasnoKasa.shift.checkedAt")} value={formatDateTime(shiftStatus?.checked_at, locale)} />
+              </div>
+              <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
+                {t("vchasnoKasa.shift.message")}: {resolveShiftMessage(shiftStatus?.message || "", t) || "-"}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-xs font-semibold disabled:opacity-60"
+                  style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                  disabled={isRefreshingShift}
+                  onClick={() => {
+                    void handleRefreshShiftStatus();
+                  }}
+                >
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" style={{ animationDuration: "2.2s" }} />
+                  {t("vchasnoKasa.shift.refresh")}
+                </button>
+                <button
+                  type="button"
+                  className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-xs font-semibold disabled:opacity-60"
+                  style={{ borderColor: "#2563eb", backgroundColor: "#2563eb", color: "#fff" }}
+                  disabled={isOpeningShift || isClosingShift || shiftStatus?.is_open === true}
+                  onClick={() => {
+                    void handleOpenShift();
+                  }}
+                >
+                  {isOpeningShift ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+                  {t("vchasnoKasa.shift.open")}
+                </button>
+                <button
+                  type="button"
+                  className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-xs font-semibold disabled:opacity-60"
+                  style={{ borderColor: "#dc2626", backgroundColor: "#dc2626", color: "#fff" }}
+                  disabled={isClosingShift || isOpeningShift || shiftStatus?.is_open !== true}
+                  onClick={() => {
+                    void handleCloseShift();
+                  }}
+                >
+                  {isClosingShift ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <span className="inline-block h-3 w-3 rounded-[2px] bg-current" />}
+                  {t("vchasnoKasa.shift.close")}
+                </button>
+              </div>
+            </section>
+          </div>
         </div>
 
         <section className="rounded-xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
@@ -307,8 +499,9 @@ export function VchasnoKasaPage() {
               type="button"
               className="inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold"
               style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+              disabled={isLoading}
               onClick={() => {
-                void load();
+                void handleRefreshData();
               }}
             >
               <RefreshCw className="h-4 w-4 animate-spin" style={{ animationDuration: "2.2s" }} />
@@ -337,7 +530,7 @@ export function VchasnoKasaPage() {
                     <td className="border-t px-3 py-2" style={{ borderColor: "var(--border)" }}>{row.amount} {row.currency}</td>
                     <td className="border-t px-3 py-2" style={{ borderColor: "var(--border)" }}>{resolveStatusLabel(row.status_key, t)}</td>
                     <td className="border-t px-3 py-2 font-mono" style={{ borderColor: "var(--border)" }}>{row.check_fn || "-"}</td>
-                    <td className="border-t px-3 py-2" style={{ borderColor: "var(--border)" }}>{row.updated_at || row.created_at}</td>
+                    <td className="border-t px-3 py-2" style={{ borderColor: "var(--border)" }}>{formatDateTime(row.updated_at || row.created_at, locale)}</td>
                     <td className="border-t px-3 py-2 text-right" style={{ borderColor: "var(--border)" }}>
                       <div className="flex justify-end gap-2">
                         <button
@@ -379,51 +572,25 @@ export function VchasnoKasaPage() {
           </div>
         </section>
       </section>
+
+      <VchasnoCodesModal
+        isOpen={isPaymentCodesModalOpen}
+        title={t("vchasnoKasa.codes.paymentMethodsTitle")}
+        rows={paymentMethodOptions}
+        rightColumnLabel={t("vchasnoKasa.codes.paymentMethod")}
+        codeLabel={t("vchasnoKasa.codes.code")}
+        closeLabel={t("vchasnoKasa.codes.close")}
+        onClose={() => setIsPaymentCodesModalOpen(false)}
+      />
+      <VchasnoCodesModal
+        isOpen={isTaxCodesModalOpen}
+        title={t("vchasnoKasa.codes.taxGroupsTitle")}
+        rows={taxGroupOptions}
+        rightColumnLabel={t("vchasnoKasa.codes.taxGroup")}
+        codeLabel={t("vchasnoKasa.codes.code")}
+        closeLabel={t("vchasnoKasa.codes.close")}
+        onClose={() => setIsTaxCodesModalOpen(false)}
+      />
     </AsyncState>
-  );
-}
-
-function resolveStatusLabel(statusKey: string, t: (key: string) => string): string {
-  const translationKey = `vchasnoKasa.receiptStatus.${statusKey || "pending"}`;
-  const translated = t(translationKey);
-  return translated === translationKey ? t("vchasnoKasa.receiptStatus.pending") : translated;
-}
-
-function Field({
-  label,
-  children,
-  hint,
-  error,
-}: {
-  label: string;
-  children: React.ReactNode;
-  hint?: string;
-  error?: string;
-}) {
-  return (
-    <label className="grid gap-1">
-      <span className="text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>{label}</span>
-      {children}
-      {hint ? <span className="text-xs" style={{ color: "var(--muted)" }}>{hint}</span> : null}
-      {error ? <span className="text-xs" style={{ color: "#b91c1c" }}>{error}</span> : null}
-    </label>
-  );
-}
-
-function ToggleField({ label, value, onToggle }: { label: string; value: boolean; onToggle: () => void }) {
-  return (
-    <label className="inline-flex items-center gap-2 text-sm font-medium">
-      <input type="checkbox" checked={value} onChange={onToggle} />
-      <span>{label}</span>
-    </label>
-  );
-}
-
-function StatusRow({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
-  return (
-    <div className="rounded-md border px-3 py-2" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}>
-      <p className="text-[11px]" style={{ color: "var(--muted)" }}>{label}</p>
-      <p className={`mt-1 text-sm font-medium text-[var(--text)] ${mono ? "font-mono" : ""}`}>{value || "-"}</p>
-    </div>
   );
 }

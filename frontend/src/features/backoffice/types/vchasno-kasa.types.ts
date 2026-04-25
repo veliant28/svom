@@ -14,14 +14,28 @@ export type BackofficeOrderReceiptSummary = {
 export type BackofficeVchasnoKasaSettings = {
   is_enabled: boolean;
   api_token_masked: string;
+  fiscal_api_token_masked: string;
   rro_fn: string;
   default_payment_type: number;
   default_tax_group: string;
+  selected_payment_methods: string[];
+  selected_tax_groups: string[];
   auto_issue_on_completed: boolean;
   send_customer_email: boolean;
   last_connection_checked_at: string | null;
   last_connection_ok: boolean | null;
   last_connection_message: string;
+};
+
+export type BackofficeVchasnoKasaShiftStatus = {
+  status_key: string;
+  is_open: boolean | null;
+  shift_id: string;
+  shift_link: string;
+  message: string;
+  checked_at: string | null;
+  can_open: boolean;
+  response_code: number | null;
 };
 
 export type BackofficeVchasnoKasaConnectionCheck = {

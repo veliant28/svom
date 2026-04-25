@@ -4,6 +4,7 @@ import type {
   BackofficeOrderReceiptActionResult,
   BackofficeVchasnoKasaConnectionCheck,
   BackofficeVchasnoKasaSettings,
+  BackofficeVchasnoKasaShiftStatus,
   BackofficeVchasnoReceiptList,
 } from "@/features/backoffice/types/vchasno-kasa.types";
 
@@ -16,9 +17,12 @@ export async function updateBackofficeVchasnoKasaSettings(
   payload: Partial<{
     is_enabled: boolean;
     api_token: string;
+    fiscal_api_token: string;
     rro_fn: string;
     default_payment_type: number;
     default_tax_group: string;
+    selected_payment_methods: string[];
+    selected_tax_groups: string[];
     auto_issue_on_completed: boolean;
     send_customer_email: boolean;
   }>,
@@ -29,6 +33,28 @@ export async function updateBackofficeVchasnoKasaSettings(
 export async function testBackofficeVchasnoKasaConnection(token: string): Promise<BackofficeVchasnoKasaConnectionCheck> {
   return postJson<BackofficeVchasnoKasaConnectionCheck, Record<string, never>>(
     "/backoffice/vchasno-kasa/test-connection/",
+    {},
+    undefined,
+    { token },
+  );
+}
+
+export async function getBackofficeVchasnoKasaShiftStatus(token: string): Promise<BackofficeVchasnoKasaShiftStatus> {
+  return getJson<BackofficeVchasnoKasaShiftStatus>("/backoffice/vchasno-kasa/shift-status/", undefined, { token });
+}
+
+export async function openBackofficeVchasnoKasaShift(token: string): Promise<BackofficeVchasnoKasaShiftStatus> {
+  return postJson<BackofficeVchasnoKasaShiftStatus, Record<string, never>>(
+    "/backoffice/vchasno-kasa/open-shift/",
+    {},
+    undefined,
+    { token },
+  );
+}
+
+export async function closeBackofficeVchasnoKasaShift(token: string): Promise<BackofficeVchasnoKasaShiftStatus> {
+  return postJson<BackofficeVchasnoKasaShiftStatus, Record<string, never>>(
+    "/backoffice/vchasno-kasa/close-shift/",
     {},
     undefined,
     { token },
