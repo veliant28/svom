@@ -1,0 +1,166 @@
+{
+  "backoffice": {
+    "common": {
+      "footerSettings": {
+        "title": "Футер",
+        "subtitle": "Редактирование контактных данных в футере storefront.",
+        "fields": {
+          "workingHours": "Время работы",
+          "timeFrom": "С",
+          "timeTo": "По",
+          "phone": "Телефон"
+        },
+        "days": {
+          "mon": "ПН",
+          "tue": "ВТ",
+          "wed": "СР",
+          "thu": "ЧТ",
+          "fri": "ПТ",
+          "sat": "СБ",
+          "sun": "ВС"
+        },
+        "placeholders": {
+          "workingHours": "ПН, ВТ, СР, ЧТ, ПТ, СБ 10:00-17:00",
+          "phone": "38(0XX)XXX-XX-XX"
+        },
+        "hints": {
+          "phoneMask": "Формат: 38(0XX)XXX-XX-XX. Если ввести 066..., автоматически подставится 38."
+        },
+        "validation": {
+          "daysRequired": "Выберите хотя бы один день недели.",
+          "phoneIncomplete": "Введите полный номер телефона в формате 38(0XX)XXX-XX-XX."
+        },
+        "actions": {
+          "save": "Сохранить",
+          "saving": "Сохраняем..."
+        },
+        "messages": {
+          "loadFailed": "Не удалось загрузить настройки футера.",
+          "saveFailed": "Не удалось сохранить настройки футера.",
+          "saved": "Настройки футера сохранены."
+        }
+      },
+      "heroBlock": {
+        "title": "Hero-Блок",
+        "subtitle": "Управление главным hero-блоком: до 10 слайдов со спорткарами, локализованные тексты и плавная анимация смены.",
+        "actions": {
+          "refresh": "Обновить",
+          "saving": "Сохраняем...",
+          "saveSettings": "Сохранить",
+          "creating": "Создаём...",
+          "createSlide": "Добавить",
+          "saveSlide": "Сохранить",
+          "deleteSlide": "Удалить"
+        },
+        "settings": {
+          "title": "Настройки показа",
+          "limitLabel": "Слайдов: {count} / {max}",
+          "effect": "Тип анимации",
+          "intervalSeconds": "Время показа (сек)",
+          "speedMs": "Скорость смены (мс)",
+          "maxActive": "Активных слайдов",
+          "autoplay": "Автосмена"
+        },
+        "effects": {
+          "crossfade": "Плавный кроссфейд",
+          "panLeft": "Кинопанорама влево",
+          "liftUp": "Плавный подъём",
+          "cinematicZoom": "Кинематографичный зум",
+          "revealRight": "Проявление справа"
+        },
+        "create": {
+          "title": "Новый hero-слайд",
+          "subtitle": "Добавьте локализованные тексты и два изображения. Изменения на сайте появляются сразу.",
+          "desktopImageHint": "Desktop: рекомендуется 1920x880 px, JPG/PNG/WebP.",
+          "mobileImageHint": "Mobile: рекомендуется 900x1200 px, JPG/PNG/WebP, портретная ориентация."
+        },
+        "fields": {
+          "title": "Заголовок",
+          "subtitle": "Подзаголовок",
+          "link": "(https://... или /catalog)",
+          "sortOrder": "Порядок",
+          "active": "Включен",
+          "desktopImage": "Desktop-изображение",
+          "mobileImage": "Mobile-изображение",
+          "currentImageSaved": "Сейчас сохранено: {name}",
+          "newFileSelected": "Новый файл: {name}",
+          "replaceImageHint": "Новый файл не выбран, текущее изображение останется",
+          "noFileSelected": "Файл не выбран",
+          "localizationHint": "Для публикации достаточно одного языка, но лучше заполнить все три для корректного storefront i18n."
+        },
+        "states": {
+          "empty": "Hero-слайды пока не добавлены."
+        },
+        "messages": {
+          "loadFailed": "Не удалось загрузить hero-блок.",
+          "settingsSaved": "Настройки hero-блока сохранены.",
+          "settingsSaveFailed": "Не удалось сохранить настройки hero-блока.",
+          "slideCreated": "Hero-слайд добавлен.",
+          "slideCreateFailed": "Не удалось добавить hero-слайд.",
+          "slideSaved": "Hero-слайд сохранён.",
+          "slideSaveFailed": "Не удалось сохранить hero-слайд.",
+          "slideDeleted": "Hero-слайд удалён.",
+          "slideDeleteFailed": "Не удалось удалить hero-слайд."
+        }
+      },
+      "promoBanners": {
+        "title": "Рекламный баннер",
+        "subtitle": "Управление баннерами на сайте: до 10 штук, расписание показа и анимация смены.",
+        "actions": {
+          "refresh": "Обновить",
+          "saving": "Сохраняем...",
+          "saveSettings": "Сохранить",
+          "creating": "Создаём...",
+          "createBanner": "Добавить",
+          "saveBanner": "Сохранить",
+          "deleteBanner": "Удалить"
+        },
+        "settings": {
+          "title": "Настройки показа",
+          "limitLabel": "Баннеров: {count} / {max}",
+          "effect": "Тип анимации",
+          "intervalSeconds": "Время показа (сек)",
+          "speedMs": "Скорость смены (мс)",
+          "maxActive": "Баннеров одновременно",
+          "autoplay": "Автосмена"
+        },
+        "effects": {
+          "fade": "Плавное растворение",
+          "slideLeft": "Сдвиг слева",
+          "slideUp": "Сдвиг снизу",
+          "blindsVertical": "Вертикальные жалюзи",
+          "zoomIn": "Мягкое приближение"
+        },
+        "create": {
+          "title": "Новый баннер",
+          "subtitle": "Заполните поля и загрузите изображение. Изменения применяются на сайте сразу.",
+          "imageHint": "Рекомендуемый размер: 1600x500 px, формат JPG/PNG/WebP."
+        },
+        "fields": {
+          "title": "Заголовок",
+          "description": "Описание",
+          "link": "Ссылка (https://... или /каталог)",
+          "sortOrder": "Порядок",
+          "active": "Включен",
+          "startsAt": "Показывать с",
+          "endsAt": "Показывать до",
+          "image": "Изображение"
+        },
+        "states": {
+          "empty": "Баннеры пока не добавлены."
+        },
+        "messages": {
+          "loadFailed": "Не удалось загрузить баннеры.",
+          "settingsSaved": "Настройки показа сохранены.",
+          "settingsSaveFailed": "Не удалось сохранить настройки показа.",
+          "bannerCreated": "Баннер добавлен.",
+          "bannerCreateFailed": "Не удалось добавить баннер.",
+          "bannerSaved": "Баннер сохранён.",
+          "bannerSaveFailed": "Не удалось сохранить баннер.",
+          "bannerDeleted": "Баннер удалён.",
+          "bannerDeleteFailed": "Не удалось удалить баннер."
+        }
+      }
+    }
+  }
+}

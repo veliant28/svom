@@ -1,0 +1,389 @@
+{
+  "backoffice": {
+    "common": {
+      "rawOffers": {
+        "title": "Raw Offers",
+        "subtitle": "Staging layer for supplier offers before final upsert.",
+        "filters": {
+          "search": "Search by SKU/article/brand",
+          "all": "All rows",
+          "valid": "Valid only",
+          "invalid": "Invalid only"
+        },
+        "actions": {
+          "refresh": "Refresh"
+        },
+        "table": {
+          "columns": {
+            "supplier": "Supplier",
+            "sku": "SKU / Article",
+            "brand": "Brand",
+            "price": "Price",
+            "stock": "Stock",
+            "state": "State"
+          }
+        },
+        "states": {
+          "empty": "No raw offers found."
+        }
+      },
+      "supplierOffers": {
+        "title": "Supplier Offers",
+        "subtitle": "Operational supplier offer matrix for pricing input.",
+        "filters": {
+          "search": "Search by product/supplier/SKU",
+          "all": "All offers",
+          "available": "Available",
+          "unavailable": "Unavailable"
+        },
+        "actions": {
+          "refresh": "Refresh"
+        },
+        "table": {
+          "columns": {
+            "supplier": "Supplier",
+            "product": "Product",
+            "supplierSku": "Supplier SKU",
+            "price": "Purchase price",
+            "stock": "Stock",
+            "availability": "Availability"
+          }
+        },
+        "states": {
+          "empty": "No supplier offers found."
+        }
+      },
+      "productPrices": {
+        "title": "Product Prices",
+        "subtitle": "Final calculated prices after policies and repricing.",
+        "filters": {
+          "search": "Search by product/brand/policy"
+        },
+        "actions": {
+          "refresh": "Refresh"
+        },
+        "table": {
+          "columns": {
+            "product": "Product",
+            "category": "Category",
+            "purchasePrice": "Purchase",
+            "finalPrice": "Final",
+            "policy": "Policy",
+            "updated": "Updated"
+          }
+        },
+        "states": {
+          "empty": "No product prices found."
+        }
+      },
+      "brandAliases": {
+        "title": "Brand Aliases",
+        "subtitle": "Normalize supplier brand aliases to canonical brand names.",
+        "form": {
+          "alias": "Supplier alias",
+          "canonical": "Canonical brand"
+        },
+        "filters": {
+          "search": "Search alias or canonical"
+        },
+        "states": {
+          "empty": "No aliases yet."
+        },
+        "actions": {
+          "create": "Create",
+          "activate": "Activate",
+          "deactivate": "Deactivate"
+        },
+        "messages": {
+          "created": "Brand alias created.",
+          "updated": "Brand alias updated.",
+          "actionFailed": "Unable to update brand aliases."
+        },
+        "table": {
+          "columns": {
+            "alias": "Alias",
+            "canonical": "Canonical",
+            "scope": "Scope",
+            "priority": "Priority",
+            "status": "Status",
+            "actions": "Actions"
+          },
+          "scopeGlobal": "Global"
+        }
+      },
+      "brands": {
+        "title": "Brands",
+        "subtitle": "Operational management for catalog brands.",
+        "create": {
+          "title": "Create Brand"
+        },
+        "edit": {
+          "title": "Edit: {name}",
+          "fallbackTitle": "Edit Brand"
+        },
+        "modal": {
+          "subtitle": "Changes are saved directly to catalog.Brand."
+        },
+        "fields": {
+          "name": "Brand name",
+          "isActive": "Active"
+        },
+        "filters": {
+          "search": "Search by brand name",
+          "all": "All",
+          "active": "Active only",
+          "inactive": "Inactive only"
+        },
+        "actions": {
+          "create": "Create brand",
+          "edit": "Edit",
+          "delete": "Delete",
+          "save": "Save",
+          "cancel": "Cancel"
+        },
+        "messages": {
+          "nameRequired": "Brand name is required.",
+          "created": "Brand created.",
+          "createFailed": "Unable to create brand.",
+          "updated": "Brand updated.",
+          "updateFailed": "Unable to update brand.",
+          "deleteConfirm": "Delete brand \"{name}\"?",
+          "deleted": "Brand deleted.",
+          "deleteFailed": "Unable to delete brand."
+        },
+        "states": {
+          "empty": "No brands found."
+        },
+        "table": {
+          "columns": {
+            "name": "Brand",
+            "status": "Status",
+            "updated": "Updated",
+            "actions": "Actions"
+          }
+        },
+        "pagination": {
+          "total": "Total brands: {count}",
+          "prev": "Prev",
+          "next": "Next",
+          "page": "Page {current} of {total}"
+        }
+      },
+      "products": {
+        "title": "Products",
+        "subtitle": "Operational management for catalog products.",
+        "create": {
+          "title": "Create Product"
+        },
+        "edit": {
+          "title": "Edit Product"
+        },
+        "modal": {
+          "subtitle": "Changes are saved directly to catalog.Product."
+        },
+        "fields": {
+          "sku": "SKU",
+          "article": "Article",
+          "name": "Product name",
+          "brand": "Brand",
+          "category": "Category"
+        },
+        "flags": {
+          "active": "Active",
+          "featured": "Featured",
+          "new": "New",
+          "bestseller": "Bestseller"
+        },
+        "filters": {
+          "search": "Search by SKU, product name, brand, or category",
+          "allStates": "Any state",
+          "active": "Active only",
+          "inactive": "Inactive only",
+          "allBrands": "All brands",
+          "allCategories": "All categories"
+        },
+        "actions": {
+          "refresh": "Refresh",
+          "create": "Create product",
+          "pricing": "Price",
+          "bulkActions": "Bulk actions",
+          "selectPage": "Select page",
+          "unselectPage": "Clear page selection",
+          "edit": "Edit",
+          "delete": "Delete",
+          "save": "Save",
+          "cancel": "Cancel",
+          "bulkMoveCategory": "Move to category",
+          "bulkReindex": "Reindex",
+          "bulkDelete": "Delete selected"
+        },
+        "messages": {
+          "required": "Required fields: SKU, name, brand, and category.",
+          "created": "Product created.",
+          "createFailed": "Unable to create product.",
+          "updated": "Product updated.",
+          "updateFailed": "Unable to update product.",
+          "deleteConfirm": "Delete product \"{name}\"?",
+          "deleted": "Product deleted.",
+          "deleteFailed": "Unable to delete product.",
+          "reindexQueued": "Reindex queued for {count} product(s).",
+          "reindexFailed": "Unable to queue reindex.",
+          "bulkMoveCategoryConfirm": "Move selected products ({count}) to another category and update import rules for them?",
+          "bulkMoveCategorySelect": "Select target category",
+          "bulkMoveCategoryRequired": "Select a target category.",
+          "bulkMoveCategoryDone": "Category updated for {products} product(s); import rules updated for {offers} offer(s).",
+          "bulkMoveCategoryFailed": "Unable to bulk move products to category.",
+          "bulkDeleteConfirm": "Delete selected products ({count})?",
+          "bulkDeleted": "Deleted products: {count}.",
+          "bulkDeletePartial": "Deleted: {deleted}. Failed to delete: {failed}.",
+          "bulkDeleteFailed": "Unable to delete selected products."
+        },
+        "states": {
+          "empty": "No products found.",
+          "editingUnavailable": "The product to edit is not available on the current page."
+        },
+        "tooltips": {
+          "actionEdit": "Edit product",
+          "actionDelete": "Delete product",
+          "openPricing": "Open price and markup controls.",
+          "bulkActions": "Bulk actions for selected products.",
+          "pricePrimary": "Primary catalog price for this product.",
+          "priceWithMarkup": "Price with markup",
+          "supplierPrice": "Supplier price",
+          "appliedMarkup": "Applied markup",
+          "policy": "Policy",
+          "policyGlobal": "Global markup",
+          "policyCategory": "Category markup",
+          "notSet": "Not set",
+          "updatedAt": "Updated"
+        },
+        "table": {
+          "supplierArticle": "Supplier article",
+          "columns": {
+            "select": "Select",
+            "product": "Product",
+            "brand": "Brand",
+            "price": "Price",
+            "warehouses": "Warehouses",
+            "stock": "Stock",
+            "status": "Status",
+            "actions": "Actions"
+          }
+        },
+        "pagination": {
+          "total": "Total products: {count}",
+          "perPage": "Per page",
+          "prev": "Prev",
+          "next": "Next",
+          "page": "Page {current} of {total}"
+        }
+      },
+      "categories": {
+        "title": "Categories",
+        "subtitle": "Operational management for catalog categories.",
+        "create": {
+          "title": "Create Category"
+        },
+        "edit": {
+          "title": "Edit: {name}",
+          "fallbackTitle": "Edit Category"
+        },
+        "modal": {
+          "subtitle": "Changes are saved directly to catalog.Category."
+        },
+        "fields": {
+          "name": "Category name",
+          "parentNone": "No parent category",
+          "description": "Description (optional)",
+          "isActive": "Active"
+        },
+        "filters": {
+          "search": "Search by category name",
+          "all": "All",
+          "active": "Active only",
+          "inactive": "Inactive only",
+          "anyParent": "Any level",
+          "rootOnly": "Root only"
+        },
+        "actions": {
+          "create": "Create category",
+          "edit": "Edit",
+          "delete": "Delete",
+          "save": "Save",
+          "cancel": "Cancel"
+        },
+        "messages": {
+          "nameRequired": "Category name is required.",
+          "created": "Category created.",
+          "createFailed": "Unable to create category.",
+          "updated": "Category updated.",
+          "updateFailed": "Unable to update category.",
+          "deleteConfirm": "Delete category \"{name}\"?",
+          "deleted": "Category deleted.",
+          "deleteFailed": "Unable to delete category."
+        },
+        "states": {
+          "empty": "No categories found."
+        },
+        "table": {
+          "columns": {
+            "name": "Category",
+            "status": "Status",
+            "updated": "Updated",
+            "actions": "Actions"
+          },
+          "rootLabel": "Root"
+        },
+        "pagination": {
+          "total": "Total categories: {count}",
+          "prev": "Prev",
+          "next": "Next",
+          "page": "Page {current} of {total}"
+        }
+      },
+      "articleRules": {
+        "title": "Article Rules",
+        "subtitle": "Configure article normalization rules and supplier-specific overrides.",
+        "form": {
+          "name": "Rule name",
+          "pattern": "Pattern",
+          "replacement": "Replacement"
+        },
+        "ruleTypes": {
+          "remove_separators": "Remove separators",
+          "strip_prefix": "Strip prefix",
+          "strip_suffix": "Strip suffix",
+          "regex_replace": "Regex replace",
+          "force_uppercase": "Force uppercase"
+        },
+        "filters": {
+          "search": "Search rules"
+        },
+        "states": {
+          "empty": "No normalization rules yet."
+        },
+        "actions": {
+          "create": "Create",
+          "activate": "Activate",
+          "deactivate": "Deactivate"
+        },
+        "messages": {
+          "created": "Article rule created.",
+          "updated": "Article rule updated.",
+          "actionFailed": "Unable to update article rules."
+        },
+        "table": {
+          "columns": {
+            "name": "Name",
+            "type": "Type",
+            "pattern": "Pattern",
+            "replacement": "Replacement",
+            "priority": "Priority",
+            "status": "Status",
+            "actions": "Actions"
+          }
+        }
+      }
+    }
+  }
+}

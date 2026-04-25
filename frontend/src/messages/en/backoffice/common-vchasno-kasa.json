@@ -1,0 +1,167 @@
+{
+  "backoffice": {
+    "common": {
+      "vchasnoKasa": {
+        "title": "Vchasno.Kasa",
+        "subtitle": "Receipt fiscalization settings and latest receipts for orders.",
+        "form": {
+          "title": "Vchasno.Kasa settings",
+          "helper": "Use the Orders API token from Налаштування компанії → Інтеграція замовлень → API for receipts. Use the cash register API token from cash register settings for shift management. Tokens are stored only on the backend and shown masked after save.",
+          "enabled": "Enable integration",
+          "apiToken": "Orders API token",
+          "apiTokenMasked": "Saved token",
+          "fiscalApiToken": "Cash register API token",
+          "fiscalApiTokenMasked": "Saved cash register token",
+          "fiscalApiTokenFallbackMasked": "Orders token is used",
+          "rroFn": "Fiscal RRO/PRRO number",
+          "defaultPaymentType": "Default payment type",
+          "defaultTaxGroup": "Default tax group",
+          "autoIssueOnCompleted": "Automatically create receipt when status becomes \"Completed\"",
+          "sendCustomerEmail": "Send customer email to receipt delivery",
+          "save": "Save",
+          "saving": "Saving...",
+          "testConnection": "Test connection",
+          "testing": "Testing..."
+        },
+        "paymentMethods": {
+          "title": "Cash register payment methods",
+          "codes": "Payment method codes",
+          "items": {
+            "0": "Cash",
+            "1": "Non-cash",
+            "2": "Card",
+            "3": "Prepayment",
+            "4": "Postpayment",
+            "5": "Credit",
+            "6": "Certificate",
+            "8": "Check",
+            "11": "Bonus points",
+            "12": "Credit repayment",
+            "13": "Transfer via QR code",
+            "14": "Transfer from card",
+            "15": "Transfer from current account",
+            "16": "Internet acquiring",
+            "17": "LiqPay payment",
+            "18": "Payment via ROZETKA Pay transfer service",
+            "19": "Portmone payment",
+            "20": "NovaPay payment"
+          }
+        },
+        "taxGroups": {
+          "title": "Cash register tax groups",
+          "codes": "Tax group codes",
+          "items": {
+            "А": "VAT 20%",
+            "В": "VAT 7%",
+            "З": "Not subject to VAT",
+            "Б": "Without VAT",
+            "Е": "VAT 0%",
+            "ИК": "VAT 20% + PF 7.5%",
+            "ГД": "VAT 20% + excise 5%",
+            "Ж": "Without VAT + excise 5%",
+            "Л": "VAT 14%"
+          }
+        },
+        "codes": {
+          "paymentMethodsTitle": "Payment method codes",
+          "taxGroupsTitle": "Tax group codes",
+          "code": "Code",
+          "paymentMethod": "Payment method",
+          "taxGroup": "Tax group",
+          "close": "Close"
+        },
+        "status": {
+          "title": "Integration status",
+          "enabled": "Integration",
+          "ordersApiToken": "Orders API token",
+          "fiscalApiToken": "Cash register API token",
+          "rroFn": "RRO/PRRO",
+          "lastCheck": "Last check",
+          "lastCheckState": "Check result",
+          "lastCheckMessage": "Message",
+          "ok": "Successful",
+          "failed": "Failed"
+        },
+        "shift": {
+          "title": "Cash shift",
+          "state": "Shift state",
+          "shiftId": "Shift ID",
+          "shiftLink": "Shift number",
+          "checkedAt": "Checked at",
+          "message": "Message",
+          "refresh": "Refresh",
+          "open": "Open",
+          "close": "Close",
+          "statuses": {
+            "open": "Open",
+            "closed": "Closed",
+            "disabled": "Integration disabled",
+            "error": "Error",
+            "unknown": "Unknown"
+          },
+          "messages": {
+            "opened": "Shift is open.",
+            "closed": "Shift is closed.",
+            "disabled": "Vchasno.Kasa integration is disabled.",
+            "unknown": "Failed to determine shift status.",
+            "error": "Shift status check failed.",
+            "unauthorized": "Unauthorized in Vchasno.Kasa. Check cash register API token and fiscal permissions.",
+            "tokenMissing": "Vchasno cash register API token is missing (Cash register settings -> Token)."
+          }
+        },
+        "latest": {
+          "title": "Latest receipts",
+          "subtitle": "Latest Vchasno.Kasa receipts for SVOM orders.",
+          "refresh": "Refresh",
+          "order": "Order",
+          "customer": "Customer",
+          "amount": "Amount",
+          "status": "Status",
+          "checkFn": "Fiscal number",
+          "date": "Date",
+          "actions": "Actions",
+          "sync": "Sync",
+          "open": "Open",
+          "empty": "No receipts created yet."
+        },
+        "receiptStatus": {
+          "pending": "Not created",
+          "created": "Created",
+          "delivered": "Delivered",
+          "fiscalized": "Fiscalized",
+          "cancelled": "Cancelled",
+          "error": "Error"
+        },
+        "messages": {
+          "loadFailed": "Failed to load Vchasno.Kasa settings",
+          "settingsSaved": "Vchasno.Kasa settings saved",
+          "settingsSaveFailed": "Failed to save Vchasno.Kasa settings",
+          "connectionOk": "Connection test successful.",
+          "connectionFailed": "Failed to test connection.",
+          "shiftOpened": "Cash shift opened.",
+          "shiftOpenFailed": "Failed to open cash shift.",
+          "shiftClosed": "Cash shift closed.",
+          "shiftCloseFailed": "Failed to close cash shift.",
+          "shiftStatusFailed": "Failed to refresh cash shift status.",
+          "shiftStatusUpdated": "Shift status updated: {status}.",
+          "dataRefreshed": "Vchasno.Kasa data refreshed.",
+          "receiptSynced": "Receipt synced.",
+          "receiptOpened": "Receipt opened in a new tab.",
+          "integrationDisabled": "Vchasno.Kasa integration is disabled.",
+          "tokenMissing": "Vchasno Orders API token is missing (Налаштування компанії -> Інтеграція замовлень -> API).",
+          "rroMissing": "Fiscal RRO/PRRO number is missing.",
+          "connectionUnavailable": "Unable to connect to Vchasno.Kasa.",
+          "receiptSyncFailed": "Failed to sync receipt.",
+          "receiptOpenFailed": "Failed to open receipt.",
+          "popupBlocked": "The browser blocked the new tab. Allow popups and try again."
+        },
+        "validation": {
+          "tokenRequired": "Enter the Orders API token (Налаштування компанії → Інтеграція замовлень → API).",
+          "rroRequired": "Enter the fiscal RRO/PRRO number.",
+          "paymentMethodRequired": "Select at least one Vchasno.Kasa cash register payment method",
+          "taxGroupRequired": "Select at least one Vchasno.Kasa cash register tax group"
+        }
+      }
+    }
+  }
+}

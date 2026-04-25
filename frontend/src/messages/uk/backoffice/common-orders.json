@@ -1,0 +1,672 @@
+{
+  "backoffice": {
+    "common": {
+      "orders": {
+        "title": "Замовлення",
+        "subtitle": "Операційний контур замовлень: чистий список і всі дії в модальних вікнах.",
+        "filters": {
+          "search": "Пошук за замовленням, клієнтом або товаром",
+          "allStatuses": "Усі статуси"
+        },
+        "actions": {
+          "refresh": "Оновити",
+          "bulkActions": "Масові дії",
+          "bulkDelete": "Видалити вибрані",
+          "delete": "Видалити замовлення",
+          "close": "Закрити",
+          "closeModal": "Закрити вікно",
+          "cancel": "Скасувати"
+        },
+        "tooltips": {
+          "bulkActions": "Масові дії",
+          "open": "Відкрити замовлення",
+          "supplierOrder": "Оформити замовлення постачальнику",
+          "delete": "Видалити замовлення",
+          "selectAll": "Вибрати всі замовлення на сторінці",
+          "selectOne": "Вибрати замовлення {orderNumber}",
+          "waybill": "Відкрити ТТН",
+          "waybillCreate": "Створити ТТН",
+          "refresh": "Оновити"
+        },
+        "table": {
+          "columns": {
+            "order": "Номер замовлення",
+            "client": "Клієнт",
+            "status": "Статус",
+            "total": "Разом",
+            "created": "Створено",
+            "actions": "Дії",
+            "waybill": "ТТН",
+            "waybillStatus": "Статус ТТН"
+          },
+          "itemsCount": "Позицій: {count}",
+          "subtotal": "Проміжний підсумок: {value}",
+          "waybillEmpty": "Немає ТТН",
+          "waybillStatusEmpty": "—",
+          "waybillStatusUnknown": "Без статусу",
+          "waybillStatusCatalog": {
+            "1": {
+              "short": "Створено",
+              "full": "Відправник самостійно створив цю накладну, але ще не надав до відправки"
+            },
+            "2": {
+              "short": "Видалено",
+              "full": "Видалено"
+            },
+            "3": {
+              "short": "Не знайдено",
+              "full": "Номер не знайдено"
+            },
+            "4": {
+              "short": "У місті відправника",
+              "full": "Відправлення у місті ХХXХ (статус для міжобласних відправлень)"
+            },
+            "5": {
+              "short": "У дорозі",
+              "full": "Відправлення прямує до міста YYYY"
+            },
+            "6": {
+              "short": "У місті одержувача",
+              "full": "Відправлення у місті YYYY, орієнтовна доставка до ВІДДІЛЕННЯ-XXX dd-mm. Очікуйте додаткове повідомлення про прибуття"
+            },
+            "7": {
+              "short": "На відділенні",
+              "full": "Прибув на відділення"
+            },
+            "8": {
+              "short": "У поштоматі",
+              "full": "Прибув на відділення (завантажено в Поштомат)"
+            },
+            "9": {
+              "short": "Отримано",
+              "full": "Відправлення отримано"
+            },
+            "10": {
+              "short": "Отримано, переказ очікується",
+              "full": "Відправлення отримано %DateReceived%. Протягом доби ви одержите SMS-повідомлення про надходження грошового переказу та зможете отримати його в касі відділення «Нова пошта»"
+            },
+            "11": {
+              "short": "Отримано, переказ видано",
+              "full": "Відправлення отримано %DateReceived%. Грошовий переказ видано одержувачу"
+            },
+            "12": {
+              "short": "Комплектується",
+              "full": "«Нова пошта» комплектує ваше відправлення"
+            },
+            "41": {
+              "short": "Локально в місті",
+              "full": "Відправлення у місті ХХXХ (статус для послуг «Локал стандарт» і «Локал експрес» — доставка в межах міста)"
+            },
+            "101": {
+              "short": "До одержувача",
+              "full": "На шляху до одержувача"
+            },
+            "102": {
+              "short": "Відмова з поверненням",
+              "full": "Відмова від отримання (відправником створено замовлення на повернення)"
+            },
+            "103": {
+              "short": "Відмова",
+              "full": "Відмова від отримання"
+            },
+            "104": {
+              "short": "Зміну адреси прийнято",
+              "full": "Змінено адресу"
+            },
+            "105": {
+              "short": "Зберігання припинено",
+              "full": "Припинено зберігання"
+            },
+            "106": {
+              "short": "Створено зворотну ЕН",
+              "full": "Одержано і створено ЕН зворотної доставки"
+            },
+            "111": {
+              "short": "Невдала доставка",
+              "full": "Невдала спроба доставки через відсутність одержувача на адресі або зв'язку з ним"
+            },
+            "112": {
+              "short": "Доставку перенесено",
+              "full": "Дата доставки перенесена одержувачем"
+            }
+          }
+        },
+        "bulk": {
+          "selected": "Вибрано: {count}"
+        },
+        "states": {
+          "empty": "Замовлення не знайдено.",
+          "notFound": "Замовлення не знайдено."
+        },
+        "pagination": {
+          "total": "Усього замовлень: {count}",
+          "prev": "Назад",
+          "next": "Вперед",
+          "page": "Сторінка {current} з {total}"
+        },
+        "messages": {
+          "detailFailed": "Не вдалося завантажити замовлення.",
+          "processing": "Замовлення переведено в роботу.",
+          "confirmed": "Замовлення підтверджено.",
+          "awaiting": "Замовлення переведено в очікування закупівлі.",
+          "reserved": "Позиції замовлення зарезервовано.",
+          "readyForShipment": "Замовлення позначено як готове до відправлення.",
+          "readyToShip": "Замовлення позначено як готове до відправлення.",
+          "shipped": "Замовлення позначено як відправлене.",
+          "completed": "Замовлення завершено.",
+          "resetToNew": "Статус замовлення повернено в Нове.",
+          "cancelled": "Замовлення скасовано.",
+          "actionFailed": "Не вдалося виконати дію із замовленням.",
+          "supplierPayloadFailed": "Не вдалося підготувати payload для замовлення постачальнику.",
+          "supplierOrderCreated": "Замовлення постачальнику оформлено.",
+          "supplierOrderCreatedWithId": "Замовлення постачальнику оформлено (ID: {id}).",
+          "supplierCreateFailed": "Не вдалося оформити замовлення постачальнику.",
+          "supplierOrderCancelled": "Замовлення постачальнику скасовано.",
+          "supplierCancelFailed": "Не вдалося скасувати замовлення постачальнику.",
+          "deleted": "Замовлення видалено.",
+          "deleteFailed": "Не вдалося видалити замовлення.",
+          "bulkDeleted": "Видалено замовлень: {count}.",
+          "bulkDeletePartial": "Видалено: {deleted}, не вдалося: {failed}.",
+          "bulkDeleteFailed": "Не вдалося виконати масове видалення.",
+          "waybillLoadFailed": "Не вдалося завантажити дані ТТН.",
+          "waybillCreated": "ТТН створено.",
+          "waybillUpdated": "ТТН оновлено.",
+          "waybillSaveFailed": "Не вдалося зберегти ТТН.",
+          "waybillSynced": "Статус ТТН оновлено.",
+          "waybillSyncFailed": "Не вдалося оновити статус ТТН.",
+          "waybillDeleted": "ТТН видалено.",
+          "waybillDeleteFailed": "Не вдалося видалити ТТН.",
+          "waybillPrintFailed": "Не вдалося отримати друковану форму ТТН.",
+          "senderCreated": "Профіль відправника створено.",
+          "senderUpdated": "Профіль відправника оновлено.",
+          "senderDeleted": "Профіль відправника видалено.",
+          "senderSaveFailed": "Не вдалося зберегти профіль відправника.",
+          "senderValidated": "Профіль відправника успішно перевірено.",
+          "senderValidateFailed": "Не вдалося перевірити профіль відправника.",
+          "senderDeleteFailed": "Не вдалося видалити профіль відправника.",
+          "paymentRefreshed": "Статус оплати оновлено.",
+          "paymentRefreshFailed": "Не вдалося оновити статус оплати.",
+          "paymentCancelled": "Оплату Monobank скасовано.",
+          "paymentFinalized": "Холд Monobank фіналізовано.",
+          "paymentInvoiceRemoved": "Інвойс Monobank інвалідовано.",
+          "paymentFiscalChecksLoaded": "Фіскальні чеки завантажено: {count}.",
+          "monobankActionFailed": "Не вдалося виконати дію Monobank.",
+          "monobankActionNotAvailable": "Дія доступна лише для оплати Monobank.",
+          "statusChangeNoPermission": "Немає прав на зміну статусу у зворотному напрямку.",
+          "completedReceiptStarted": "Статус замовлення оновлено. Створення чека запущено.",
+          "completedReceiptSettingsWarning": "Статус замовлення оновлено, але чек не створено: перевірте налаштування Вчасно.Каса."
+        },
+        "receipt": {
+          "label": "Чек",
+          "actions": {
+            "issue": "Створити чек",
+            "sync": "Синхронізувати",
+            "open": "Відкрити чек"
+          },
+          "messages": {
+            "created": "Чек створено.",
+            "alreadyCreated": "Чек уже створено.",
+            "createFailed": "Не вдалося створити чек.",
+            "synced": "Чек синхронізовано.",
+            "syncFailed": "Не вдалося синхронізувати чек.",
+            "openFailed": "Не вдалося відкрити чек.",
+            "popupBlocked": "Браузер заблокував нову вкладку. Дозвольте popup і повторіть.",
+            "notCreated": "Чек ще не створено.",
+            "unavailable": "Чек поки що не можна відкрити."
+          },
+          "status": {
+            "pending": "Не створено",
+            "notCreated": "Не створено",
+            "created": "Створено",
+            "delivered": "Доставлено",
+            "fiscalized": "Фіскалізовано",
+            "cancelled": "Скасовано",
+            "error": "Помилка фіскалізації"
+          }
+        },
+        "statusDescriptions": {
+          "new": "Нове замовлення. Можна підтвердити та передати в обробку.",
+          "processing": "Замовлення прийнято в роботу та обробляється.",
+          "confirmed": "Замовлення підтверджене та готове до наступного етапу.",
+          "awaiting_procurement": "Замовлення очікує закупівлю у постачальників.",
+          "reserved": "Усі позиції зарезервовані.",
+          "partially_reserved": "Частину позицій зарезервовано, решта чекає закупівлі.",
+          "ready_for_shipment": "Замовлення готове до відправлення клієнту.",
+          "ready_to_ship": "Замовлення готове до відправлення клієнту.",
+          "shipped": "Замовлення відправлено клієнту.",
+          "completed": "Замовлення завершено.",
+          "cancelled": "Замовлення скасовано.",
+          "default": "Статус замовлення оновлено. Перевірте деталі перед наступним кроком."
+        },
+        "modals": {
+          "view": {
+            "title": "Замовлення",
+            "titleWithNumber": "Замовлення {number}",
+            "summary": {
+              "customer": "Клієнт",
+              "fullName": "ПІБ",
+              "phone": "Телефон",
+              "meta": "Службова інформація",
+              "created": "Дата створення: {value}",
+              "items": "Позицій: {count}",
+              "delivery": "Доставка: {value}",
+              "deliveryMethod": "Спосіб доставки",
+              "paymentMethod": "Спосіб оплати",
+              "deliveryCity": "Місто доставки",
+              "deliveryDestination": "Відділення / поштомат / адреса",
+              "total": "Підсумок",
+              "subtotal": "Проміжний підсумок: {value} {currency}",
+              "deliveryFee": "Доставка: {value} {currency}",
+              "values": {
+                "deliveryMethods": {
+                  "pickup": "Самовивіз",
+                  "courier": "Кур'єр",
+                  "nova_poshta": "Нова Пошта"
+                }
+              }
+            },
+            "items": {
+              "title": "Склад замовлення",
+              "columns": {
+                "product": "Товар",
+                "qty": "К-сть",
+                "price": "Ціна",
+                "total": "Сума",
+                "procurement": "Закупівля"
+              },
+              "empty": "У замовленні немає позицій."
+            },
+            "serviceInfo": {
+              "title": "Коментарі та службова інформація",
+              "customerComment": "Коментар клієнта: {value}",
+              "internalNotes": "Внутрішня примітка: {value}",
+              "operatorNotes": "Примітка оператора: {value}",
+              "empty": "Додаткових коментарів немає."
+            },
+            "actions": {
+              "processing": "У роботу",
+              "confirm": "Підтвердити",
+              "readyForShipment": "Готове до відправлення",
+              "awaiting": "В очікування закупівлі",
+              "ship": "Відправлено",
+              "complete": "Завершити",
+              "resetToNew": "Повернути в нове",
+              "reserve": "Зарезервувати",
+              "ready": "Готове до відправлення",
+              "cancel": "Скасувати",
+              "openSupplierOrder": "Замовлення постачальнику"
+            },
+            "tooltips": {
+              "processing": "Перевести замовлення в роботу",
+              "confirm": "Підтвердити замовлення",
+              "readyForShipment": "Позначити замовлення готовим до відправлення",
+              "awaiting": "Перевести замовлення в очікування закупівлі",
+              "ship": "Позначити замовлення як відправлене",
+              "complete": "Завершити замовлення",
+              "resetToNew": "Повернути замовлення в статус Нове",
+              "reserve": "Спробувати зарезервувати позиції",
+              "ready": "Позначити замовлення як готове до відправлення",
+              "cancel": "Скасувати замовлення"
+            }
+          },
+          "supplier": {
+            "title": "Замовлення постачальнику",
+            "subtitle": "Підготовка та відправлення складу замовлення постачальнику GPL.",
+            "subtitleWithNumber": "Замовлення постачальнику для {number}",
+            "explainTitle": "Що відбудеться",
+            "explainBody": "Ми сформуємо список товарів і надішлемо його постачальнику GPL. Перед відправкою перевірте склад та підсумок.",
+            "itemsTitle": "Товари, які будуть надіслані постачальнику",
+            "columns": {
+              "article": "Артикул",
+              "name": "Назва",
+              "qty": "К-сть",
+              "price": "Ціна",
+              "total": "Сума",
+              "mapping": "Звʼязка"
+            },
+            "mapping": {
+              "tooltip": "Буде надіслано як товар GPL ID: {id}",
+              "ok": "Готово",
+              "missing": "Немає звʼязки"
+            },
+            "empty": "Немає доступних позицій для відправки постачальнику.",
+            "payloadTitle": "Що буде відправлено постачальнику",
+            "payloadSubtitle": "Фактичний payload, який піде в GPL /api/orders/store",
+            "payloadEmpty": "Payload ще не сформовано.",
+            "cannotSubmit": "Неможливо відправити замовлення: без звʼязки залишилось позицій {count}.",
+            "lastOrder": "Останнє оформлене замовлення постачальнику: #{id}",
+            "actions": {
+              "cancelSupplierOrder": "Скасувати замовлення постачальнику",
+              "submit": "Оформити замовлення постачальнику"
+            }
+          },
+          "delete": {
+            "title": "Видалити замовлення",
+            "bulkTitle": "Видалити вибрані замовлення",
+            "singleMessage": "Ви дійсно хочете видалити замовлення {orderNumber}? Цю дію неможливо скасувати.",
+            "bulkMessage": "Ви дійсно хочете видалити вибрані замовлення ({count})? Цю дію неможливо скасувати."
+          },
+          "waybill": {
+            "title": "ТТН Нової Пошти",
+            "subtitle": "Оформлення ТТН для замовлення {number}",
+            "subtitleEmpty": "Оформлення ТТН",
+            "sectionShipment": "Відправлення",
+            "sectionRecipient": "Отримувач",
+            "sectionPaymentAdditional": "Оплата та додаткові послуги",
+            "fields": {
+              "sender": "Відправник НП",
+              "description": "Опис",
+              "counterparty": "Контрагент",
+              "counterpartyLookupLoading": "Шукаємо бізнес-контрагента...",
+              "counterpartyPrivateDefaultHint": "Приватна особа за замовчуванням. Для бізнес-клієнта введіть ЄДРПОУ (8) або ІПН (10).",
+              "counterpartyBusinessCodeHint": "Введіть код ЄДРПОУ (8) або ІПН (10).",
+              "deliveryType": "Тип доставки",
+              "city": "Місто отримувача",
+              "cityPlaceholder": "Введіть місто",
+              "warehouse": "Відділення / поштомат",
+              "warehousePlaceholder": "Введіть відділення",
+              "street": "Вулиця",
+              "streetPlaceholder": "Введіть вулицю",
+              "house": "Будинок",
+              "apartment": "Квартира",
+              "recipientName": "ПІБ отримувача",
+              "recipientPhone": "Телефон отримувача",
+              "seats": "Кількість місць",
+              "weight": "Вага (кг)",
+              "cost": "Оціночна вартість",
+              "afterpayment": "Сума контролю оплати",
+              "widthCm": "Ширина, см",
+              "lengthCm": "Довжина, см",
+              "heightCm": "Висота, см",
+              "volumetricWeight": "Об'ємна вага",
+              "weightUnit": "кг",
+              "packagingType": "Тип пакування",
+              "packRef": "REF пакування",
+              "packRefHint": "Оберіть пакування зі списку нижче",
+              "packRefLoading": "Завантажуємо варіанти пакування...",
+              "packRefEmpty": "Немає варіантів пакування для поточних габаритів"
+            },
+            "delivery": {
+              "warehouse": "Відділення",
+              "postomat": "Поштомат",
+              "address": "Адреса"
+            },
+            "cargoTypes": {
+              "documents": "Документи",
+              "parcel": "Посилка",
+              "cargo": "Вантаж",
+              "pallet": "Палета"
+            },
+            "actions": {
+              "create": "Створити ТТН",
+              "update": "Оновити ТТН",
+              "delete": "Видалити ТТН",
+              "checkReaddress": "Перевірити переадресацію",
+              "checkReturn": "Перевірити повернення",
+              "trackTtn": "Відстежити ТТН",
+              "syncStatus": "Оновити статус",
+              "printHtml": "Друк ТТН",
+              "printPdf": "Друк маркування",
+              "additionalServices": "Додаткові послуги",
+              "addPackaging": "Додати пакування",
+              "packagingAdded": "Пакування додано",
+              "addSeat": "Додати місце",
+              "removeSeat": "Прибрати місце",
+              "seatList": "Список місць",
+              "seatCardTitle": "Місце {index}",
+              "backFromPackaging": "Назад",
+              "backFromSeatList": "Назад",
+              "backFromAdditionalServices": "Назад"
+            },
+            "payment": {
+              "toPay": "До сплати",
+              "cashOnDelivery": "Післяплата"
+            },
+            "additional": {
+              "title": "Параметри за документацією Нової Пошти",
+              "saturdayDelivery": "Суботня доставка",
+              "localExpress": "Local Express",
+              "preferredDeliveryDate": "Бажана дата доставки",
+              "datePlaceholder": "ДД.ММ.РРРР",
+              "timeInterval": "Інтервал доставки",
+              "timeIntervalNone": "Без інтервалу",
+              "timeInterval1": "Інтервал 1",
+              "timeInterval2": "Інтервал 2",
+              "timeInterval3": "Інтервал 3",
+              "timeInterval4": "Інтервал 4",
+              "infoRegClientBarcodes": "Внутрішній номер замовлення клієнта",
+              "accompanyingDocuments": "Супровідні документи",
+              "redBoxBarcode": "RedBox Barcode",
+              "numberOfFloorsLifting": "Підйом до дверей (поверх)",
+              "numberOfFloorsDescent": "Спуск від дверей (поверх)",
+              "forwardingCount": "Контроль поштучної передачі",
+              "deliveryByHand": "Доставка особисто в руки",
+              "deliveryByHandRecipients": "Одержувачі для вручення",
+              "deliveryByHandRecipientsHint": "Кожного одержувача вказуйте з нового рядка",
+              "specialCargo": "Ручне оброблення",
+              "cashOnDeliveryAmount": "Післяплата",
+              "cashOnDeliveryHint": "",
+              "controlPaymentAmount": "Контроль оплати",
+              "controlPaymentHint": ""
+            },
+            "auto": {
+              "description": "Опис",
+              "descriptionValue": "Автозапчастини та аксесуари",
+              "additional": "Додаткова інформація",
+              "additionalValue": "Номер замовлення {orderNumber}"
+            },
+            "current": {
+              "number": "Номер ТТН",
+              "status": "Статус"
+            },
+            "tracking": {
+              "title": "Трекінг ТТН",
+              "currentStatus": "Поточний статус",
+              "syncedAt": "Оновлено",
+              "empty": "Події трекінгу ще відсутні.",
+              "close": "Закрити",
+              "location": "Локація",
+              "warehouse": "Відділення",
+              "note": "Примітка",
+              "comment": "Коментар",
+              "planned": "Планово"
+            },
+            "meta": {
+              "senderType": "Тип відправника",
+              "payerType": "Тип платника",
+              "paymentMethod": "Метод оплати",
+              "payerTypes": {
+                "sender": "Відправник",
+                "recipient": "Отримувач",
+                "thirdPerson": "Третя особа"
+              },
+              "paymentMethods": {
+                "cash": "Готівка",
+                "nonCash": "Безготівково"
+              },
+              "validation": {
+                "controlPaymentUnavailable": "Для вибраного відправника в Новій Пошті не підключено послугу «Контроль оплати».",
+                "thirdPersonRequiresNonCash": "Для платника «Третя особа» доступний лише безготівковий спосіб оплати.",
+                "thirdPersonUnavailable": "Для вибраного відправника оплата третьою особою недоступна.",
+                "nonCashUnavailable": "Для вибраного відправника безготівкова оплата недоступна.",
+                "nonCashUnavailableForPrivateRecipient": "Для отримувача типу «Приватна особа» безготівкова оплата недоступна."
+              },
+              "serviceType": "Тип сервісу",
+              "syncedAt": "Синхронізовано",
+              "editable": "Редагування",
+              "yes": "Так",
+              "no": "Ні",
+              "unknown": "—",
+              "errorCodes": "Коди помилок",
+              "warningCodes": "Коди попереджень",
+              "infoCodes": "Інфо-коди",
+              "readonlyHint": "ТТН у фінальному статусі і недоступна для редагування.",
+              "senderTypes": {
+                "privatePerson": "Приватна особа",
+                "fop": "ФОП",
+                "business": "Бізнес"
+              }
+            },
+            "settings": {
+              "title": "Відправники Нової Пошти",
+              "subtitle": "Профілі відправників з окремими токенами та refs.",
+              "columns": {
+                "name": "Профіль",
+                "type": "Тип",
+                "refs": "Refs",
+                "status": "Статус"
+              },
+              "default": "За замовчуванням",
+              "valid": "Валідний",
+              "notValidated": "Не перевірено",
+              "empty": "Профілі відправників не налаштовано.",
+              "form": {
+                "name": "Назва профілю",
+                "apiToken": "API токен НП",
+                "counterpartyRef": "Counterparty Ref",
+                "contactRef": "Contact Ref",
+                "addressRef": "Адреса відправника",
+                "cityRef": "Місто відправника",
+                "phone": "Телефон відправника",
+                "contactName": "Контактна особа",
+                "organizationName": "Організація",
+                "edrpou": "ЄДРПОУ",
+                "active": "Активний",
+                "default": "За замовчуванням"
+              },
+              "actions": {
+                "create": "Створити профіль",
+                "update": "Оновити профіль",
+                "edit": "Редагувати",
+                "validate": "Перевірити",
+                "delete": "Видалити"
+              },
+              "lookup": {
+                "title": "Онлайн-довідник НП",
+                "subtitle": "Швидкий пошук населених пунктів, вулиць і відділень за токеном відправника.",
+                "sender": "Профіль відправника",
+                "selectSender": "Оберіть відправника",
+                "locale": "Локаль",
+                "settlements": "Населені пункти",
+                "streets": "Вулиці",
+                "warehouses": "Відділення / поштомати",
+                "searchPlaceholder": "Введіть запит",
+                "search": "Пошук",
+                "empty": "Немає даних"
+              }
+            }
+          }
+        },
+        "payment": {
+          "title": "Оплата",
+          "provider": "Провайдер",
+          "method": "Метод",
+          "status": "Статус",
+          "amount": "Сума",
+          "invoiceId": "Invoice ID",
+          "reference": "Reference",
+          "failureReason": "Причина помилки",
+          "pageUrl": "Page URL",
+          "open": "Відкрити",
+          "openPaymentPage": "Відкрити сторінку оплати",
+          "lastWebhookAt": "Останній webhook",
+          "lastSyncAt": "Остання синхронізація",
+          "refreshStatus": "Оновити статус оплати",
+          "monobank": {
+            "controlsTitle": "Дії Monobank",
+            "amountMinor": "Сума (мін. одиниці, опційно)",
+            "amountMinorHint": "наприклад 4200",
+            "amountMinorInvalid": "Вкажіть ціле число більше нуля.",
+            "actions": {
+              "finalize": "Фіналізувати холд",
+              "cancel": "Скасувати оплату",
+              "remove": "Інвалідовати інвойс",
+              "fiscalChecks": "Фіскальні чеки"
+            },
+            "tooltips": {
+              "finalize": "Списати холд і завершити оплату",
+              "cancel": "Скасувати оплату повністю або на суму з поля вище",
+              "remove": "Вимкнути посилання на оплату, щоб за цим інвойсом більше не можна було оплатити",
+              "fiscalChecks": "Показати фіскальні чеки за цим інвойсом"
+            },
+            "fiscalChecksTitle": "Фіскальні чеки",
+            "fiscalType": "Тип чека",
+            "fiscalSource": "Джерело фіскалізації",
+            "taxUrl": "Відкрити tax URL"
+          },
+          "values": {
+            "providers": {
+              "cash_on_delivery": "Післяплата",
+              "monobank": "Monobank",
+              "liqpay": "LiqPay"
+            },
+            "methods": {
+              "cash_on_delivery": "Післяплата",
+              "monobank": "Monobank",
+              "liqpay": "LiqPay",
+              "card_placeholder": "Оплата карткою"
+            },
+            "statuses": {
+              "pending": "Очікує",
+              "processing": "В обробці",
+              "created": "Створено",
+              "success": "Успішно",
+              "paid": "Оплачено",
+              "failed": "Помилка",
+              "expired": "Термін дії минув",
+              "cancelled": "Скасовано"
+            }
+          }
+        }
+      },
+      "orderDetail": {
+        "title": "Замовлення",
+        "titleWithNumber": "Замовлення {orderNumber}",
+        "subtitle": "Операції із замовленням, оплатою, доставкою та позиціями замовлення.",
+        "actions": {
+          "backToOrders": "Назад до замовлень",
+          "processing": "У роботу",
+          "readyForShipment": "Готове до відправлення",
+          "ship": "Відправлено",
+          "complete": "Завершити",
+          "resetToNew": "Повернути в нове",
+          "cancel": "Скасувати замовлення",
+          "recommendSupplier": "Підібрати постачальника",
+          "setRecommendedSupplier": "Призначити рекомендованого постачальника"
+        },
+        "cancelReasons": {
+          "customer_request": "Запит клієнта",
+          "payment_failed": "Помилка оплати",
+          "supplier_shortage": "Дефіцит у постачальника",
+          "unavailable": "Недоступно",
+          "operator_decision": "Рішення оператора",
+          "other": "Інше"
+        },
+        "summary": {
+          "status": "Статус",
+          "customer": "Клієнт",
+          "totals": "Підсумки",
+          "itemsIssues": "Позицій: {items}, проблем: {issues}"
+        },
+        "table": {
+          "columns": {
+            "product": "Товар",
+            "qty": "К-сть",
+            "availability": "Наявність",
+            "supplier": "Постачальник",
+            "procurement": "Закупівля",
+            "actions": "Дії"
+          },
+          "eta": "ETA: {days} дн.",
+          "recommended": "Рекомендовано: {value}",
+          "selected": "Обрано: {value}",
+          "suggestedNow": "Актуально зараз: {value}"
+        },
+        "states": {
+          "notFound": "Замовлення не знайдено.",
+          "emptyItems": "Позиції замовлення відсутні."
+        }
+      }
+    }
+  }
+}

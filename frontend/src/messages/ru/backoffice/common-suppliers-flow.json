@@ -1,0 +1,101 @@
+{
+  "backoffice": {
+    "common": {
+      "importSchedules": {
+        "title": "Расписание",
+        "subtitle": "Единая таблица запуска расписания импорта для всех поставщиков.",
+        "schedule": {
+          "daily": "Каждый день 7/7",
+          "time": "Время:"
+        },
+        "filters": {
+          "search": "Поиск источника"
+        },
+        "states": {
+          "empty": "Источники не найдены."
+        },
+        "actions": {
+          "enable": "Включить",
+          "disable": "Выключить",
+          "enableSchedule": "Вкл расписание",
+          "disableSchedule": "Выкл расписание",
+          "saveSchedule": "Сохранить расписание",
+          "runNow": "Запустить сценарий",
+          "runningNow": "Выполняется...",
+          "saveDefaults": "Сохранить значения по умолчанию"
+        },
+        "messages": {
+          "scheduleUpdated": "Состояние расписания обновлено для {source}.",
+          "scheduleSaved": "Настройки расписания сохранены для {source}.",
+          "scheduleDefaultsApplied": "Настройки по умолчанию применены для {source}.",
+          "runQueued": "Сценарий для {source} поставлен в очередь.",
+          "runCompleted": "Сценарий для {source} выполнен.",
+          "runFailed": "Не удалось запустить сценарий импорта.",
+          "actionFailed": "Не удалось обновить расписание."
+        },
+        "table": {
+          "columns": {
+            "source": "Источник",
+            "enabled": "Автоимпорт",
+            "cron": "Расписание",
+            "nextRun": "Следующий запуск",
+            "lastResult": "Последний результат",
+            "pipeline": "Сценарий",
+            "actions": "Действия"
+          },
+          "pipelineScenario": "Проверка/обновление токена -> Запрос/Скачивание/Импорт прайса -> Публикация -> Наценка -> Переиндексация",
+          "lastRunSummary": "строк: {rows} / пропущено: {skipped}",
+          "lastRunStarted": "Старт: {value}",
+          "lastRunFinished": "Финиш: {value}"
+        }
+      },
+      "procurement": {
+        "title": "Закупки",
+        "subtitle": "Операционный список заказов, требующих распределения и резервирования у поставщиков.",
+        "actions": {
+          "openSuggestions": "Открыть рекомендации поставщиков",
+          "refresh": "Обновить",
+          "openOrder": "Открыть заказ"
+        },
+        "table": {
+          "columns": {
+            "order": "Заказ",
+            "status": "Статус",
+            "issues": "Проблемы",
+            "total": "Итого",
+            "actions": "Действия"
+          }
+        },
+        "states": {
+          "empty": "Заказы для закупки не найдены."
+        }
+      },
+      "procurementSuggestions": {
+        "title": "Рекомендации закупки",
+        "subtitle": "Группировка рекомендаций по поставщикам: что и у кого закупать.",
+        "actions": {
+          "backToProcurement": "Назад к закупкам",
+          "refresh": "Обновить"
+        },
+        "unassigned": "Без назначения",
+        "supplierCode": "Код поставщика: {code}",
+        "groupTotals": "Позиций: {items} · Количество: {quantity}",
+        "table": {
+          "columns": {
+            "order": "Заказ",
+            "product": "Товар",
+            "qty": "Кол-во",
+            "offer": "Оффер",
+            "fulfillment": "Исполнение",
+            "status": "Статус"
+          },
+          "stock": "Остаток: {value}",
+          "eta": "ETA: {days} дн."
+        },
+        "states": {
+          "empty": "Рекомендации по закупке отсутствуют."
+        }
+      }
+    }
+  }
+}

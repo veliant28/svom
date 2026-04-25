@@ -1,0 +1,101 @@
+{
+  "backoffice": {
+    "common": {
+      "importSchedules": {
+        "title": "Schedule",
+        "subtitle": "Unified import schedule table for all suppliers.",
+        "schedule": {
+          "daily": "Daily 7/7",
+          "time": "Time:"
+        },
+        "filters": {
+          "search": "Search source"
+        },
+        "states": {
+          "empty": "No sources found."
+        },
+        "actions": {
+          "enable": "Enable",
+          "disable": "Disable",
+          "enableSchedule": "Enable schedule",
+          "disableSchedule": "Disable schedule",
+          "saveSchedule": "Save schedule",
+          "runNow": "Run scenario",
+          "runningNow": "Running...",
+          "saveDefaults": "Save defaults"
+        },
+        "messages": {
+          "scheduleUpdated": "Schedule state updated for {source}.",
+          "scheduleSaved": "Schedule settings saved for {source}.",
+          "scheduleDefaultsApplied": "Default schedule applied for {source}.",
+          "runQueued": "Scenario for {source} has been queued.",
+          "runCompleted": "Scenario for {source} completed.",
+          "runFailed": "Failed to run import scenario.",
+          "actionFailed": "Unable to update the import schedule."
+        },
+        "table": {
+          "columns": {
+            "source": "Source",
+            "enabled": "Auto import",
+            "cron": "Schedule",
+            "nextRun": "Next run",
+            "lastResult": "Last result",
+            "pipeline": "Scenario",
+            "actions": "Actions"
+          },
+          "pipelineScenario": "Token check/update -> Price request/download/import -> Publish -> Markup -> Reindex",
+          "lastRunSummary": "rows: {rows} / skipped: {skipped}",
+          "lastRunStarted": "Started: {value}",
+          "lastRunFinished": "Finished: {value}"
+        }
+      },
+      "procurement": {
+        "title": "Procurement",
+        "subtitle": "Operational list of orders that require supplier allocation and reservation.",
+        "actions": {
+          "openSuggestions": "Open supplier suggestions",
+          "refresh": "Refresh",
+          "openOrder": "Open order"
+        },
+        "table": {
+          "columns": {
+            "order": "Order",
+            "status": "Status",
+            "issues": "Issues",
+            "total": "Total",
+            "actions": "Actions"
+          }
+        },
+        "states": {
+          "empty": "No procurement orders."
+        }
+      },
+      "procurementSuggestions": {
+        "title": "Procurement Suggestions",
+        "subtitle": "Grouped supplier recommendations for what to procure and from whom.",
+        "actions": {
+          "backToProcurement": "Back to procurement",
+          "refresh": "Refresh"
+        },
+        "unassigned": "Unassigned",
+        "supplierCode": "Supplier code: {code}",
+        "groupTotals": "Items: {items} · Quantity: {quantity}",
+        "table": {
+          "columns": {
+            "order": "Order",
+            "product": "Product",
+            "qty": "Qty",
+            "offer": "Offer",
+            "fulfillment": "Fulfillment",
+            "status": "Status"
+          },
+          "stock": "Stock: {value}",
+          "eta": "ETA: {days}d"
+        },
+        "states": {
+          "empty": "No procurement suggestions."
+        }
+      }
+    }
+  }
+}

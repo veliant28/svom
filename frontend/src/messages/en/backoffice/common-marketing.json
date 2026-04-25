@@ -1,0 +1,166 @@
+{
+  "backoffice": {
+    "common": {
+      "footerSettings": {
+        "title": "Footer",
+        "subtitle": "Edit storefront footer contact data.",
+        "fields": {
+          "workingHours": "Working hours",
+          "timeFrom": "From",
+          "timeTo": "To",
+          "phone": "Phone"
+        },
+        "days": {
+          "mon": "Mon",
+          "tue": "Tue",
+          "wed": "Wed",
+          "thu": "Thu",
+          "fri": "Fri",
+          "sat": "Sat",
+          "sun": "Sun"
+        },
+        "placeholders": {
+          "workingHours": "Mon, Tue, Wed, Thu, Fri, Sat 10:00-17:00",
+          "phone": "38(0XX)XXX-XX-XX"
+        },
+        "hints": {
+          "phoneMask": "Format: 38(0XX)XXX-XX-XX. If you type 066..., the 38 prefix is added automatically."
+        },
+        "validation": {
+          "daysRequired": "Select at least one weekday.",
+          "phoneIncomplete": "Enter full phone number in format 38(0XX)XXX-XX-XX."
+        },
+        "actions": {
+          "save": "Save",
+          "saving": "Saving..."
+        },
+        "messages": {
+          "loadFailed": "Failed to load footer settings.",
+          "saveFailed": "Failed to save footer settings.",
+          "saved": "Footer settings saved."
+        }
+      },
+      "heroBlock": {
+        "title": "Hero Block",
+        "subtitle": "Manage the main storefront hero: up to 10 sports-car slides, localized copy, and smooth transition animation.",
+        "actions": {
+          "refresh": "Refresh",
+          "saving": "Saving...",
+          "saveSettings": "Save",
+          "creating": "Creating...",
+          "createSlide": "Add",
+          "saveSlide": "Save",
+          "deleteSlide": "Delete"
+        },
+        "settings": {
+          "title": "Display settings",
+          "limitLabel": "Slides: {count} / {max}",
+          "effect": "Animation type",
+          "intervalSeconds": "Display time (sec)",
+          "speedMs": "Transition speed (ms)",
+          "maxActive": "Active slides",
+          "autoplay": "Autoplay"
+        },
+        "effects": {
+          "crossfade": "Crossfade",
+          "panLeft": "Cinematic pan left",
+          "liftUp": "Soft lift up",
+          "cinematicZoom": "Cinematic zoom",
+          "revealRight": "Reveal from right"
+        },
+        "create": {
+          "title": "New hero slide",
+          "subtitle": "Add localized copy and two images. Updates appear on the storefront immediately.",
+          "desktopImageHint": "Desktop: recommended 1920x880 px, JPG/PNG/WebP.",
+          "mobileImageHint": "Mobile: recommended 900x1200 px, JPG/PNG/WebP, portrait orientation."
+        },
+        "fields": {
+          "title": "Title",
+          "subtitle": "Subtitle",
+          "link": "(https://... or /catalog)",
+          "sortOrder": "Order",
+          "active": "Enabled",
+          "desktopImage": "Desktop image",
+          "mobileImage": "Mobile image",
+          "currentImageSaved": "Currently saved: {name}",
+          "newFileSelected": "New file: {name}",
+          "replaceImageHint": "No new file selected, current image will stay",
+          "noFileSelected": "No file selected",
+          "localizationHint": "One language is enough to publish, but filling all three keeps storefront i18n correct."
+        },
+        "states": {
+          "empty": "No hero slides added yet."
+        },
+        "messages": {
+          "loadFailed": "Failed to load hero block.",
+          "settingsSaved": "Hero block settings saved.",
+          "settingsSaveFailed": "Failed to save hero block settings.",
+          "slideCreated": "Hero slide created.",
+          "slideCreateFailed": "Failed to create hero slide.",
+          "slideSaved": "Hero slide saved.",
+          "slideSaveFailed": "Failed to save hero slide.",
+          "slideDeleted": "Hero slide deleted.",
+          "slideDeleteFailed": "Failed to delete hero slide."
+        }
+      },
+      "promoBanners": {
+        "title": "Ad Banner",
+        "subtitle": "Manage storefront banners: up to 10 items, schedule window, and transition animation.",
+        "actions": {
+          "refresh": "Refresh",
+          "saving": "Saving...",
+          "saveSettings": "Save",
+          "creating": "Creating...",
+          "createBanner": "Add",
+          "saveBanner": "Save",
+          "deleteBanner": "Delete"
+        },
+        "settings": {
+          "title": "Display settings",
+          "limitLabel": "Banners: {count} / {max}",
+          "effect": "Animation type",
+          "intervalSeconds": "Display time (sec)",
+          "speedMs": "Transition speed (ms)",
+          "maxActive": "Banners at once",
+          "autoplay": "Autoplay"
+        },
+        "effects": {
+          "fade": "Fade",
+          "slideLeft": "Slide left",
+          "slideUp": "Slide up",
+          "blindsVertical": "Vertical blinds",
+          "zoomIn": "Soft zoom in"
+        },
+        "create": {
+          "title": "New banner",
+          "subtitle": "Fill in the fields and upload an image. Changes are applied on the storefront immediately.",
+          "imageHint": "Recommended size: 1600x500 px, JPG/PNG/WebP."
+        },
+        "fields": {
+          "title": "Title",
+          "description": "Description",
+          "link": "Link (https://... or /catalog)",
+          "sortOrder": "Order",
+          "active": "Enabled",
+          "startsAt": "Show from",
+          "endsAt": "Show until",
+          "image": "Image"
+        },
+        "states": {
+          "empty": "No banners added yet."
+        },
+        "messages": {
+          "loadFailed": "Failed to load banners.",
+          "settingsSaved": "Display settings saved.",
+          "settingsSaveFailed": "Failed to save display settings.",
+          "bannerCreated": "Banner created.",
+          "bannerCreateFailed": "Failed to create banner.",
+          "bannerSaved": "Banner saved.",
+          "bannerSaveFailed": "Failed to save banner.",
+          "bannerDeleted": "Banner deleted.",
+          "bannerDeleteFailed": "Failed to delete banner."
+        }
+      }
+    }
+  }
+}

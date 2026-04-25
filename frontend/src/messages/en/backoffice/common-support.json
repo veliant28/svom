@@ -1,0 +1,99 @@
+{
+  "backoffice": {
+    "common": {
+      "support": {
+        "title": "Technical support",
+        "subtitle": "Live queue, thread details and operator actions on one screen.",
+        "actions": {
+          "refresh": "Refresh"
+        },
+        "filters": {
+          "search": "Search by subject, customer or email",
+          "waiting": "Waiting only",
+          "assignedToMe": "Assigned to me",
+          "unassigned": "Unassigned"
+        },
+        "states": {
+          "loading": "Loading support threads...",
+          "emptyThreads": "No support threads found.",
+          "emptyMessages": "No messages yet.",
+          "realtimeConnected": "Real-time connection is active.",
+          "realtimeReconnecting": "Reconnecting to real-time updates..."
+        },
+        "messages": {
+          "loadFailed": "Failed to load support data.",
+          "loadStaffFailed": "Failed to load support staff.",
+          "sendFailed": "Failed to send reply.",
+          "assigned": "Assignee updated.",
+          "assignFailed": "Failed to update assignee.",
+          "statusChanged": "Thread status updated.",
+          "statusFailed": "Failed to update thread status.",
+          "loadWallboardFailed": "Failed to load wallboard."
+        },
+        "details": {
+          "actions": "Actions",
+          "selectStatus": "Select status",
+          "selectAssignee": "Select assignee"
+        },
+        "composer": {
+          "placeholder": "Write a reply",
+          "send": "Send",
+          "sending": "Sending..."
+        },
+        "statuses": {
+          "new": "New",
+          "open": "Open",
+          "waiting_for_support": "Waiting for support",
+          "waiting_for_client": "Waiting for client",
+          "resolved": "Resolved",
+          "closed": "Closed"
+        },
+        "shared": {
+          "customer": "Customer",
+          "assigned": "Assigned staff",
+          "lastActivity": "Last activity",
+          "firstResponse": "First response",
+          "selectThread": "Select a support thread to view details.",
+          "online": "Online",
+          "offline": "Offline",
+          "mine": "Mine",
+          "typing": "{users} is typing...",
+          "systemEvents": {
+            "assignedManual": "Thread assigned manually.",
+            "assignedAutoReply": "Thread assigned automatically after reply.",
+            "reassignedManual": "Thread reassigned manually.",
+            "reassignedAutoReply": "Thread reassigned automatically after reply.",
+            "statusChanged": "Status changed to {status}.",
+            "generic": "System event"
+          },
+          "statusValues": {
+            "new": "New",
+            "open": "Open",
+            "waiting_for_support": "Waiting for support",
+            "waiting_for_client": "Waiting for client",
+            "resolved": "Resolved",
+            "closed": "Closed"
+          }
+        },
+        "wallboard": {
+          "title": "Support wallboard",
+          "subtitle": "Realtime support queue and operator overview.",
+          "oldestWaiting": "Oldest waiting thread",
+          "operators": "Operators",
+          "latest": "Latest active threads",
+          "counts": {
+            "new": "New",
+            "open": "Open",
+            "waiting_for_support": "Waiting for support",
+            "waiting_for_client": "Waiting for client",
+            "resolved": "Resolved",
+            "closed": "Closed",
+            "unassigned": "Unassigned",
+            "online_operators": "Online operators",
+            "active_threads": "Active threads"
+          }
+        }
+      }
+    }
+  }
+}

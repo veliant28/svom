@@ -1,0 +1,98 @@
+{
+  "backoffice": {
+    "common": {
+      "payments": {
+        "title": "Оплата",
+        "subtitle": "Операційні налаштування Monobank, перевірка з’єднання та курси валют.",
+        "providers": {
+          "mono": "Mono",
+          "nova": "Nova",
+          "liq": "Liq",
+          "novaPlaceholder": "Інтеграція Nova Pay у розробці."
+        },
+        "monobank": {
+          "title": "Налаштування Monobank",
+          "helper": "Токен мерчанта та дані підпису віджета зберігаються на backend.",
+          "enabled": "Увімкнено",
+          "token": "X-Token / merchant token",
+          "tokenMasked": "Збережений токен",
+          "widgetKeyId": "Widget keyId",
+          "widgetPrivateKey": "Widget private key (PEM)",
+          "widgetPrivateKeyMasked": "Збережений приватний ключ",
+          "webhookUrl": "Webhook URL",
+          "redirectUrl": "Redirect URL",
+          "testConnection": "Перевірити з’єднання",
+          "testing": "Перевіряємо...",
+          "save": "Зберегти налаштування",
+          "saving": "Зберігаємо...",
+          "status": "Статус",
+          "lastConnection": "Остання перевірка",
+          "lastConnectionState": "Стан з’єднання",
+          "lastConnectionMessage": "Повідомлення перевірки",
+          "currencyRates": "Курси валют Monobank",
+          "lastFetchedAt": "Остання синхронізація",
+          "refreshRates": "Оновити курси",
+          "rateLabels": {
+            "buy": "купівля",
+            "sell": "продаж",
+            "cross": "крос-курс"
+          }
+        },
+        "novapay": {
+          "title": "Налаштування Nova Pay",
+          "helper": "Merchant ID та API токен (X-Sign) зберігаються на backend у БД.",
+          "enabled": "Увімкнено",
+          "merchantId": "Merchant ID",
+          "apiToken": "API token (X-Sign)",
+          "apiTokenMasked": "Збережений токен",
+          "testConnection": "Перевірити з’єднання",
+          "testing": "Перевіряємо...",
+          "status": "Статус",
+          "lastConnection": "Остання перевірка",
+          "lastConnectionState": "Стан з’єднання",
+          "lastConnectionMessage": "Повідомлення перевірки",
+          "save": "Зберегти налаштування",
+          "saving": "Зберігаємо..."
+        },
+        "liqpay": {
+          "title": "Налаштування LiqPay",
+          "helper": "Публічний і приватний ключі LiqPay зберігаються на backend у БД.",
+          "enabled": "Увімкнено",
+          "publicKey": "Public key",
+          "privateKey": "Private key",
+          "publicKeyMasked": "Збережений публічний ключ",
+          "privateKeyMasked": "Збережений приватний ключ",
+          "serverUrl": "Server URL (callback)",
+          "resultUrl": "Result URL (redirect)",
+          "testConnection": "Перевірити з’єднання",
+          "testing": "Перевіряємо...",
+          "status": "Статус",
+          "lastConnection": "Остання перевірка",
+          "lastConnectionState": "Стан з’єднання",
+          "lastConnectionMessage": "Повідомлення перевірки",
+          "save": "Зберегти налаштування",
+          "saving": "Зберігаємо..."
+        },
+        "messages": {
+          "loadSettingsFailed": "Не вдалося завантажити налаштування Monobank.",
+          "saveSettingsFailed": "Не вдалося зберегти налаштування Monobank.",
+          "settingsSaved": "Налаштування Monobank збережено.",
+          "connectionFailed": "Не вдалося перевірити з’єднання Monobank.",
+          "connectionOk": "З’єднання Monobank успішне.",
+          "currencyRefreshing": "Завантаження курсів Monobank...",
+          "currencyFailed": "Не вдалося завантажити курси валют Monobank.",
+          "loadNovaSettingsFailed": "Не вдалося завантажити налаштування Nova Pay.",
+          "saveNovaSettingsFailed": "Не вдалося зберегти налаштування Nova Pay.",
+          "novaSettingsSaved": "Налаштування Nova Pay збережено.",
+          "novaConnectionFailed": "Не вдалося перевірити з’єднання Nova Pay.",
+          "novaConnectionOk": "З’єднання Nova Pay успішне.",
+          "loadLiqpaySettingsFailed": "Не вдалося завантажити налаштування LiqPay.",
+          "saveLiqpaySettingsFailed": "Не вдалося зберегти налаштування LiqPay.",
+          "liqpaySettingsSaved": "Налаштування LiqPay збережено.",
+          "liqpayConnectionFailed": "Не вдалося перевірити з’єднання LiqPay.",
+          "liqpayConnectionOk": "З’єднання LiqPay успішне."
+        }
+      }
+    }
+  }
+}

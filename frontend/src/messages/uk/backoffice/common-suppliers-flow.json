@@ -1,0 +1,101 @@
+{
+  "backoffice": {
+    "common": {
+      "importSchedules": {
+        "title": "Розклад",
+        "subtitle": "Єдина таблиця запуску розкладу імпорту для всіх постачальників.",
+        "schedule": {
+          "daily": "Щодня 7/7",
+          "time": "Час:"
+        },
+        "filters": {
+          "search": "Пошук джерела"
+        },
+        "states": {
+          "empty": "Джерела не знайдено."
+        },
+        "actions": {
+          "enable": "Увімкнути",
+          "disable": "Вимкнути",
+          "enableSchedule": "Увімкнути розклад",
+          "disableSchedule": "Вимкнути розклад",
+          "saveSchedule": "Зберегти розклад",
+          "runNow": "Запустити сценарій",
+          "runningNow": "Виконується...",
+          "saveDefaults": "Зберегти типові значення"
+        },
+        "messages": {
+          "scheduleUpdated": "Стан розкладу оновлено для {source}.",
+          "scheduleSaved": "Налаштування розкладу збережено для {source}.",
+          "scheduleDefaultsApplied": "Типові налаштування застосовано для {source}.",
+          "runQueued": "Сценарій для {source} поставлено в чергу.",
+          "runCompleted": "Сценарій для {source} виконано.",
+          "runFailed": "Не вдалося запустити сценарій імпорту.",
+          "actionFailed": "Не вдалося оновити розклад імпорту."
+        },
+        "table": {
+          "columns": {
+            "source": "Джерело",
+            "enabled": "Автоімпорт",
+            "cron": "Розклад",
+            "nextRun": "Наступний запуск",
+            "lastResult": "Останній результат",
+            "pipeline": "Сценарій",
+            "actions": "Дії"
+          },
+          "pipelineScenario": "Перевірка/оновлення токена -> Запит/Завантаження/Імпорт прайсу -> Публікація -> Націнка -> Переіндексація",
+          "lastRunSummary": "рядків: {rows} / пропущено: {skipped}",
+          "lastRunStarted": "Старт: {value}",
+          "lastRunFinished": "Фініш: {value}"
+        }
+      },
+      "procurement": {
+        "title": "Закупівлі",
+        "subtitle": "Операційний список замовлень, що потребують розподілу та резервування у постачальників.",
+        "actions": {
+          "openSuggestions": "Відкрити рекомендації постачальників",
+          "refresh": "Оновити",
+          "openOrder": "Відкрити замовлення"
+        },
+        "table": {
+          "columns": {
+            "order": "Замовлення",
+            "status": "Статус",
+            "issues": "Проблеми",
+            "total": "Разом",
+            "actions": "Дії"
+          }
+        },
+        "states": {
+          "empty": "Замовлень для закупівлі не знайдено."
+        }
+      },
+      "procurementSuggestions": {
+        "title": "Рекомендації закупівлі",
+        "subtitle": "Групування рекомендацій за постачальниками: що і в кого закуповувати.",
+        "actions": {
+          "backToProcurement": "Назад до закупівель",
+          "refresh": "Оновити"
+        },
+        "unassigned": "Без призначення",
+        "supplierCode": "Код постачальника: {code}",
+        "groupTotals": "Позицій: {items} · Кількість: {quantity}",
+        "table": {
+          "columns": {
+            "order": "Замовлення",
+            "product": "Товар",
+            "qty": "К-сть",
+            "offer": "Офер",
+            "fulfillment": "Виконання",
+            "status": "Статус"
+          },
+          "stock": "Залишок: {value}",
+          "eta": "ETA: {days} дн."
+        },
+        "states": {
+          "empty": "Рекомендації із закупівлі відсутні."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,672 @@
+{
+  "backoffice": {
+    "common": {
+      "orders": {
+        "title": "Orders",
+        "subtitle": "Operational order workspace: clean list and all actions in modals.",
+        "filters": {
+          "search": "Search by order, customer or product",
+          "allStatuses": "All statuses"
+        },
+        "actions": {
+          "refresh": "Refresh",
+          "bulkActions": "Bulk actions",
+          "bulkDelete": "Delete selected",
+          "delete": "Delete order",
+          "close": "Close",
+          "closeModal": "Close modal",
+          "cancel": "Cancel"
+        },
+        "tooltips": {
+          "bulkActions": "Bulk actions",
+          "open": "Open order",
+          "supplierOrder": "Create supplier order",
+          "delete": "Delete order",
+          "selectAll": "Select all orders on this page",
+          "selectOne": "Select order {orderNumber}",
+          "waybill": "Open waybill",
+          "waybillCreate": "Create waybill",
+          "refresh": "Refresh"
+        },
+        "table": {
+          "columns": {
+            "order": "Order number",
+            "client": "Customer",
+            "status": "Status",
+            "total": "Total",
+            "created": "Created",
+            "actions": "Actions",
+            "waybill": "Waybill",
+            "waybillStatus": "Waybill status"
+          },
+          "itemsCount": "Items: {count}",
+          "subtotal": "Subtotal: {value}",
+          "waybillEmpty": "No waybill",
+          "waybillStatusEmpty": "—",
+          "waybillStatusUnknown": "Unknown status",
+          "waybillStatusCatalog": {
+            "1": {
+              "short": "Created",
+              "full": "The sender created this waybill but has not yet handed it over for shipment."
+            },
+            "2": {
+              "short": "Deleted",
+              "full": "Deleted"
+            },
+            "3": {
+              "short": "Not found",
+              "full": "Number not found"
+            },
+            "4": {
+              "short": "In sender city",
+              "full": "Shipment is in city XXXX (status for inter-regional shipments)"
+            },
+            "5": {
+              "short": "In transit",
+              "full": "Shipment is heading to city YYYY"
+            },
+            "6": {
+              "short": "In recipient city",
+              "full": "Shipment is in city YYYY, estimated delivery to BRANCH-XXX dd-mm. Please wait for an additional arrival notification"
+            },
+            "7": {
+              "short": "At branch",
+              "full": "Arrived at branch"
+            },
+            "8": {
+              "short": "In parcel locker",
+              "full": "Arrived at branch (loaded into parcel locker)"
+            },
+            "9": {
+              "short": "Delivered",
+              "full": "Shipment received"
+            },
+            "10": {
+              "short": "Delivered, transfer pending",
+              "full": "Shipment received on %DateReceived%. Within 24 hours you will receive an SMS about money transfer availability at Nova Poshta branch cashier"
+            },
+            "11": {
+              "short": "Delivered, transfer issued",
+              "full": "Shipment received on %DateReceived%. Money transfer has been issued to the recipient"
+            },
+            "12": {
+              "short": "Being processed",
+              "full": "Nova Poshta is processing your shipment"
+            },
+            "41": {
+              "short": "Local in city",
+              "full": "Shipment is in city XXXX (status for Local Standard and Local Express services, delivery within the city)"
+            },
+            "101": {
+              "short": "Out for delivery",
+              "full": "On the way to recipient"
+            },
+            "102": {
+              "short": "Refused with return",
+              "full": "Refusal to receive (sender created a return request)"
+            },
+            "103": {
+              "short": "Refused",
+              "full": "Refusal to receive"
+            },
+            "104": {
+              "short": "Address changed",
+              "full": "Address changed"
+            },
+            "105": {
+              "short": "Storage stopped",
+              "full": "Storage stopped"
+            },
+            "106": {
+              "short": "Return waybill created",
+              "full": "Received and reverse-delivery waybill created"
+            },
+            "111": {
+              "short": "Delivery attempt failed",
+              "full": "Delivery attempt failed because recipient was unavailable at address or by phone"
+            },
+            "112": {
+              "short": "Delivery postponed",
+              "full": "Delivery date postponed by recipient"
+            }
+          }
+        },
+        "bulk": {
+          "selected": "Selected: {count}"
+        },
+        "states": {
+          "empty": "No orders found.",
+          "notFound": "Order not found."
+        },
+        "pagination": {
+          "total": "Total orders: {count}",
+          "prev": "Prev",
+          "next": "Next",
+          "page": "Page {current} of {total}"
+        },
+        "messages": {
+          "detailFailed": "Unable to load order details.",
+          "processing": "Order moved to processing.",
+          "confirmed": "Order confirmed.",
+          "awaiting": "Order moved to awaiting procurement.",
+          "reserved": "Order items reserved.",
+          "readyForShipment": "Order marked as ready for shipment.",
+          "readyToShip": "Order marked as ready to ship.",
+          "shipped": "Order marked as shipped.",
+          "completed": "Order completed.",
+          "resetToNew": "Order status returned to New.",
+          "cancelled": "Order cancelled.",
+          "actionFailed": "Unable to perform order action.",
+          "supplierPayloadFailed": "Unable to prepare supplier order payload.",
+          "supplierOrderCreated": "Supplier order created.",
+          "supplierOrderCreatedWithId": "Supplier order created (ID: {id}).",
+          "supplierCreateFailed": "Unable to create supplier order.",
+          "supplierOrderCancelled": "Supplier order cancelled.",
+          "supplierCancelFailed": "Unable to cancel supplier order.",
+          "deleted": "Order deleted.",
+          "deleteFailed": "Unable to delete order.",
+          "bulkDeleted": "Deleted orders: {count}.",
+          "bulkDeletePartial": "Deleted: {deleted}, failed: {failed}.",
+          "bulkDeleteFailed": "Unable to run bulk delete.",
+          "waybillLoadFailed": "Unable to load waybill data.",
+          "waybillCreated": "Waybill created.",
+          "waybillUpdated": "Waybill updated.",
+          "waybillSaveFailed": "Unable to save waybill.",
+          "waybillSynced": "Waybill status refreshed.",
+          "waybillSyncFailed": "Unable to refresh waybill status.",
+          "waybillDeleted": "Waybill deleted.",
+          "waybillDeleteFailed": "Unable to delete waybill.",
+          "waybillPrintFailed": "Unable to load waybill print form.",
+          "senderCreated": "Sender profile created.",
+          "senderUpdated": "Sender profile updated.",
+          "senderDeleted": "Sender profile deleted.",
+          "senderSaveFailed": "Unable to save sender profile.",
+          "senderValidated": "Sender profile validated.",
+          "senderValidateFailed": "Unable to validate sender profile.",
+          "senderDeleteFailed": "Unable to delete sender profile.",
+          "paymentRefreshed": "Payment status refreshed.",
+          "paymentRefreshFailed": "Failed to refresh payment status.",
+          "paymentCancelled": "Monobank payment cancelled.",
+          "paymentFinalized": "Monobank hold finalized.",
+          "paymentInvoiceRemoved": "Monobank invoice invalidated.",
+          "paymentFiscalChecksLoaded": "Fiscal checks loaded: {count}.",
+          "monobankActionFailed": "Unable to run Monobank action.",
+          "monobankActionNotAvailable": "This action is available only for Monobank payments.",
+          "statusChangeNoPermission": "No permission to change status backward.",
+          "completedReceiptStarted": "Order status updated. Receipt creation has started.",
+          "completedReceiptSettingsWarning": "Order status updated, but receipt was not created: check Vchasno.Kasa settings."
+        },
+        "receipt": {
+          "label": "Receipt",
+          "actions": {
+            "issue": "Create receipt",
+            "sync": "Sync",
+            "open": "Open receipt"
+          },
+          "messages": {
+            "created": "Receipt created.",
+            "alreadyCreated": "Receipt already created.",
+            "createFailed": "Failed to create receipt.",
+            "synced": "Receipt synced.",
+            "syncFailed": "Failed to sync receipt.",
+            "openFailed": "Failed to open receipt.",
+            "popupBlocked": "The browser blocked the new tab. Allow popups and try again.",
+            "notCreated": "Receipt has not been created yet.",
+            "unavailable": "Receipt cannot be opened yet."
+          },
+          "status": {
+            "pending": "Not created",
+            "notCreated": "Not created",
+            "created": "Created",
+            "delivered": "Delivered",
+            "fiscalized": "Fiscalized",
+            "cancelled": "Cancelled",
+            "error": "Fiscalization error"
+          }
+        },
+        "statusDescriptions": {
+          "new": "New order. Confirm it to continue processing.",
+          "processing": "Order is in processing.",
+          "confirmed": "Order confirmed and ready for the next stage.",
+          "awaiting_procurement": "Order is waiting for supplier procurement.",
+          "reserved": "All items are reserved.",
+          "partially_reserved": "Some items are reserved, some still need procurement.",
+          "ready_for_shipment": "Order is ready for shipment.",
+          "ready_to_ship": "Order is ready for shipment.",
+          "shipped": "Order has been shipped.",
+          "completed": "Order is completed.",
+          "cancelled": "Order is cancelled.",
+          "default": "Order status updated. Check details before next step."
+        },
+        "modals": {
+          "view": {
+            "title": "Order",
+            "titleWithNumber": "Order {number}",
+            "summary": {
+              "customer": "Customer",
+              "fullName": "Full name",
+              "phone": "Phone",
+              "meta": "Meta",
+              "created": "Created: {value}",
+              "items": "Items: {count}",
+              "delivery": "Delivery: {value}",
+              "deliveryMethod": "Delivery method",
+              "paymentMethod": "Payment method",
+              "deliveryCity": "Delivery city",
+              "deliveryDestination": "Warehouse / postomat / address",
+              "total": "Total",
+              "subtotal": "Subtotal: {value} {currency}",
+              "deliveryFee": "Delivery fee: {value} {currency}",
+              "values": {
+                "deliveryMethods": {
+                  "pickup": "Pickup",
+                  "courier": "Courier",
+                  "nova_poshta": "Nova Poshta"
+                }
+              }
+            },
+            "items": {
+              "title": "Order items",
+              "columns": {
+                "product": "Product",
+                "qty": "Qty",
+                "price": "Price",
+                "total": "Total",
+                "procurement": "Procurement"
+              },
+              "empty": "No order items."
+            },
+            "serviceInfo": {
+              "title": "Comments and service info",
+              "customerComment": "Customer comment: {value}",
+              "internalNotes": "Internal notes: {value}",
+              "operatorNotes": "Operator notes: {value}",
+              "empty": "No additional comments."
+            },
+            "actions": {
+              "processing": "Start processing",
+              "confirm": "Confirm",
+              "readyForShipment": "Ready for shipment",
+              "awaiting": "Awaiting procurement",
+              "ship": "Mark shipped",
+              "complete": "Complete",
+              "resetToNew": "Reset to new",
+              "reserve": "Reserve",
+              "ready": "Ready to ship",
+              "cancel": "Cancel order",
+              "openSupplierOrder": "Supplier order"
+            },
+            "tooltips": {
+              "processing": "Move order to processing",
+              "confirm": "Confirm order",
+              "readyForShipment": "Mark order as ready for shipment",
+              "awaiting": "Move order to awaiting procurement",
+              "ship": "Mark order as shipped",
+              "complete": "Complete order",
+              "resetToNew": "Return order to New status",
+              "reserve": "Try to reserve order items",
+              "ready": "Mark order as ready to ship",
+              "cancel": "Cancel order"
+            }
+          },
+          "supplier": {
+            "title": "Supplier order",
+            "subtitle": "Prepare and send this order to GPL supplier.",
+            "subtitleWithNumber": "Supplier order for {number}",
+            "explainTitle": "What happens next",
+            "explainBody": "We'll prepare order items and send them to GPL supplier. Review items and totals before submitting.",
+            "itemsTitle": "Items to be sent to supplier",
+            "columns": {
+              "article": "Article",
+              "name": "Name",
+              "qty": "Qty",
+              "price": "Price",
+              "total": "Total",
+              "mapping": "Mapping"
+            },
+            "mapping": {
+              "tooltip": "Will be sent as GPL product ID: {id}",
+              "ok": "Mapped",
+              "missing": "Missing mapping"
+            },
+            "empty": "No items available for supplier order.",
+            "payloadTitle": "Payload to supplier",
+            "payloadSubtitle": "Actual payload that will be sent to GPL /api/orders/store",
+            "payloadEmpty": "Payload is empty.",
+            "cannotSubmit": "Cannot submit: {count} item(s) still have no mapping.",
+            "lastOrder": "Last created supplier order: #{id}",
+            "actions": {
+              "cancelSupplierOrder": "Cancel supplier order",
+              "submit": "Create supplier order"
+            }
+          },
+          "delete": {
+            "title": "Delete order",
+            "bulkTitle": "Delete selected orders",
+            "singleMessage": "Delete order {orderNumber}? This action cannot be undone.",
+            "bulkMessage": "Delete selected orders ({count})? This action cannot be undone."
+          },
+          "waybill": {
+            "title": "Nova Poshta waybill",
+            "subtitle": "Waybill for order {number}",
+            "subtitleEmpty": "Waybill",
+            "sectionShipment": "Shipment",
+            "sectionRecipient": "Recipient",
+            "sectionPaymentAdditional": "Payment and additional services",
+            "fields": {
+              "sender": "NP sender",
+              "description": "Description",
+              "counterparty": "Counterparty",
+              "counterpartyLookupLoading": "Searching business counterparty...",
+              "counterpartyPrivateDefaultHint": "Private person by default. Enter EDRPOU (8) or TAX ID (10) for a business client.",
+              "counterpartyBusinessCodeHint": "Enter EDRPOU (8) or TAX ID (10).",
+              "deliveryType": "Delivery type",
+              "city": "Recipient city",
+              "cityPlaceholder": "Type city",
+              "warehouse": "Warehouse / postomat",
+              "warehousePlaceholder": "Type warehouse",
+              "street": "Street",
+              "streetPlaceholder": "Type street",
+              "house": "House",
+              "apartment": "Apartment",
+              "recipientName": "Recipient name",
+              "recipientPhone": "Recipient phone",
+              "seats": "Seats amount",
+              "weight": "Weight (kg)",
+              "cost": "Declared cost",
+              "afterpayment": "Control payment amount",
+              "widthCm": "Width, cm",
+              "lengthCm": "Length, cm",
+              "heightCm": "Height, cm",
+              "volumetricWeight": "Volumetric weight",
+              "weightUnit": "kg",
+              "packagingType": "Packaging type",
+              "packRef": "Packaging REF",
+              "packRefHint": "Select packaging from the list below",
+              "packRefLoading": "Loading packaging options...",
+              "packRefEmpty": "No packaging options for current dimensions"
+            },
+            "delivery": {
+              "warehouse": "Warehouse",
+              "postomat": "Postomat",
+              "address": "Address"
+            },
+            "cargoTypes": {
+              "documents": "Documents",
+              "parcel": "Parcel",
+              "cargo": "Cargo",
+              "pallet": "Pallet"
+            },
+            "actions": {
+              "create": "Create waybill",
+              "update": "Update waybill",
+              "delete": "Delete waybill",
+              "checkReaddress": "Check readdressing",
+              "checkReturn": "Check return",
+              "trackTtn": "Track TTN",
+              "syncStatus": "Refresh status",
+              "printHtml": "Print TTN",
+              "printPdf": "Print marking",
+              "additionalServices": "Additional services",
+              "addPackaging": "Add packaging",
+              "packagingAdded": "Packaging added",
+              "addSeat": "Add place",
+              "removeSeat": "Remove place",
+              "seatList": "Places list",
+              "seatCardTitle": "Place {index}",
+              "backFromPackaging": "Back",
+              "backFromSeatList": "Back",
+              "backFromAdditionalServices": "Back"
+            },
+            "payment": {
+              "toPay": "To pay",
+              "cashOnDelivery": "Cash on delivery"
+            },
+            "additional": {
+              "title": "Nova Poshta documented options",
+              "saturdayDelivery": "Saturday delivery",
+              "localExpress": "Local Express",
+              "preferredDeliveryDate": "Preferred delivery date",
+              "datePlaceholder": "DD.MM.YYYY",
+              "timeInterval": "Delivery time interval",
+              "timeIntervalNone": "No interval",
+              "timeInterval1": "Interval 1",
+              "timeInterval2": "Interval 2",
+              "timeInterval3": "Interval 3",
+              "timeInterval4": "Interval 4",
+              "infoRegClientBarcodes": "Client internal order number",
+              "accompanyingDocuments": "Accompanying documents",
+              "redBoxBarcode": "RedBox barcode",
+              "numberOfFloorsLifting": "To-door lifting floors",
+              "numberOfFloorsDescent": "From-door descent floors",
+              "forwardingCount": "Forwarding count",
+              "deliveryByHand": "Hand-to-hand delivery",
+              "deliveryByHandRecipients": "Delivery-by-hand recipients",
+              "deliveryByHandRecipientsHint": "One recipient per line",
+              "specialCargo": "Special cargo handling",
+              "cashOnDeliveryAmount": "Cash on delivery amount",
+              "cashOnDeliveryHint": "",
+              "controlPaymentAmount": "Control payment amount",
+              "controlPaymentHint": ""
+            },
+            "auto": {
+              "description": "Description",
+              "descriptionValue": "Auto parts and accessories",
+              "additional": "Additional information",
+              "additionalValue": "Order number {orderNumber}"
+            },
+            "current": {
+              "number": "Waybill number",
+              "status": "Status"
+            },
+            "tracking": {
+              "title": "TTN Tracking",
+              "currentStatus": "Current status",
+              "syncedAt": "Synced at",
+              "empty": "No tracking events yet.",
+              "close": "Close",
+              "location": "Location",
+              "warehouse": "Branch",
+              "note": "Note",
+              "comment": "Comment",
+              "planned": "Planned"
+            },
+            "meta": {
+              "senderType": "Sender type",
+              "payerType": "Payer type",
+              "paymentMethod": "Payment method",
+              "payerTypes": {
+                "sender": "Sender",
+                "recipient": "Recipient",
+                "thirdPerson": "Third person"
+              },
+              "paymentMethods": {
+                "cash": "Cash",
+                "nonCash": "Non-cash"
+              },
+              "validation": {
+                "controlPaymentUnavailable": "Control Payment is not enabled in Nova Poshta for the selected sender.",
+                "thirdPersonRequiresNonCash": "Only NonCash payment method is available for Third person payer.",
+                "thirdPersonUnavailable": "Third-person payer is unavailable for the selected sender.",
+                "nonCashUnavailable": "Non-cash payment is unavailable for the selected sender.",
+                "nonCashUnavailableForPrivateRecipient": "Non-cash payment is unavailable when recipient type is Private person."
+              },
+              "serviceType": "Service type",
+              "syncedAt": "Synced at",
+              "editable": "Editable",
+              "yes": "Yes",
+              "no": "No",
+              "unknown": "—",
+              "errorCodes": "Error codes",
+              "warningCodes": "Warning codes",
+              "infoCodes": "Info codes",
+              "readonlyHint": "Waybill is in final status and can no longer be edited.",
+              "senderTypes": {
+                "privatePerson": "Private person",
+                "fop": "FOP",
+                "business": "Business"
+              }
+            },
+            "settings": {
+              "title": "Nova Poshta senders",
+              "subtitle": "Sender profiles with isolated tokens and refs.",
+              "columns": {
+                "name": "Profile",
+                "type": "Type",
+                "refs": "Refs",
+                "status": "Status"
+              },
+              "default": "Default",
+              "valid": "Valid",
+              "notValidated": "Not validated",
+              "empty": "No sender profiles configured.",
+              "form": {
+                "name": "Profile name",
+                "apiToken": "NP API token",
+                "counterpartyRef": "Counterparty Ref",
+                "contactRef": "Contact Ref",
+                "addressRef": "Address Ref",
+                "cityRef": "City Ref",
+                "phone": "Sender phone",
+                "contactName": "Contact person",
+                "organizationName": "Organization",
+                "edrpou": "EDRPOU",
+                "active": "Active",
+                "default": "Default"
+              },
+              "actions": {
+                "create": "Create profile",
+                "update": "Update profile",
+                "edit": "Edit",
+                "validate": "Validate",
+                "delete": "Delete"
+              },
+              "lookup": {
+                "title": "NP online lookup",
+                "subtitle": "Quick lookup for settlements, streets and warehouses using selected sender token.",
+                "sender": "Sender profile",
+                "selectSender": "Select sender",
+                "locale": "Locale",
+                "settlements": "Settlements",
+                "streets": "Streets",
+                "warehouses": "Warehouses / postomats",
+                "searchPlaceholder": "Type query",
+                "search": "Search",
+                "empty": "No data"
+              }
+            }
+          }
+        },
+        "payment": {
+          "title": "Payment",
+          "provider": "Provider",
+          "method": "Method",
+          "status": "Status",
+          "amount": "Amount",
+          "invoiceId": "Invoice ID",
+          "reference": "Reference",
+          "failureReason": "Failure reason",
+          "pageUrl": "Page URL",
+          "open": "Open",
+          "openPaymentPage": "Open payment page",
+          "lastWebhookAt": "Last webhook",
+          "lastSyncAt": "Last sync",
+          "refreshStatus": "Refresh payment status",
+          "monobank": {
+            "controlsTitle": "Monobank actions",
+            "amountMinor": "Amount (minor units, optional)",
+            "amountMinorHint": "e.g. 4200",
+            "amountMinorInvalid": "Enter an integer value greater than zero.",
+            "actions": {
+              "finalize": "Finalize hold",
+              "cancel": "Cancel payment",
+              "remove": "Invalidate invoice",
+              "fiscalChecks": "Fiscal checks"
+            },
+            "tooltips": {
+              "finalize": "Capture the hold and complete the payment",
+              "cancel": "Cancel the payment fully or for the amount from the field above",
+              "remove": "Disable the payment link so this invoice can no longer be paid",
+              "fiscalChecks": "Show fiscal checks for this invoice"
+            },
+            "fiscalChecksTitle": "Fiscal checks",
+            "fiscalType": "Check type",
+            "fiscalSource": "Fiscalization source",
+            "taxUrl": "Open tax URL"
+          },
+          "values": {
+            "providers": {
+              "cash_on_delivery": "Cash on delivery",
+              "monobank": "Monobank",
+              "liqpay": "LiqPay"
+            },
+            "methods": {
+              "cash_on_delivery": "Cash on delivery",
+              "monobank": "Monobank",
+              "liqpay": "LiqPay",
+              "card_placeholder": "Card payment"
+            },
+            "statuses": {
+              "pending": "Pending",
+              "processing": "Processing",
+              "created": "Created",
+              "success": "Successful",
+              "paid": "Paid",
+              "failed": "Failed",
+              "expired": "Expired",
+              "cancelled": "Cancelled"
+            }
+          }
+        }
+      },
+      "orderDetail": {
+        "title": "Order",
+        "titleWithNumber": "Order {orderNumber}",
+        "subtitle": "Order, payment, delivery and item operations.",
+        "actions": {
+          "backToOrders": "Back to orders",
+          "processing": "Start processing",
+          "readyForShipment": "Ready for shipment",
+          "ship": "Mark shipped",
+          "complete": "Complete",
+          "resetToNew": "Reset to new",
+          "cancel": "Cancel order",
+          "recommendSupplier": "Recommend supplier",
+          "setRecommendedSupplier": "Set recommended supplier"
+        },
+        "cancelReasons": {
+          "customer_request": "Customer request",
+          "payment_failed": "Payment failed",
+          "supplier_shortage": "Supplier shortage",
+          "unavailable": "Unavailable",
+          "operator_decision": "Operator decision",
+          "other": "Other"
+        },
+        "summary": {
+          "status": "Status",
+          "customer": "Customer",
+          "totals": "Totals",
+          "itemsIssues": "Items: {items}, issues: {issues}"
+        },
+        "table": {
+          "columns": {
+            "product": "Product",
+            "qty": "Qty",
+            "availability": "Availability",
+            "supplier": "Supplier",
+            "procurement": "Procurement",
+            "actions": "Actions"
+          },
+          "eta": "ETA: {days}d",
+          "recommended": "Recommended: {value}",
+          "selected": "Selected: {value}",
+          "suggestedNow": "Suggested now: {value}"
+        },
+        "states": {
+          "notFound": "Order not found.",
+          "emptyItems": "No order items."
+        }
+      }
+    }
+  }
+}

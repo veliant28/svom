@@ -1,0 +1,99 @@
+{
+  "backoffice": {
+    "common": {
+      "support": {
+        "title": "Технічна підтримка",
+        "subtitle": "Жива черга, чат і дії операторів на одному екрані.",
+        "actions": {
+          "refresh": "Оновити"
+        },
+        "filters": {
+          "search": "Пошук за темою, клієнтом або email",
+          "waiting": "Лише очікування",
+          "assignedToMe": "Призначено мені",
+          "unassigned": "Без відповідального"
+        },
+        "states": {
+          "loading": "Завантажуємо звернення...",
+          "emptyThreads": "Звернення не знайдено.",
+          "emptyMessages": "Повідомлень поки немає.",
+          "realtimeConnected": "Realtime-зʼєднання активне.",
+          "realtimeReconnecting": "Перепідключаємо realtime..."
+        },
+        "messages": {
+          "loadFailed": "Не вдалося завантажити дані підтримки.",
+          "loadStaffFailed": "Не вдалося завантажити співробітників підтримки.",
+          "sendFailed": "Не вдалося надіслати відповідь.",
+          "assigned": "Відповідального оновлено.",
+          "assignFailed": "Не вдалося оновити відповідального.",
+          "statusChanged": "Статус звернення оновлено.",
+          "statusFailed": "Не вдалося оновити статус звернення.",
+          "loadWallboardFailed": "Не вдалося завантажити wallboard."
+        },
+        "details": {
+          "actions": "Дії",
+          "selectStatus": "Оберіть статус",
+          "selectAssignee": "Оберіть відповідального"
+        },
+        "composer": {
+          "placeholder": "Введіть відповідь",
+          "send": "Надіслати",
+          "sending": "Надсилаємо..."
+        },
+        "statuses": {
+          "new": "Нове",
+          "open": "Відкрите",
+          "waiting_for_support": "Очікує підтримку",
+          "waiting_for_client": "Очікує клієнта",
+          "resolved": "Вирішене",
+          "closed": "Закрите"
+        },
+        "shared": {
+          "customer": "Клієнт",
+          "assigned": "Відповідальний",
+          "lastActivity": "Остання активність",
+          "firstResponse": "Перша відповідь",
+          "selectThread": "Оберіть звернення, щоб побачити деталі.",
+          "online": "Онлайн",
+          "offline": "Офлайн",
+          "mine": "Моє",
+          "typing": "{users} друкує...",
+          "systemEvents": {
+            "assignedManual": "Звернення призначено вручну.",
+            "assignedAutoReply": "Звернення призначено автоматично після відповіді.",
+            "reassignedManual": "Звернення перепризначено вручну.",
+            "reassignedAutoReply": "Звернення перепризначено автоматично після відповіді.",
+            "statusChanged": "Статус змінено на {status}.",
+            "generic": "Системна подія"
+          },
+          "statusValues": {
+            "new": "Нове",
+            "open": "Відкрите",
+            "waiting_for_support": "Очікує підтримку",
+            "waiting_for_client": "Очікує клієнта",
+            "resolved": "Вирішене",
+            "closed": "Закрите"
+          }
+        },
+        "wallboard": {
+          "title": "Support wallboard",
+          "subtitle": "Черга підтримки та оператори в realtime.",
+          "oldestWaiting": "Найстаріше звернення в очікуванні",
+          "operators": "Оператори",
+          "latest": "Останні активні звернення",
+          "counts": {
+            "new": "Нові",
+            "open": "Відкриті",
+            "waiting_for_support": "Чекають підтримку",
+            "waiting_for_client": "Чекають клієнта",
+            "resolved": "Вирішені",
+            "closed": "Закриті",
+            "unassigned": "Без відповідального",
+            "online_operators": "Операторів онлайн",
+            "active_threads": "Активних звернень"
+          }
+        }
+      }
+    }
+  }
+}

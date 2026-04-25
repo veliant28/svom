@@ -1,0 +1,164 @@
+{
+  "backoffice": {
+    "common": {
+      "pricing": {
+        "title": "Pricing Control",
+        "subtitle": "Simple markup and repricing panel.",
+        "actions": {
+          "refresh": "Refresh",
+          "increase": "Increase percent",
+          "decrease": "Decrease percent",
+          "applyGlobal": "Apply global markup",
+          "applyCategory": "Apply to category",
+          "recalculateAll": "Recalculate all products",
+          "recalculateCategory": "Recalculate category"
+        },
+        "fields": {
+          "globalPercent": "Global markup",
+          "categoryPercent": "Category markup",
+          "categorySearch": "Search category",
+          "selectCategory": "Select category",
+          "includeChildren": "Include subcategories"
+        },
+        "blocks": {
+          "chart": {
+            "title": "Current Markup Overview",
+            "subtitle": "Products grouped by markup ranges"
+          },
+          "global": {
+            "title": "Global markup",
+            "scope": "Applied to all active products: {count}",
+            "hint": "Range: 0–100%"
+          },
+          "category": {
+            "title": "Category markup",
+            "impact": "Affected products: {count}"
+          },
+          "top": {
+            "title": "Top / Not top",
+            "ready": "Mode is available.",
+            "unavailable": "Separate pricing scope for top/not top is not configured in this project.",
+            "stats": "Top: {top} · Not top: {other}"
+          },
+          "recalculate": {
+            "title": "Apply and recalculate"
+          }
+        },
+        "tooltips": {
+          "chart": "Shows how many products fall into each markup range.",
+          "global": "Global markup affects products without higher-priority pricing rules.",
+          "category": "Category markup has higher priority than global. You can include subcategories.",
+          "top": "This block is enabled only when the project has a dedicated top/not top pricing scope.",
+          "recalculate": "Recalculation updates final prices using current rules.",
+          "recalculateAll": "Run recalculation for all active products.",
+          "recalculateCategory": "Run recalculation for the selected category only."
+        },
+        "messages": {
+          "globalApplied": "Global markup applied. Affected products: {count}. Mode: {mode}.",
+          "globalFailed": "Unable to apply global markup.",
+          "categoryApplied": "Category markup applied. Products: {count}, categories: {categories}.",
+          "categoryFailed": "Unable to apply category markup.",
+          "recalculateQueued": "Recalculation started. Affected products: {count}. Mode: {mode}.",
+          "recalculateFailed": "Unable to start recalculation."
+        },
+        "states": {
+          "empty": "No pricing data available.",
+          "chartEmpty": "No chart data available."
+        }
+      },
+      "loyalty": {
+        "title": "Loyalty",
+        "subtitle": "Issue promo codes and monitor usage in one workspace.",
+        "actions": {
+          "refresh": "Refresh",
+          "copy": "Copy"
+        },
+        "types": {
+          "delivery": "Delivery discount",
+          "product": "Product markup discount"
+        },
+        "states": {
+          "active": "Active",
+          "used": "Used",
+          "expired": "Expired",
+          "disabled": "Disabled",
+          "selected": "Selected",
+          "loadingCustomers": "Searching customers...",
+          "customersEmpty": "No customers found.",
+          "empty": "No loyalty data yet.",
+          "chartEmpty": "No issuance data for chart.",
+          "statsEmpty": "No employee stats yet.",
+          "issuancesEmpty": "No promo issuances yet."
+        },
+        "issue": {
+          "title": "Generate and issue",
+          "subtitle": "Single workflow: generate unique code and assign it to customer.",
+          "fields": {
+            "customerSearch": "Customer search",
+            "customer": "Customer",
+            "reason": "Issuance reason",
+            "type": "Promo type",
+            "percent": "Discount percent",
+            "expiresAt": "Expires at",
+            "usageLimit": "Usage limit"
+          },
+          "placeholders": {
+            "customerSearch": "Email, name, phone",
+            "customer": "Select customer",
+            "reason": "Reason is required"
+          },
+          "actions": {
+            "issue": "Generate and issue code",
+            "issuing": "Issuing...",
+            "percentMinus": "Decrease percent",
+            "percentPlus": "Increase percent",
+            "usageLimitMinus": "Decrease usage limit",
+            "usageLimitPlus": "Increase usage limit"
+          },
+          "lastIssued": "Issued code",
+          "selectedCustomer": "Selected customer: {label}"
+        },
+        "issuances": {
+          "title": "Recent issuances",
+          "types": {
+            "delivery": "Delivery",
+            "product": "Product"
+          },
+          "columns": {
+            "code": "Code",
+            "customer": "Customer",
+            "type": "Type",
+            "size": "Size",
+            "issuer": "Issued by",
+            "reason": "Reason",
+            "issuedAt": "Issued",
+            "expiresAt": "Expires",
+            "used": "Used",
+            "state": "State"
+          }
+        },
+        "stats": {
+          "title": "Employee stats",
+          "columns": {
+            "staff": "Employee",
+            "issued": "Issued",
+            "delivery": "Delivery",
+            "product": "Product",
+            "nominal": "Nominal %",
+            "used": "Used",
+            "conversion": "Conversion"
+          }
+        },
+        "chart": {
+          "title": "Issuances by days",
+          "subtitle": "Last 14 days"
+        },
+        "messages": {
+          "issued": "Promo code issued: {code}.",
+          "issueFailed": "Unable to issue promo code.",
+          "codeCopied": "Promo code copied."
+        }
+      }
+    }
+  }
+}

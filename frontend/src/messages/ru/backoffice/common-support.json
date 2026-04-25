@@ -1,0 +1,99 @@
+{
+  "backoffice": {
+    "common": {
+      "support": {
+        "title": "Техническая поддержка",
+        "subtitle": "Живая очередь, чат и действия операторов на одном экране.",
+        "actions": {
+          "refresh": "Обновить"
+        },
+        "filters": {
+          "search": "Поиск по теме, клиенту или email",
+          "waiting": "Только ожидающие",
+          "assignedToMe": "Назначено мне",
+          "unassigned": "Без ответственного"
+        },
+        "states": {
+          "loading": "Загружаем обращения...",
+          "emptyThreads": "Обращения не найдены.",
+          "emptyMessages": "Сообщений пока нет.",
+          "realtimeConnected": "Соединение realtime активно.",
+          "realtimeReconnecting": "Переподключаем realtime..."
+        },
+        "messages": {
+          "loadFailed": "Не удалось загрузить данные поддержки.",
+          "loadStaffFailed": "Не удалось загрузить сотрудников поддержки.",
+          "sendFailed": "Не удалось отправить ответ.",
+          "assigned": "Ответственный обновлён.",
+          "assignFailed": "Не удалось обновить ответственного.",
+          "statusChanged": "Статус обращения обновлён.",
+          "statusFailed": "Не удалось обновить статус обращения.",
+          "loadWallboardFailed": "Не удалось загрузить wallboard."
+        },
+        "details": {
+          "actions": "Действия",
+          "selectStatus": "Выберите статус",
+          "selectAssignee": "Выберите ответственного"
+        },
+        "composer": {
+          "placeholder": "Введите ответ",
+          "send": "Отправить",
+          "sending": "Отправляем..."
+        },
+        "statuses": {
+          "new": "Новый",
+          "open": "Открыт",
+          "waiting_for_support": "Ожидает поддержки",
+          "waiting_for_client": "Ожидает клиента",
+          "resolved": "Решён",
+          "closed": "Закрыт"
+        },
+        "shared": {
+          "customer": "Клиент",
+          "assigned": "Ответственный",
+          "lastActivity": "Последняя активность",
+          "firstResponse": "Первый ответ",
+          "selectThread": "Выберите обращение, чтобы увидеть детали.",
+          "online": "Онлайн",
+          "offline": "Оффлайн",
+          "mine": "Моё",
+          "typing": "{users} печатает...",
+          "systemEvents": {
+            "assignedManual": "Обращение назначено вручную.",
+            "assignedAutoReply": "Обращение назначено автоматически после ответа.",
+            "reassignedManual": "Обращение переназначено вручную.",
+            "reassignedAutoReply": "Обращение переназначено автоматически после ответа.",
+            "statusChanged": "Статус изменён на {status}.",
+            "generic": "Системное событие"
+          },
+          "statusValues": {
+            "new": "Новый",
+            "open": "Открыт",
+            "waiting_for_support": "Ожидает поддержки",
+            "waiting_for_client": "Ожидает клиента",
+            "resolved": "Решён",
+            "closed": "Закрыт"
+          }
+        },
+        "wallboard": {
+          "title": "Support wallboard",
+          "subtitle": "Очередь поддержки и операторы в realtime.",
+          "oldestWaiting": "Самое старое ожидающее обращение",
+          "operators": "Операторы",
+          "latest": "Последние активные обращения",
+          "counts": {
+            "new": "Новые",
+            "open": "Открытые",
+            "waiting_for_support": "Ждут поддержки",
+            "waiting_for_client": "Ждут клиента",
+            "resolved": "Решённые",
+            "closed": "Закрытые",
+            "unassigned": "Без ответственного",
+            "online_operators": "Операторов онлайн",
+            "active_threads": "Активных обращений"
+          }
+        }
+      }
+    }
+  }
+}

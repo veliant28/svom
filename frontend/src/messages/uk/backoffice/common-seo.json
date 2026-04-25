@@ -1,0 +1,168 @@
+{
+  "backoffice": {
+    "common": {
+      "seo": {
+        "title": "SEO і Google",
+        "subtitle": "Керування мета-даними, індексацією, sitemap і Google-інтеграціями.",
+        "switcherAria": "Вибір робочого простору SEO",
+        "switcher": {
+          "seo": "SEO",
+          "google": "Google"
+        },
+        "actions": {
+          "refresh": "Оновити",
+          "save": "Зберегти",
+          "saving": "Зберігаємо...",
+          "create": "Створити",
+          "delete": "Видалити",
+          "rebuildSitemap": "Перегенерувати sitemap"
+        },
+        "summary": {
+          "seoEnabled": "SEO",
+          "sitemap": "Sitemap",
+          "robots": "Robots",
+          "templates": "Шаблони",
+          "overrides": "Overrides",
+          "missingMeta": "Проблеми meta",
+          "googleEnabled": "Google",
+          "ga4": "GA4",
+          "gtm": "GTM",
+          "searchConsole": "Search Console",
+          "ecommerceEvents": "E-commerce events"
+        },
+        "status": {
+          "configured": "Налаштовано",
+          "notConfigured": "Не налаштовано",
+          "enabled": "Увімкнено",
+          "disabled": "Вимкнено"
+        },
+        "sections": {
+          "globalSettings": "Глобальні SEO налаштування",
+          "globalSettingsHint": "Default title/description/OG і robots на рівні всього сайту.",
+          "sitemap": "Sitemap",
+          "sitemapHint": "Керування публікацією sitemap для сутностей каталогу.",
+          "robots": "robots.txt",
+          "robotsHint": "Редактор robots.txt з попереднім переглядом підсумкового вмісту.",
+          "templates": "Шаблони meta",
+          "templatesHint": "Шаблони для product/category/brand/page з плейсхолдерами.",
+          "overrides": "Ручні overrides",
+          "overridesHint": "Точкові мета-налаштування за path і locale."
+        },
+        "fields": {
+          "enabled": "Увімкнено",
+          "canonicalBaseUrl": "Canonical base URL",
+          "defaultRobotsDirective": "Robots directive за замовчуванням",
+          "defaultMetaTitle": "Meta title за замовчуванням",
+          "defaultMetaDescription": "Meta description за замовчуванням",
+          "defaultOgTitle": "OG title за замовчуванням",
+          "defaultOgDescription": "OG description за замовчуванням",
+          "entityType": "Тип сутності",
+          "locale": "Locale",
+          "active": "Активно",
+          "titleTemplate": "Title template",
+          "descriptionTemplate": "Description template",
+          "h1Template": "H1 template",
+          "ogTitleTemplate": "OG title template",
+          "ogDescriptionTemplate": "OG description template",
+          "path": "Path",
+          "metaTitle": "Meta title",
+          "metaDescription": "Meta description",
+          "h1": "H1",
+          "canonicalUrl": "Canonical URL",
+          "robotsDirective": "Robots directive",
+          "robotsTxt": "robots.txt",
+          "ogTitle": "OG title",
+          "ogDescription": "OG description",
+          "ogImageUrl": "OG image URL",
+          "preview": "Попередній перегляд",
+          "sitemapEnabled": "Увімкнути sitemap",
+          "productSitemapEnabled": "Товари",
+          "categorySitemapEnabled": "Категорії",
+          "brandSitemapEnabled": "Бренди",
+          "consentModeEnabled": "Consent mode",
+          "ecommerceEventsEnabled": "Увімкнути e-commerce events",
+          "debugMode": "Debug mode",
+          "anonymizeIp": "Anonymize IP",
+          "ga4MeasurementId": "GA4 Measurement ID",
+          "gtmContainerId": "GTM Container ID",
+          "searchConsoleVerificationToken": "Search Console verification token",
+          "googleSiteVerificationMeta": "google-site-verification meta content"
+        },
+        "placeholders": {
+          "canonicalBaseUrl": "https://svom.com.ua",
+          "robotsDirective": "index,follow"
+        },
+        "entities": {
+          "product": "Товари",
+          "category": "Категорії",
+          "brand": "Бренди",
+          "page": "Сторінки",
+          "override": "Overrides",
+          "template": "Templates"
+        },
+        "charts": {
+          "healthTitle": "SEO здоров'я каталогу",
+          "ok": "OK",
+          "missingTitle": "Немає title",
+          "missingDescription": "Немає description"
+        },
+        "sitemap": {
+          "lastRebuilt": "Остання перегенерація: {datetime}"
+        },
+        "google": {
+          "settingsTitle": "Google Analytics / GA4 і GTM",
+          "settingsHint": "Безпечні ідентифікатори інтеграцій, без довільних script-tag.",
+          "verificationTitle": "Search Console verification",
+          "verificationHint": "Токен/мета-контент для meta name=\"google-site-verification\".",
+          "eventsTitle": "E-commerce events",
+          "eventsHint": "Локальні перемикачі подій трекінгу.",
+          "chartTitle": "Стан Google-подій",
+          "chartSubtitle": "Діаграма побудована за локальною конфігурацією інтеграції.",
+          "externalMetricsHint": "Google API метрики ще не підключені, показані лише локальні статуси.",
+          "events": "Events",
+          "enabledEvents": "Увімкнені",
+          "disabledEvents": "Вимкнені",
+          "eventLabels": {
+            "view_item": "Перегляд товару",
+            "add_to_cart": "Додавання в кошик",
+            "begin_checkout": "Початок оформлення",
+            "purchase": "Покупка",
+            "refund": "Повернення",
+            "search": "Пошук",
+            "view_item_list": "Перегляд списку товарів"
+          },
+          "eventDescriptions": {
+            "view_item": "Подія перегляду картки товару.",
+            "add_to_cart": "Подія додавання товару до кошика.",
+            "begin_checkout": "Подія початку оформлення замовлення.",
+            "purchase": "Подія успішної оплати/покупки замовлення.",
+            "refund": "Подія повернення замовлення.",
+            "search": "Подія пошуку по каталогу.",
+            "view_item_list": "Подія перегляду категорії або списку товарів."
+          }
+        },
+        "states": {
+          "metaChecksUnavailable": "Перевірка missing meta недоступна: у поточній моделі каталогу немає окремих meta-полів.",
+          "chartEmpty": "Дані для графіка відсутні.",
+          "emptyTemplates": "Шаблони ще не додані.",
+          "emptyOverrides": "Overrides ще не додані."
+        },
+        "messages": {
+          "loadFailed": "Не вдалося завантажити SEO-розділ.",
+          "settingsSaved": "SEO-налаштування збережено.",
+          "googleSettingsSaved": "Google-налаштування збережено.",
+          "templateCreated": "Шаблон створено.",
+          "templateUpdated": "Шаблон оновлено.",
+          "templateDeleted": "Шаблон видалено.",
+          "overrideCreated": "Override створено.",
+          "overrideUpdated": "Override оновлено.",
+          "overrideDeleted": "Override видалено.",
+          "sitemapRebuilt": "Sitemap перегенеровано.",
+          "actionFailed": "Не вдалося виконати дію.",
+          "invalidGa4Id": "Некоректний GA4 ID. Очікується формат G-XXXXXXXX.",
+          "invalidGtmId": "Некоректний GTM ID. Очікується формат GTM-XXXXXXX."
+        }
+      }
+    }
+  }
+}

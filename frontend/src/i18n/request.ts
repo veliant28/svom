@@ -15,7 +15,7 @@ type LocaleModuleLoaders = {
   search: MessagesLoader;
   product: MessagesLoader;
   commerce: MessagesLoader;
-  backofficeCommon: MessagesLoader;
+  backofficeCommon: MessagesLoader[];
   backofficeNavigation: MessagesLoader;
   backofficeDashboard: MessagesLoader;
   backofficeImportRuns: MessagesLoader;
@@ -43,8 +43,20 @@ const localeModuleLoaders: Record<AppLocale, LocaleModuleLoaders> = {
     search: () => import("../messages/en/search.json").then((module) => module.default as Messages),
     product: () => import("../messages/en/product.json").then((module) => module.default as Messages),
     commerce: () => import("../messages/en/commerce.json").then((module) => module.default as Messages),
-    backofficeCommon: () =>
-      import("../messages/en/backoffice/common.json").then((module) => module.default as Messages),
+    backofficeCommon: [
+      () => import("../messages/en/backoffice/common.json").then((module) => module.default as Messages),
+      () => import("../messages/en/backoffice/common-statuses.json").then((module) => module.default as Messages),
+      () => import("../messages/en/backoffice/common-orders.json").then((module) => module.default as Messages),
+      () => import("../messages/en/backoffice/common-products.json").then((module) => module.default as Messages),
+      () => import("../messages/en/backoffice/common-suppliers-flow.json").then((module) => module.default as Messages),
+      () => import("../messages/en/backoffice/common-pricing-loyalty.json").then((module) => module.default as Messages),
+      () => import("../messages/en/backoffice/common-vchasno-kasa.json").then((module) => module.default as Messages),
+      () => import("../messages/en/backoffice/common-seo.json").then((module) => module.default as Messages),
+      () => import("../messages/en/backoffice/common-payments.json").then((module) => module.default as Messages),
+      () => import("../messages/en/backoffice/common-marketing.json").then((module) => module.default as Messages),
+      () => import("../messages/en/backoffice/common-rbac.json").then((module) => module.default as Messages),
+      () => import("../messages/en/backoffice/common-support.json").then((module) => module.default as Messages),
+    ],
     backofficeNavigation: () =>
       import("../messages/en/backoffice/navigation.json").then((module) => module.default as Messages),
     backofficeDashboard: () =>
@@ -76,8 +88,20 @@ const localeModuleLoaders: Record<AppLocale, LocaleModuleLoaders> = {
     search: () => import("../messages/ru/search.json").then((module) => module.default as Messages),
     product: () => import("../messages/ru/product.json").then((module) => module.default as Messages),
     commerce: () => import("../messages/ru/commerce.json").then((module) => module.default as Messages),
-    backofficeCommon: () =>
-      import("../messages/ru/backoffice/common.json").then((module) => module.default as Messages),
+    backofficeCommon: [
+      () => import("../messages/ru/backoffice/common.json").then((module) => module.default as Messages),
+      () => import("../messages/ru/backoffice/common-statuses.json").then((module) => module.default as Messages),
+      () => import("../messages/ru/backoffice/common-orders.json").then((module) => module.default as Messages),
+      () => import("../messages/ru/backoffice/common-products.json").then((module) => module.default as Messages),
+      () => import("../messages/ru/backoffice/common-suppliers-flow.json").then((module) => module.default as Messages),
+      () => import("../messages/ru/backoffice/common-pricing-loyalty.json").then((module) => module.default as Messages),
+      () => import("../messages/ru/backoffice/common-vchasno-kasa.json").then((module) => module.default as Messages),
+      () => import("../messages/ru/backoffice/common-seo.json").then((module) => module.default as Messages),
+      () => import("../messages/ru/backoffice/common-payments.json").then((module) => module.default as Messages),
+      () => import("../messages/ru/backoffice/common-marketing.json").then((module) => module.default as Messages),
+      () => import("../messages/ru/backoffice/common-rbac.json").then((module) => module.default as Messages),
+      () => import("../messages/ru/backoffice/common-support.json").then((module) => module.default as Messages),
+    ],
     backofficeNavigation: () =>
       import("../messages/ru/backoffice/navigation.json").then((module) => module.default as Messages),
     backofficeDashboard: () =>
@@ -109,8 +133,20 @@ const localeModuleLoaders: Record<AppLocale, LocaleModuleLoaders> = {
     search: () => import("../messages/uk/search.json").then((module) => module.default as Messages),
     product: () => import("../messages/uk/product.json").then((module) => module.default as Messages),
     commerce: () => import("../messages/uk/commerce.json").then((module) => module.default as Messages),
-    backofficeCommon: () =>
-      import("../messages/uk/backoffice/common.json").then((module) => module.default as Messages),
+    backofficeCommon: [
+      () => import("../messages/uk/backoffice/common.json").then((module) => module.default as Messages),
+      () => import("../messages/uk/backoffice/common-statuses.json").then((module) => module.default as Messages),
+      () => import("../messages/uk/backoffice/common-orders.json").then((module) => module.default as Messages),
+      () => import("../messages/uk/backoffice/common-products.json").then((module) => module.default as Messages),
+      () => import("../messages/uk/backoffice/common-suppliers-flow.json").then((module) => module.default as Messages),
+      () => import("../messages/uk/backoffice/common-pricing-loyalty.json").then((module) => module.default as Messages),
+      () => import("../messages/uk/backoffice/common-vchasno-kasa.json").then((module) => module.default as Messages),
+      () => import("../messages/uk/backoffice/common-seo.json").then((module) => module.default as Messages),
+      () => import("../messages/uk/backoffice/common-payments.json").then((module) => module.default as Messages),
+      () => import("../messages/uk/backoffice/common-marketing.json").then((module) => module.default as Messages),
+      () => import("../messages/uk/backoffice/common-rbac.json").then((module) => module.default as Messages),
+      () => import("../messages/uk/backoffice/common-support.json").then((module) => module.default as Messages),
+    ],
     backofficeNavigation: () =>
       import("../messages/uk/backoffice/navigation.json").then((module) => module.default as Messages),
     backofficeDashboard: () =>
@@ -142,6 +178,25 @@ function getBackofficeBlock(messages: Messages): Messages {
     return backoffice as Messages;
   }
   return {};
+}
+
+function isPlainObject(value: unknown): value is Messages {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function deepMergeMessages(...sources: Messages[]): Messages {
+  const merged: Messages = {};
+  for (const source of sources) {
+    for (const [key, value] of Object.entries(source)) {
+      const current = merged[key];
+      if (isPlainObject(current) && isPlainObject(value)) {
+        merged[key] = deepMergeMessages(current, value);
+        continue;
+      }
+      merged[key] = value;
+    }
+  }
+  return merged;
 }
 
 async function loadModule(locale: AppLocale, name: string, loader: MessagesLoader): Promise<Messages> {
@@ -176,7 +231,7 @@ async function loadMessages(locale: AppLocale): Promise<Messages> {
       search,
       product,
       commerce,
-      backofficeCommon,
+      backofficeCommonModules,
       backofficeNavigation,
       backofficeDashboard,
       backofficeImportRuns,
@@ -197,7 +252,11 @@ async function loadMessages(locale: AppLocale): Promise<Messages> {
       loadModule(locale, "search", loaders.search),
       loadModule(locale, "product", loaders.product),
       loadModule(locale, "commerce", loaders.commerce),
-      loadModule(locale, "backoffice/common", loaders.backofficeCommon),
+      Promise.all(
+        loaders.backofficeCommon.map((loader, index) =>
+          loadModule(locale, `backoffice/common/${index}`, loader),
+        ),
+      ),
       loadModule(locale, "backoffice/navigation", loaders.backofficeNavigation),
       loadModule(locale, "backoffice/dashboard", loaders.backofficeDashboard),
       loadModule(locale, "backoffice/import-runs", loaders.backofficeImportRuns),
@@ -220,21 +279,21 @@ async function loadMessages(locale: AppLocale): Promise<Messages> {
       ...search,
       ...product,
       ...commerce,
-      backoffice: {
-        ...getBackofficeBlock(backofficeCommon),
-        ...getBackofficeBlock(backofficeNavigation),
-        ...getBackofficeBlock(backofficeDashboard),
-        ...getBackofficeBlock(backofficeImportRuns),
-        ...getBackofficeBlock(backofficeImportErrors),
-        ...getBackofficeBlock(backofficeImportQuality),
-        ...getBackofficeBlock(backofficeAutocatalog),
-        ...getBackofficeBlock(backofficeSuppliers),
-        ...getBackofficeBlock(backofficeUtr),
-        ...getBackofficeBlock(backofficeGpl),
-        ...getBackofficeBlock(backofficeImports),
-        ...getBackofficeBlock(backofficeAuth),
-        ...getBackofficeBlock(backofficeErrors),
-      },
+      backoffice: deepMergeMessages(
+        ...backofficeCommonModules.map(getBackofficeBlock),
+        getBackofficeBlock(backofficeNavigation),
+        getBackofficeBlock(backofficeDashboard),
+        getBackofficeBlock(backofficeImportRuns),
+        getBackofficeBlock(backofficeImportErrors),
+        getBackofficeBlock(backofficeImportQuality),
+        getBackofficeBlock(backofficeAutocatalog),
+        getBackofficeBlock(backofficeSuppliers),
+        getBackofficeBlock(backofficeUtr),
+        getBackofficeBlock(backofficeGpl),
+        getBackofficeBlock(backofficeImports),
+        getBackofficeBlock(backofficeAuth),
+        getBackofficeBlock(backofficeErrors),
+      ),
     };
     if (shouldCacheMessages) {
       messagesCache.set(locale, merged);

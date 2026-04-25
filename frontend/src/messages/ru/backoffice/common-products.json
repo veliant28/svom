@@ -1,0 +1,389 @@
+{
+  "backoffice": {
+    "common": {
+      "rawOffers": {
+        "title": "Сырые офферы",
+        "subtitle": "Промежуточный слой офферов поставщиков перед итоговым upsert.",
+        "filters": {
+          "search": "Поиск по SKU, артикулу или бренду",
+          "all": "Все строки",
+          "valid": "Только валидные",
+          "invalid": "Только невалидные"
+        },
+        "actions": {
+          "refresh": "Обновить"
+        },
+        "table": {
+          "columns": {
+            "supplier": "Поставщик",
+            "sku": "SKU / Артикул",
+            "brand": "Бренд",
+            "price": "Цена",
+            "stock": "Остаток",
+            "state": "Состояние"
+          }
+        },
+        "states": {
+          "empty": "Сырые офферы не найдены."
+        }
+      },
+      "supplierOffers": {
+        "title": "Офферы поставщиков",
+        "subtitle": "Операционная матрица офферов для входа в ценообразование.",
+        "filters": {
+          "search": "Поиск по товару, поставщику или SKU",
+          "all": "Все офферы",
+          "available": "В наличии",
+          "unavailable": "Недоступны"
+        },
+        "actions": {
+          "refresh": "Обновить"
+        },
+        "table": {
+          "columns": {
+            "supplier": "Поставщик",
+            "product": "Товар",
+            "supplierSku": "SKU поставщика",
+            "price": "Закупочная цена",
+            "stock": "Остаток",
+            "availability": "Доступность"
+          }
+        },
+        "states": {
+          "empty": "Офферы поставщиков не найдены."
+        }
+      },
+      "productPrices": {
+        "title": "Цены товаров",
+        "subtitle": "Финальные рассчитанные цены после политик и переоценки.",
+        "filters": {
+          "search": "Поиск по товару, бренду или политике"
+        },
+        "actions": {
+          "refresh": "Обновить"
+        },
+        "table": {
+          "columns": {
+            "product": "Товар",
+            "category": "Категория",
+            "purchasePrice": "Закупка",
+            "finalPrice": "Финальная",
+            "policy": "Политика",
+            "updated": "Обновлено"
+          }
+        },
+        "states": {
+          "empty": "Цены товаров не найдены."
+        }
+      },
+      "brandAliases": {
+        "title": "Алиасы брендов",
+        "subtitle": "Нормализация алиасов брендов поставщиков к каноническим брендам.",
+        "form": {
+          "alias": "Алиас поставщика",
+          "canonical": "Канонический бренд"
+        },
+        "filters": {
+          "search": "Поиск по алиасу или каноническому бренду"
+        },
+        "states": {
+          "empty": "Алиасы пока не добавлены."
+        },
+        "actions": {
+          "create": "Создать",
+          "activate": "Активировать",
+          "deactivate": "Деактивировать"
+        },
+        "messages": {
+          "created": "Алиас бренда создан.",
+          "updated": "Алиас бренда обновлен.",
+          "actionFailed": "Не удалось обновить алиасы брендов."
+        },
+        "table": {
+          "columns": {
+            "alias": "Алиас",
+            "canonical": "Канонический",
+            "scope": "Область",
+            "priority": "Приоритет",
+            "status": "Статус",
+            "actions": "Действия"
+          },
+          "scopeGlobal": "Глобально"
+        }
+      },
+      "brands": {
+        "title": "Бренды",
+        "subtitle": "Операционное управление брендами каталога.",
+        "create": {
+          "title": "Создание бренда"
+        },
+        "edit": {
+          "title": "Редактирование: {name}",
+          "fallbackTitle": "Редактирование бренда"
+        },
+        "modal": {
+          "subtitle": "Изменения сохраняются в catalog.Brand."
+        },
+        "fields": {
+          "name": "Название бренда",
+          "isActive": "Активен"
+        },
+        "filters": {
+          "search": "Поиск по названию бренда",
+          "all": "Все",
+          "active": "Только активные",
+          "inactive": "Только неактивные"
+        },
+        "actions": {
+          "create": "Создать бренд",
+          "edit": "Редактировать",
+          "delete": "Удалить",
+          "save": "Сохранить",
+          "cancel": "Отмена"
+        },
+        "messages": {
+          "nameRequired": "Укажите название бренда.",
+          "created": "Бренд создан.",
+          "createFailed": "Не удалось создать бренд.",
+          "updated": "Бренд обновлен.",
+          "updateFailed": "Не удалось обновить бренд.",
+          "deleteConfirm": "Удалить бренд «{name}»?",
+          "deleted": "Бренд удалён.",
+          "deleteFailed": "Не удалось удалить бренд."
+        },
+        "states": {
+          "empty": "Бренды не найдены."
+        },
+        "table": {
+          "columns": {
+            "name": "Бренд",
+            "status": "Статус",
+            "updated": "Обновлено",
+            "actions": "Действия"
+          }
+        },
+        "pagination": {
+          "total": "Всего брендов: {count}",
+          "prev": "Назад",
+          "next": "Вперед",
+          "page": "Страница {current} из {total}"
+        }
+      },
+      "products": {
+        "title": "Товары",
+        "subtitle": "Операционное управление товарами каталога.",
+        "create": {
+          "title": "Создание товара"
+        },
+        "edit": {
+          "title": "Редактирование товара"
+        },
+        "modal": {
+          "subtitle": "Изменения сохраняются в catalog.Product."
+        },
+        "fields": {
+          "sku": "SKU",
+          "article": "Артикул",
+          "name": "Название товара",
+          "brand": "Бренд",
+          "category": "Категория"
+        },
+        "flags": {
+          "active": "Активен",
+          "featured": "Рекомендуемый",
+          "new": "Новинка",
+          "bestseller": "Хит продаж"
+        },
+        "filters": {
+          "search": "Поиск по SKU, названию, бренду или категории",
+          "allStates": "Любой статус",
+          "active": "Только активные",
+          "inactive": "Только неактивные",
+          "allBrands": "Все бренды",
+          "allCategories": "Все категории"
+        },
+        "actions": {
+          "refresh": "Обновить",
+          "create": "Создать товар",
+          "pricing": "Цена",
+          "bulkActions": "Массовые действия",
+          "selectPage": "Выбрать страницу",
+          "unselectPage": "Снять выбор страницы",
+          "edit": "Редактировать",
+          "delete": "Удалить",
+          "save": "Сохранить",
+          "cancel": "Отмена",
+          "bulkMoveCategory": "Перенести в категорию",
+          "bulkReindex": "Переиндексировать",
+          "bulkDelete": "Удалить выбранные"
+        },
+        "messages": {
+          "required": "Заполните обязательные поля: SKU, название, бренд и категория.",
+          "created": "Товар создан.",
+          "createFailed": "Не удалось создать товар.",
+          "updated": "Товар обновлен.",
+          "updateFailed": "Не удалось обновить товар.",
+          "deleteConfirm": "Удалить товар «{name}»?",
+          "deleted": "Товар удалён.",
+          "deleteFailed": "Не удалось удалить товар.",
+          "reindexQueued": "Переиндексация поставлена в очередь для {count} товар(ов).",
+          "reindexFailed": "Не удалось поставить переиндексацию в очередь.",
+          "bulkMoveCategoryConfirm": "Перенести выбранные товары ({count}) в другую категорию и обновить правила импорта по ним?",
+          "bulkMoveCategorySelect": "Выберите целевую категорию",
+          "bulkMoveCategoryRequired": "Выберите целевую категорию.",
+          "bulkMoveCategoryDone": "Категория обновлена для {products} товар(ов), правила импорта обновлены для {offers} оффер(ов).",
+          "bulkMoveCategoryFailed": "Не удалось массово перенести товары в категорию.",
+          "bulkDeleteConfirm": "Удалить выбранные товары ({count})?",
+          "bulkDeleted": "Удалено товаров: {count}.",
+          "bulkDeletePartial": "Удалено: {deleted}. Не удалось удалить: {failed}.",
+          "bulkDeleteFailed": "Не удалось удалить выбранные товары."
+        },
+        "states": {
+          "empty": "Товары не найдены.",
+          "editingUnavailable": "Редактируемый товар отсутствует в текущей странице."
+        },
+        "tooltips": {
+          "actionEdit": "Редактировать товар",
+          "actionDelete": "Удалить товар",
+          "openPricing": "Открыть управление ценами и наценками.",
+          "bulkActions": "Массовые действия с выбранными товарами.",
+          "pricePrimary": "Основная цена товара для каталога.",
+          "priceWithMarkup": "Цена с наценкой",
+          "supplierPrice": "Цена поставщика",
+          "appliedMarkup": "Примененная наценка",
+          "policy": "Политика",
+          "policyGlobal": "Общая наценка",
+          "policyCategory": "Наценка по категориям",
+          "notSet": "Не задано",
+          "updatedAt": "Обновлено"
+        },
+        "table": {
+          "supplierArticle": "Артикул поставщика",
+          "columns": {
+            "select": "Выбор",
+            "product": "Товар",
+            "brand": "Бренд",
+            "price": "Цена",
+            "warehouses": "Склады",
+            "stock": "Остаток",
+            "status": "Статус",
+            "actions": "Действия"
+          }
+        },
+        "pagination": {
+          "total": "Всего товаров: {count}",
+          "perPage": "На странице",
+          "prev": "Назад",
+          "next": "Вперед",
+          "page": "Страница {current} из {total}"
+        }
+      },
+      "categories": {
+        "title": "Категории",
+        "subtitle": "Операционное управление категориями каталога.",
+        "create": {
+          "title": "Создание категории"
+        },
+        "edit": {
+          "title": "Редактирование: {name}",
+          "fallbackTitle": "Редактирование категории"
+        },
+        "modal": {
+          "subtitle": "Изменения сохраняются в catalog.Category."
+        },
+        "fields": {
+          "name": "Название категории",
+          "parentNone": "Без родительской категории",
+          "description": "Описание (необязательно)",
+          "isActive": "Активна"
+        },
+        "filters": {
+          "search": "Поиск по названию категории",
+          "all": "Все",
+          "active": "Только активные",
+          "inactive": "Только неактивные",
+          "anyParent": "Любой уровень",
+          "rootOnly": "Только корневые"
+        },
+        "actions": {
+          "create": "Создать категорию",
+          "edit": "Редактировать",
+          "delete": "Удалить",
+          "save": "Сохранить",
+          "cancel": "Отмена"
+        },
+        "messages": {
+          "nameRequired": "Укажите название категории.",
+          "created": "Категория создана.",
+          "createFailed": "Не удалось создать категорию.",
+          "updated": "Категория обновлена.",
+          "updateFailed": "Не удалось обновить категорию.",
+          "deleteConfirm": "Удалить категорию «{name}»?",
+          "deleted": "Категория удалена.",
+          "deleteFailed": "Не удалось удалить категорию."
+        },
+        "states": {
+          "empty": "Категории не найдены."
+        },
+        "table": {
+          "columns": {
+            "name": "Категория",
+            "status": "Статус",
+            "updated": "Обновлено",
+            "actions": "Действия"
+          },
+          "rootLabel": "Корень"
+        },
+        "pagination": {
+          "total": "Всего категорий: {count}",
+          "prev": "Назад",
+          "next": "Вперед",
+          "page": "Страница {current} из {total}"
+        }
+      },
+      "articleRules": {
+        "title": "Правила артикулов",
+        "subtitle": "Настройка правил нормализации артикулов и источниковых переопределений.",
+        "form": {
+          "name": "Название правила",
+          "pattern": "Шаблон",
+          "replacement": "Замена"
+        },
+        "ruleTypes": {
+          "remove_separators": "Удалить разделители",
+          "strip_prefix": "Удалить префикс",
+          "strip_suffix": "Удалить суффикс",
+          "regex_replace": "Замена по регулярному выражению",
+          "force_uppercase": "Верхний регистр"
+        },
+        "filters": {
+          "search": "Поиск правил"
+        },
+        "states": {
+          "empty": "Правила нормализации не найдены."
+        },
+        "actions": {
+          "create": "Создать",
+          "activate": "Активировать",
+          "deactivate": "Деактивировать"
+        },
+        "messages": {
+          "created": "Правило артикулов создано.",
+          "updated": "Правило артикулов обновлено.",
+          "actionFailed": "Не удалось обновить правила артикулов."
+        },
+        "table": {
+          "columns": {
+            "name": "Название",
+            "type": "Тип",
+            "pattern": "Шаблон",
+            "replacement": "Замена",
+            "priority": "Приоритет",
+            "status": "Статус",
+            "actions": "Действия"
+          }
+        }
+      }
+    }
+  }
+}

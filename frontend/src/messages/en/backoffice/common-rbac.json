@@ -1,0 +1,316 @@
+{
+  "backoffice": {
+    "common": {
+      "rbac": {
+        "roles": {
+          "values": {
+            "administrator": "Administrator",
+            "manager": "Manager",
+            "user": "User",
+            "operator": "Operator"
+          },
+          "descriptions": {
+            "administrator": "Full access to all backoffice areas, roles, users, and groups.",
+            "manager": "Operational access to catalog/orders without full system administration.",
+            "user": "Minimal access. Permissions come from role and extra groups.",
+            "operator": "Customer support role for order operations without system settings."
+          }
+        },
+        "capabilities": {
+          "backoffice": {
+            "access": {
+              "title": "Backoffice access",
+              "description": "Allows entering the backoffice area."
+            }
+          },
+          "users": {
+            "view": {
+              "title": "View users",
+              "description": "Allows reading users in backoffice."
+            },
+            "manage": {
+              "title": "Manage users",
+              "description": "Allows creating, updating and deactivating users."
+            },
+            "management": {
+              "bundle": {
+                "title": "Manage users",
+                "description": "Includes editing users and user cards."
+              }
+            },
+            "card": {
+              "edit": {
+                "administrator": {
+                  "title": "Edit user card (administrator)",
+                  "description": "Allows administrators to edit user cards."
+                },
+                "manager": {
+                  "title": "Edit user card (manager)",
+                  "description": "Allows managers to edit user cards."
+                },
+                "all": {
+                  "title": "Edit user card (all roles)",
+                  "description": "Allows any backoffice role to edit user cards."
+                }
+              }
+            }
+          },
+          "groups": {
+            "view": {
+              "title": "View groups",
+              "description": "Allows reading groups and assigned permissions."
+            },
+            "manage": {
+              "title": "Manage groups",
+              "description": "Allows creating and updating groups and their capabilities."
+            }
+          },
+          "catalog": {
+            "view": {
+              "title": "View catalog",
+              "description": "Allows reading catalog entities in backoffice."
+            },
+            "manage": {
+              "title": "Manage catalog",
+              "description": "Allows managing catalog entities in backoffice."
+            }
+          },
+          "orders": {
+            "view": {
+              "title": "View orders",
+              "description": "Allows reading orders and order details."
+            },
+            "manage": {
+              "title": "Manage orders",
+              "description": "Allows performing order operations in backoffice."
+            }
+          },
+          "customers": {
+            "support": {
+              "title": "Customer support actions",
+              "description": "Allows customer support actions in order flow."
+            }
+          },
+          "pricing": {
+            "view": {
+              "title": "View pricing",
+              "description": "Allows reading pricing dashboards and data."
+            },
+            "manage": {
+              "title": "Manage pricing",
+              "description": "Allows managing pricing settings and recalculation."
+            }
+          },
+          "suppliers": {
+            "view": {
+              "title": "View suppliers",
+              "description": "Allows reading suppliers and supplier data."
+            },
+            "manage": {
+              "title": "Manage suppliers",
+              "description": "Allows managing suppliers and supplier operations."
+            }
+          },
+          "imports": {
+            "view": {
+              "title": "View imports",
+              "description": "Allows reading import runs, quality and errors."
+            },
+            "manage": {
+              "title": "Manage imports",
+              "description": "Allows running import and import maintenance actions."
+            }
+          },
+          "schedules": {
+            "view": {
+              "title": "View schedules",
+              "description": "Allows viewing and managing supplier import schedules."
+            }
+          },
+          "brands": {
+            "view": {
+              "title": "View brands",
+              "description": "Allows viewing and managing catalog brands."
+            }
+          },
+          "categories": {
+            "view": {
+              "title": "View categories",
+              "description": "Allows viewing and managing catalog categories."
+            }
+          },
+          "seo": {
+            "view": {
+              "title": "View SEO",
+              "description": "Allows reading SEO dashboard and SEO/Google settings."
+            },
+            "manage": {
+              "title": "Manage SEO",
+              "description": "Allows managing SEO settings, templates, overrides and Google integration."
+            }
+          },
+          "autocatalog": {
+            "view": {
+              "title": "View autocatalog",
+              "description": "Allows viewing autocatalog data and filters."
+            }
+          },
+          "payments": {
+            "view": {
+              "title": "View payments",
+              "description": "Allows viewing and managing payment provider settings."
+            }
+          },
+          "vchasno_kasa": {
+            "manage": {
+              "title": "Manage Vchasno.Kasa",
+              "description": "Allows managing Vchasno.Kasa integration and receipts."
+            }
+          },
+          "nova_poshta": {
+            "settings": {
+              "title": "Nova Poshta settings",
+              "description": "Allows viewing and managing Nova Poshta sender settings."
+            }
+          },
+          "settings": {
+            "manage": {
+              "title": "Manage settings",
+              "description": "Allows managing operational and system settings in backoffice."
+            }
+          },
+          "footer": {
+            "settings": {
+              "title": "Footer settings",
+              "description": "Allows managing storefront footer contact data."
+            }
+          },
+          "promo_banners": {
+            "manage": {
+              "title": "Ad banners",
+              "description": "Allows managing storefront ad banners and transition animation."
+            }
+          },
+          "loyalty": {
+            "issue": {
+              "title": "Issue loyalty promo codes",
+              "description": "Allows issuing loyalty promo codes and viewing loyalty analytics."
+            }
+          },
+          "procurement": {
+            "manage": {
+              "title": "Manage procurement",
+              "description": "Allows working with procurement recommendations and supplier overrides."
+            }
+          }
+        },
+        "users": {
+          "title": "Users",
+          "subtitle": "Manage accounts, roles, and access groups.",
+          "empty": "No users found.",
+          "pagination": "Page {page} of {pages}",
+          "filters": {
+            "search": "Search by email, first name, last name, phone",
+            "allStatuses": "All statuses",
+            "allRoles": "All roles"
+          },
+          "columns": {
+            "email": "User",
+            "role": "System role",
+            "groups": "Groups",
+            "status": "Status",
+            "actions": "Actions"
+          },
+          "actions": {
+            "create": "Create user",
+            "edit": "Edit",
+            "activate": "Activate",
+            "deactivate": "Deactivate",
+            "showPassword": "Show password",
+            "hidePassword": "Hide password",
+            "save": "Save",
+            "saving": "Saving...",
+            "reset": "Reset",
+            "delete": "Delete"
+          },
+          "fields": {
+            "email": "Email",
+            "firstName": "First name",
+            "lastName": "Last name",
+            "phone": "Phone",
+            "password": "Password",
+            "active": "Active account",
+            "groups": "Groups",
+            "noRole": "No system role",
+            "backofficeAccess": "Backoffice access"
+          },
+          "editor": {
+            "createTitle": "New user",
+            "editTitle": "User card",
+            "helper": "Set system role, groups, and backoffice access state."
+          },
+          "rolePreview": {
+            "title": "Role description",
+            "none": "No system role selected. Access depends only on groups."
+          },
+          "messages": {
+            "created": "User created.",
+            "updated": "User updated.",
+            "activated": "User activated.",
+            "deactivated": "User deactivated.",
+            "saveFailed": "Failed to save user.",
+            "toggleFailed": "Failed to change user status.",
+            "deleted": "User deleted.",
+            "deleteFailed": "Unable to delete user.",
+            "deleteConfirm": "Delete user {email}?"
+          }
+        },
+        "groups": {
+          "title": "Groups",
+          "subtitle": "Manage access groups and capability rights.",
+          "empty": "No groups found.",
+          "pagination": "Page {page} of {pages}",
+          "filters": {
+            "search": "Search by group name"
+          },
+          "columns": {
+            "name": "Group",
+            "members": "Users",
+            "capabilities": "Access rights",
+            "actions": "Actions",
+            "system": "System role",
+            "custom": "Custom group"
+          },
+          "actions": {
+            "create": "Create group",
+            "edit": "Edit",
+            "save": "Save",
+            "saving": "Saving...",
+            "reset": "Reset"
+          },
+          "fields": {
+            "name": "Group name",
+            "capabilities": "Capabilities"
+          },
+          "capabilityBundles": {
+            "usersManagement": {
+              "title": "Manage users",
+              "description": "Includes user editing and user-card editing permissions."
+            }
+          },
+          "editor": {
+            "createTitle": "New group",
+            "editTitle": "Group card",
+            "helper": "Configure group name and capabilities. Only administrator can edit system role groups."
+          },
+          "messages": {
+            "created": "Group created.",
+            "updated": "Group updated.",
+            "saveFailed": "Failed to save group.",
+            "systemReadonly": "System role group cannot be edited manually."
+          }
+        }
+      }
+    }
+  }
+}
