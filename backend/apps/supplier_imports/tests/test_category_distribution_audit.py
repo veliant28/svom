@@ -45,3 +45,9 @@ class CategoryDistributionAuditSuppressorTests(SimpleTestCase):
                 root_changed=False,
             )
         )
+
+    def test_cross_root_overlap_requires_substantive_token(self):
+        self.assertFalse(Command._has_substantive_cross_root_overlap(("гальмівної", "системи")))
+        self.assertFalse(Command._has_substantive_cross_root_overlap(("механізму", "ремкомплект")))
+        self.assertTrue(Command._has_substantive_cross_root_overlap(("гідропідсилювача", "насоса")))
+        self.assertTrue(Command._has_substantive_cross_root_overlap(("механізму", "рульового")))

@@ -81,6 +81,42 @@ COOLING_PATH_MARKERS = (
     "охолодження",
 )
 
+WEAK_CROSS_ROOT_OVERLAP_TOKENS = {
+    "система",
+    "системи",
+    "системы",
+    "гальмівна",
+    "гальмівної",
+    "гальмівний",
+    "тормозная",
+    "тормозной",
+    "тормозного",
+    "масляного",
+    "масляний",
+    "масляный",
+    "механізм",
+    "механізму",
+    "механизм",
+    "механизма",
+    "фильтр",
+    "фильтра",
+    "фільтр",
+    "фільтра",
+    "насос",
+    "насоса",
+    "pump",
+    "радіатор",
+    "радіатора",
+    "радиатор",
+    "радиатора",
+    "ремкомплект",
+    "кондиціонер",
+    "кондиціонера",
+    "conditioner",
+    "glass",
+    "stop",
+}
+
 
 @dataclass(frozen=True)
 class CandidateMove:
@@ -427,6 +463,9 @@ class Command(BaseCommand):
             predicted_category_path = category_path_title.get(predicted_category_id, "")
             product_name = product.get("name") or ""
 
+            if root_changed and not self._has_substantive_cross_root_overlap(specific_overlap):
+                continue
+
             if self._is_suppressed_false_positive(
                 product_name=product_name,
                 assigned_category_path=assigned_category_path,
@@ -457,6 +496,10 @@ class Command(BaseCommand):
 
         candidates.sort(key=lambda row: (row.delta, row.predicted_score), reverse=True)
         return candidates
+
+    @staticmethod
+    def _has_substantive_cross_root_overlap(specific_overlap: tuple[str, ...]) -> bool:
+        return any(token not in WEAK_CROSS_ROOT_OVERLAP_TOKENS for token in specific_overlap)
 
     @classmethod
     def _is_suppressed_false_positive(
