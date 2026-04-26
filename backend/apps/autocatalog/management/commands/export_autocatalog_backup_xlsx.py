@@ -41,7 +41,10 @@ class Command(BaseCommand):
         row_counts: dict[str, int] = {}
 
         self.stdout.write("Preparing sheet: restore_plan ...")
-        row_counts["restore_plan"] = self._append_restore_plan_sheet(workbook)
+        row_counts["restore_plan"] = self._append_restore_plan_sheet(
+            workbook,
+            include_detail_matrix=bool(options.get("with_detail_matrix")),
+        )
         self.stdout.write(f"Done: restore_plan ({row_counts['restore_plan']})")
         self.stdout.write("Preparing sheet: car_makes ...")
         row_counts["car_makes"] = self._append_sheet(
@@ -112,6 +115,7 @@ class Command(BaseCommand):
                 "model_name",
                 "model_slug",
                 "start_date_at",
+                "end_date_at",
                 "year",
                 "modification",
                 "capacity",
@@ -132,6 +136,7 @@ class Command(BaseCommand):
                     modification.model.name,
                     modification.model.slug,
                     self._fmt_date(modification.start_date_at),
+                    self._fmt_date(modification.end_date_at),
                     modification.year,
                     modification.modification,
                     modification.capacity,
@@ -216,8 +221,8 @@ class Command(BaseCommand):
         repo_root = Path(settings.BASE_DIR).parent
         return (repo_root / f"autocatalog_backup_{timestamp}.xlsx").resolve()
 
-    def _append_restore_plan_sheet(self, workbook: Workbook) -> int:
-        rows = (
+    def _append_restore_plan_sheet(self, workbook: Workbook, *, include_detail_matrix: bool) -> int:
+        rows = [
             ("order", "sheet", "model", "pk_field", "fk_dependencies", "restore_notes"),
             (1, "car_makes", "autocatalog.CarMake", "id", "-", "Сначала марки."),
             (2, "car_models", "autocatalog.CarModel", "id", "make_id -> car_makes.id", "Затем модели."),
@@ -238,15 +243,18 @@ class Command(BaseCommand):
                 "car_modification_id -> car_modifications.id",
                 "UTR detail->car relation в самом конце. Лист разбивается на chunks по лимиту Excel.",
             ),
-            (
-                6,
-                "detail_dependency_matrix",
-                "derived",
-                "-",
-                "-",
-                "Диагностический лист: быстрое понимание связности detail_id.",
-            ),
-        )
+        ]
+        if include_detail_matrix:
+            rows.append(
+                (
+                    6,
+                    "detail_dependency_matrix",
+                    "derived",
+                    "-",
+                    "-",
+                    "Диагностический лист: быстрое понимание связности detail_id.",
+                )
+            )
         sheet = workbook.create_sheet("restore_plan")
         count = 0
         for row in rows:
@@ -301,6 +309,7 @@ class Command(BaseCommand):
             "modification",
             "capacity",
             "engine",
+            "end_date_at",
             "created_at",
         )
         queryset = (
@@ -341,6 +350,7 @@ class Command(BaseCommand):
                 item.car_modification.modification,
                 item.car_modification.capacity,
                 item.car_modification.engine,
+                self._fmt_date(item.car_modification.end_date_at),
                 self._fmt_dt(item.created_at),
             )
             sheet.append(row)
