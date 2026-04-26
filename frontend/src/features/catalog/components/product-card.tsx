@@ -12,20 +12,19 @@ import type { CatalogProduct } from "@/features/catalog/types";
 import { ContainedImagePanel } from "@/shared/components/ui/contained-image-panel";
 import { isFitmentDisabledCategory } from "@/features/catalog/lib/fitment-disabled-categories";
 
-export function ProductCard({ product }: { product: CatalogProduct }) {
+export function ProductCard({
+  product,
+  preserveCatalogQuery = false,
+}: {
+  product: CatalogProduct;
+  preserveCatalogQuery?: boolean;
+}) {
   const t = useTranslations("product.card");
   const searchParams = useSearchParams();
   const stockTone: BackofficeStatusChipTone =
     product.total_stock_qty <= 0 ? "red" : product.total_stock_qty <= 5 ? "orange" : "blue";
   const productHref = (() => {
-    const params = new URLSearchParams();
-    ["car_modification", "garage_vehicle", "modification"].forEach((key) => {
-      const value = searchParams.get(key);
-      if (value) {
-        params.set(key, value);
-      }
-    });
-    const query = params.toString();
+    const query = preserveCatalogQuery ? searchParams.toString() : "";
     return query ? `/catalog/${product.slug}?${query}` : `/catalog/${product.slug}`;
   })();
 

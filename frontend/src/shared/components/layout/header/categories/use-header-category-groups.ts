@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 
 import { getCategories } from "@/features/catalog/api/get-categories";
@@ -83,23 +83,42 @@ export function useHeaderCategoryGroups(initialCategories: CategorySummary[] = [
   const locale = useLocale();
   const [categories, setCategories] = useState<CategorySummary[]>(initialCategories);
   const [isLoading, setIsLoading] = useState(initialCategories.length === 0);
+  const lastFetchedLocaleRef = useRef<string | null>(null);
+  const hasCategories = categories.length > 0;
+
+  useEffect(() => {
+    if (initialCategories.length > 0) {
+      setCategories(initialCategories);
+      setIsLoading(false);
+    }
+  }, [initialCategories]);
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadCategories() {
-      if (categories.length === 0) {
-        setIsLoading(true);
+      if (hasCategories) {
+        lastFetchedLocaleRef.current = locale;
+        setIsLoading(false);
+        return;
       }
+      if (lastFetchedLocaleRef.current === locale) {
+        return;
+      }
+      lastFetchedLocaleRef.current = locale;
+      setIsLoading(true);
       try {
         const data = await getCategories(locale);
         if (isMounted) {
-          setCategories(Array.isArray(data) ? data : []);
+          setCategories((current) => {
+            if (!Array.isArray(data) || data.length === 0) {
+              return current;
+            }
+            return data;
+          });
         }
       } catch {
-        if (isMounted) {
-          setCategories([]);
-        }
+        // Keep server-rendered categories visible if the client refresh fails.
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -112,7 +131,7 @@ export function useHeaderCategoryGroups(initialCategories: CategorySummary[] = [
     return () => {
       isMounted = false;
     };
-  }, [categories.length, locale]);
+  }, [hasCategories, locale]);
 
   const parents = useMemo(() => groupCategoriesByParent(categories), [categories]);
 

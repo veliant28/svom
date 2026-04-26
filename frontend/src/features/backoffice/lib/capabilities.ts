@@ -31,6 +31,7 @@ export const BACKOFFICE_CAPABILITIES = {
   vchasnoKasaManage: "vchasno_kasa.manage",
   novaPoshtaSettings: "nova_poshta.settings",
   settingsManage: "settings.manage",
+  emailSettings: "email.settings",
   footerSettings: "footer.settings",
   promoBannersManage: "promo_banners.manage",
   loyaltyIssue: "loyalty.issue",

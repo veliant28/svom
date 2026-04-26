@@ -17,7 +17,8 @@ def serialize_price_list(*, row: SupplierPriceList, cooldown_wait_seconds: int) 
         SupplierPriceList.STATUS_DOWNLOADED,
         SupplierPriceList.STATUS_IMPORTED,
     }
-    import_available = row.status in {
+    has_downloaded_file = bool(row.downloaded_file_path)
+    import_available = has_downloaded_file and row.status in {
         SupplierPriceList.STATUS_DOWNLOADED,
         SupplierPriceList.STATUS_IMPORTED,
     }

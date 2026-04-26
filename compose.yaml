@@ -59,6 +59,7 @@ services:
       - .env
     environment:
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.dev}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1},backend,svom_backend
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
       REDIS_CACHE_URL: redis://redis:6379/1
@@ -77,6 +78,25 @@ services:
       elasticsearch:
         condition: service_healthy
     command: bash -lc "python manage.py migrate && daphne -b 0.0.0.0 -p 8000 config.asgi:application"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: infra/docker/frontend/Dockerfile
+    container_name: svom_frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000/api}
+      NEXT_SERVER_API_BASE_URL: ${NEXT_SERVER_API_BASE_URL:-http://backend:8000/api}
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+      - frontend_next:/app/.next
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_started
 
   celery_worker:
     build:
@@ -136,3 +156,5 @@ volumes:
   postgres_data:
   redis_data:
   elastic_data:
+  frontend_node_modules:
+  frontend_next:

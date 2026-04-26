@@ -128,8 +128,8 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
       );
     };
 
-    const shouldPoll = (statuses: UtrEnrichmentStatus[]) =>
-      statuses.some((item) => item.status === "queued" || item.status === "in_progress" || item.queued);
+    const shouldContinue = (statuses: UtrEnrichmentStatus[]) =>
+      statuses.some((item) => item.needs_enrichment || item.status === "queued" || item.status === "in_progress" || item.queued);
 
     async function warmVisibleProducts() {
       try {
@@ -139,12 +139,12 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
         }
         applyStatuses(statuses);
 
-        for (let attempt = 0; attempt < 8 && shouldPoll(statuses); attempt += 1) {
+        for (let attempt = 0; attempt < Math.max(productIds.length * 2, 45) && shouldContinue(statuses); attempt += 1) {
           await new Promise((resolve) => window.setTimeout(resolve, 1000));
           if (isCancelled) {
             return;
           }
-          statuses = await requestUtrProductEnrichment(productIds, false);
+          statuses = await requestUtrProductEnrichment(productIds, true);
           if (isCancelled) {
             return;
           }

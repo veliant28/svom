@@ -6,6 +6,8 @@ export type UtrEnrichmentStatus = {
   utr_detail_id: string;
   primary_image: string;
   characteristics_count: number;
+  needs_enrichment: boolean;
+  processed: boolean;
   queued: boolean;
 };
 

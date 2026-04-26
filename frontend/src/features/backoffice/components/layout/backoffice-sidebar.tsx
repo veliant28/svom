@@ -103,7 +103,7 @@ const NAV_ITEMS: SidebarNavItem[] = [
     href: "/backoffice/email-settings",
     icon: Mail,
     key: "emailSettings",
-    requiredCapability: BACKOFFICE_CAPABILITIES.settingsManage,
+    requiredCapability: BACKOFFICE_CAPABILITIES.emailSettings,
   },
 ];
 

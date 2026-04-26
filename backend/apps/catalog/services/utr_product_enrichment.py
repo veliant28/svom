@@ -11,11 +11,12 @@ from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.files.base import ContentFile
 from django.db.models import Q
 from django.utils import timezone
 
-from apps.autocatalog.models import UtrArticleDetailMap
+from apps.autocatalog.models import UtrArticleDetailMap, UtrDetailCarMap
 from apps.autocatalog.services.utr_article_detail_resolver.persistence import upsert_mapping as upsert_utr_article_detail_mapping
 from apps.autocatalog.services.utr_article_detail_resolver.selector import select_candidate_ids
 from apps.autocatalog.services.utr_autocatalog_import_service import UtrAutocatalogImportService
@@ -28,7 +29,7 @@ from apps.supplier_imports.services.integrations.utr.client import UtrClient
 logger = logging.getLogger(__name__)
 
 _MAX_VISIBLE_ENRICHMENT_PRODUCTS = 60
-_QUEUE_STALE_AFTER = timedelta(minutes=10)
+_IN_PROGRESS_RETRY_AFTER = timedelta(seconds=30)
 _FAILED_RETRY_AFTER = timedelta(hours=6)
 _UNAVAILABLE_RETRY_AFTER = timedelta(hours=24)
 _MAX_IMAGE_BYTES = 10 * 1024 * 1024
@@ -49,6 +50,8 @@ class UtrEnrichmentStatus:
     utr_detail_id: str
     primary_image: str
     characteristics_count: int
+    needs_enrichment: bool = False
+    processed: bool = False
     queued: bool = False
 
     def as_dict(self) -> dict[str, object]:
@@ -58,6 +61,8 @@ class UtrEnrichmentStatus:
             "utr_detail_id": self.utr_detail_id,
             "primary_image": self.primary_image,
             "characteristics_count": self.characteristics_count,
+            "needs_enrichment": self.needs_enrichment,
+            "processed": self.processed,
             "queued": self.queued,
         }
 
@@ -74,12 +79,45 @@ def request_visible_utr_enrichment(*, product_ids: list[str], request=None, enqu
     )
     product_by_id = {str(product.id): product for product in products}
     rows: list[dict[str, object]] = []
+    sync_limit = _resolve_sync_enrichment_limit(product_count=len(normalized_ids)) if enqueue else 0
+    processed_ids: set[str] = set()
+
+    if sync_limit > 0:
+        for product_id in normalized_ids:
+            product = product_by_id.get(product_id)
+            if product is None:
+                continue
+            enrichment = getattr(product, "utr_enrichment", None)
+            if enrichment is None:
+                enrichment, _ = UtrProductEnrichment.objects.get_or_create(product=product)
+            if not _should_enqueue(product=product, enrichment=enrichment):
+                continue
+
+            enrich_utr_product(product_id=str(product.id))
+            processed_ids.add(str(product.id))
+            if len(processed_ids) >= sync_limit:
+                break
+
+    if processed_ids:
+        refreshed_products = list(
+            Product.objects.filter(id__in=processed_ids)
+            .select_related("brand", "utr_enrichment")
+            .prefetch_related("images")
+        )
+        product_by_id.update({str(product.id): product for product in refreshed_products})
 
     for product_id in normalized_ids:
         product = product_by_id.get(product_id)
         if product is None:
             continue
-        rows.append(_prepare_product_enrichment_status(product=product, request=request, enqueue=enqueue).as_dict())
+        rows.append(
+            _prepare_product_enrichment_status(
+                product=product,
+                request=request,
+                enqueue=False,
+                processed=str(product.id) in processed_ids,
+            ).as_dict()
+        )
 
     return rows
 
@@ -132,20 +170,7 @@ def enrich_utr_product(*, product_id: str) -> dict[str, object]:
             request_reason="lazy_product_detail_enrichment",
         )
         images_payload = _extract_images_payload(detail_payload)
-        created_image = False
-        if not ProductImage.objects.filter(product=product).exists():
-            image_url = _select_image_url(images_payload)
-            if image_url:
-                try:
-                    created_image = _create_product_image(product=product, image_url=image_url)
-                except Exception as exc:  # noqa: BLE001
-                    logger.warning(
-                        "utr_product_image_download_failed product_id=%s detail_id=%s url=%s error=%s",
-                        product.id,
-                        detail_id,
-                        image_url,
-                        exc,
-                    )
+        created_images = _create_missing_product_images(product=product, images_payload=images_payload)
 
         characteristics_payload: list[dict] = []
         if bool(getattr(settings, "UTR_LAZY_ENRICH_CHARACTERISTICS_ENABLED", True)):
@@ -203,7 +228,8 @@ def enrich_utr_product(*, product_id: str) -> dict[str, object]:
             "product_id": str(product.id),
             "status": enrichment.status,
             "utr_detail_id": detail_id,
-            "created_image": created_image,
+            "created_image": created_images > 0,
+            "created_images": created_images,
             "characteristics_count": len(characteristics_payload),
             "applicability": applicability_summary.to_dict() if applicability_summary else None,
         }
@@ -343,7 +369,13 @@ def build_utr_characteristic_attributes(*, product: Product) -> list[dict[str, s
     return rows
 
 
-def _prepare_product_enrichment_status(*, product: Product, request, enqueue: bool) -> UtrEnrichmentStatus:
+def _prepare_product_enrichment_status(
+    *,
+    product: Product,
+    request,
+    enqueue: bool,
+    processed: bool = False,
+) -> UtrEnrichmentStatus:
     detail_id = resolve_utr_detail_id(product=product)
     primary_image = _build_primary_image_url(product=product, request=request)
     enrichment = getattr(product, "utr_enrichment", None)
@@ -365,46 +397,70 @@ def _prepare_product_enrichment_status(*, product: Product, request, enqueue: bo
             utr_detail_id="",
             primary_image=primary_image,
             characteristics_count=_characteristics_count(enrichment),
+            needs_enrichment=False,
+            processed=processed,
             queued=False,
         )
 
-    queued = False
-    if enqueue and _should_enqueue(product=product, enrichment=enrichment):
-        enrichment.status = UtrProductEnrichment.STATUS_QUEUED
-        enrichment.next_retry_at = None
-        enrichment.error_message = ""
-        enrichment.save(update_fields=("status", "next_retry_at", "error_message", "updated_at"))
-        _enqueue_enrichment_task(product_id=str(product.id))
-        queued = True
-
+    needs_enrichment = _should_enqueue(product=product, enrichment=enrichment)
     return UtrEnrichmentStatus(
         product_id=str(product.id),
         status=enrichment.status,
         utr_detail_id=detail_id,
         primary_image=primary_image,
         characteristics_count=_characteristics_count(enrichment),
-        queued=queued,
+        needs_enrichment=needs_enrichment,
+        processed=processed,
+        queued=False,
     )
 
 
 def _should_enqueue(*, product: Product, enrichment: UtrProductEnrichment) -> bool:
     now = timezone.now()
-    has_image = ProductImage.objects.filter(product=product).exists()
+    detail_id = resolve_utr_detail_id(product=product) or str(enrichment.utr_detail_id or "").strip()
+    has_image = _has_complete_image_set(product=product, enrichment=enrichment)
     has_characteristics = _characteristics_count(enrichment) > 0
-    if has_image and has_characteristics:
+    has_applicability = _has_applicability_result(detail_id=detail_id)
+    if has_image and has_characteristics and has_applicability:
         return False
-    if enrichment.status in {UtrProductEnrichment.STATUS_QUEUED, UtrProductEnrichment.STATUS_IN_PROGRESS}:
-        if enrichment.updated_at and enrichment.updated_at >= now - _QUEUE_STALE_AFTER:
+    if enrichment.status == UtrProductEnrichment.STATUS_IN_PROGRESS:
+        if enrichment.updated_at and enrichment.updated_at >= now - _IN_PROGRESS_RETRY_AFTER:
             return False
     if enrichment.next_retry_at and enrichment.next_retry_at > now:
         return False
     return True
 
 
-def _enqueue_enrichment_task(*, product_id: str) -> None:
-    from apps.catalog.tasks.utr_product_enrichment import enrich_utr_product_task
+def _resolve_sync_enrichment_limit(*, product_count: int) -> int:
+    if product_count <= 0:
+        return 0
+    if product_count == 1:
+        return 1
+    return max(int(getattr(settings, "UTR_SYNC_ENRICH_MAX_PRODUCTS", 1)), 1)
 
-    enrich_utr_product_task.delay(product_id=product_id)
+
+def _has_complete_image_set(*, product: Product, enrichment: UtrProductEnrichment) -> bool:
+    image_urls = _select_image_urls(enrichment.images_payload if isinstance(enrichment.images_payload, list) else [])
+    if not image_urls:
+        if enrichment.status == UtrProductEnrichment.STATUS_FETCHED:
+            return True
+        return ProductImage.objects.filter(product=product).exists()
+    existing_digests = _existing_utr_image_digests(product=product)
+    return all(_image_url_digest(image_url) in existing_digests for image_url in image_urls)
+
+
+def _has_applicability_result(*, detail_id: str) -> bool:
+    if not bool(getattr(settings, "UTR_LAZY_ENRICH_APPLICABILITY_ENABLED", True)):
+        return True
+    normalized_detail_id = str(detail_id or "").strip()
+    if not normalized_detail_id:
+        return False
+    if UtrDetailCarMap.objects.filter(utr_detail_id=normalized_detail_id).exists():
+        return True
+    try:
+        return bool(cache.get(f"utr:autocatalog:applicability_done:{normalized_detail_id}"))
+    except Exception:
+        return False
 
 
 def _has_utr_source(*, product: Product) -> bool:
@@ -439,23 +495,72 @@ def _extract_images_payload(detail_payload: dict) -> list[dict]:
     return [item for item in images if isinstance(item, dict)]
 
 
-def _select_image_url(images_payload: list[dict]) -> str:
+def _select_image_urls(images_payload: list[dict]) -> list[str]:
+    urls: list[str] = []
+    seen: set[str] = set()
     for image in images_payload:
         for key in ("fullImagePath", "thumbnail", "imagePath"):
             url = _normalize_image_url(image.get(key))
-            if url:
-                return url
-    return ""
+            if not url or url in seen:
+                continue
+            seen.add(url)
+            urls.append(url)
+            break
+    return urls
+
+
+def _create_missing_product_images(*, product: Product, images_payload: list[dict]) -> int:
+    image_urls = _select_image_urls(images_payload)
+    if not image_urls:
+        return 0
+
+    created_count = 0
+    existing_digests = _existing_utr_image_digests(product=product)
+    for image_url in image_urls:
+        digest = _image_url_digest(image_url)
+        if digest in existing_digests:
+            continue
+        try:
+            if _create_product_image(product=product, image_url=image_url):
+                existing_digests.add(digest)
+                created_count += 1
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "utr_product_image_download_failed product_id=%s url=%s error=%s",
+                product.id,
+                image_url,
+                exc,
+            )
+    return created_count
 
 
 def _create_product_image(*, product: Product, image_url: str) -> bool:
     content, content_type = _download_image(image_url)
     extension = _resolve_extension(image_url=image_url, content_type=content_type)
     filename = _build_filename(product=product, image_url=image_url, extension=extension)
-    image = ProductImage(product=product, alt_text=product.name[:255], is_primary=True, sort_order=0)
+    existing_images = ProductImage.objects.filter(product=product)
+    last_sort_order = existing_images.order_by("-sort_order").values_list("sort_order", flat=True).first()
+    sort_order = int(last_sort_order if last_sort_order is not None else -1) + 1
+    image = ProductImage(
+        product=product,
+        alt_text=product.name[:255],
+        is_primary=not existing_images.filter(is_primary=True).exists(),
+        sort_order=sort_order,
+    )
     image.image.save(filename, ContentFile(content), save=False)
     image.save()
     return True
+
+
+def _existing_utr_image_digests(*, product: Product) -> set[str]:
+    digests: set[str] = set()
+    image_names = ProductImage.objects.filter(product=product).values_list("image", flat=True)
+    for image_name in image_names:
+        text = str(image_name or "")
+        for part in text.replace(".", "-").split("-"):
+            if len(part) == 16 and all(char in "0123456789abcdef" for char in part.lower()):
+                digests.add(part.lower())
+    return digests
 
 
 def _download_image(image_url: str) -> tuple[bytes, str]:
@@ -504,9 +609,13 @@ def _resolve_extension(*, image_url: str, content_type: str) -> str:
 
 
 def _build_filename(*, product: Product, image_url: str, extension: str) -> str:
-    digest = hashlib.sha1(image_url.encode("utf-8")).hexdigest()[:16]  # noqa: S324
+    digest = _image_url_digest(image_url)
     product_token = str(product.id).replace("-", "")[:12]
     return f"utr-{product_token}-{digest}{extension}"
+
+
+def _image_url_digest(image_url: str) -> str:
+    return hashlib.sha1(image_url.encode("utf-8")).hexdigest()[:16]  # noqa: S324
 
 
 def _build_primary_image_url(*, product: Product, request) -> str:

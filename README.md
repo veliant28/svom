@@ -72,7 +72,7 @@ Important variables from `.env.example`:
 - `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api`
 - `UTR_*` safety and rate-limit settings
 
-### 2. Start infrastructure and backend
+### 2. Start the Docker stack
 
 ```bash
 docker compose up --build
@@ -84,6 +84,7 @@ This starts:
 - `svom_redis`
 - `svom_elasticsearch`
 - `svom_backend`
+- `svom_frontend`
 - `svom_celery_worker`
 - `svom_celery_beat`
 
@@ -94,19 +95,11 @@ Backend is exposed at:
 
 The backend container runs migrations on startup.
 
-### 3. Start frontend
-
-In a separate terminal:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
 Frontend is exposed at:
 
 - `http://localhost:3000`
+
+Frontend runs inside Docker. Browser API calls use `NEXT_PUBLIC_API_BASE_URL` and server-side frontend requests use `NEXT_SERVER_API_BASE_URL`, which defaults to `http://backend:8000/api` inside the Compose network.
 
 ## Development commands
 

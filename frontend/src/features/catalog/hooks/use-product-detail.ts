@@ -100,7 +100,7 @@ export function useProductDetail(slug: string) {
   ]);
 
   useEffect(() => {
-    if (!product || (product.images.length > 0 && product.attributes.length > 0)) {
+    if (!product) {
       return;
     }
 
@@ -110,14 +110,16 @@ export function useProductDetail(slug: string) {
     async function warmProductDetail() {
       try {
         let statuses = await requestUtrProductEnrichment([currentProduct.id], true);
-        for (let attempt = 0; attempt < 8; attempt += 1) {
+        for (let attempt = 0; attempt < 60; attempt += 1) {
           const status = statuses[0];
           const hasNewImage = Boolean(status?.primary_image) && currentProduct.images.length === 0;
           const hasNewCharacteristics = Number(status?.characteristics_count || 0) > 0 && currentProduct.attributes.length === 0;
-          const isStillRunning = status?.status === "queued" || status?.status === "in_progress" || status?.queued;
+          const hasProcessedUpdate = Boolean(status?.processed);
+          const isStillRunning =
+            Boolean(status?.needs_enrichment) || status?.status === "queued" || status?.status === "in_progress" || status?.queued;
 
-          if (hasNewImage || hasNewCharacteristics || !isStillRunning) {
-            if (!isCancelled && (hasNewImage || hasNewCharacteristics)) {
+          if (hasNewImage || hasNewCharacteristics || hasProcessedUpdate || !isStillRunning) {
+            if (!isCancelled && (hasNewImage || hasNewCharacteristics || hasProcessedUpdate)) {
               const refreshed = await getProductDetail(slug, locale, vehicleParams);
               if (!isCancelled) {
                 setProduct(refreshed);
@@ -130,7 +132,7 @@ export function useProductDetail(slug: string) {
           if (isCancelled) {
             return;
           }
-          statuses = await requestUtrProductEnrichment([currentProduct.id], false);
+          statuses = await requestUtrProductEnrichment([currentProduct.id], true);
         }
       } catch {
         // UTR enrichment is a non-blocking fallback for missing local data.

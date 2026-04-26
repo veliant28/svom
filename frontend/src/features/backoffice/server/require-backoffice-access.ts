@@ -15,7 +15,7 @@ const fetchCurrentUser = cache(async (token: string): Promise<BackofficeUser | n
     response = await timeServerAsync(
       "backoffice.current_user.fetch",
       () =>
-        fetch(`${siteConfig.apiBaseUrl}/users/auth/current-user/`, {
+        fetch(`${siteConfig.serverApiBaseUrl}/users/auth/current-user/`, {
           method: "GET",
           headers: {
             Authorization: `Token ${token}`,

@@ -9,7 +9,7 @@ from rest_framework.test import APITestCase
 
 from apps.autocatalog.models import CarMake, CarModel, CarModification, UtrArticleDetailMap, UtrDetailCarMap
 from apps.catalog.models import Brand, Category, Product, ProductImage, UtrProductEnrichment
-from apps.catalog.services.utr_product_enrichment import enrich_utr_product, request_visible_utr_enrichment
+from apps.catalog.services.utr_product_enrichment import request_visible_utr_enrichment
 from apps.compatibility.models import ProductFitment
 from apps.pricing.models import ProductPrice, Supplier
 from apps.supplier_imports.models import ImportRun, ImportSource, SupplierRawOffer
@@ -346,10 +346,8 @@ class CatalogFitmentAPITests(APITestCase):
 
     @patch("apps.catalog.services.utr_product_enrichment._resolve_utr_access_token", return_value="test-token")
     @patch("apps.catalog.services.utr_product_enrichment.UtrClient")
-    @patch("apps.catalog.services.utr_product_enrichment._enqueue_enrichment_task")
     def test_lazy_utr_enrichment_resolves_missing_detail_id_and_persists_fallback(
         self,
-        _enqueue_mock,
         client_class,
         _token_mock,
     ):
@@ -366,11 +364,6 @@ class CatalogFitmentAPITests(APITestCase):
         ProductPrice.objects.create(product=product, final_price="100.00", currency="UAH")
         self._create_utr_raw_offer(product=product, article=product.article, brand_name=self.brand.name)
 
-        status_rows = request_visible_utr_enrichment(product_ids=[str(product.id)], enqueue=True)
-
-        self.assertEqual(status_rows[0]["status"], UtrProductEnrichment.STATUS_QUEUED)
-        self.assertTrue(status_rows[0]["queued"])
-
         client = client_class.return_value
         client.search_details.return_value = [
             {
@@ -384,6 +377,9 @@ class CatalogFitmentAPITests(APITestCase):
             "images": [
                 {
                     "fullImagePath": "https://cdn.example.test/lazy-utr-001.webp",
+                },
+                {
+                    "fullImagePath": "https://cdn.example.test/lazy-utr-001-secondary.webp",
                 }
             ],
         }
@@ -418,16 +414,17 @@ class CatalogFitmentAPITests(APITestCase):
                     "apps.catalog.services.utr_product_enrichment._download_image",
                     return_value=(b"fake-image", "image/webp"),
                 ):
-                    result = enrich_utr_product(product_id=str(product.id))
+                    status_rows = request_visible_utr_enrichment(product_ids=[str(product.id)], enqueue=True)
 
-                self.assertEqual(result["status"], UtrProductEnrichment.STATUS_FETCHED)
-                self.assertEqual(result["utr_detail_id"], "93001")
-                self.assertEqual(result["characteristics_count"], 1)
-                self.assertTrue(result["created_image"])
+                self.assertEqual(status_rows[0]["status"], UtrProductEnrichment.STATUS_FETCHED)
+                self.assertEqual(status_rows[0]["utr_detail_id"], "93001")
+                self.assertEqual(status_rows[0]["characteristics_count"], 1)
+                self.assertFalse(status_rows[0]["queued"])
+                self.assertTrue(status_rows[0]["processed"])
 
                 product.refresh_from_db()
                 self.assertEqual(product.utr_detail_id, "93001")
-                self.assertTrue(ProductImage.objects.filter(product=product).exists())
+                self.assertEqual(ProductImage.objects.filter(product=product).count(), 2)
 
         self.assertTrue(
             UtrArticleDetailMap.objects.filter(

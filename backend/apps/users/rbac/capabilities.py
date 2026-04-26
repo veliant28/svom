@@ -181,6 +181,12 @@ BACKOFFICE_CAPABILITIES: tuple[BackofficeCapabilityDefinition, ...] = (
         description="Manage operational/system settings in backoffice.",
     ),
     BackofficeCapabilityDefinition(
+        code="email.settings",
+        permission_codename="bo_cap_email_settings",
+        title="Email settings",
+        description="Access and manage email delivery settings in backoffice.",
+    ),
+    BackofficeCapabilityDefinition(
         code="footer.settings",
         permission_codename="bo_cap_footer_settings",
         title="Footer settings",

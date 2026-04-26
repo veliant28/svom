@@ -28,6 +28,7 @@ export type BackofficeCapabilityCode =
   | "vchasno_kasa.manage"
   | "nova_poshta.settings"
   | "settings.manage"
+  | "email.settings"
   | "footer.settings"
   | "promo_banners.manage"
   | "loyalty.issue"

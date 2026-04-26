@@ -14,7 +14,7 @@ from apps.core.services import send_email_settings_test_message
 
 
 class BackofficeEmailSettingsAPIView(BackofficeAPIView):
-    required_capability = "settings.manage"
+    required_capability = "email.settings"
 
     def get(self, request):
         serializer = EmailDeliverySettingsSerializer(get_email_delivery_settings())
@@ -29,7 +29,7 @@ class BackofficeEmailSettingsAPIView(BackofficeAPIView):
 
 
 class BackofficeEmailSettingsTestAPIView(BackofficeAPIView):
-    required_capability = "settings.manage"
+    required_capability = "email.settings"
 
     def post(self, request):
         serializer = EmailDeliveryTestSerializer(data=request.data)

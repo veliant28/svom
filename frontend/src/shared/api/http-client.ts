@@ -1,4 +1,4 @@
-import { siteConfig } from "@/shared/config/site";
+import { getRuntimeApiBaseUrl } from "@/shared/config/site";
 import { createRequestTimingId, logServerTiming } from "@/shared/lib/server-timing";
 
 export type QueryParams = Record<string, string | number | boolean | undefined>;
@@ -66,7 +66,7 @@ async function requestJson<T>(
   options: RequestOptions = {},
   body?: unknown,
 ): Promise<T> {
-  const requestUrl = `${siteConfig.apiBaseUrl}${path}${toSearchParams(options.params)}`;
+  const requestUrl = `${getRuntimeApiBaseUrl()}${path}${toSearchParams(options.params)}`;
   const isServerRequest = typeof window === "undefined";
   const requestId = isServerRequest ? (options.requestId ?? createRequestTimingId("api")) : options.requestId;
   const startedAt = performance.now();

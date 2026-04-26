@@ -17,7 +17,7 @@ export default async function CatalogProductDetailRoute({
 
 async function getProductDetailForMetadata(slug: string, locale: string): Promise<ProductDetail | null> {
   try {
-    const response = await fetch(`${siteConfig.apiBaseUrl}/catalog/products/${slug}/?locale=${encodeURIComponent(locale)}`, {
+    const response = await fetch(`${siteConfig.serverApiBaseUrl}/catalog/products/${slug}/?locale=${encodeURIComponent(locale)}`, {
       method: "GET",
       cache: "no-store",
       credentials: "omit",

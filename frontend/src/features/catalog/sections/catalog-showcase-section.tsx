@@ -2,13 +2,23 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 
 import { CatalogGridSkeleton } from "@/features/catalog/components/catalog-grid-skeleton";
 import { ProductCard } from "@/features/catalog/components/product-card";
 import { useCatalogProducts } from "@/features/catalog/hooks/use-catalog-products";
 import type { CatalogFilters } from "@/features/catalog/types";
+import { usePathname, useRouter } from "@/i18n/navigation";
 
 const CATALOG_PAGE_SIZE = 52;
+
+function parseCatalogPage(searchParams: URLSearchParams): number {
+  const value = Number(searchParams.get("page") || "1");
+  if (!Number.isFinite(value) || value < 1) {
+    return 1;
+  }
+  return Math.floor(value);
+}
 
 export function CatalogShowcaseSection({
   filters,
@@ -19,11 +29,16 @@ export function CatalogShowcaseSection({
 }) {
   const tHome = useTranslations("common.home");
   const tCatalog = useTranslations("catalog");
-  const [page, setPage] = useState(1);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const syncPageWithUrl = Boolean(filters);
+  const [localPage, setLocalPage] = useState(1);
   const sectionRef = useRef<HTMLElement | null>(null);
   const shouldScrollToTopRef = useRef(false);
   const normalizedFilters = useMemo(() => filters ?? {}, [filters]);
-  const filtersKey = useMemo(() => JSON.stringify(normalizedFilters), [normalizedFilters]);
+  const urlPage = parseCatalogPage(new URLSearchParams(searchParams.toString()));
+  const page = syncPageWithUrl ? urlPage : localPage;
   const { products, totalCount, isLoading } = useCatalogProducts(
     { ...normalizedFilters, page, pageSize: CATALOG_PAGE_SIZE },
     { useActiveVehicle: Boolean(filters) },
@@ -37,14 +52,21 @@ export function CatalogShowcaseSection({
   const contentSpacingClass = showHeading ? "mt-4" : "";
 
   useEffect(() => {
-    setPage(1);
-  }, [filtersKey]);
-
-  useEffect(() => {
-    if (page > pagesCount) {
-      setPage(pagesCount);
+    if (!isLoading && page > pagesCount) {
+      if (!syncPageWithUrl) {
+        setLocalPage(pagesCount);
+        return;
+      }
+      const nextParams = new URLSearchParams(searchParams.toString());
+      if (pagesCount <= 1) {
+        nextParams.delete("page");
+      } else {
+        nextParams.set("page", String(pagesCount));
+      }
+      const query = nextParams.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname);
     }
-  }, [page, pagesCount]);
+  }, [isLoading, page, pagesCount, pathname, router, searchParams, syncPageWithUrl]);
 
   useEffect(() => {
     if (!shouldScrollToTopRef.current) {
@@ -59,7 +81,18 @@ export function CatalogShowcaseSection({
       return;
     }
     shouldScrollToTopRef.current = true;
-    setPage(nextPage);
+    if (!syncPageWithUrl) {
+      setLocalPage(nextPage);
+      return;
+    }
+    const nextParams = new URLSearchParams(searchParams.toString());
+    if (nextPage <= 1) {
+      nextParams.delete("page");
+    } else {
+      nextParams.set("page", String(nextPage));
+    }
+    const query = nextParams.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname);
   };
 
   return (
@@ -86,7 +119,7 @@ export function CatalogShowcaseSection({
               <>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   {products.map((product) => (
-                    <ProductCard key={product.id} product={product} />
+                    <ProductCard key={product.id} product={product} preserveCatalogQuery={syncPageWithUrl} />
                   ))}
                 </div>
                 {pagesCount > 1 ? (

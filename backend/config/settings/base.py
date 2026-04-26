@@ -210,10 +210,15 @@ SUPPLIER_IMPORT_SCHEDULED_PIPELINE_TIME_LIMIT = max(
     env_int("SUPPLIER_IMPORT_SCHEDULED_PIPELINE_TIME_LIMIT", 60 * 150),
     SUPPLIER_IMPORT_SCHEDULED_PIPELINE_SOFT_TIME_LIMIT + 60,
 )
+SUPPLIER_PRICE_LIST_FILE_RETENTION_HOURS = max(env_int("SUPPLIER_PRICE_LIST_FILE_RETENTION_HOURS", 48), 1)
 CELERY_BEAT_SCHEDULE = {
     "supplier-imports-scheduled-dispatch": {
         "task": "supplier_imports.run_scheduled_imports",
         "schedule": crontab(minute="*"),
+    },
+    "supplier-imports-cleanup-price-list-files": {
+        "task": "supplier_imports.cleanup_price_list_files",
+        "schedule": crontab(minute=17),
     },
     "commerce-sync-nova-poshta-waybills": {
         "task": "commerce.sync_nova_poshta_waybill_statuses",
@@ -241,7 +246,7 @@ SEARCH_BACKEND = "db"
 
 # UTR safety defaults: conservative to reduce supplier-ban risk.
 UTR_ENABLED = env_bool("UTR_ENABLED", True)
-UTR_RATE_LIMIT_PER_MINUTE = max(env_int("UTR_RATE_LIMIT_PER_MINUTE", 6), 1)
+UTR_RATE_LIMIT_PER_MINUTE = max(env_int("UTR_RATE_LIMIT_PER_MINUTE", 10), 1)
 UTR_CONCURRENCY = max(1, min(env_int("UTR_CONCURRENCY", 1), 2))
 UTR_MAX_RETRIES = max(env_int("UTR_MAX_RETRIES", 3), 1)
 UTR_BACKOFF_BASE_SECONDS = max(env_float("UTR_BACKOFF_BASE_SECONDS", 2.0), 0.5)
@@ -258,5 +263,6 @@ if _utr_resolve_stage_order not in {"brandless_first", "branded_first"}:
     _utr_resolve_stage_order = "branded_first"
 UTR_RESOLVE_STAGE_ORDER = _utr_resolve_stage_order
 UTR_CACHE_TTL_SECONDS = max(env_int("UTR_CACHE_TTL_SECONDS", 60 * 60 * 24 * 30), 60)
+UTR_SYNC_ENRICH_MAX_PRODUCTS = max(env_int("UTR_SYNC_ENRICH_MAX_PRODUCTS", 1), 1)
 UTR_SINGLE_RUN_LOCK_KEY = env_int("UTR_SINGLE_RUN_LOCK_KEY", 804721451)
 UTR_SINGLE_RUN_LOCK_TTL_SECONDS = max(env_int("UTR_SINGLE_RUN_LOCK_TTL_SECONDS", 60 * 60), 60)

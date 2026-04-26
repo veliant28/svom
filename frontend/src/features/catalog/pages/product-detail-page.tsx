@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Boxes, CheckCircle2, ChevronLeft, XCircle } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 
 import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
 import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
@@ -22,6 +23,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   const locale = useLocale();
   const t = useTranslations("product.detail");
   const tCard = useTranslations("product.card");
+  const searchParams = useSearchParams();
   const { product, isLoading, vehicleParams } = useProductDetail(slug);
   const images = Array.isArray(product?.images) ? product.images : [];
   const attributes = Array.isArray(product?.attributes) ? product.attributes : [];
@@ -33,6 +35,8 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   const [remoteFitmentCount, setRemoteFitmentCount] = useState<number | null>(null);
   const [selectedVehicleApplied, setSelectedVehicleApplied] = useState(false);
   const fitments = remoteFitments ?? productFitments;
+  const catalogQuery = searchParams.toString();
+  const backToCatalogHref = catalogQuery ? `/catalog?${catalogQuery}` : "/catalog";
   const primaryImage = images.find((image) => image.is_primary) ?? images[0];
   const totalStockQty = product?.total_stock_qty ?? 0;
   const stockTone: BackofficeStatusChipTone = totalStockQty <= 0 ? "red" : totalStockQty <= 5 ? "orange" : "blue";
@@ -224,7 +228,11 @@ export function ProductDetailPage({ slug }: { slug: string }) {
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-8">
-      <Link href="/catalog" className="inline-flex items-center gap-1 text-sm" style={{ color: "var(--muted)" }}>
+      <Link
+        href={backToCatalogHref}
+        className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium transition hover:opacity-80"
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", color: "var(--fg)" }}
+      >
         <ChevronLeft size={14} />
         {t("backToCatalog")}
       </Link>

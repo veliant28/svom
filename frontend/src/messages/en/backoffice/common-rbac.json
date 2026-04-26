@@ -179,6 +179,12 @@
               "description": "Allows managing operational and system settings in backoffice."
             }
           },
+          "email": {
+            "settings": {
+              "title": "Email access",
+              "description": "Allows opening and managing Email settings in the backoffice menu."
+            }
+          },
           "footer": {
             "settings": {
               "title": "Footer settings",

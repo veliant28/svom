@@ -5,7 +5,7 @@ import { siteConfig } from "@/shared/config/site";
 import type { SeoPublicConfig } from "@/features/seo/types";
 
 async function requestJson<T>(path: string): Promise<T | null> {
-  const url = `${siteConfig.apiBaseUrl}${path}`;
+  const url = `${siteConfig.serverApiBaseUrl}${path}`;
   try {
     const response = await fetch(url, {
       method: "GET",
