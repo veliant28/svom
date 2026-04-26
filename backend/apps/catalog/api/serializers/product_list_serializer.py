@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.catalog.models import Product
+from apps.catalog.services.fitment_filtering import is_fitment_disabled_category
 from apps.pricing.services import ProductSellableSnapshotService
 
 from .product_shared_serializer import ProductBrandSerializer, ProductCategorySerializer
@@ -27,6 +28,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     total_stock_qty = serializers.SerializerMethodField()
     has_fitment_data = serializers.BooleanField(read_only=True, default=False)
     fits_selected_vehicle = serializers.BooleanField(read_only=True, allow_null=True, default=None)
+    fitment_badge_hidden = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -53,6 +55,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             "is_bestseller",
             "has_fitment_data",
             "fits_selected_vehicle",
+            "fitment_badge_hidden",
         )
 
     def get_primary_image(self, obj: Product) -> str:
@@ -103,3 +106,11 @@ class ProductListSerializer(serializers.ModelSerializer):
                 continue
             total += max(int(offer.stock_qty or 0), 0)
         return total
+
+    def get_fitment_badge_hidden(self, obj: Product) -> bool:
+        cached = getattr(obj, "_fitment_badge_hidden", None)
+        if cached is not None:
+            return bool(cached)
+        hidden = is_fitment_disabled_category(getattr(obj, "category", None))
+        setattr(obj, "_fitment_badge_hidden", hidden)
+        return hidden

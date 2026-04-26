@@ -47,6 +47,10 @@ class PriceHistory(UUIDPrimaryKeyMixin, TimestampedMixin):
         ordering = ("-created_at",)
         verbose_name = _("История цены")
         verbose_name_plural = _("История цен")
+        indexes = [
+            models.Index(fields=("source", "created_at", "product"), name="pricing_ph_src_cr_prod_idx"),
+            models.Index(fields=("source", "product"), name="pricing_ph_src_prod_idx"),
+        ]
 
     def __str__(self) -> str:
         return f"{self.product} {self.old_price} -> {self.new_price}"

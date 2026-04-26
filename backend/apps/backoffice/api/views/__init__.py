@@ -149,11 +149,14 @@ from .hero_block_views import (
     BackofficeHeroSlideRetrieveUpdateDestroyAPIView,
 )
 from .vchasno_kasa_views import (
+    BackofficeVchasnoKasaCloseShiftAPIView,
     BackofficeOrderVchasnoKasaIssueAPIView,
+    BackofficeVchasnoKasaOpenShiftAPIView,
     BackofficeOrderVchasnoKasaOpenAPIView,
     BackofficeOrderVchasnoKasaSyncAPIView,
     BackofficeVchasnoKasaReceiptListAPIView,
     BackofficeVchasnoKasaSettingsAPIView,
+    BackofficeVchasnoKasaShiftStatusAPIView,
     BackofficeVchasnoKasaTestConnectionAPIView,
 )
 from .promo_banner_views import (
@@ -173,6 +176,7 @@ from .vehicle_taxonomy_views import (
     BackofficeVehicleModificationListCreateAPIView,
     BackofficeVehicleModificationRetrieveUpdateDestroyAPIView,
 )
+from .email_settings_view import BackofficeEmailSettingsAPIView, BackofficeEmailSettingsTestAPIView
 
 __all__ = [
     "ArticleRuleListCreateAPIView",
@@ -321,12 +325,17 @@ __all__ = [
     "BackofficeVchasnoKasaSettingsAPIView",
     "BackofficeVchasnoKasaTestConnectionAPIView",
     "BackofficeVchasnoKasaReceiptListAPIView",
+    "BackofficeVchasnoKasaShiftStatusAPIView",
+    "BackofficeVchasnoKasaOpenShiftAPIView",
+    "BackofficeVchasnoKasaCloseShiftAPIView",
     "BackofficeOrderVchasnoKasaIssueAPIView",
     "BackofficeOrderVchasnoKasaSyncAPIView",
     "BackofficeOrderVchasnoKasaOpenAPIView",
     "BackofficePromoBannerSettingsAPIView",
     "BackofficePromoBannerListCreateAPIView",
     "BackofficePromoBannerRetrieveUpdateDestroyAPIView",
+    "BackofficeEmailSettingsAPIView",
+    "BackofficeEmailSettingsTestAPIView",
     "RunImportSourceActionAPIView",
     "ImportAllActionAPIView",
     "RepriceAfterImportActionAPIView",

@@ -84,6 +84,9 @@ class UtrHttpError(RuntimeError):
         super().__init__(f"UTR HTTPError {self.code} for {self.url}: {self.body[:300]}")
 
 
+RETRYABLE_HTTP_CODES = {429, 500, 502, 503, 504, 520, 521, 522, 523, 524, 530}
+
+
 class UtrApiClient:
     def __init__(
         self,
@@ -104,6 +107,40 @@ class UtrApiClient:
         self._last_request_at: float | None = None
         self.request_count = 0
 
+    def _reload_token_from_db(self) -> str:
+        integration = get_supplier_integration_by_code(source_code="utr")
+        return str(integration.access_token or "").strip()
+
+    def _recover_token_via_auth(self) -> tuple[str, str]:
+        try:
+            from apps.supplier_imports.services.integrations.utr.client import UtrClient
+
+            client = UtrClient(base_url=self.base_url)
+            token, method = client._recover_access_token_for_utr()
+            return str(token or "").strip(), str(method or "").strip()
+        except Exception as exc:
+            print(f"[auth] token recovery failed: {exc}")
+            return "", ""
+
+    def _recover_from_401(self, *, body: str) -> bool:
+        current_token = str(self.token or "").strip()
+        db_token = self._reload_token_from_db()
+        if db_token and db_token != current_token:
+            self.token = db_token
+            print("[auth] 401 detected: reloaded newer token from DB, retrying request")
+            return True
+
+        recovered_token, method = self._recover_token_via_auth()
+        if recovered_token and recovered_token != current_token:
+            self.token = recovered_token
+            method_label = method or "recovery"
+            print(f"[auth] 401 detected: recovered token via {method_label}, retrying request")
+            return True
+
+        if "Invalid JWT Token" in body:
+            print("[auth] 401 Invalid JWT Token: auto-recovery did not produce a new token")
+        return False
+
     def _respect_rate_limit(self) -> None:
         if self._last_request_at is None or self.sleep_seconds <= 0:
             return
@@ -113,13 +150,17 @@ class UtrApiClient:
             print(f"[rate-limit] sleep {wait_for:.1f}s before next UTR request")
             time.sleep(wait_for)
 
+    def _retry_wait_seconds(self, attempt: int) -> float:
+        return max(self.retry_backoff_seconds * attempt, self.sleep_seconds)
+
     def get_json(self, path: str) -> Any:
         url = path if path.startswith("http") else f"{self.base_url}/{path.lstrip('/')}"
-        req = Request(url, headers={"Authorization": f"Bearer {self.token}"})
+        auth_recovery_attempted = False
 
         for attempt in range(1, self.max_retries + 2):
             self._respect_rate_limit()
             print(f"[request #{self.request_count + 1}] GET {url} (attempt {attempt}/{self.max_retries + 1})")
+            req = Request(url, headers={"Authorization": f"Bearer {self.token}"})
 
             try:
                 with urlopen(req, timeout=self.request_timeout) as response:
@@ -128,6 +169,15 @@ class UtrApiClient:
             except HTTPError as exc:
                 self._last_request_at = time.monotonic()
                 body = exc.read().decode("utf-8", "ignore") if hasattr(exc, "read") else ""
+                if exc.code == 401 and not auth_recovery_attempted:
+                    auth_recovery_attempted = True
+                    if self._recover_from_401(body=body):
+                        continue
+                if exc.code in RETRYABLE_HTTP_CODES and attempt <= self.max_retries:
+                    wait_for = self._retry_wait_seconds(attempt)
+                    print(f"[http {exc.code}] {url} -> sleep {wait_for:.1f}s before conservative retry")
+                    time.sleep(wait_for)
+                    continue
                 raise UtrHttpError(code=exc.code, url=url, body=body) from exc
             except TimeoutError as exc:
                 self._last_request_at = time.monotonic()
@@ -136,7 +186,7 @@ class UtrApiClient:
                         f"UTR request timed out for {url} after {attempt} attempt(s); "
                         f"timeout={self.request_timeout:.0f}s"
                     ) from exc
-                wait_for = max(self.retry_backoff_seconds * attempt, self.sleep_seconds)
+                wait_for = self._retry_wait_seconds(attempt)
                 print(f"[timeout] {url} -> sleep {wait_for:.1f}s before conservative retry")
                 time.sleep(wait_for)
                 continue
@@ -144,7 +194,7 @@ class UtrApiClient:
                 self._last_request_at = time.monotonic()
                 if attempt > self.max_retries:
                     raise RuntimeError(f"UTR URLError for {url}: {exc}") from exc
-                wait_for = max(self.retry_backoff_seconds * attempt, self.sleep_seconds)
+                wait_for = self._retry_wait_seconds(attempt)
                 print(f"[network] {url} -> sleep {wait_for:.1f}s before conservative retry: {exc}")
                 time.sleep(wait_for)
                 continue

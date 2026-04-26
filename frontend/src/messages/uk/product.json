@@ -3,7 +3,7 @@
     "card": {
       "viewDetails": "Детальніше",
       "fitment": {
-        "fits": "Підходить до вашого авто",
+        "fits": "Сумісно",
         "noData": "Сумісність не вказана",
         "notFits": "Не підходить до вибраного авто"
       },
@@ -22,7 +22,12 @@
       },
       "attributesTitle": "Характеристики",
       "fitmentTitle": "Сумісність",
-      "fitmentEmpty": "Для цього товару сумісність поки не вказана."
+      "fitmentEmpty": "Для цього товару сумісність поки не вказана.",
+      "fitmentMakeLabel": "Марка",
+      "fitmentModelLabel": "Модель",
+      "fitmentAllMakes": "Усі марки",
+      "fitmentAllModels": "Усі моделі",
+      "fitmentRows": "Показано сумісностей: {count}"
     }
   }
 }

@@ -12,6 +12,7 @@ from apps.catalog.models import Brand, Category, Product
 from apps.pricing.models import PriceHistory, ProductPrice, Supplier, SupplierOffer
 from apps.supplier_imports.models import ImportRowError, ImportRun, ImportSource, SupplierRawOffer
 from apps.users.models import User
+from apps.users.rbac import set_user_system_role
 
 
 class BackofficeAPISmokeTests(APITestCase):
@@ -30,6 +31,7 @@ class BackofficeAPISmokeTests(APITestCase):
             is_staff=False,
             is_superuser=False,
         )
+        set_user_system_role(user=self.staff_user, role_code="administrator")
 
         self.staff_token = Token.objects.create(user=self.staff_user)
         self.regular_token = Token.objects.create(user=self.regular_user)

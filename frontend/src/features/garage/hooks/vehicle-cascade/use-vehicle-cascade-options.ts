@@ -107,6 +107,23 @@ export function useVehicleCascadeOptions(state: VehicleCascadeState, derived: Ve
   }, [years, isLoadingYears, selectedYear, hasCascadeContext, setSelectedYear]);
 
   useEffect(() => {
+    if (!activeYear) {
+      setMakes([]);
+      setSelectedMake("");
+      resetAfterMakeChange({
+        setSelectedModel,
+        setSelectedModification,
+        setSelectedCapacity,
+        setSelectedEngine,
+        setModels,
+        setModifications,
+        setCapacities,
+        setEngines,
+      });
+      setIsLoadingMakes(false);
+      return;
+    }
+
     let isMounted = true;
 
     async function loadMakes() {
@@ -134,7 +151,21 @@ export function useVehicleCascadeOptions(state: VehicleCascadeState, derived: Ve
     return () => {
       isMounted = false;
     };
-  }, [activeYear, selectedMake, setIsLoadingMakes, setMakes, setSelectedMake]);
+  }, [
+    activeYear,
+    selectedMake,
+    setCapacities,
+    setEngines,
+    setIsLoadingMakes,
+    setMakes,
+    setModels,
+    setModifications,
+    setSelectedCapacity,
+    setSelectedEngine,
+    setSelectedMake,
+    setSelectedModel,
+    setSelectedModification,
+  ]);
 
   useEffect(() => {
     const makeChanged = consumeCascadeStepChange(previousMakeRef, selectedMake);

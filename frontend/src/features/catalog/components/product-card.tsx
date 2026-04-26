@@ -1,7 +1,8 @@
 "use client";
 
-import { ArrowRight, Boxes } from "lucide-react";
+import { ArrowRight, Boxes, CheckCircle2, XCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 
 import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
 import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
@@ -9,26 +10,43 @@ import { WishlistToggleButton } from "@/features/wishlist/components/wishlist-to
 import { Link } from "@/i18n/navigation";
 import type { CatalogProduct } from "@/features/catalog/types";
 import { ContainedImagePanel } from "@/shared/components/ui/contained-image-panel";
+import { isFitmentDisabledCategory } from "@/features/catalog/lib/fitment-disabled-categories";
 
 export function ProductCard({ product }: { product: CatalogProduct }) {
   const t = useTranslations("product.card");
+  const searchParams = useSearchParams();
   const stockTone: BackofficeStatusChipTone =
     product.total_stock_qty <= 0 ? "red" : product.total_stock_qty <= 5 ? "orange" : "blue";
+  const productHref = (() => {
+    const params = new URLSearchParams();
+    ["car_modification", "garage_vehicle", "modification"].forEach((key) => {
+      const value = searchParams.get(key);
+      if (value) {
+        params.set(key, value);
+      }
+    });
+    const query = params.toString();
+    return query ? `/catalog/${product.slug}?${query}` : `/catalog/${product.slug}`;
+  })();
 
   const fitmentBadge = (() => {
+    if (product.fitment_badge_hidden || isFitmentDisabledCategory(product.category)) {
+      return null;
+    }
+
     if (product.fits_selected_vehicle === true) {
       return {
         label: t("fitment.fits"),
-        color: "var(--success, #136f3a)",
-        background: "color-mix(in srgb, var(--success, #136f3a) 10%, transparent)",
+        tone: "success" as const,
+        icon: CheckCircle2,
       };
     }
 
     if (product.fits_selected_vehicle === false) {
       return {
         label: t("fitment.notFits"),
-        color: "var(--danger, #b42318)",
-        background: "color-mix(in srgb, var(--danger, #b42318) 10%, transparent)",
+        tone: "red" as const,
+        icon: XCircle,
       };
     }
 
@@ -51,23 +69,19 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
           {t("labels.stockTotal", { count: product.total_stock_qty })}
         </BackofficeStatusChip>
       </div>
-      {fitmentBadge ? (
-        <p
-          className="mt-2 inline-flex rounded-full px-2 py-1 text-[11px] font-medium"
-          style={{ color: fitmentBadge.color, backgroundColor: fitmentBadge.background }}
-        >
-          {fitmentBadge.label}
-        </p>
-      ) : null}
-
       <div className="mt-3 flex items-center justify-between gap-2">
         <div className="inline-flex gap-2">
           <AddToCartButton productId={product.id} variant="headerGreenIcon" maxQuantity={product.total_stock_qty} />
           <WishlistToggleButton productId={product.id} />
         </div>
+        {fitmentBadge ? (
+          <BackofficeStatusChip tone={fitmentBadge.tone} icon={fitmentBadge.icon} className="shrink-0">
+            {fitmentBadge.label}
+          </BackofficeStatusChip>
+        ) : null}
       </div>
 
-      <Link href={`/catalog/${product.slug}`} className="mt-4 inline-flex items-center gap-1 text-sm font-medium" style={{ color: "var(--accent)" }}>
+      <Link href={productHref} className="mt-4 inline-flex items-center gap-1 text-sm font-medium" style={{ color: "var(--accent)" }}>
         {t("viewDetails")}
         <ArrowRight size={14} />
       </Link>

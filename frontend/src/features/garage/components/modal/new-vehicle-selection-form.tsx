@@ -64,7 +64,7 @@ export function NewVehicleSelectionForm({
           <select
             value={cascade.selectedMake}
             onChange={(event) => cascade.setSelectedMake(event.target.value)}
-            disabled={cascade.isLoadingMakes || isSubmitting}
+            disabled={!cascade.selectedYear || cascade.isLoadingMakes || isSubmitting}
             className="h-10 rounded-lg border px-3"
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
           >

@@ -21,6 +21,7 @@ import {
   Settings2,
   ImageUp,
   Globe2,
+  Mail,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -48,6 +49,7 @@ type SidebarNavItem = {
     | "orders"
     | "novaPoshtaSenders"
     | "footerSettings"
+    | "emailSettings"
     | "promoBanners"
     | "users"
     | "groups"
@@ -96,6 +98,12 @@ const NAV_ITEMS: SidebarNavItem[] = [
     icon: Settings2,
     key: "footerSettings",
     requiredCapability: BACKOFFICE_CAPABILITIES.footerSettings,
+  },
+  {
+    href: "/backoffice/email-settings",
+    icon: Mail,
+    key: "emailSettings",
+    requiredCapability: BACKOFFICE_CAPABILITIES.settingsManage,
   },
 ];
 

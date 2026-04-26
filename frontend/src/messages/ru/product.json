@@ -3,9 +3,9 @@
     "card": {
       "viewDetails": "Подробнее",
       "fitment": {
-        "fits": "Подходит к вашему авто",
+        "fits": "Совместимо",
         "noData": "Совместимость не указана",
-        "notFits": "Не подходит к выбранному авто"
+        "notFits": "Несовместимо"
       },
       "labels": {
         "eta": " · ETA {days} дн.",
@@ -22,7 +22,12 @@
       },
       "attributesTitle": "Характеристики",
       "fitmentTitle": "Совместимость",
-      "fitmentEmpty": "Совместимость для этого товара пока не указана."
+      "fitmentEmpty": "Совместимость для этого товара пока не указана.",
+      "fitmentMakeLabel": "Марка",
+      "fitmentModelLabel": "Модель",
+      "fitmentAllMakes": "Все марки",
+      "fitmentAllModels": "Все модели",
+      "fitmentRows": "Показано совместимостей: {count}"
     }
   }
 }

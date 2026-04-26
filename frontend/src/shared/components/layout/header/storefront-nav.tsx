@@ -9,6 +9,7 @@ import { SearchHeaderControl } from "@/features/search/components/header/search-
 import { usePathname } from "@/i18n/navigation";
 import { HeaderParentCategoryButtons } from "@/shared/components/layout/header/categories/header-parent-category-buttons";
 import { HeaderIconLink } from "@/shared/components/layout/header/header-icon-control";
+import type { CategorySummary } from "@/features/catalog/types";
 
 function isActivePath(pathname: string, target: string): boolean {
   if (target === "/") {
@@ -19,9 +20,10 @@ function isActivePath(pathname: string, target: string): boolean {
 
 type StorefrontNavProps = {
   showCategories?: boolean;
+  initialCategories?: CategorySummary[];
 };
 
-export function StorefrontNav({ showCategories = true }: StorefrontNavProps) {
+export function StorefrontNav({ showCategories = true, initialCategories = [] }: StorefrontNavProps) {
   const t = useTranslations("common.header");
   const pathname = usePathname();
   const { itemsCount } = useCart();
@@ -29,7 +31,7 @@ export function StorefrontNav({ showCategories = true }: StorefrontNavProps) {
 
   return (
     <nav className="flex items-center gap-2">
-      {showCategories ? <HeaderParentCategoryButtons /> : null}
+      {showCategories ? <HeaderParentCategoryButtons initialCategories={initialCategories} /> : null}
       <SearchHeaderControl />
       <GarageHeaderControl />
       <HeaderIconLink

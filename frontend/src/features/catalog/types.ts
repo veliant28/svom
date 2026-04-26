@@ -38,6 +38,7 @@ export type CatalogProduct = {
   is_bestseller: boolean;
   has_fitment_data: boolean;
   fits_selected_vehicle: boolean | null;
+  fitment_badge_hidden?: boolean;
 };
 
 export type CatalogFilters = {
@@ -81,6 +82,25 @@ export type ProductFitment = {
   is_exact: boolean;
 };
 
+export type ProductFitmentOption = {
+  value: string;
+  label: string;
+};
+
+export type ProductFitmentOptions = {
+  makes: ProductFitmentOption[];
+  models: ProductFitmentOption[];
+  selected_make: string;
+  selected_model: string;
+  total_fitments: number;
+};
+
+export type ProductFitmentRowsResponse = {
+  count: number;
+  next_offset: number | null;
+  results: ProductFitment[];
+};
+
 export type ProductDetail = {
   id: string;
   sku: string;
@@ -105,6 +125,9 @@ export type ProductDetail = {
   is_featured: boolean;
   is_new: boolean;
   is_bestseller: boolean;
+  has_fitment_data: boolean;
+  fits_selected_vehicle: boolean | null;
+  fitment_badge_hidden?: boolean;
 };
 
 export type PaginatedResponse<T> = {

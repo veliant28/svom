@@ -1,14 +1,21 @@
 from __future__ import annotations
 
+import sys
 from datetime import timedelta
 
-from django.db.models import Count, Sum
+from django.core.cache import cache
+from django.db import connection
+from django.db.models import Count, F, Q, Window
+from django.db.models.functions import RowNumber
 from django.utils import timezone
 
 from apps.catalog.models import Product
 from apps.commerce.models import Order
 from apps.pricing.models import PriceHistory, ProductPrice, SupplierOffer
 from apps.supplier_imports.models import ImportRowError, ImportRun, ImportRunQuality, ImportSource, SupplierRawOffer
+
+
+SUMMARY_AGGREGATE_CACHE_SECONDS = 30
 
 
 def build_backoffice_summary_payload() -> dict:
@@ -34,38 +41,16 @@ def build_backoffice_summary_payload() -> dict:
         for run in latest_runs_qs
     ]
 
-    status_buckets = ImportRun.objects.values("status").annotate(total=Count("id")).order_by("status")
-    repriced_history_qs = PriceHistory.objects.filter(source=PriceHistory.SOURCE_IMPORT)
-    repriced_total = repriced_history_qs.values("product_id").distinct().count()
-    repriced_24h = repriced_history_qs.filter(created_at__gte=since_24h).values("product_id").distinct().count()
-    unprocessed_statuses = (
-        Order.STATUS_NEW,
-        Order.STATUS_PROCESSING,
-        Order.STATUS_READY_FOR_SHIPMENT,
-    )
-    unprocessed_orders_qs = Order.objects.filter(status__in=unprocessed_statuses)
-    unprocessed_oldest = unprocessed_orders_qs.order_by("placed_at", "created_at").first()
-
-    totals = {
-        "sources": ImportSource.objects.filter(is_active=True).count(),
-        "import_runs": ImportRun.objects.count(),
-        "errors_total": ImportRowError.objects.count(),
-        "errors_24h": ImportRowError.objects.filter(created_at__gte=since_24h).count(),
-        "raw_offers": SupplierRawOffer.objects.count(),
-        "raw_offers_invalid": SupplierRawOffer.objects.filter(is_valid=False).count(),
-        "unmatched_offers": SupplierRawOffer.objects.filter(match_status=SupplierRawOffer.MATCH_STATUS_UNMATCHED).count(),
-        "conflict_offers": SupplierRawOffer.objects.filter(match_status=SupplierRawOffer.MATCH_STATUS_MANUAL_REQUIRED).count(),
-        "auto_matched_offers": SupplierRawOffer.objects.filter(match_status=SupplierRawOffer.MATCH_STATUS_AUTO_MATCHED).count(),
-        "manually_resolved_offers": SupplierRawOffer.objects.filter(match_status=SupplierRawOffer.MATCH_STATUS_MANUALLY_MATCHED).count(),
-        "supplier_offers": SupplierOffer.objects.count(),
-        "published_products": Product.objects.filter(is_active=True).count(),
-        "product_prices": ProductPrice.objects.count(),
-        "repriced_products_total": repriced_total,
-        "repriced_products_24h": repriced_24h,
-    }
+    aggregate_stats = _get_summary_aggregate_stats(since_24h=since_24h)
+    totals = aggregate_stats["totals"]
+    orders_unprocessed = aggregate_stats["orders_unprocessed"]
+    status_buckets = aggregate_stats["status_buckets"]
 
     latest_completed_run = (
-        ImportRun.objects.filter(status__in=[ImportRun.STATUS_SUCCESS, ImportRun.STATUS_PARTIAL]).order_by("-created_at").first()
+        ImportRun.objects.select_related("source")
+        .filter(status__in=[ImportRun.STATUS_SUCCESS, ImportRun.STATUS_PARTIAL])
+        .order_by("-created_at")
+        .first()
     )
     quality_summary = {}
     if latest_completed_run is not None:
@@ -94,13 +79,20 @@ def build_backoffice_summary_payload() -> dict:
         for item in ImportRunQuality.objects.select_related("source").order_by("-created_at")[:20]
     ]
 
+    latest_quality_per_supplier = (
+        ImportRunQuality.objects.select_related("source")
+        .annotate(
+            source_row=Window(
+                expression=RowNumber(),
+                partition_by=[F("source_id")],
+                order_by=F("created_at").desc(),
+            )
+        )
+        .filter(source_row=1)
+        .order_by("-created_at")
+    )
     match_rate_by_supplier = []
-    seen_sources: set[str] = set()
-    for item in ImportRunQuality.objects.select_related("source").order_by("-created_at"):
-        source_id = str(item.source_id)
-        if source_id in seen_sources:
-            continue
-        seen_sources.add(source_id)
+    for item in latest_quality_per_supplier:
         match_rate_by_supplier.append(
             {
                 "source_code": item.source.code,
@@ -166,12 +158,8 @@ def build_backoffice_summary_payload() -> dict:
     return {
         "generated_at": now,
         "totals": totals,
-        "orders_unprocessed": {
-            "count": unprocessed_orders_qs.count(),
-            "oldest_created_at": (unprocessed_oldest.placed_at if unprocessed_oldest else None),
-            "oldest_order_number": (unprocessed_oldest.order_number if unprocessed_oldest else ""),
-        },
-        "status_buckets": list(status_buckets),
+        "orders_unprocessed": orders_unprocessed,
+        "status_buckets": status_buckets,
         "latest_runs": latest_runs,
         "quality_summary": quality_summary,
         "quality_trend": quality_trend,
@@ -180,3 +168,82 @@ def build_backoffice_summary_payload() -> dict:
         "recent_degraded_imports": recent_degraded_imports,
         "requires_operator_attention": requires_operator_attention,
     }
+
+
+def _get_summary_aggregate_stats(*, since_24h) -> dict:
+    cache_key = _summary_aggregate_cache_key()
+    if cache_key:
+        cached = cache.get(cache_key)
+        if isinstance(cached, dict):
+            return cached
+
+    status_buckets = list(ImportRun.objects.values("status").annotate(total=Count("id")).order_by("status"))
+    import_runs_total = sum(int(row["total"] or 0) for row in status_buckets)
+    repriced_stats = PriceHistory.objects.filter(source=PriceHistory.SOURCE_IMPORT).aggregate(
+        total=Count("product_id", distinct=True),
+        last_24h=Count("product_id", filter=Q(created_at__gte=since_24h), distinct=True),
+    )
+    unprocessed_statuses = (
+        Order.STATUS_NEW,
+        Order.STATUS_PROCESSING,
+        Order.STATUS_READY_FOR_SHIPMENT,
+    )
+    unprocessed_orders_qs = Order.objects.filter(status__in=unprocessed_statuses)
+    unprocessed_order_stats = unprocessed_orders_qs.aggregate(total=Count("id"))
+    unprocessed_oldest = (
+        unprocessed_orders_qs.order_by("placed_at", "created_at")
+        .values("placed_at", "order_number")
+        .first()
+    )
+    import_error_stats = ImportRowError.objects.aggregate(
+        total=Count("id"),
+        last_24h=Count("id", filter=Q(created_at__gte=since_24h)),
+    )
+    raw_offer_stats = SupplierRawOffer.objects.aggregate(
+        total=Count("id"),
+        invalid=Count("id", filter=Q(is_valid=False)),
+        unmatched=Count("id", filter=Q(match_status=SupplierRawOffer.MATCH_STATUS_UNMATCHED)),
+        conflict=Count("id", filter=Q(match_status=SupplierRawOffer.MATCH_STATUS_MANUAL_REQUIRED)),
+        auto_matched=Count("id", filter=Q(match_status=SupplierRawOffer.MATCH_STATUS_AUTO_MATCHED)),
+        manually_resolved=Count("id", filter=Q(match_status=SupplierRawOffer.MATCH_STATUS_MANUALLY_MATCHED)),
+    )
+
+    payload = {
+        "totals": {
+            "sources": ImportSource.objects.filter(is_active=True).count(),
+            "import_runs": import_runs_total,
+            "errors_total": import_error_stats["total"] or 0,
+            "errors_24h": import_error_stats["last_24h"] or 0,
+            "raw_offers": raw_offer_stats["total"] or 0,
+            "raw_offers_invalid": raw_offer_stats["invalid"] or 0,
+            "unmatched_offers": raw_offer_stats["unmatched"] or 0,
+            "conflict_offers": raw_offer_stats["conflict"] or 0,
+            "auto_matched_offers": raw_offer_stats["auto_matched"] or 0,
+            "manually_resolved_offers": raw_offer_stats["manually_resolved"] or 0,
+            "supplier_offers": SupplierOffer.objects.count(),
+            "published_products": Product.objects.filter(is_active=True).count(),
+            "product_prices": ProductPrice.objects.count(),
+            "repriced_products_total": repriced_stats["total"] or 0,
+            "repriced_products_24h": repriced_stats["last_24h"] or 0,
+        },
+        "orders_unprocessed": {
+            "count": unprocessed_order_stats["total"] or 0,
+            "oldest_created_at": (unprocessed_oldest["placed_at"] if unprocessed_oldest else None),
+            "oldest_order_number": (unprocessed_oldest["order_number"] if unprocessed_oldest else ""),
+        },
+        "status_buckets": status_buckets,
+    }
+    if cache_key:
+        cache.set(cache_key, payload, SUMMARY_AGGREGATE_CACHE_SECONDS)
+    return payload
+
+
+def _summary_aggregate_cache_key() -> str:
+    if _is_running_tests():
+        return ""
+    database_name = str(connection.settings_dict.get("NAME") or connection.alias)
+    return f"backoffice:summary:aggregates:{database_name}:v1"
+
+
+def _is_running_tests() -> bool:
+    return any(arg == "test" or arg.endswith("/test") for arg in sys.argv)

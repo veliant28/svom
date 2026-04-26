@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
+from apps.backoffice.services import ProductOperationsService
 from apps.catalog.models import Brand, Category, Product
 from apps.catalog.services import generate_unique_product_slug, sanitize_product_name
 from apps.pricing.models import SupplierOffer
@@ -107,6 +108,21 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
         if not validated_data.get("slug"):
             validated_data["slug"] = generate_unique_product_slug(name=validated_data["name"])
         return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        previous_category_id = str(instance.category_id) if instance.category_id else ""
+        updated_product = super().update(instance, validated_data)
+        next_category_id = str(updated_product.category_id) if updated_product.category_id else ""
+        if previous_category_id and next_category_id and previous_category_id != next_category_id:
+            request = self.context.get("request")
+            actor = getattr(request, "user", None) if request is not None else None
+            ProductOperationsService().bulk_move_to_category(
+                product_ids=[str(updated_product.id)],
+                category=updated_product.category,
+                actor=actor,
+                update_import_rules=True,
+            )
+        return updated_product
 
     @staticmethod
     def _resolve_product_price(obj: Product):

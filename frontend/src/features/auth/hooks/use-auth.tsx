@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { getCurrentUser } from "@/features/auth/api/get-current-user";
 import { login as loginRequest } from "@/features/auth/api/login";
 import { logout as logoutRequest } from "@/features/auth/api/logout";
+import { register as registerRequest, type RegisterPayload } from "@/features/auth/api/register";
 import { clearStoredAuthToken, readStoredAuthToken, writeStoredAuthToken } from "@/features/auth/lib/token-storage";
 import type { AuthUser } from "@/features/auth/types/auth";
 
@@ -14,6 +15,7 @@ type AuthContextValue = {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (payload: { email: string; password: string }) => Promise<void>;
+  register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<AuthUser | null>;
 };
@@ -70,6 +72,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(response.user);
   }, []);
 
+  const register = useCallback(async (payload: RegisterPayload) => {
+    const response = await registerRequest(payload);
+    writeStoredAuthToken(response.token);
+    setToken(response.token);
+    setUser(response.user);
+  }, []);
+
   const logout = useCallback(async () => {
     if (token) {
       try {
@@ -102,10 +111,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isLoading,
       isAuthenticated: Boolean(token && user),
       login,
+      register,
       logout,
       refreshUser,
     }),
-    [token, user, isLoading, login, logout, refreshUser],
+    [token, user, isLoading, login, register, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

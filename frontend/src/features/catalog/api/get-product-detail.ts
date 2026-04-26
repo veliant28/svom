@@ -1,7 +1,9 @@
 import { getJson } from "@/shared/api/http-client";
 
-import type { ProductDetail } from "../types";
+import type { CatalogFilters, ProductDetail } from "../types";
 
-export async function getProductDetail(slug: string, locale?: string): Promise<ProductDetail> {
-  return getJson<ProductDetail>(`/catalog/products/${slug}/`, locale ? { locale } : undefined);
+type ProductDetailParams = Pick<CatalogFilters, "car_modification" | "garage_vehicle" | "modification">;
+
+export async function getProductDetail(slug: string, locale?: string, params: ProductDetailParams = {}): Promise<ProductDetail> {
+  return getJson<ProductDetail>(`/catalog/products/${slug}/`, { ...params, locale });
 }

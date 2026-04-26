@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "next-intl";
 
 import { getProducts } from "@/features/catalog/api/get-products";
+import { requestUtrProductEnrichment, type UtrEnrichmentStatus } from "@/features/catalog/api/request-utr-enrichment";
 import { useActiveVehicle } from "@/features/garage/hooks/use-active-vehicle";
 import type { CatalogFilters, CatalogProduct } from "@/features/catalog/types";
 
@@ -40,10 +41,8 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
   }, [baseParamsKey]);
   const effectiveParams = useMemo(() => {
     const result: UseCatalogProductsParams = { ...baseParams };
-    const hasSearchQuery = Boolean(result.q?.trim());
 
-    // Global text search should not be silently narrowed by active-vehicle fitment.
-    if (options.useActiveVehicle && !hasSearchQuery) {
+    if (options.useActiveVehicle) {
       const hasExplicitVehicle = Boolean(result.garage_vehicle || result.car_modification);
       if (!hasExplicitVehicle) {
         if (activeVehicleSource === "garage" && activeGarageVehicleId) {
@@ -69,6 +68,7 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
   ]);
   const paramsKey = JSON.stringify({ ...effectiveParams, locale });
   const isEnabled = options.enabled ?? true;
+  const productIdsKey = useMemo(() => products.map((product) => product.id).join("|"), [products]);
 
   useEffect(() => {
     if (!isEnabled) {
@@ -106,6 +106,61 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
       isMounted = false;
     };
   }, [effectiveParams, isEnabled, locale, paramsKey]);
+
+  useEffect(() => {
+    if (!isEnabled || isLoading || !productIdsKey) {
+      return;
+    }
+
+    let isCancelled = false;
+    const productIds = productIdsKey.split("|").filter(Boolean);
+
+    const applyStatuses = (statuses: UtrEnrichmentStatus[]) => {
+      const statusByProductId = new Map(statuses.map((item) => [item.product_id, item]));
+      setProducts((current) =>
+        current.map((product) => {
+          const status = statusByProductId.get(product.id);
+          if (!status?.primary_image || status.primary_image === product.primary_image) {
+            return product;
+          }
+          return { ...product, primary_image: status.primary_image };
+        }),
+      );
+    };
+
+    const shouldPoll = (statuses: UtrEnrichmentStatus[]) =>
+      statuses.some((item) => item.status === "queued" || item.status === "in_progress" || item.queued);
+
+    async function warmVisibleProducts() {
+      try {
+        let statuses = await requestUtrProductEnrichment(productIds, true);
+        if (isCancelled) {
+          return;
+        }
+        applyStatuses(statuses);
+
+        for (let attempt = 0; attempt < 8 && shouldPoll(statuses); attempt += 1) {
+          await new Promise((resolve) => window.setTimeout(resolve, 1000));
+          if (isCancelled) {
+            return;
+          }
+          statuses = await requestUtrProductEnrichment(productIds, false);
+          if (isCancelled) {
+            return;
+          }
+          applyStatuses(statuses);
+        }
+      } catch {
+        // Enrichment is opportunistic; catalog rendering must not depend on UTR.
+      }
+    }
+
+    void warmVisibleProducts();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isEnabled, isLoading, productIdsKey]);
 
   return { products, totalCount, isLoading };
 }

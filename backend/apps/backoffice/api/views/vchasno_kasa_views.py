@@ -9,17 +9,21 @@ from apps.backoffice.api.serializers import (
     BackofficeOrderReceiptActionSerializer,
     BackofficeVchasnoKasaConnectionCheckSerializer,
     BackofficeVchasnoKasaSettingsSerializer,
+    BackofficeVchasnoKasaShiftStatusSerializer,
     BackofficeVchasnoReceiptListSerializer,
 )
 from apps.backoffice.api.views._base import BackofficeAPIView
 from apps.commerce.models import Order, OrderReceipt
 from apps.commerce.services.vchasno_kasa import (
     VchasnoKasaError,
+    close_vchasno_shift,
     get_open_receipt_url,
     get_vchasno_kasa_settings,
+    get_vchasno_shift_status,
     has_order_receipt_table,
     has_vchasno_kasa_settings_table,
     issue_order_receipt,
+    open_vchasno_shift,
     serialize_receipt_summary,
     sync_order_receipt,
     test_vchasno_kasa_connection,
@@ -66,6 +70,32 @@ class BackofficeVchasnoKasaReceiptListAPIView(BackofficeAPIView):
             .order_by("-updated_at", "-created_at")[:20]
         )
         serializer = BackofficeVchasnoReceiptListSerializer({"count": len(queryset), "results": list(queryset)})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class BackofficeVchasnoKasaShiftStatusAPIView(BackofficeAPIView):
+    def get(self, request):
+        serializer = BackofficeVchasnoKasaShiftStatusSerializer(get_vchasno_shift_status())
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class BackofficeVchasnoKasaOpenShiftAPIView(BackofficeAPIView):
+    def post(self, request):
+        try:
+            payload = open_vchasno_shift(actor=request.user)
+        except VchasnoKasaError as exc:
+            return Response(exc.as_api_payload(), status=exc.status_code)
+        serializer = BackofficeVchasnoKasaShiftStatusSerializer(payload)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class BackofficeVchasnoKasaCloseShiftAPIView(BackofficeAPIView):
+    def post(self, request):
+        try:
+            payload = close_vchasno_shift(actor=request.user)
+        except VchasnoKasaError as exc:
+            return Response(exc.as_api_payload(), status=exc.status_code)
+        serializer = BackofficeVchasnoKasaShiftStatusSerializer(payload)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

@@ -15,8 +15,8 @@ export function LoginForm() {
   const { login, isAuthenticated } = useAuth();
   const { showError } = useStorefrontFeedback();
 
-  const [email, setEmail] = useState("demo@svom.local");
-  const [password, setPassword] = useState("demo12345");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (isAuthenticated) {

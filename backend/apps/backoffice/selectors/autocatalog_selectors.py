@@ -17,15 +17,15 @@ def apply_autocatalog_filters(queryset: QuerySet[CarModification], *, params) ->
     mapped = params.get("mapped", "").strip().lower()
 
     if make:
-        queryset = queryset.filter(make__name__icontains=make)
+        queryset = queryset.filter(make__name__iexact=make)
     if model:
-        queryset = queryset.filter(model__name__icontains=model)
+        queryset = queryset.filter(model__name__iexact=model)
     if engine:
-        queryset = queryset.filter(engine__icontains=engine)
+        queryset = queryset.filter(engine__iexact=engine)
     if capacity:
-        queryset = queryset.filter(capacity__icontains=capacity)
+        queryset = queryset.filter(capacity__iexact=capacity)
     if modification:
-        queryset = queryset.filter(modification__icontains=modification)
+        queryset = queryset.filter(modification__iexact=modification)
     if year:
         try:
             queryset = queryset.filter(year=int(year))

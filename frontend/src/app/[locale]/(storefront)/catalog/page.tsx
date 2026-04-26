@@ -15,7 +15,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "catalog.catalog" });
+  const t = await getTranslations({ locale, namespace: "catalog" });
   const seoConfig = await getSeoPublicConfig();
 
   return resolveSeoMetadata({

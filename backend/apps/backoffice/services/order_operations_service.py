@@ -340,12 +340,15 @@ class OrderOperationsService:
 
     def _schedule_vchasno_receipt_after_completion(self, *, order: Order) -> str:
         from apps.commerce.services.vchasno_kasa import get_vchasno_kasa_settings
+        from apps.commerce.services.vchasno_kasa.payloads import get_selected_payment_methods, get_selected_tax_groups
         from apps.commerce.tasks.vchasno_kasa import issue_vchasno_kasa_receipt_task
 
         settings = get_vchasno_kasa_settings()
         if not settings.is_enabled or not settings.auto_issue_on_completed:
             return ""
         if not (settings.api_token or "").strip() or not (settings.rro_fn or "").strip():
+            return "vchasno_incomplete_settings"
+        if not get_selected_payment_methods(settings=settings) or not get_selected_tax_groups(settings=settings):
             return "vchasno_incomplete_settings"
         transaction.on_commit(lambda: issue_vchasno_kasa_receipt_task.delay(order_id=str(order.id)))
         return "vchasno_issue_started"

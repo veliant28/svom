@@ -1,4 +1,7 @@
 from django.contrib.auth import authenticate
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
@@ -9,9 +12,53 @@ from rest_framework.views import APIView
 from apps.users.api.serializers import (
     LoginRequestSerializer,
     PasswordChangeSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
     ProfileUpdateSerializer,
+    RegisterRequestSerializer,
     UserSummarySerializer,
 )
+from apps.users.models import User
+from apps.core.services import get_configured_frontend_base_url, send_configured_mail
+
+
+def _build_frontend_url(request, path: str) -> str:
+    configured_base_url = get_configured_frontend_base_url()
+    origin = request.headers.get("Origin", "").strip().rstrip("/")
+    base_url = configured_base_url or origin
+    if not base_url:
+        base_url = request.build_absolute_uri("/").rstrip("/")
+    return f"{base_url}{path}"
+
+
+def _password_reset_email_content(locale: str, reset_url: str) -> tuple[str, str]:
+    messages = {
+        User.LANGUAGE_RU: (
+            "Восстановление пароля SVOM",
+            (
+                "Мы получили запрос на восстановление пароля аккаунта SVOM.\n\n"
+                f"Откройте ссылку, чтобы задать новый пароль:\n{reset_url}\n\n"
+                "Если вы не запрашивали восстановление, просто проигнорируйте письмо."
+            ),
+        ),
+        User.LANGUAGE_UK: (
+            "Відновлення пароля SVOM",
+            (
+                "Ми отримали запит на відновлення пароля акаунта SVOM.\n\n"
+                f"Відкрийте посилання, щоб задати новий пароль:\n{reset_url}\n\n"
+                "Якщо ви не запитували відновлення, просто проігноруйте лист."
+            ),
+        ),
+        User.LANGUAGE_EN: (
+            "SVOM password reset",
+            (
+                "We received a request to reset your SVOM account password.\n\n"
+                f"Open this link to set a new password:\n{reset_url}\n\n"
+                "If you did not request this, ignore this email."
+            ),
+        ),
+    }
+    return messages.get(locale, messages[User.LANGUAGE_UK])
 
 
 class AuthLoginAPIView(APIView):
@@ -35,6 +82,24 @@ class AuthLoginAPIView(APIView):
                 "token": token.key,
                 "user": UserSummarySerializer(user).data,
             }
+        )
+
+
+class AuthRegisterAPIView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = RegisterRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        token, _ = Token.objects.get_or_create(user=user)
+        return Response(
+            {
+                "token": token.key,
+                "user": UserSummarySerializer(user).data,
+            },
+            status=status.HTTP_201_CREATED,
         )
 
 
@@ -83,4 +148,44 @@ class PasswordChangeAPIView(APIView):
         serializer.is_valid(raise_exception=True)
         request.user.set_password(serializer.validated_data["new_password"])
         request.user.save(update_fields=["password"])
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PasswordResetRequestAPIView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"]
+        locale = serializer.validated_data["locale"]
+
+        user = User.objects.filter(email__iexact=email, is_active=True).first()
+        if user:
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            reset_url = _build_frontend_url(request, f"/{locale}/reset-password/{uid}/{token}")
+            subject, message = _password_reset_email_content(locale, reset_url)
+            send_configured_mail(
+                subject=subject,
+                message=message,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PasswordResetConfirmAPIView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data["user"]
+        user.set_password(serializer.validated_data["new_password"])
+        user.save(update_fields=["password"])
+        Token.objects.filter(user=user).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

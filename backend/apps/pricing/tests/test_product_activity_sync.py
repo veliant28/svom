@@ -81,6 +81,101 @@ class ProductActivitySyncTests(TestCase):
         self.assertEqual(result.activated, 1)
         self.assertTrue(inactive_with_fresh_price.is_active)
 
+    def test_sync_zeroes_stale_offers_for_deactivated_products(self):
+        now = timezone.now()
+        cutoff = now - timedelta(hours=24)
+
+        stale_product = self._create_product(is_active=True, prefix="STALE-STOCK")
+        stale_price = ProductPrice.objects.create(product=stale_product, final_price="140.00", currency="UAH")
+        ProductPrice.objects.filter(id=stale_price.id).update(updated_at=now - timedelta(hours=30))
+
+        stale_offer = SupplierOffer.objects.create(
+            supplier=self.supplier,
+            product=stale_product,
+            supplier_sku=f"SUP-{stale_product.sku}",
+            purchase_price="100.00",
+            logistics_cost="0.00",
+            extra_cost="0.00",
+            stock_qty=9,
+            lead_time_days=2,
+            is_available=True,
+        )
+        SupplierOffer.objects.filter(id=stale_offer.id).update(updated_at=now - timedelta(hours=30))
+
+        result = sync_products_activity_by_price_freshness(freshness_hours=24, cutoff_at=cutoff)
+
+        stale_product.refresh_from_db()
+        stale_offer.refresh_from_db()
+
+        self.assertFalse(stale_product.is_active)
+        self.assertEqual(stale_offer.stock_qty, 0)
+        self.assertFalse(stale_offer.is_available)
+        self.assertEqual(result.supplier_offers_zeroed, 1)
+
+    def test_sync_does_not_zero_recently_refreshed_offer_with_stale_product_price(self):
+        now = timezone.now()
+        cutoff = now - timedelta(hours=24)
+
+        product = self._create_product(is_active=True, prefix="REFRESHED-STOCK")
+        stale_price = ProductPrice.objects.create(product=product, final_price="140.00", currency="UAH")
+        ProductPrice.objects.filter(id=stale_price.id).update(updated_at=now - timedelta(hours=30))
+        fresh_offer = SupplierOffer.objects.create(
+            supplier=self.supplier,
+            product=product,
+            supplier_sku=f"SUP-{product.sku}",
+            purchase_price="100.00",
+            logistics_cost="0.00",
+            extra_cost="0.00",
+            stock_qty=9,
+            lead_time_days=2,
+            is_available=True,
+        )
+        SupplierOffer.objects.filter(id=fresh_offer.id).update(updated_at=now - timedelta(minutes=5))
+
+        result = sync_products_activity_by_price_freshness(freshness_hours=24, cutoff_at=cutoff)
+
+        product.refresh_from_db()
+        fresh_offer.refresh_from_db()
+
+        self.assertFalse(product.is_active)
+        self.assertEqual(fresh_offer.stock_qty, 9)
+        self.assertTrue(fresh_offer.is_available)
+        self.assertEqual(result.supplier_offers_zeroed, 0)
+
+    def test_sync_does_not_zero_offers_for_products_reactivated_by_fresh_price(self):
+        now = timezone.now()
+        cutoff = now - timedelta(hours=24)
+
+        inactive_product = self._create_product(is_active=False, prefix="INACTIVE-FRESH-OFFER")
+        fresh_price = ProductPrice.objects.create(
+            product=inactive_product,
+            final_price="120.00",
+            currency="UAH",
+        )
+        ProductPrice.objects.filter(id=fresh_price.id).update(updated_at=now - timedelta(hours=1))
+        fresh_offer = SupplierOffer.objects.create(
+            supplier=self.supplier,
+            product=inactive_product,
+            supplier_sku=f"SUP-{inactive_product.sku}",
+            purchase_price="90.00",
+            logistics_cost="0.00",
+            extra_cost="0.00",
+            stock_qty=4,
+            lead_time_days=1,
+            is_available=True,
+        )
+        SupplierOffer.objects.filter(id=fresh_offer.id).update(updated_at=now - timedelta(hours=1))
+
+        result = sync_products_activity_by_price_freshness(freshness_hours=24, cutoff_at=cutoff)
+
+        inactive_product.refresh_from_db()
+        fresh_offer.refresh_from_db()
+
+        self.assertTrue(inactive_product.is_active)
+        self.assertEqual(fresh_offer.stock_qty, 4)
+        self.assertTrue(fresh_offer.is_available)
+        self.assertEqual(result.supplier_offers_zeroed, 0)
+
     def test_reprice_immediately_reactivates_product(self):
         product = self._create_product(is_active=False, prefix="REPRICE")
         SupplierOffer.objects.create(
@@ -115,5 +210,6 @@ class ProductActivitySyncTests(TestCase):
         self.assertFalse(stale_product.is_active)
         self.assertEqual(payload["deactivated"], 1)
         self.assertEqual(payload["activated"], 0)
+        self.assertIn("supplier_offers_zeroed", payload)
         self.assertEqual(payload["freshness_hours"], 24)
         self.assertIsInstance(payload["cutoff_at"], str)

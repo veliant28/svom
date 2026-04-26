@@ -1,4 +1,5 @@
 from django.urls import reverse
+from django.core import mail
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
@@ -114,3 +115,66 @@ class AuthAPISmokeTests(APITestCase):
         current_user_response = self.client.get(reverse("users_api:auth-current-user"), **auth_headers)
         self.assertEqual(current_user_response.status_code, status.HTTP_200_OK)
         self.assertEqual(current_user_response.data["middle_name"], "Геннадиевич")
+
+    def test_register_creates_user_profile_and_returns_token(self):
+        response = self.client.post(
+            reverse("users_api:auth-register"),
+            {
+                "email": "new-customer@test.local",
+                "password": "StrongPass12345",
+                "first_name": "Ivan",
+                "last_name": "Petrenko",
+                "middle_name": "Ivanovych",
+                "phone": "38 (099) 111-22-33",
+                "preferred_language": "ru",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn("token", response.data)
+        self.assertEqual(response.data["user"]["email"], "new-customer@test.local")
+        self.assertEqual(response.data["user"]["first_name"], "Ivan")
+        self.assertEqual(response.data["user"]["last_name"], "Petrenko")
+        self.assertEqual(response.data["user"]["middle_name"], "Ivanovych")
+        self.assertEqual(response.data["user"]["phone"], "38(099)111-22-33")
+        self.assertEqual(response.data["user"]["preferred_language"], "ru")
+
+    def test_password_reset_sends_email_and_confirm_changes_password(self):
+        reset_response = self.client.post(
+            reverse("users_api:auth-password-reset"),
+            {
+                "email": self.user.email,
+                "locale": "ru",
+            },
+            format="json",
+            HTTP_ORIGIN="https://svom.test",
+        )
+
+        self.assertEqual(reset_response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("https://svom.test/ru/reset-password/", mail.outbox[0].body)
+
+        reset_path = mail.outbox[0].body.split("https://svom.test/ru/reset-password/", 1)[1].splitlines()[0]
+        uid, token = reset_path.split("/", 1)
+
+        confirm_response = self.client.post(
+            reverse("users_api:auth-password-reset-confirm"),
+            {
+                "uid": uid,
+                "token": token,
+                "new_password": "NewStrongPass12345",
+            },
+            format="json",
+        )
+
+        self.assertEqual(confirm_response.status_code, status.HTTP_204_NO_CONTENT)
+        login_response = self.client.post(
+            reverse("users_api:auth-login"),
+            {
+                "email": self.user.email,
+                "password": "NewStrongPass12345",
+            },
+            format="json",
+        )
+        self.assertEqual(login_response.status_code, status.HTTP_200_OK)

@@ -1,10 +1,10 @@
 "use client";
 
-import { Fragment, useCallback, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Power, RotateCcw } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { getBackofficeImportSchedules, runBackofficeImportSchedule, updateBackofficeImportSchedule } from "@/features/backoffice/api/backoffice-api";
+import { getBackofficeImportRun, getBackofficeImportSchedules, runBackofficeImportSchedule, updateBackofficeImportSchedule } from "@/features/backoffice/api/backoffice-api";
 import { BackofficeTable } from "@/features/backoffice/components/table/backoffice-table";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { ActionIconButton } from "@/features/backoffice/components/widgets/action-icon-button";
@@ -13,7 +13,7 @@ import { StatusChip } from "@/features/backoffice/components/widgets/status-chip
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
 import { useBackofficeQuery } from "@/features/backoffice/hooks/use-backoffice-query";
 import { formatBackofficeDate } from "@/features/backoffice/lib/supplier-workspace";
-import type { BackofficeImportSource } from "@/features/backoffice/types/backoffice";
+import type { BackofficeImportRun, BackofficeImportSource } from "@/features/backoffice/types/backoffice";
 import { useTheme } from "@/shared/components/theme/theme-provider";
 
 type ScheduleDraft = {
@@ -58,6 +58,92 @@ function buildDraft(item: BackofficeImportSource): ScheduleDraft {
   };
 }
 
+const ACTIVE_IMPORT_RUN_STATUSES = new Set(["pending", "running"]);
+
+type ImportRunStatusSnapshot = {
+  status: string;
+  finished_at: string | null;
+} | null;
+
+function isActiveImportRunSnapshot(run: ImportRunStatusSnapshot): boolean {
+  if (!run?.status || run.finished_at) {
+    return false;
+  }
+  return ACTIVE_IMPORT_RUN_STATUSES.has(run.status.toLowerCase());
+}
+
+function hasActiveImportRun(item: BackofficeImportSource): boolean {
+  return isActiveImportRunSnapshot(item.last_run);
+}
+
+function ScheduleRunActionButton({
+  item,
+  token,
+  localRunning,
+  runLabel,
+  runningLabel,
+  onRun,
+  onRunFinished,
+}: {
+  item: BackofficeImportSource;
+  token: string | null;
+  localRunning: boolean;
+  runLabel: string;
+  runningLabel: string;
+  onRun: () => void;
+  onRunFinished: () => void;
+}) {
+  const [polledRun, setPolledRun] = useState<BackofficeImportRun | null>(null);
+  const runId = item.last_run?.id || "";
+  const currentRun = polledRun && polledRun.id === runId ? polledRun : item.last_run;
+  const isBackendRunning = isActiveImportRunSnapshot(currentRun);
+  const runLocked = localRunning || isBackendRunning;
+
+  useEffect(() => {
+    setPolledRun(null);
+  }, [item.last_run?.finished_at, item.last_run?.id, item.last_run?.status]);
+
+  useEffect(() => {
+    if (!token || !runId || !isBackendRunning) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    const pollRun = async () => {
+      try {
+        const nextRun = await getBackofficeImportRun(token, runId);
+        if (cancelled) {
+          return;
+        }
+        setPolledRun(nextRun);
+        if (!isActiveImportRunSnapshot(nextRun)) {
+          onRunFinished();
+        }
+      } catch {
+        // Keep the button locked on transient polling failures; the next tick will retry.
+      }
+    };
+
+    void pollRun();
+    const intervalId = window.setInterval(() => {
+      void pollRun();
+    }, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [isBackendRunning, onRunFinished, runId, token]);
+
+  return (
+    <ActionIconButton
+      label={runLocked ? runningLabel : runLabel}
+      icon={Check}
+      disabled={runLocked}
+      onClick={onRun}
+    />
+  );
+}
+
 export function ImportSchedulesPage() {
   const t = useTranslations("backoffice.common");
   const { theme } = useTheme();
@@ -78,11 +164,18 @@ export function ImportSchedulesPage() {
   );
 
   const { token, data, isLoading, error, refetch } = useBackofficeQuery<{ count: number; results: BackofficeImportSource[] }>(queryFn, [q]);
-  const rows = data?.results ?? [];
+  const rows = useMemo(() => data?.results ?? [], [data?.results]);
   const getDraft = useCallback(
     (item: BackofficeImportSource): ScheduleDraft => drafts[item.id] ?? buildDraft(item),
     [drafts],
   );
+  const isRunLocked = useCallback(
+    (item: BackofficeImportSource) => Boolean(runningBySource[item.id]) || hasActiveImportRun(item),
+    [runningBySource],
+  );
+  const refreshAfterRunFinished = useCallback(() => {
+    void refetch();
+  }, [refetch]);
 
   async function saveScheduleTime(item: BackofficeImportSource, runTime: string, options?: { silent?: boolean }) {
     if (!token) return;
@@ -115,7 +208,7 @@ export function ImportSchedulesPage() {
 
   async function runScenario(item: BackofficeImportSource) {
     if (!token) return;
-    if (runningBySource[item.id]) return;
+    if (isRunLocked(item)) return;
     const sourceLabel = item.code.toUpperCase();
     const draft = getDraft(item);
     const scheduleSaved = await saveScheduleTime(item, draft.schedule_run_time, { silent: true });
@@ -326,47 +419,50 @@ export function ImportSchedulesPage() {
               key: "actions",
               label: t("importSchedules.table.columns.actions"),
               render: (item) => (
-                <div className="flex items-center gap-1 whitespace-nowrap">
-                  <button
-                    type="button"
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors"
-                    aria-label={item.is_auto_import_enabled ? t("importSchedules.actions.disable") : t("importSchedules.actions.enable")}
-                    style={{
-                      borderColor: item.is_auto_import_enabled ? monoActiveBackground : "var(--border)",
-                      backgroundColor: item.is_auto_import_enabled ? monoActiveBackground : "var(--surface)",
-                      color: item.is_auto_import_enabled ? monoActiveText : "var(--text)",
-                    }}
-                    onClick={() => {
-                      void toggleAutoImport(item);
-                    }}
-                  >
-                    <Power className="h-4 w-4" />
-                  </button>
-                  <ActionIconButton
-                    label={runningBySource[item.id] ? t("importSchedules.actions.runningNow") : t("importSchedules.actions.runNow")}
-                    icon={Check}
-                    disabled={Boolean(runningBySource[item.id])}
-                    onClick={() => {
-                      void runScenario(item);
-                    }}
-                  />
-                  <ActionIconButton
-                    label={t("importSchedules.actions.saveDefaults")}
-                    icon={RotateCcw}
-                    onClick={() => {
-                      const nextDraft: ScheduleDraft = {
-                        schedule_run_time: "01:00",
-                        schedule_timezone: "Europe/Kyiv",
-                        schedule_every_day: true,
-                      };
-                      setDrafts((prev) => ({
-                        ...prev,
-                        [item.id]: nextDraft,
-                      }));
-                      void saveScheduleTime(item, nextDraft.schedule_run_time);
-                    }}
-                  />
-                </div>
+                  <div className="flex items-center gap-1 whitespace-nowrap">
+                    <button
+                      type="button"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors"
+                      aria-label={item.is_auto_import_enabled ? t("importSchedules.actions.disable") : t("importSchedules.actions.enable")}
+                      style={{
+                        borderColor: item.is_auto_import_enabled ? monoActiveBackground : "var(--border)",
+                        backgroundColor: item.is_auto_import_enabled ? monoActiveBackground : "var(--surface)",
+                        color: item.is_auto_import_enabled ? monoActiveText : "var(--text)",
+                      }}
+                      onClick={() => {
+                        void toggleAutoImport(item);
+                      }}
+                    >
+                      <Power className="h-4 w-4" />
+                    </button>
+                    <ScheduleRunActionButton
+                      item={item}
+                      token={token}
+                      localRunning={Boolean(runningBySource[item.id])}
+                      runLabel={t("importSchedules.actions.runNow")}
+                      runningLabel={t("importSchedules.actions.runningNow")}
+                      onRun={() => {
+                        void runScenario(item);
+                      }}
+                      onRunFinished={refreshAfterRunFinished}
+                    />
+                    <ActionIconButton
+                      label={t("importSchedules.actions.saveDefaults")}
+                      icon={RotateCcw}
+                      onClick={() => {
+                        const nextDraft: ScheduleDraft = {
+                          schedule_run_time: "01:00",
+                          schedule_timezone: "Europe/Kyiv",
+                          schedule_every_day: true,
+                        };
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [item.id]: nextDraft,
+                        }));
+                        void saveScheduleTime(item, nextDraft.schedule_run_time);
+                      }}
+                    />
+                  </div>
               ),
             },
           ]}

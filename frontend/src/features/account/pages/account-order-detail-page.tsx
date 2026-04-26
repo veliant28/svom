@@ -3,11 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import { useLocale, useTranslations } from "next-intl";
+import { LoaderCircle, Receipt } from "lucide-react";
 
 import { AccountAuthRequired } from "@/features/account/components/account-auth-required";
 import { formatDateTime, formatMoney, resolveOrderStatusChipIcon, resolveOrderStatusChipTone } from "@/features/account/lib/account-formatters";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import { getCheckoutMonobankWidget } from "@/features/checkout/api/monobank-payment";
 import { MonobankFallbackButton } from "@/features/checkout/components/payment/monobank-fallback-button";
 import { MONOBANK_OFFICIAL_WIDGETS_ENABLED } from "@/features/checkout/lib/monobank-widget-flags";
@@ -357,6 +359,11 @@ export function AccountOrderDetailPage({ orderId }: { orderId: string }) {
   const paymentLabel = resolvePaymentMethodLabel(order.payment_method, locale);
   const monobankPageUrl = order.payment_method === "monobank" ? (order.payment?.page_url || "").trim() : "";
   const liqpayPageUrl = order.payment_method === "liqpay" ? (order.payment?.page_url || "").trim() : "";
+  const receiptActionLabel = receiptOpening
+    ? t("labels.receiptOpening")
+    : order.receipt?.can_open
+      ? t("labels.receiptOpen")
+      : t("labels.receiptNotCreated");
   const currentOrder = order;
 
   async function handleOpenReceipt() {
@@ -448,7 +455,26 @@ export function AccountOrderDetailPage({ orderId }: { orderId: string }) {
 
         {order.items.length > 0 ? (
           <section className="mt-3 rounded-md border p-3" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
-            <p className="text-sm font-semibold">{t("subtitle")}</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold">{t("subtitle")}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold">Товарный чек</p>
+                <BackofficeTooltip content={receiptActionLabel} placement="top" align="center" wrapperClassName="inline-flex shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleOpenReceipt();
+                    }}
+                    disabled={!order.receipt?.can_open || receiptOpening}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                    aria-label={receiptActionLabel}
+                  >
+                    {receiptOpening ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Receipt className="h-3.5 w-3.5" />}
+                  </button>
+                </BackofficeTooltip>
+              </div>
+            </div>
             <div className="mt-3 overflow-x-auto rounded-md border" style={{ borderColor: "var(--border)" }}>
               <table className="min-w-full border-separate border-spacing-0 text-xs">
                 <thead style={{ backgroundColor: "var(--surface-2)", color: "var(--muted)" }}>
@@ -456,31 +482,15 @@ export function AccountOrderDetailPage({ orderId }: { orderId: string }) {
                     <th className="px-3 py-2 text-left font-medium">{t("table.sku")}</th>
                     <th className="px-3 py-2 text-left font-medium">{t("table.product")}</th>
                     <th className="px-3 py-2 text-right font-medium">{t("table.qty")}</th>
-                    <th className="px-3 py-2 text-center font-medium">{t("table.receipt")}</th>
                     <th className="px-3 py-2 text-right font-medium">{t("table.total")}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {order.items.map((item, index) => (
+                  {order.items.map((item) => (
                     <tr key={item.id} style={{ borderTop: "1px solid var(--border)" }}>
                       <td className="px-3 py-2">{item.product_sku || "-"}</td>
                       <td className="px-3 py-2">{item.product_name}</td>
                       <td className="px-3 py-2 text-right">{item.quantity}</td>
-                      <td className="px-3 py-2 text-center">
-                        {index === 0 ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              void handleOpenReceipt();
-                            }}
-                            disabled={!order.receipt?.can_open || receiptOpening}
-                            className="inline-flex h-8 items-center justify-center rounded-md border px-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-                            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-                          >
-                            {receiptOpening ? t("labels.receiptOpening") : order.receipt?.can_open ? t("labels.receiptOpen") : t("labels.receiptNotCreated")}
-                          </button>
-                        ) : null}
-                      </td>
                       <td className="px-3 py-2 text-right">{formatMoney(item.line_total, order.currency, locale)}</td>
                     </tr>
                   ))}

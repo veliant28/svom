@@ -13,10 +13,13 @@ class VchasnoKasaSettings(UUIDPrimaryKeyMixin, TimestampedMixin):
     code = models.CharField(_("Код профиля"), max_length=32, unique=True, default=DEFAULT_CODE)
     is_enabled = models.BooleanField(_("Вчасно.Каса включена"), default=False)
 
-    api_token = models.CharField(_("Токен кассы"), max_length=255, blank=True)
+    api_token = models.CharField(_("API токен заказов Вчасно"), max_length=255, blank=True)
+    fiscal_api_token = models.CharField(_("API токен каси Вчасно"), max_length=255, blank=True)
     rro_fn = models.CharField(_("Фискальный номер РРО/ПРРО"), max_length=64, blank=True)
     default_payment_type = models.PositiveSmallIntegerField(_("Тип оплаты по умолчанию"), default=1)
     default_tax_group = models.CharField(_("Налоговая группа по умолчанию"), max_length=32, blank=True)
+    selected_payment_methods = models.JSONField(_("Обрані засоби оплат каси"), default=list, blank=True)
+    selected_tax_groups = models.JSONField(_("Обрані податкові групи каси"), default=list, blank=True)
     auto_issue_on_completed = models.BooleanField(_("Автоматически создавать чек при завершении"), default=True)
     send_customer_email = models.BooleanField(_("Передавать email клиента"), default=True)
 
@@ -51,6 +54,15 @@ class VchasnoKasaSettings(UUIDPrimaryKeyMixin, TimestampedMixin):
     @property
     def api_token_masked(self) -> str:
         token = (self.api_token or "").strip()
+        if not token:
+            return ""
+        if len(token) <= 4:
+            return "•" * len(token)
+        return f"{'•' * max(8, len(token) - 4)}{token[-4:]}"
+
+    @property
+    def fiscal_api_token_masked(self) -> str:
+        token = (self.fiscal_api_token or "").strip()
         if not token:
             return ""
         if len(token) <= 4:

@@ -1,0 +1,26 @@
+{
+  "proposed_rules": [
+    {
+      "from_category_id": "ee0287ae-704f-4edf-aa41-4713f9ee1f5a",
+      "to_category_id": "ed6be85e-3e3e-4200-a980-44f2fe8cd441",
+      "from_category_path": "Двигатель и Система выхлопа > Система выпуска > Глушитель",
+      "to_category_path": "Двигатель и Система выхлопа > Система выпуска > Выхлопная труба",
+      "product_ids": [
+        "180631ee-6aa1-4616-8333-4e6c1dbd938a",
+        "369dc921-f6ff-430b-8c48-25c15b727f7b",
+        "390e2c97-c6a5-4667-af35-783ab1efe05e",
+        "457e6438-b872-4ffe-9d0b-7ebea14c755c",
+        "55d756cd-c51e-4d60-8fe9-c89207fee1df",
+        "5aba1663-ae0d-4d0d-82c4-648f3f0b834d",
+        "a0c09432-85cb-41f2-bc02-724983143e09",
+        "b9a9342c-ab94-492f-b6f2-8dbe53440998",
+        "d36d6724-07e9-43d8-9b1d-1bbebc217788",
+        "d39c4950-39a9-4cd2-8b2d-6488e453df04",
+        "d7e78d02-eaee-4e00-883c-72c032b61088",
+        "dcb073c8-a3fd-4d59-b72d-93cca3a31797",
+        "eadbeb71-a10f-45a1-b7d7-458a17286331",
+        "f54b21ec-e632-4f54-9bad-33405b2de3da"
+      ]
+    }
+  ]
+}

@@ -24,7 +24,7 @@ class ScheduledImportService:
     DEFAULT_STALE_TIMEOUT_MINUTES = 180
 
     def list_due_sources(self, *, now: datetime | None = None) -> list[ImportSource]:
-        moment = now or datetime.utcnow().astimezone()
+        moment = now or dj_timezone.now()
         due: list[ImportSource] = []
         queryset = (
             ImportSource.objects.filter(is_active=True, is_auto_import_enabled=True)

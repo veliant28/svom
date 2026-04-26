@@ -7,9 +7,10 @@ import { CategoryParentIcon } from "@/shared/components/layout/header/categories
 import type { HeaderCategoryParent } from "@/shared/components/layout/header/categories/header-category.types";
 import { useHeaderCategoryGroups } from "@/shared/components/layout/header/categories/use-header-category-groups";
 import { HeaderIconButton } from "@/shared/components/layout/header/header-icon-control";
+import type { CategorySummary } from "@/features/catalog/types";
 
-export function HeaderParentCategoryButtons() {
-  const { parents, isLoading } = useHeaderCategoryGroups();
+export function HeaderParentCategoryButtons({ initialCategories = [] }: { initialCategories?: CategorySummary[] }) {
+  const { parents, isLoading } = useHeaderCategoryGroups(initialCategories);
   const [openParentId, setOpenParentId] = useState<string | null>(null);
 
   const activeParent = useMemo<HeaderCategoryParent | null>(

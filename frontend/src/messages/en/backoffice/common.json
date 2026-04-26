@@ -15,6 +15,55 @@
       "closeSidebar": "Close sidebar",
       "yes": "Yes",
       "no": "No",
+      "email": {
+        "title": "Email",
+        "subtitle": "SMTP settings for password recovery emails and system notifications.",
+        "form": {
+          "title": "SMTP delivery",
+          "helper": "Enable SMTP to send messages to real email addresses. An empty password field keeps the saved password unchanged."
+        },
+        "fields": {
+          "enabled": "Enable real email delivery",
+          "fromEmail": "From email",
+          "frontendBaseUrl": "Frontend base URL for reset links",
+          "host": "SMTP host",
+          "port": "Port",
+          "timeout": "Timeout, sec",
+          "hostUser": "SMTP user",
+          "hostPassword": "SMTP password",
+          "savedPassword": "Saved password",
+          "useTls": "TLS",
+          "useSsl": "SSL"
+        },
+        "actions": {
+          "save": "Save",
+          "saving": "Saving...",
+          "test": "Send test",
+          "testing": "Sending..."
+        },
+        "test": {
+          "title": "Test delivery",
+          "helper": "Save the settings first, then send a test email to a real address.",
+          "recipient": "Recipient"
+        },
+        "status": {
+          "title": "Status",
+          "enabled": "SMTP enabled",
+          "connection": "Last check",
+          "lastChecked": "Check time",
+          "message": "Message",
+          "ok": "Successful",
+          "failed": "Failed",
+          "notChecked": "Not checked"
+        },
+        "messages": {
+          "loadFailed": "Failed to load email settings.",
+          "saveFailed": "Failed to save email settings.",
+          "saved": "Email settings saved.",
+          "testFailed": "Failed to send test email.",
+          "testOk": "Test email sent."
+        }
+      },
       "topbar": {
         "role": "Operations",
         "toggleSidebar": "Toggle sidebar",

@@ -33,4 +33,4 @@ CORS_ALLOWED_ORIGINS = [
     if origin.strip()
 ]
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")

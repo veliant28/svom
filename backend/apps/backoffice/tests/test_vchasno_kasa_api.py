@@ -3,6 +3,7 @@ from __future__ import annotations
 from unittest.mock import patch
 
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
@@ -83,20 +84,103 @@ class BackofficeVchasnoKasaAPITests(APITestCase):
             {
                 "is_enabled": True,
                 "api_token": "secret-token-1234",
+                "fiscal_api_token": "fiscal-secret-5678",
                 "rro_fn": "PRRO-77",
                 "default_payment_type": 1,
+                "selected_payment_methods": ["1"],
+                "selected_tax_groups": ["Б"],
             },
             format="json",
             **self.auth,
         )
         self.assertEqual(save_response.status_code, status.HTTP_200_OK)
         self.assertNotIn("api_token", save_response.data)
+        self.assertNotIn("fiscal_api_token", save_response.data)
         self.assertTrue(save_response.data["api_token_masked"].endswith("1234"))
+        self.assertTrue(save_response.data["fiscal_api_token_masked"].endswith("5678"))
 
         get_response = self.client.get(reverse("backoffice_api:vchasno-kasa-settings"), **self.auth)
         self.assertEqual(get_response.status_code, status.HTTP_200_OK)
         self.assertNotIn("api_token", get_response.data)
+        self.assertNotIn("fiscal_api_token", get_response.data)
         self.assertTrue(get_response.data["api_token_masked"].endswith("1234"))
+        self.assertTrue(get_response.data["fiscal_api_token_masked"].endswith("5678"))
+
+    def test_settings_accept_multiple_payment_methods_and_tax_groups(self):
+        response = self.client.patch(
+            reverse("backoffice_api:vchasno-kasa-settings"),
+            {
+                "is_enabled": True,
+                "api_token": "secret-token-5678",
+                "rro_fn": "PRRO-88",
+                "selected_payment_methods": ["17", "20", "2"],
+                "selected_tax_groups": ["Б", "А", "ИК"],
+            },
+            format="json",
+            **self.auth,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["selected_payment_methods"], ["17", "20", "2"])
+        self.assertEqual(response.data["selected_tax_groups"], ["Б", "А", "ИК"])
+
+        settings = VchasnoKasaSettings.objects.get(code=VchasnoKasaSettings.DEFAULT_CODE)
+        self.assertEqual(settings.selected_payment_methods, ["17", "20", "2"])
+        self.assertEqual(settings.selected_tax_groups, ["Б", "А", "ИК"])
+
+    @patch("apps.backoffice.api.views.vchasno_kasa_views.get_vchasno_shift_status")
+    def test_shift_status_endpoint_returns_payload(self, mock_get_shift_status):
+        mock_get_shift_status.return_value = {
+            "status_key": "closed",
+            "is_open": False,
+            "shift_id": "",
+            "shift_link": "",
+            "message": "Необхідно відкрити зміну",
+            "checked_at": timezone.now(),
+            "can_open": True,
+            "response_code": 2007,
+        }
+
+        response = self.client.get(reverse("backoffice_api:vchasno-kasa-shift-status"), **self.auth)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status_key"], "closed")
+        self.assertTrue(response.data["can_open"])
+
+    @patch("apps.backoffice.api.views.vchasno_kasa_views.open_vchasno_shift")
+    def test_open_shift_endpoint_returns_payload(self, mock_open_shift):
+        mock_open_shift.return_value = {
+            "status_key": "open",
+            "is_open": True,
+            "shift_id": "shift-1",
+            "shift_link": "39",
+            "message": "Зміну відкрито.",
+            "checked_at": timezone.now(),
+            "can_open": False,
+            "response_code": 0,
+        }
+
+        response = self.client.post(reverse("backoffice_api:vchasno-kasa-open-shift"), {}, format="json", **self.auth)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status_key"], "open")
+        self.assertEqual(response.data["shift_id"], "shift-1")
+
+    @patch("apps.backoffice.api.views.vchasno_kasa_views.close_vchasno_shift")
+    def test_close_shift_endpoint_returns_payload(self, mock_close_shift):
+        mock_close_shift.return_value = {
+            "status_key": "closed",
+            "is_open": False,
+            "shift_id": "shift-1",
+            "shift_link": "39",
+            "message": "Зміну закрито.",
+            "checked_at": timezone.now(),
+            "can_open": True,
+            "response_code": 0,
+        }
+
+        response = self.client.post(reverse("backoffice_api:vchasno-kasa-close-shift"), {}, format="json", **self.auth)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status_key"], "closed")
+        self.assertEqual(response.data["shift_id"], "shift-1")
 
     @patch("apps.commerce.services.vchasno_kasa.service.VchasnoKasaApiClient.create_order")
     def test_issue_receipt_is_idempotent(self, mock_create_order):
@@ -105,6 +189,8 @@ class BackofficeVchasnoKasaAPITests(APITestCase):
             is_enabled=True,
             api_token="token-1234",
             rro_fn="PRRO-77",
+            selected_payment_methods=["4"],
+            selected_tax_groups=["Б"],
         )
         mock_create_order.return_value = {
             "order_number": self.order.order_number,
@@ -143,6 +229,8 @@ class BackofficeVchasnoKasaAPITests(APITestCase):
             is_enabled=True,
             api_token="token-1234",
             rro_fn="PRRO-77",
+            selected_payment_methods=["4"],
+            selected_tax_groups=["Б"],
             auto_issue_on_completed=True,
         )
 

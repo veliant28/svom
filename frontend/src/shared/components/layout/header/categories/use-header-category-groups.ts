@@ -79,16 +79,18 @@ function groupCategoriesByParent(categories: CategorySummary[]): HeaderCategoryP
   });
 }
 
-export function useHeaderCategoryGroups() {
+export function useHeaderCategoryGroups(initialCategories: CategorySummary[] = []) {
   const locale = useLocale();
-  const [categories, setCategories] = useState<CategorySummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [categories, setCategories] = useState<CategorySummary[]>(initialCategories);
+  const [isLoading, setIsLoading] = useState(initialCategories.length === 0);
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadCategories() {
-      setIsLoading(true);
+      if (categories.length === 0) {
+        setIsLoading(true);
+      }
       try {
         const data = await getCategories(locale);
         if (isMounted) {
@@ -110,7 +112,7 @@ export function useHeaderCategoryGroups() {
     return () => {
       isMounted = false;
     };
-  }, [locale]);
+  }, [categories.length, locale]);
 
   const parents = useMemo(() => groupCategoriesByParent(categories), [categories]);
 

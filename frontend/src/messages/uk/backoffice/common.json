@@ -15,6 +15,55 @@
       "closeSidebar": "Закрити бічну панель",
       "yes": "Так",
       "no": "Ні",
+      "email": {
+        "title": "Email",
+        "subtitle": "SMTP налаштування для листів відновлення пароля та системних сповіщень.",
+        "form": {
+          "title": "SMTP відправка",
+          "helper": "Увімкніть SMTP, щоб листи надходили на реальні email. Порожнє поле пароля не змінює збережений пароль."
+        },
+        "fields": {
+          "enabled": "Увімкнути реальну відправку листів",
+          "fromEmail": "Email відправника",
+          "frontendBaseUrl": "Frontend base URL для reset-посилань",
+          "host": "SMTP host",
+          "port": "Порт",
+          "timeout": "Timeout, сек",
+          "hostUser": "SMTP user",
+          "hostPassword": "SMTP password",
+          "savedPassword": "Збережений пароль",
+          "useTls": "TLS",
+          "useSsl": "SSL"
+        },
+        "actions": {
+          "save": "Зберегти",
+          "saving": "Зберігаємо...",
+          "test": "Надіслати тест",
+          "testing": "Надсилаємо..."
+        },
+        "test": {
+          "title": "Тестова відправка",
+          "helper": "Спочатку збережіть налаштування, потім надішліть тестовий лист на реальну адресу.",
+          "recipient": "Отримувач"
+        },
+        "status": {
+          "title": "Статус",
+          "enabled": "SMTP увімкнено",
+          "connection": "Остання перевірка",
+          "lastChecked": "Час перевірки",
+          "message": "Повідомлення",
+          "ok": "Успішно",
+          "failed": "Помилка",
+          "notChecked": "Не перевірялося"
+        },
+        "messages": {
+          "loadFailed": "Не вдалося завантажити email налаштування.",
+          "saveFailed": "Не вдалося зберегти email налаштування.",
+          "saved": "Email налаштування збережено.",
+          "testFailed": "Не вдалося надіслати тестовий лист.",
+          "testOk": "Тестовий лист надіслано."
+        }
+      },
       "topbar": {
         "role": "Операційний контур",
         "toggleSidebar": "Перемкнути бічну панель",

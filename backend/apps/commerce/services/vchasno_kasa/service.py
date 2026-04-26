@@ -9,8 +9,13 @@ from django.utils import timezone
 from apps.commerce.models import Order, OrderReceipt, VchasnoKasaSettings
 
 from .client import VchasnoKasaApiClient
-from .exceptions import VchasnoKasaConfigError, VchasnoKasaDisabledError, VchasnoKasaError
-from .payloads import build_vchasno_order_payload, build_vchasno_sync_payload
+from .exceptions import VchasnoKasaApiError, VchasnoKasaConfigError, VchasnoKasaDisabledError, VchasnoKasaError
+from .payloads import (
+    build_vchasno_order_payload,
+    build_vchasno_sync_payload,
+    get_selected_payment_methods,
+    get_selected_tax_groups,
+)
 
 STATUS_CODE_TO_KEY = {
     0: "created",
@@ -57,6 +62,86 @@ def test_vchasno_kasa_connection() -> dict[str, Any]:
     return _save_check_result(settings=settings, ok=True, message="Connection successful.")
 
 
+def get_vchasno_shift_status() -> dict[str, Any]:
+    settings = get_vchasno_kasa_settings()
+    if not settings.is_enabled:
+        return _build_shift_status_payload(status_key="disabled", message="Інтеграцію Вчасно.Каса вимкнено.", response_code=None)
+
+    token = _resolve_fiscal_api_token(settings=settings)
+    if not token:
+        return _build_shift_status_payload(
+            status_key="error",
+            message="API токен каси Вчасно не задан (Налаштування каси -> Токен).",
+            response_code=None,
+        )
+
+    try:
+        response = VchasnoKasaApiClient(token=token).execute_fiscal({"fiscal": {"task": 18}})
+    except VchasnoKasaError as exc:
+        return _build_shift_status_payload(status_key="error", message=str(exc), response_code=getattr(exc, "status_code", None))
+    return _serialize_shift_status_from_response(response=response)
+
+
+def open_vchasno_shift(*, actor=None) -> dict[str, Any]:
+    settings = get_vchasno_kasa_settings()
+    if not settings.is_enabled:
+        raise VchasnoKasaDisabledError("Інтеграцію Вчасно.Каса вимкнено.")
+
+    token = _resolve_fiscal_api_token(settings=settings)
+    if not token:
+        raise VchasnoKasaConfigError(
+            "API токен каси Вчасно не задан (Налаштування каси -> Токен).",
+            code="VCHASNO_KASA_FISCAL_TOKEN_MISSING",
+        )
+
+    response = VchasnoKasaApiClient(token=token).execute_fiscal({"fiscal": {"task": 0, "cashier": "SVOM"}})
+    payload = _serialize_shift_status_from_response(response=response)
+    if payload["status_key"] == "error":
+        message = payload["message"] or "Не вдалося відкрити зміну."
+        if _looks_like_shift_already_open(message):
+            payload["status_key"] = "open"
+            payload["is_open"] = True
+            payload["can_open"] = False
+            return payload
+        raise VchasnoKasaApiError(message, status_code=422, details={"response": response})
+    payload["status_key"] = "open"
+    payload["is_open"] = True
+    payload["can_open"] = False
+    if not payload["message"]:
+        payload["message"] = "Зміну відкрито."
+    return payload
+
+
+def close_vchasno_shift(*, actor=None) -> dict[str, Any]:
+    settings = get_vchasno_kasa_settings()
+    if not settings.is_enabled:
+        raise VchasnoKasaDisabledError("Інтеграцію Вчасно.Каса вимкнено.")
+
+    token = _resolve_fiscal_api_token(settings=settings)
+    if not token:
+        raise VchasnoKasaConfigError(
+            "API токен каси Вчасно не задан (Налаштування каси -> Токен).",
+            code="VCHASNO_KASA_FISCAL_TOKEN_MISSING",
+        )
+
+    response = VchasnoKasaApiClient(token=token).execute_fiscal({"fiscal": {"task": 11, "cashier": "SVOM"}})
+    payload = _serialize_shift_status_from_response(response=response)
+    if payload["status_key"] == "error":
+        message = payload["message"] or "Не вдалося закрити зміну."
+        if payload.get("response_code") == 2007 or _looks_like_shift_already_closed(message):
+            payload["status_key"] = "closed"
+            payload["is_open"] = False
+            payload["can_open"] = True
+            payload["message"] = "Зміну закрито."
+            return payload
+        raise VchasnoKasaApiError(message, status_code=422, details={"response": response})
+    payload["status_key"] = "closed"
+    payload["is_open"] = False
+    payload["can_open"] = True
+    payload["message"] = "Зміну закрито."
+    return payload
+
+
 def ensure_vchasno_kasa_settings_ready(*, settings: VchasnoKasaSettings | None = None) -> VchasnoKasaSettings:
     settings = settings or get_vchasno_kasa_settings()
     if not has_vchasno_kasa_settings_table() or not has_order_receipt_table():
@@ -67,7 +152,10 @@ def ensure_vchasno_kasa_settings_ready(*, settings: VchasnoKasaSettings | None =
     if not settings.is_enabled:
         raise VchasnoKasaDisabledError()
     if not (settings.api_token or "").strip():
-        raise VchasnoKasaConfigError("Токен Вчасно.Каса не задан.", code="VCHASNO_KASA_TOKEN_MISSING")
+        raise VchasnoKasaConfigError(
+            "API токен замовлень Вчасно не задан (Налаштування компанії -> Інтеграція замовлень -> API).",
+            code="VCHASNO_KASA_TOKEN_MISSING",
+        )
     if not (settings.rro_fn or "").strip():
         raise VchasnoKasaConfigError("Фискальный номер РРО/ПРРО не задан.", code="VCHASNO_KASA_RRO_FN_MISSING")
     return settings
@@ -96,10 +184,11 @@ def get_order_sale_receipt(order: Order) -> OrderReceipt | None:
 
 def issue_order_receipt(*, order: Order, actor=None) -> OrderReceipt:
     settings = ensure_vchasno_kasa_settings_ready()
+    _auto_open_shift_for_receipt_if_closed(settings=settings)
     receipt = _get_or_create_sale_receipt(order=order, actor=actor)
     if receipt.receipt_url and receipt.fiscal_status_code == 11:
         return receipt
-    if receipt.response_payload:
+    if _should_sync_existing_receipt(receipt=receipt):
         return sync_order_receipt(order=order, actor=actor)
 
     payload = build_vchasno_order_payload(order=order, receipt=receipt, settings=settings)
@@ -164,8 +253,16 @@ def get_open_receipt_url(*, order: Order) -> str:
 def serialize_receipt_summary(*, order: Order) -> dict[str, Any]:
     receipt = get_order_sale_receipt(order)
     settings = get_vchasno_kasa_settings()
+    has_payment_methods = bool(get_selected_payment_methods(settings=settings))
+    has_tax_groups = bool(get_selected_tax_groups(settings=settings))
     if receipt is None:
-        can_issue = bool(settings.is_enabled and (settings.api_token or "").strip() and (settings.rro_fn or "").strip())
+        can_issue = bool(
+            settings.is_enabled
+            and (settings.api_token or "").strip()
+            and (settings.rro_fn or "").strip()
+            and has_payment_methods
+            and has_tax_groups
+        )
         return {
             "provider": OrderReceipt.PROVIDER_VCHASNO_KASA,
             "available": bool(settings.is_enabled),
@@ -180,7 +277,7 @@ def serialize_receipt_summary(*, order: Order) -> dict[str, Any]:
         }
 
     status_code = receipt.fiscal_status_code
-    status_key = (receipt.fiscal_status_key or "").strip() or _status_key_from_code(status_code)
+    status_key = _resolve_receipt_status_key(receipt=receipt)
     return {
         "provider": receipt.provider,
         "available": True,
@@ -197,7 +294,7 @@ def serialize_receipt_summary(*, order: Order) -> dict[str, Any]:
 
 def serialize_receipt_row(receipt: OrderReceipt) -> dict[str, Any]:
     order = receipt.order
-    status_key = (receipt.fiscal_status_key or "").strip() or _status_key_from_code(receipt.fiscal_status_code)
+    status_key = _resolve_receipt_status_key(receipt=receipt)
     return {
         "id": str(receipt.id),
         "order_id": str(order.id),
@@ -326,6 +423,15 @@ def _status_key_from_code(status_code: int | None) -> str:
     return STATUS_CODE_TO_KEY.get(int(status_code), "pending")
 
 
+def _resolve_receipt_status_key(*, receipt: OrderReceipt) -> str:
+    explicit = str(getattr(receipt, "fiscal_status_key", "") or "").strip()
+    if explicit:
+        return explicit
+    if str(getattr(receipt, "error_code", "") or "").strip() or str(getattr(receipt, "error_message", "") or "").strip():
+        return "error"
+    return _status_key_from_code(getattr(receipt, "fiscal_status_code", None))
+
+
 def _resolve_status_code(payload: dict[str, Any]) -> int | None:
     for key in ("status_code", "statusCode", "fiscal_status_code", "fiscalStatusCode", "status"):
         value = payload.get(key)
@@ -402,6 +508,151 @@ def _resolve_datetime(payload: dict[str, Any], keys: tuple[str, ...]):
     if parsed.tzinfo is None:
         return timezone.make_aware(parsed, timezone.get_current_timezone())
     return parsed
+
+
+def _build_shift_status_payload(*, status_key: str, message: str, response_code: int | None, shift_id: str = "", shift_link: str = "") -> dict[str, Any]:
+    return {
+        "status_key": status_key,
+        "is_open": True if status_key == "open" else False if status_key == "closed" else None,
+        "shift_id": shift_id,
+        "shift_link": shift_link,
+        "message": str(message or "").strip(),
+        "checked_at": timezone.now(),
+        "can_open": status_key == "closed",
+        "response_code": response_code,
+    }
+
+
+def _serialize_shift_status_from_response(*, response: dict[str, Any]) -> dict[str, Any]:
+    response_code = _resolve_int(response.get("res"))
+    info = response.get("info")
+    if not isinstance(info, dict):
+        info = {}
+    shift_status = _resolve_int(info.get("shift_status"))
+    shift_id = _first_string(info, "shift_id", "shiftId")
+    shift_link_raw = info.get("shift_link", info.get("shiftLink"))
+    shift_link = str(shift_link_raw).strip() if shift_link_raw is not None else ""
+    raw_message = _first_string(response, "errortxt", "error", "message")
+    message = _normalize_shift_message(raw_message=raw_message, response_code=response_code)
+    status_key = _resolve_shift_status_key(
+        response_code=response_code,
+        shift_status=shift_status,
+        shift_id=shift_id,
+        shift_link=shift_link,
+        message=message,
+    )
+    if not message:
+        message = _default_shift_message(status_key=status_key)
+    return _build_shift_status_payload(
+        status_key=status_key,
+        message=message,
+        response_code=response_code,
+        shift_id=shift_id,
+        shift_link=shift_link,
+    )
+
+
+def _resolve_shift_status_key(
+    *,
+    response_code: int | None,
+    shift_status: int | None,
+    shift_id: str,
+    shift_link: str,
+    message: str,
+) -> str:
+    if response_code == 0:
+        if shift_status == 1:
+            return "open"
+        if shift_status == 0:
+            return "closed"
+        if shift_id or shift_link:
+            return "open"
+        return "unknown"
+    if response_code == 2007 or "відкрити зміну" in message.lower():
+        return "closed"
+    if response_code == 2008 or "закрити зміну" in message.lower():
+        return "open"
+    return "error"
+
+
+def _default_shift_message(*, status_key: str) -> str:
+    if status_key == "open":
+        return "Зміну відкрито."
+    if status_key == "closed":
+        return "Зміну закрито."
+    if status_key == "disabled":
+        return "Інтеграцію Вчасно.Каса вимкнено."
+    if status_key == "unknown":
+        return "Не вдалося визначити стан зміни."
+    return "Помилка перевірки стану зміни."
+
+
+def _normalize_shift_message(*, raw_message: str, response_code: int | None) -> str:
+    message = str(raw_message or "").strip()
+    if response_code in {401, 403}:
+        return (
+            "Неавторизовано у Вчасно.Каса. Перевірте API токен каси "
+            "(Налаштування каси → API → Згенерувати) і права токена на фіскальні операції."
+        )
+    if message.lower() in {"unauthorized", "forbidden"}:
+        return (
+            "Неавторизовано у Вчасно.Каса. Перевірте API токен каси "
+            "(Налаштування каси → API → Згенерувати) і права токена на фіскальні операції."
+        )
+    return message
+
+
+def _resolve_fiscal_api_token(*, settings: VchasnoKasaSettings) -> str:
+    fiscal_token = str(getattr(settings, "fiscal_api_token", "") or "").strip()
+    if fiscal_token:
+        return fiscal_token
+    return str(settings.api_token or "").strip()
+
+
+def _auto_open_shift_for_receipt_if_closed(*, settings: VchasnoKasaSettings) -> None:
+    token = _resolve_fiscal_api_token(settings=settings)
+    if not token:
+        return
+    try:
+        response = VchasnoKasaApiClient(token=token).execute_fiscal({"fiscal": {"task": 18}})
+    except VchasnoKasaError:
+        return
+    status_payload = _serialize_shift_status_from_response(response=response)
+    if status_payload.get("status_key") != "closed":
+        return
+    try:
+        open_vchasno_shift()
+    except VchasnoKasaError:
+        return
+
+
+def _should_sync_existing_receipt(*, receipt: OrderReceipt) -> bool:
+    if not getattr(receipt, "response_payload", {}):
+        return False
+    if str(getattr(receipt, "error_code", "") or "").strip() or str(getattr(receipt, "error_message", "") or "").strip():
+        return False
+    return True
+
+
+def _looks_like_shift_already_open(message: str) -> bool:
+    normalized = str(message or "").lower()
+    return "вже" in normalized and "відкр" in normalized and "змін" in normalized
+
+
+def _looks_like_shift_already_closed(message: str) -> bool:
+    normalized = str(message or "").lower()
+    return (
+        ("вже" in normalized and "закр" in normalized and "змін" in normalized)
+        or ("немає" in normalized and "відкрит" in normalized and "змін" in normalized)
+    )
+
+
+def _resolve_int(value: Any) -> int | None:
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and value.strip().isdigit():
+        return int(value.strip())
+    return None
 
 
 @lru_cache(maxsize=1)

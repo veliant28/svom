@@ -11,7 +11,7 @@ def get_public_products_queryset() -> QuerySet[Product]:
     supplier_offers = SupplierOffer.objects.select_related("supplier").order_by("supplier__priority", "supplier__name", "id")
     return (
         Product.objects.filter(is_active=True)
-        .select_related("brand", "category", "product_price")
+        .select_related("brand", "category", "category__parent", "category__parent__parent", "product_price")
         .prefetch_related(
             Prefetch("images", queryset=primary_images, to_attr="primary_images"),
             Prefetch("images", queryset=all_images, to_attr="all_images"),
@@ -34,7 +34,7 @@ def get_product_detail_queryset() -> QuerySet[Product]:
 
     return (
         Product.objects.filter(is_active=True)
-        .select_related("brand", "category", "product_price")
+        .select_related("brand", "category", "category__parent", "category__parent__parent", "product_price", "utr_enrichment")
         .prefetch_related(
             "images",
             "product_attributes__attribute",

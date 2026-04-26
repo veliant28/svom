@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 from celery import shared_task
+from django.conf import settings
 
 from apps.supplier_imports.services.integrations.exceptions import SupplierCooldownError, SupplierIntegrationError
 from apps.supplier_imports.services.scheduling.pipeline import ScheduledSupplierImportPipelineService
 
 
-@shared_task(name="supplier_imports.run_scheduled_supplier_pipeline")
+@shared_task(
+    name="supplier_imports.run_scheduled_supplier_pipeline",
+    soft_time_limit=int(getattr(settings, "SUPPLIER_IMPORT_SCHEDULED_PIPELINE_SOFT_TIME_LIMIT", 60 * 120)),
+    time_limit=int(getattr(settings, "SUPPLIER_IMPORT_SCHEDULED_PIPELINE_TIME_LIMIT", 60 * 150)),
+)
 def run_scheduled_supplier_pipeline_task(source_code: str) -> dict:
     service = ScheduledSupplierImportPipelineService()
     try:

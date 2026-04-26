@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from pathlib import Path
 from typing import Any
 
 from django.utils import timezone
@@ -39,6 +40,8 @@ def list_price_lists(service, *, supplier_code: str) -> list[dict]:
 def get_request_params(service, *, supplier_code: str) -> dict[str, Any]:
     source, integration = resolve_source_and_integration(supplier_code=supplier_code)
     source_file = resolve_source_file_path(source.input_path, preferred_extension="xlsx")
+    if supplier_code == "gpl" and source_file is None:
+        source_file = _resolve_gpl_source_file(source=source)
     file_meta = extract_file_metadata(source_file=source_file, supplier_code=supplier_code)
 
     default_formats = ["xlsx"]
@@ -112,8 +115,15 @@ def request_price_list(
 
     now = timezone.now()
     source_file = resolve_source_file_path(source.input_path, preferred_extension="xlsx")
+    if supplier_code == "gpl":
+        source_file = _resolve_gpl_source_file(source=source)
     if supplier_code == "gpl" and source_file is None:
         raise SupplierIntegrationError("Для GPL источник прайса должен быть XLSX-файлом.")
+    if supplier_code == "gpl" and source_file is not None:
+        resolved_path = str(source_file)
+        if (source.input_path or "").strip() != resolved_path:
+            source.input_path = resolved_path
+            source.save(update_fields=("input_path", "updated_at"))
     metadata = extract_file_metadata(source_file=source_file, supplier_code=supplier_code)
 
     request_payload = {
@@ -210,3 +220,21 @@ def request_price_list(
 
     cooldown = service.guard.get_status(integration=integration)
     return serialize_price_list(row=created, cooldown_wait_seconds=cooldown.wait_seconds)
+
+
+def _resolve_gpl_source_file(*, source) -> Path | None:
+    primary = resolve_source_file_path(source.input_path, preferred_extension="xlsx")
+    if primary is not None:
+        return primary
+
+    historical_rows = (
+        SupplierPriceList.objects.filter(source=source)
+        .order_by("-created_at")
+        .only("downloaded_file_path", "source_file_path")[:50]
+    )
+    for row in historical_rows:
+        for raw_path in (row.downloaded_file_path, row.source_file_path):
+            candidate = resolve_source_file_path(str(raw_path or ""), preferred_extension="xlsx")
+            if candidate is not None:
+                return candidate
+    return None

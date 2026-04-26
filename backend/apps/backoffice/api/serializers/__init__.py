@@ -75,6 +75,7 @@ from .vchasno_kasa_serializer import (
     BackofficeOrderReceiptSummarySerializer,
     BackofficeVchasnoKasaConnectionCheckSerializer,
     BackofficeVchasnoKasaSettingsSerializer,
+    BackofficeVchasnoKasaShiftStatusSerializer,
     BackofficeVchasnoReceiptListSerializer,
     BackofficeVchasnoReceiptRowSerializer,
 )
@@ -116,6 +117,11 @@ from .vehicle_generation_serializer import BackofficeVehicleGenerationSerializer
 from .vehicle_make_serializer import BackofficeVehicleMakeSerializer
 from .vehicle_model_serializer import BackofficeVehicleModelSerializer
 from .vehicle_modification_serializer import BackofficeVehicleModificationSerializer
+from .email_settings_serializer import (
+    EmailDeliverySettingsSerializer,
+    EmailDeliveryTestResponseSerializer,
+    EmailDeliveryTestSerializer,
+)
 
 __all__ = [
     "ArticleNormalizationRuleSerializer",
@@ -178,6 +184,7 @@ __all__ = [
     "LiqPaySettingsSerializer",
     "BackofficeVchasnoKasaSettingsSerializer",
     "BackofficeVchasnoKasaConnectionCheckSerializer",
+    "BackofficeVchasnoKasaShiftStatusSerializer",
     "BackofficeOrderReceiptSummarySerializer",
     "BackofficeOrderReceiptActionSerializer",
     "BackofficeVchasnoReceiptRowSerializer",
@@ -215,4 +222,7 @@ __all__ = [
     "BackofficeSupportStatusUpdateSerializer",
     "BackofficePromoBannerSerializer",
     "BackofficePromoBannerSettingsSerializer",
+    "EmailDeliverySettingsSerializer",
+    "EmailDeliveryTestResponseSerializer",
+    "EmailDeliveryTestSerializer",
 ]

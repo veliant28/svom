@@ -15,6 +15,55 @@
       "closeSidebar": "Закрыть боковую панель",
       "yes": "Да",
       "no": "Нет",
+      "email": {
+        "title": "Email",
+        "subtitle": "Настройки SMTP для писем восстановления пароля и системных уведомлений.",
+        "form": {
+          "title": "SMTP отправка",
+          "helper": "Включите SMTP, чтобы письма уходили на реальные email. Пустое поле пароля не меняет сохраненный пароль."
+        },
+        "fields": {
+          "enabled": "Включить реальную отправку писем",
+          "fromEmail": "Email отправителя",
+          "frontendBaseUrl": "Frontend base URL для reset-ссылок",
+          "host": "SMTP host",
+          "port": "Порт",
+          "timeout": "Timeout, сек",
+          "hostUser": "SMTP user",
+          "hostPassword": "SMTP password",
+          "savedPassword": "Сохраненный пароль",
+          "useTls": "TLS",
+          "useSsl": "SSL"
+        },
+        "actions": {
+          "save": "Сохранить",
+          "saving": "Сохраняем...",
+          "test": "Отправить тест",
+          "testing": "Отправляем..."
+        },
+        "test": {
+          "title": "Тестовая отправка",
+          "helper": "Сначала сохраните настройки, затем отправьте тестовое письмо на реальный адрес.",
+          "recipient": "Получатель"
+        },
+        "status": {
+          "title": "Статус",
+          "enabled": "SMTP включен",
+          "connection": "Последняя проверка",
+          "lastChecked": "Время проверки",
+          "message": "Сообщение",
+          "ok": "Успешно",
+          "failed": "Ошибка",
+          "notChecked": "Не проверялось"
+        },
+        "messages": {
+          "loadFailed": "Не удалось загрузить настройки email.",
+          "saveFailed": "Не удалось сохранить настройки email.",
+          "saved": "Настройки email сохранены.",
+          "testFailed": "Не удалось отправить тестовое письмо.",
+          "testOk": "Тестовое письмо отправлено."
+        }
+      },
       "topbar": {
         "role": "Операционный контур",
         "toggleSidebar": "Переключить боковую панель",

@@ -183,7 +183,7 @@ export function GarageAddVehicleForm({ onCreated }: GarageAddVehicleFormProps) {
           <select
             value={selectedMake}
             onChange={(event) => setSelectedMake(event.target.value)}
-            disabled={isLoadingMakes || isSubmitting}
+            disabled={!selectedYear || isLoadingMakes || isSubmitting}
             className="h-10 w-full max-w-full min-w-0 rounded-md border px-3"
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
           >

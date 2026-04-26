@@ -22,6 +22,8 @@ export function HeaderContactSticker() {
           aria-hidden
           width={994}
           height={870}
+          priority
+          loading="eager"
           className="header-contact-sticker-art"
         />
         <span className="header-contact-sticker-overlay">

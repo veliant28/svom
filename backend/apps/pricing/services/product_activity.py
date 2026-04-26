@@ -7,6 +7,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.catalog.models import Product
+from apps.pricing.models import SupplierOffer
 
 DEFAULT_PRICE_FRESHNESS_HOURS = 24
 
@@ -15,6 +16,7 @@ DEFAULT_PRICE_FRESHNESS_HOURS = 24
 class ProductActivitySyncResult:
     activated: int
     deactivated: int
+    supplier_offers_zeroed: int
     freshness_hours: int
     cutoff_at: timezone.datetime
 
@@ -59,9 +61,23 @@ def sync_products_activity_by_price_freshness(
         Q(product_price__isnull=True) | Q(product_price__updated_at__lt=cutoff),
     ).update(is_active=False)
 
+    supplier_offers_zeroed = SupplierOffer.objects.filter(
+        product__is_active=False,
+    ).filter(
+        Q(product__product_price__isnull=True) | Q(product__product_price__updated_at__lt=cutoff),
+    ).filter(
+        updated_at__lt=cutoff,
+    ).filter(
+        Q(stock_qty__gt=0) | Q(is_available=True),
+    ).update(
+        stock_qty=0,
+        is_available=False,
+    )
+
     return ProductActivitySyncResult(
         activated=int(activated),
         deactivated=int(deactivated),
+        supplier_offers_zeroed=int(supplier_offers_zeroed),
         freshness_hours=normalized_hours,
         cutoff_at=cutoff,
     )

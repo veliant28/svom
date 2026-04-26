@@ -2,6 +2,7 @@
 
 import { AlertCircle, ExternalLink, LoaderCircle, RefreshCw, Receipt } from "lucide-react";
 
+import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import type { BackofficeOrderReceiptSummary } from "@/features/backoffice/types/vchasno-kasa.types";
 
 type Translator = (key: string, values?: Record<string, string | number>) => string;
@@ -32,10 +33,10 @@ export function OrderReceiptField({
 
   return (
     <div className="rounded-md border px-3 py-2" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}>
-      <p className="text-[11px]" style={{ color: "var(--muted)" }}>{t("orders.receipt.label")}</p>
-      <div className="mt-1 flex items-start justify-between gap-2">
+      <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-[var(--text)]">{statusLabel}</p>
+          <p className="text-[11px]" style={{ color: "var(--muted)" }}>{t("orders.receipt.label")}</p>
+          <p className="mt-1 text-sm font-medium text-[var(--text)]">{statusLabel}</p>
           {receipt?.check_fn ? (
             <p className="mt-0.5 font-mono text-xs" style={{ color: "var(--muted)" }}>{receipt.check_fn}</p>
           ) : null}
@@ -46,20 +47,23 @@ export function OrderReceiptField({
             </p>
           ) : null}
         </div>
-
-        <div className="flex shrink-0 items-center gap-1">
-          {receipt?.can_issue ? (
+        {receipt?.can_issue ? (
+          <BackofficeTooltip content={t("orders.receipt.actions.issue")} placement="top" align="center" wrapperClassName="inline-flex shrink-0">
             <button
               type="button"
-              className="inline-flex h-8 items-center gap-1 rounded-md border px-2 text-xs font-semibold disabled:opacity-60"
-              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border disabled:cursor-not-allowed disabled:opacity-60"
+              style={{ borderColor: "#2563eb", backgroundColor: "#2563eb", color: "#ffffff" }}
               onClick={onIssue}
               disabled={Boolean(isLoading)}
+              aria-label={t("orders.receipt.actions.issue")}
             >
-              {isLoading === "issue" ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Receipt className="h-3.5 w-3.5" />}
-              {t("orders.receipt.actions.issue")}
+              {isLoading === "issue" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Receipt className="h-4 w-4" />}
             </button>
-          ) : null}
+          </BackofficeTooltip>
+        ) : null}
+      </div>
+      {receipt?.can_sync || receipt?.can_open ? (
+        <div className="mt-2 flex items-center justify-end gap-1">
           {receipt?.can_sync ? (
             <button
               type="button"
@@ -85,7 +89,7 @@ export function OrderReceiptField({
             </button>
           ) : null}
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }

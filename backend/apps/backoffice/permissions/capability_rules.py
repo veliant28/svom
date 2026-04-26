@@ -22,6 +22,7 @@ RULES: tuple[BackofficeCapabilityRule, ...] = (
     BackofficeCapabilityRule("settings/hero-block/", ("promo_banners.manage",), ("promo_banners.manage",)),
     BackofficeCapabilityRule("settings/promo-banners/", ("promo_banners.manage",), ("promo_banners.manage",)),
     BackofficeCapabilityRule("settings/footer/", ("footer.settings",), ("footer.settings",)),
+    BackofficeCapabilityRule("settings/email/", ("settings.manage",), ("settings.manage",)),
     BackofficeCapabilityRule("procurement/", ("procurement.manage",), ("procurement.manage",)),
     BackofficeCapabilityRule("orders/", ("orders.view", "customers.support"), ("orders.manage", "customers.support")),
     BackofficeCapabilityRule("nova-poshta/senders/", ("nova_poshta.settings",), ("nova_poshta.settings",)),

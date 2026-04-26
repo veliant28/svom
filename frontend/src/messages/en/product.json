@@ -3,7 +3,7 @@
     "card": {
       "viewDetails": "View details",
       "fitment": {
-        "fits": "Fits your vehicle",
+        "fits": "Compatible",
         "noData": "Fitment not specified",
         "notFits": "Not compatible with selected vehicle"
       },
@@ -22,7 +22,12 @@
       },
       "attributesTitle": "Attributes",
       "fitmentTitle": "Fitment",
-      "fitmentEmpty": "Fitment for this product is not specified yet."
+      "fitmentEmpty": "Fitment for this product is not specified yet.",
+      "fitmentMakeLabel": "Make",
+      "fitmentModelLabel": "Model",
+      "fitmentAllMakes": "All makes",
+      "fitmentAllModels": "All models",
+      "fitmentRows": "Shown fitments: {count}"
     }
   }
 }

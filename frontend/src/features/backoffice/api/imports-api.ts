@@ -67,6 +67,10 @@ export async function getBackofficeImportRuns(token: string, params?: Backoffice
   return normalizePaginatedListResponse(data);
 }
 
+export async function getBackofficeImportRun(token: string, runId: string): Promise<BackofficeImportRun> {
+  return getJson<BackofficeImportRun>(`/backoffice/import-runs/${runId}/`, undefined, { token });
+}
+
 export async function getBackofficeImportErrors(token: string, params?: BackofficeListQuery) {
   const data = await getJson<BackofficeImportError[] | { results: BackofficeImportError[]; count: number }>(
     "/backoffice/import-errors/",

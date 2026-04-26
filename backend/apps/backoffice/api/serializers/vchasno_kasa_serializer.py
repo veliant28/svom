@@ -4,11 +4,16 @@ from rest_framework import serializers
 
 from apps.commerce.models import OrderReceipt, VchasnoKasaSettings
 from apps.commerce.services.vchasno_kasa import serialize_receipt_row
+from apps.commerce.services.vchasno_kasa.payloads import normalize_payment_method_codes, normalize_tax_group_codes
 
 
 class BackofficeVchasnoKasaSettingsSerializer(serializers.ModelSerializer):
     api_token = serializers.CharField(write_only=True, required=False, allow_blank=True, trim_whitespace=True)
     api_token_masked = serializers.CharField(read_only=True)
+    fiscal_api_token = serializers.CharField(write_only=True, required=False, allow_blank=True, trim_whitespace=True)
+    fiscal_api_token_masked = serializers.CharField(read_only=True)
+    selected_payment_methods = serializers.ListField(child=serializers.CharField(trim_whitespace=True), required=False)
+    selected_tax_groups = serializers.ListField(child=serializers.CharField(trim_whitespace=True), required=False)
 
     class Meta:
         model = VchasnoKasaSettings
@@ -16,9 +21,13 @@ class BackofficeVchasnoKasaSettingsSerializer(serializers.ModelSerializer):
             "is_enabled",
             "api_token",
             "api_token_masked",
+            "fiscal_api_token",
+            "fiscal_api_token_masked",
             "rro_fn",
             "default_payment_type",
             "default_tax_group",
+            "selected_payment_methods",
+            "selected_tax_groups",
             "auto_issue_on_completed",
             "send_customer_email",
             "last_connection_checked_at",
@@ -29,6 +38,9 @@ class BackofficeVchasnoKasaSettingsSerializer(serializers.ModelSerializer):
     def to_representation(self, instance: VchasnoKasaSettings) -> dict:
         data = super().to_representation(instance)
         data["api_token_masked"] = instance.api_token_masked
+        data["fiscal_api_token_masked"] = instance.fiscal_api_token_masked
+        data["selected_payment_methods"] = normalize_payment_method_codes(data.get("selected_payment_methods"))
+        data["selected_tax_groups"] = normalize_tax_group_codes(data.get("selected_tax_groups"))
         return data
 
     def validate(self, attrs: dict) -> dict:
@@ -37,6 +49,10 @@ class BackofficeVchasnoKasaSettingsSerializer(serializers.ModelSerializer):
         existing_token = getattr(self.instance, "api_token", "")
         resolved_token = existing_token if token in {None, ""} else token
         rro_fn = attrs.get("rro_fn", getattr(self.instance, "rro_fn", ""))
+        if "selected_payment_methods" in attrs:
+            attrs["selected_payment_methods"] = normalize_payment_method_codes(attrs.get("selected_payment_methods"))
+        if "selected_tax_groups" in attrs:
+            attrs["selected_tax_groups"] = normalize_tax_group_codes(attrs.get("selected_tax_groups"))
         if enabled and not str(resolved_token or "").strip():
             raise serializers.ValidationError({"api_token": "VCHASNO_KASA_TOKEN_MISSING"})
         if enabled and not str(rro_fn or "").strip():
@@ -45,8 +61,11 @@ class BackofficeVchasnoKasaSettingsSerializer(serializers.ModelSerializer):
 
     def update(self, instance: VchasnoKasaSettings, validated_data: dict) -> VchasnoKasaSettings:
         token = validated_data.pop("api_token", None)
+        fiscal_token = validated_data.pop("fiscal_api_token", None)
         if token not in {None, ""}:
             instance.api_token = token.strip()
+        if fiscal_token not in {None, ""}:
+            instance.fiscal_api_token = fiscal_token.strip()
         actor = self.context.get("request").user if self.context.get("request") is not None else None
         if actor is not None:
             if instance.created_by_id is None:
@@ -61,6 +80,17 @@ class BackofficeVchasnoKasaSettingsSerializer(serializers.ModelSerializer):
 class BackofficeVchasnoKasaConnectionCheckSerializer(serializers.Serializer):
     ok = serializers.BooleanField()
     message = serializers.CharField()
+
+
+class BackofficeVchasnoKasaShiftStatusSerializer(serializers.Serializer):
+    status_key = serializers.CharField()
+    is_open = serializers.BooleanField(allow_null=True)
+    shift_id = serializers.CharField(allow_blank=True)
+    shift_link = serializers.CharField(allow_blank=True)
+    message = serializers.CharField(allow_blank=True)
+    checked_at = serializers.DateTimeField(allow_null=True)
+    can_open = serializers.BooleanField()
+    response_code = serializers.IntegerField(allow_null=True)
 
 
 class BackofficeOrderReceiptSummarySerializer(serializers.Serializer):

@@ -7,6 +7,7 @@ type KnownStorefrontApiErrorMessages = {
   required: string;
   notBlank: string;
   invalidEmail: string;
+  emailAlreadyExists: string;
   invalidChoice: string;
   currentPasswordIncorrect: string;
   maxLength: (max: number) => string;
@@ -108,6 +109,9 @@ function resolveKnownApiErrorMessage(
   }
   if (/^enter a valid email address\.?$/i.test(sanitized)) {
     return knownMessages.invalidEmail;
+  }
+  if (/^a user with this email already exists\.?$/i.test(sanitized)) {
+    return knownMessages.emailAlreadyExists;
   }
   if (/^current password is incorrect\.?$/i.test(sanitized)) {
     return knownMessages.currentPasswordIncorrect;

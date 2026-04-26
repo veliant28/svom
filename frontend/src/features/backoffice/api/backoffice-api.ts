@@ -10,5 +10,6 @@ export * from "./payment-api";
 export * from "./vchasno-kasa-api";
 export * from "./seo-api";
 export * from "./footer-settings-api";
+export * from "./email-settings-api";
 export * from "./vehicles-api";
 export * from "./loyalty-api";

@@ -1,0 +1,15 @@
+{
+  "categories": [
+    {
+      "id": "a1994e0b-f1dc-4622-bd63-1da8cac64633",
+      "parent_id": "e352bdd2-26da-48a4-8850-e10e5744b03a",
+      "slug": "втулкастартера",
+      "name": "Втулка стартера",
+      "name_uk": "Втулка стартера",
+      "name_ru": "Втулка стартера",
+      "name_en": "Starter bushing",
+      "description": "",
+      "is_active": true
+    }
+  ]
+}

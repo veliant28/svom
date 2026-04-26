@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { AUTH_TOKEN_COOKIE_KEY } from "@/features/auth/lib/auth-token-constants";
 import { hasBackofficeCapabilities, type BackofficeCapabilityCode } from "@/features/backoffice/lib/capabilities";
@@ -7,7 +8,8 @@ import type { BackofficeUser } from "@/features/backoffice/types/backoffice";
 import { siteConfig } from "@/shared/config/site";
 import { createRequestTimingId, logServerTiming, timeServerAsync } from "@/shared/lib/server-timing";
 
-async function fetchCurrentUser(token: string, requestId: string): Promise<BackofficeUser | null> {
+const fetchCurrentUser = cache(async (token: string): Promise<BackofficeUser | null> => {
+  const requestId = createRequestTimingId("backoffice-current-user");
   let response: Response;
   try {
     response = await timeServerAsync(
@@ -33,7 +35,7 @@ async function fetchCurrentUser(token: string, requestId: string): Promise<Backo
   }
 
   return (await response.json()) as BackofficeUser;
-}
+});
 
 export async function requireBackofficeAccess(
   locale: string,
@@ -48,7 +50,7 @@ export async function requireBackofficeAccess(
     redirect(`/${locale}/login?next=/${locale}/backoffice`);
   }
 
-  const user = await fetchCurrentUser(token, requestId);
+  const user = await fetchCurrentUser(token);
   if (!user || !user.has_backoffice_access) {
     redirect(`/${locale}/`);
   }

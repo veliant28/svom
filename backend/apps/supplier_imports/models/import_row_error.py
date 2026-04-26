@@ -36,6 +36,9 @@ class ImportRowError(UUIDPrimaryKeyMixin, TimestampedMixin):
         ordering = ("-created_at",)
         verbose_name = _("Ошибка строки импорта")
         verbose_name_plural = _("Ошибки строк импорта")
+        indexes = [
+            models.Index(fields=("-created_at",), name="supplier_row_error_cr_idx"),
+        ]
 
     def __str__(self) -> str:
         return f"{self.source.code}:{self.error_code or 'ошибка'}"

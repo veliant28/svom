@@ -7,6 +7,7 @@ export type * from "./pricing.types";
 export type * from "./orders.types";
 export type * from "./payment.types";
 export type * from "./footer-settings.types";
+export type * from "./email-settings.types";
 export type * from "./hero-block.types";
 export type * from "./promo-banners.types";
 export type * from "./vchasno-kasa.types";

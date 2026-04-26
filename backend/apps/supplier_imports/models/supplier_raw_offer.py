@@ -199,6 +199,10 @@ class SupplierRawOffer(UUIDPrimaryKeyMixin, TimestampedMixin):
         ordering = ("source__code", "external_sku")
         verbose_name = _("Сырой оффер поставщика")
         verbose_name_plural = _("Сырые офферы поставщиков")
+        indexes = [
+            models.Index(fields=("is_valid",), name="supplier_raw_offer_valid_idx"),
+            models.Index(fields=("match_status", "is_valid"), name="supplier_raw_match_valid_idx"),
+        ]
 
     def __str__(self) -> str:
         return f"{self.source.code}:{self.external_sku}"

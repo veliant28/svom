@@ -29,6 +29,7 @@ export function ContainedImagePanel({
             src={imageUrl}
             alt={alt}
             fill
+            unoptimized
             sizes="(max-width: 768px) 100vw, 33vw"
             className="relative z-10 h-full w-full object-contain object-center"
           />

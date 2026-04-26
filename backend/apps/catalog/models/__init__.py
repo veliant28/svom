@@ -5,6 +5,7 @@ from .category import Category
 from .product import Product
 from .product_attribute import ProductAttribute
 from .product_image import ProductImage
+from .utr_product_enrichment import UtrProductEnrichment
 
 __all__ = [
     "Brand",
@@ -14,4 +15,5 @@ __all__ = [
     "Attribute",
     "AttributeValue",
     "ProductAttribute",
+    "UtrProductEnrichment",
 ]

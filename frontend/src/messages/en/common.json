@@ -151,7 +151,8 @@
       "currentPasswordIncorrect": "Current password is incorrect.",
       "maxLength": "Ensure this value has no more than {max} characters.",
       "minLength": "Ensure this value has at least {min} characters.",
-      "exactLength": "Ensure this value has exactly {count} characters."
+      "exactLength": "Ensure this value has exactly {count} characters.",
+      "emailAlreadyExists": "A user with this email already exists."
     }
   }
 }

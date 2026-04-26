@@ -14,6 +14,7 @@ def sync_products_activity_by_price_freshness_task(
     return {
         "activated": int(result.activated),
         "deactivated": int(result.deactivated),
+        "supplier_offers_zeroed": int(result.supplier_offers_zeroed),
         "freshness_hours": int(result.freshness_hours),
         "cutoff_at": result.cutoff_at.isoformat(),
     }

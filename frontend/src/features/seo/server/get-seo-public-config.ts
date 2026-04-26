@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { siteConfig } from "@/shared/config/site";
 
 import type { SeoPublicConfig } from "@/features/seo/types";
@@ -7,7 +9,7 @@ async function requestJson<T>(path: string): Promise<T | null> {
   try {
     const response = await fetch(url, {
       method: "GET",
-      cache: "no-store",
+      next: { revalidate: 60 },
       credentials: "omit",
     });
     if (!response.ok) {
@@ -19,6 +21,6 @@ async function requestJson<T>(path: string): Promise<T | null> {
   }
 }
 
-export async function getSeoPublicConfig(): Promise<SeoPublicConfig | null> {
+export const getSeoPublicConfig = cache(async (): Promise<SeoPublicConfig | null> => {
   return requestJson<SeoPublicConfig>("/seo/public/config/");
-}
+});
