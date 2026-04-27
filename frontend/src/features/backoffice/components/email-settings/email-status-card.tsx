@@ -50,10 +50,6 @@ export function EmailStatusCard({
           <dt style={{ color: "var(--muted)" }}>{t("email.status.lastChecked")}</dt>
           <dd className="font-semibold">{lastCheckedAt || "-"}</dd>
         </div>
-        <div className="grid gap-1">
-          <dt style={{ color: "var(--muted)" }}>{t("email.status.message")}</dt>
-          <dd className="break-words font-semibold">{settings?.last_connection_message || "-"}</dd>
-        </div>
       </dl>
     </div>
   );

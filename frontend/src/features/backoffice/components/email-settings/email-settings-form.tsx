@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import type {
   BackofficeEmailSettings,
   BackofficeEmailSettingsPayload,
-  BackofficeEmailTestResult,
 } from "@/features/backoffice/types/email-settings.types";
 
 import {
@@ -44,7 +43,6 @@ function settingsToFormState(settings: BackofficeEmailSettings | null): EmailSet
 
 export function EmailSettingsForm({
   settings,
-  testResult,
   isSaving,
   isTesting,
   onSave,
@@ -52,7 +50,6 @@ export function EmailSettingsForm({
   t,
 }: {
   settings: BackofficeEmailSettings | null;
-  testResult: BackofficeEmailTestResult | null;
   isSaving: boolean;
   isTesting: boolean;
   onSave: (payload: BackofficeEmailSettingsPayload) => Promise<unknown>;
@@ -119,7 +116,6 @@ export function EmailSettingsForm({
       <div className="grid content-start gap-4">
         <EmailTestPanel
           testRecipient={testRecipient}
-          testResult={testResult}
           isTesting={isTesting}
           canTest={canTest}
           onRecipientChange={setTestRecipient}

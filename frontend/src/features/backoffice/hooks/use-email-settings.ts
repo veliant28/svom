@@ -10,7 +10,6 @@ import {
 import type {
   BackofficeEmailSettings,
   BackofficeEmailSettingsPayload,
-  BackofficeEmailTestResult,
 } from "@/features/backoffice/types/email-settings.types";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
 import { useAuth } from "@/features/auth/hooks/use-auth";
@@ -19,7 +18,6 @@ export function useEmailSettings({ t }: { t: (key: string) => string }) {
   const { token } = useAuth();
   const { showApiError, showSuccess, showWarning } = useBackofficeFeedback();
   const [settings, setSettings] = useState<BackofficeEmailSettings | null>(null);
-  const [testResult, setTestResult] = useState<BackofficeEmailTestResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -76,7 +74,6 @@ export function useEmailSettings({ t }: { t: (key: string) => string }) {
       setIsTesting(true);
       try {
         const result = await testBackofficeEmailSettings(token, recipient);
-        setTestResult(result);
         if (result.ok) {
           showSuccess(t("email.messages.testOk"));
         } else {
@@ -96,7 +93,6 @@ export function useEmailSettings({ t }: { t: (key: string) => string }) {
 
   return {
     settings,
-    testResult,
     isLoading,
     isSaving,
     isTesting,

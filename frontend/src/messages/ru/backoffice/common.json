@@ -28,15 +28,6 @@
           "resend": "Resend SMTP",
           "manual": "Manual SMTP / Другое SMTP"
         },
-        "resend": {
-          "title": "Resend SMTP",
-          "verified": "Домен svom.com.ua verified в Resend.",
-          "sender": "Для восстановления пароля используйте отправителя SVOM (no-reply@svom.com.ua).",
-          "tracking": "Enable tracking metrics не нужен для восстановления пароля.",
-          "receiving": "Enable Receiving не нужен.",
-          "tls": "TLS в Resend можно оставить Opportunistic, в Django используем EMAIL_USE_TLS=1.",
-          "warning": "Не вставляйте API key в frontend или GitHub."
-        },
         "fields": {
           "enabled": "Включить реальную отправку писем",
           "fromName": "From name",
@@ -72,7 +63,6 @@
           "provider": "Провайдер",
           "connection": "Последняя проверка",
           "lastChecked": "Время проверки",
-          "message": "Сообщение",
           "ok": "Успешно",
           "failed": "Ошибка",
           "notChecked": "Не проверялось"

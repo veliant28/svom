@@ -1,10 +1,7 @@
 import { Send } from "lucide-react";
 
-import type { BackofficeEmailTestResult } from "@/features/backoffice/types/email-settings.types";
-
 export function EmailTestPanel({
   testRecipient,
-  testResult,
   isTesting,
   canTest,
   onRecipientChange,
@@ -12,7 +9,6 @@ export function EmailTestPanel({
   t,
 }: {
   testRecipient: string;
-  testResult: BackofficeEmailTestResult | null;
   isTesting: boolean;
   canTest: boolean;
   onRecipientChange: (recipient: string) => void;
@@ -46,11 +42,6 @@ export function EmailTestPanel({
           <Send size={13} />
           {isTesting ? t("email.actions.testing") : t("email.actions.test")}
         </button>
-        {testResult ? (
-          <p className="text-xs" style={{ color: testResult.ok ? "var(--success, #136f3a)" : "#b91c1c" }}>
-            {testResult.message}
-          </p>
-        ) : null}
       </div>
     </div>
   );

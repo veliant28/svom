@@ -23,7 +23,6 @@ export function EmailSettingsPage() {
       >
         <EmailSettingsForm
           settings={emailSettings.settings}
-          testResult={emailSettings.testResult}
           isSaving={emailSettings.isSaving}
           isTesting={emailSettings.isTesting}
           onSave={emailSettings.save}

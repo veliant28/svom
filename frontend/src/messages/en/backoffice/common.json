@@ -28,15 +28,6 @@
           "resend": "Resend SMTP",
           "manual": "Manual SMTP / Other SMTP"
         },
-        "resend": {
-          "title": "Resend SMTP",
-          "verified": "Domain svom.com.ua is verified in Resend.",
-          "sender": "Use SVOM (no-reply@svom.com.ua) for password recovery.",
-          "tracking": "Enable tracking metrics is not needed for password recovery.",
-          "receiving": "Enable Receiving is not needed.",
-          "tls": "Resend TLS can stay Opportunistic; Django uses EMAIL_USE_TLS=1.",
-          "warning": "Do not paste the API key into frontend code or GitHub."
-        },
         "fields": {
           "enabled": "Enable real email delivery",
           "fromName": "From name",
@@ -72,7 +63,6 @@
           "provider": "Provider",
           "connection": "Last check",
           "lastChecked": "Check time",
-          "message": "Message",
           "ok": "Successful",
           "failed": "Failed",
           "notChecked": "Not checked"
