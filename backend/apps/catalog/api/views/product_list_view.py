@@ -17,8 +17,8 @@ class ProductListAPIView(ListAPIView):
     serializer_class = ProductListSerializer
     pagination_class = CatalogProductPagination
     filterset_class = ProductFilterSet
-    ordering_fields = ("name", "created_at", "product_price__final_price")
-    ordering = ("name",)
+    ordering_fields = ("name", "created_at", "product_price__final_price", "available_stock_qty")
+    ordering = ("-available_stock_qty", "name", "id")
 
     def get_queryset(self):
         queryset = get_public_products_queryset()
