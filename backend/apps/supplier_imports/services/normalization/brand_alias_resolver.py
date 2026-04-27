@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
 
 from django.db.models import Q
@@ -21,6 +22,7 @@ class BrandNormalizationResult:
 class BrandAliasResolverService:
     def __init__(self) -> None:
         self._alias_cache: dict[tuple[str, str, str], SupplierBrandAlias | None] = {}
+        self._stats: Counter[str] = Counter()
 
     def resolve(
         self,
@@ -90,8 +92,10 @@ class BrandAliasResolverService:
             str(supplier.id) if supplier is not None else "",
         )
         if cache_key in self._alias_cache:
+            self._stats["alias_cache_hits"] += 1
             return self._alias_cache[cache_key]
 
+        self._stats["alias_cache_misses"] += 1
         queryset = SupplierBrandAlias.objects.filter(is_active=True, normalized_alias=normalized_alias)
         if source is not None:
             queryset = queryset.filter(
@@ -129,3 +133,9 @@ class BrandAliasResolverService:
         chosen = aliases[0]
         self._alias_cache[cache_key] = chosen
         return chosen
+
+    def cache_stats(self) -> dict[str, int]:
+        return {
+            **dict(self._stats),
+            "alias_cache_size": len(self._alias_cache),
+        }

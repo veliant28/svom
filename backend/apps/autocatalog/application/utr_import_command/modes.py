@@ -5,6 +5,7 @@ from typing import Any
 
 from django.conf import settings
 from django.core.management.base import CommandError
+from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from apps.autocatalog.services import (
@@ -15,6 +16,7 @@ from apps.autocatalog.services import (
 )
 from apps.catalog.models import Product
 from apps.autocatalog.models import UtrDetailCarMap
+from apps.supplier_imports.services.integrations.utr_client import UtrClient
 from apps.supplier_imports.selectors import get_supplier_integration_by_code
 
 from . import reporting
@@ -29,9 +31,8 @@ def run_autocatalog_import_flow(
     output: CommandOutput,
 ) -> None:
     integration = get_supplier_integration_by_code(source_code="utr")
-    if not integration.access_token:
-        raise CommandError(_("UTR access token отсутствует. Сначала обновите токен интеграции UTR."))
     options = normalize_options(raw_options)
+    access_token = resolve_utr_access_token(integration=integration)
 
     resolver = UtrArticleDetailResolverService()
 
@@ -55,7 +56,7 @@ def run_autocatalog_import_flow(
 
         resolve_summary = run_resolve_phase(
             resolver=resolver,
-            access_token=integration.access_token,
+            access_token=access_token,
             options=options,
             output=output,
         )
@@ -71,6 +72,7 @@ def run_autocatalog_import_flow(
 
         # Access token may be refreshed/re-obtained inside batch resolve flow.
         integration = get_supplier_integration_by_code(source_code="utr")
+        access_token = resolve_utr_access_token(integration=integration)
 
     if options.resolve_only:
         reporting.write_resolve_only_success(output)
@@ -79,6 +81,8 @@ def run_autocatalog_import_flow(
     detail_ids = merge_detail_ids(
         product_detail_ids=product_detail_ids,
         mapped_detail_ids=mapped_detail_ids,
+        existing_map_detail_ids=existing_map_detail_ids,
+        missing_applicability_only=options.missing_applicability_only,
         limit=options.limit,
         offset=options.offset,
     )
@@ -108,7 +112,7 @@ def run_autocatalog_import_flow(
 
         batch_summary = import_service.import_from_detail_ids(
             detail_ids=chunk,
-            access_token=integration.access_token,
+            access_token=access_token,
             on_error=lambda detail_id, message: reporting.write_import_error(
                 output,
                 detail_id=detail_id,
@@ -119,6 +123,8 @@ def run_autocatalog_import_flow(
             force_refresh=force_refresh,
         )
         accumulate_import_summary(total=summary, batch=batch_summary)
+        integration = get_supplier_integration_by_code(source_code="utr")
+        access_token = resolve_utr_access_token(integration=integration)
 
         if batch_summary.stopped_due_to_circuit_breaker > 0:
             reporting.write_applicability_circuit_breaker_stop(output)
@@ -126,6 +132,19 @@ def run_autocatalog_import_flow(
 
     reporting.write_import_result(output, stopped_due_to_circuit_breaker=summary.stopped_due_to_circuit_breaker)
     reporting.write_summary_dict(output, summary=summary.to_dict())
+
+
+def resolve_utr_access_token(*, integration) -> str:
+    if not integration.is_enabled:
+        raise CommandError(_("UTR integration отключена."))
+    token = str(integration.access_token or "").strip()
+    if token and (integration.access_token_expires_at is None or integration.access_token_expires_at > timezone.now()):
+        return token
+
+    recovered_token, _method = UtrClient()._recover_access_token_for_utr()
+    if recovered_token:
+        return recovered_token
+    raise CommandError(_("UTR access token отсутствует или истек. Обновите токен интеграции UTR."))
 
 
 def collect_product_detail_ids() -> list[str]:
@@ -143,10 +162,15 @@ def merge_detail_ids(
     *,
     product_detail_ids: list[str],
     mapped_detail_ids: list[str],
+    existing_map_detail_ids: list[str],
+    missing_applicability_only: bool,
     limit: int | None,
     offset: int,
 ) -> list[str]:
     merged = sorted({*product_detail_ids, *mapped_detail_ids}, key=int)
+    if missing_applicability_only:
+        existing = set(existing_map_detail_ids)
+        merged = [detail_id for detail_id in merged if detail_id not in existing]
     if offset > 0:
         merged = merged[offset:]
     if limit and limit > 0:
@@ -232,6 +256,8 @@ def accumulate_resolve_summary(
     total.resolve_pairs_auth_failures_total += batch.resolve_pairs_auth_failures_total
     total.resolve_pairs_transport_failures_total += batch.resolve_pairs_transport_failures_total
     total.resolve_pairs_supplier_errors_total += batch.resolve_pairs_supplier_errors_total
+    total.resolved_products_enriched_total += batch.resolved_products_enriched_total
+    total.resolved_product_images_created_total += batch.resolved_product_images_created_total
     total.stage_primary_brandless_attempted_total += batch.stage_primary_brandless_attempted_total
     total.stage_primary_brandless_resolved_total += batch.stage_primary_brandless_resolved_total
     total.stage_fallback_brandless_attempted_total += batch.stage_fallback_brandless_attempted_total
@@ -253,6 +279,8 @@ def accumulate_import_summary(
     total.detail_ids_skipped_cached += batch.detail_ids_skipped_cached
     total.detail_ids_skipped_disabled += batch.detail_ids_skipped_disabled
     total.detail_ids_empty_applicability += batch.detail_ids_empty_applicability
+    total.detail_ids_prefiltered_no_applicability += batch.detail_ids_prefiltered_no_applicability
+    total.detail_ids_suspicious_empty_applicability += batch.detail_ids_suspicious_empty_applicability
     total.stopped_due_to_circuit_breaker += batch.stopped_due_to_circuit_breaker
     total.makes_created += batch.makes_created
     total.models_created += batch.models_created

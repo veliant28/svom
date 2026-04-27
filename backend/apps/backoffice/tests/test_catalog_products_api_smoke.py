@@ -72,6 +72,10 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
             supplier_sku="UTR-BOS-001",
             purchase_price="120.00",
             currency="UAH",
+            price_levels=[
+                {"key": "Ціна ОПТ2 грн.", "label": "ОПТ2", "value": "100.00", "currency": "UAH", "is_primary": False, "order": 2},
+                {"key": "РРЦ грн.", "label": "РРЦ", "value": "120.00", "currency": "UAH", "is_primary": True, "order": 100},
+            ],
             stock_qty=5,
             is_available=True,
         )
@@ -112,6 +116,9 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
         self.assertIsNone(list_response.data["results"][0]["price_updated_at"])
         self.assertEqual(list_response.data["results"][0]["supplier_price"], "120.00")
         self.assertEqual(list_response.data["results"][0]["supplier_currency"], "UAH")
+        self.assertEqual(list_response.data["results"][0]["supplier_price_levels"][0]["label"], "ОПТ2")
+        self.assertEqual(list_response.data["results"][0]["supplier_price_levels"][1]["label"], "РРЦ")
+        self.assertTrue(list_response.data["results"][0]["supplier_price_levels"][1]["is_primary"])
         self.assertIsNone(list_response.data["results"][0]["applied_markup_percent"])
         self.assertEqual(list_response.data["results"][0]["applied_markup_policy_name"], "")
         self.assertEqual(

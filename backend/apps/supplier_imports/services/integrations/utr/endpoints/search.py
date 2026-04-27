@@ -72,6 +72,16 @@ def search_details_batch(
     for item in details:
         if not isinstance(item, dict):
             continue
+        detail_id = str(item.get("id") or "").strip()
+        if detail_id:
+            normalized_queries.append(
+                {
+                    "id": detail_id,
+                    "oem": "",
+                    "brand": "",
+                }
+            )
+            continue
         oem = str(item.get("oem") or item.get("article") or "").strip()
         if not oem:
             continue
@@ -95,24 +105,18 @@ def search_details_batch(
 
     if not should_force_refresh:
         for index, query in enumerate(normalized_queries):
-            cache_key = client._cache_key("search", query["oem"], query["brand"])
+            cache_key = _batch_search_cache_key(client, query=query)
             cached_payload = client._cache_get(cache_key)
             if isinstance(cached_payload, dict) and isinstance(cached_payload.get("details"), list):
                 cached_details = [item for item in cached_payload.get("details") or [] if isinstance(item, dict)]
                 rows[index] = {"details": cached_details}
                 client._increment_metric("requests_skipped_cache")
                 continue
-            payload_item = {"oem": query["oem"]}
-            if query["brand"]:
-                payload_item["brand"] = query["brand"]
-            pending_payload.append(payload_item)
+            pending_payload.append(_build_batch_payload_item(query=query))
             pending_indexes.append(index)
     else:
         for index, query in enumerate(normalized_queries):
-            payload_item = {"oem": query["oem"]}
-            if query["brand"]:
-                payload_item["brand"] = query["brand"]
-            pending_payload.append(payload_item)
+            pending_payload.append(_build_batch_payload_item(query=query))
             pending_indexes.append(index)
 
     if pending_payload:
@@ -165,7 +169,7 @@ def search_details_batch(
             if isinstance(details_payload, list):
                 normalized_details = [item for item in details_payload if isinstance(item, dict)]
                 rows[original_index] = {"details": normalized_details}
-                cache_key = client._cache_key("search", query["oem"], query["brand"])
+                cache_key = _batch_search_cache_key(client, query=query)
                 client._cache_set(cache_key, {"details": normalized_details}, timeout=client.cache_ttl_seconds)
             elif isinstance(response_item.get("error"), str):
                 rows[original_index] = {"error": response_item["error"]}
@@ -178,3 +182,21 @@ def search_details_batch(
         auth_retry_performed=auth_retry_performed,
         auth_retry_method=auth_retry_method,
     )
+
+
+def _build_batch_payload_item(*, query: dict[str, str]) -> dict:
+    detail_id = str(query.get("id") or "").strip()
+    if detail_id:
+        return {"id": int(detail_id) if detail_id.isdigit() else detail_id}
+    payload = {"oem": str(query.get("oem") or "").strip()}
+    brand = str(query.get("brand") or "").strip()
+    if brand:
+        payload["brand"] = brand
+    return payload
+
+
+def _batch_search_cache_key(client, *, query: dict[str, str]) -> str:
+    detail_id = str(query.get("id") or "").strip()
+    if detail_id:
+        return client._cache_key("search_id", detail_id)
+    return client._cache_key("search", query["oem"], query["brand"])

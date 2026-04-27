@@ -7,6 +7,7 @@ from apps.catalog.models import Brand, Product
 from apps.catalog.services import generate_unique_product_slug, sanitize_product_name
 from apps.pricing.models import Supplier, SupplierOffer
 from apps.supplier_imports.models import SupplierRawOffer
+from apps.supplier_imports.parsers.gpl_parser import extract_gpl_price_levels
 from apps.supplier_imports.parsers.utils import normalize_brand
 
 from . import selection
@@ -122,6 +123,7 @@ def upsert_supplier_offer(
 ) -> tuple[SupplierOffer, bool, bool]:
     offer = supplier_offer_cache.get(supplier_sku)
     is_available = raw_offer.stock_qty > 0 and bool(raw_offer.price and raw_offer.price > 0)
+    price_levels = _extract_price_levels(raw_offer=raw_offer)
 
     if offer is None:
         offer = SupplierOffer.objects.create(
@@ -130,6 +132,7 @@ def upsert_supplier_offer(
             supplier_sku=supplier_sku,
             currency=raw_offer.currency,
             purchase_price=raw_offer.price,
+            price_levels=price_levels,
             stock_qty=max(raw_offer.stock_qty, 0),
             lead_time_days=max(raw_offer.lead_time_days, 0),
             is_available=is_available,
@@ -147,6 +150,9 @@ def upsert_supplier_offer(
     if offer.purchase_price != raw_offer.price:
         offer.purchase_price = raw_offer.price
         changed_fields.add("purchase_price")
+    if offer.price_levels != price_levels:
+        offer.price_levels = price_levels
+        changed_fields.add("price_levels")
 
     stock_qty = max(raw_offer.stock_qty, 0)
     if offer.stock_qty != stock_qty:
@@ -165,6 +171,13 @@ def upsert_supplier_offer(
         offer.save(update_fields=tuple(sorted(changed_fields | {"updated_at"})))
         return offer, False, True
     return offer, False, False
+
+
+def _extract_price_levels(*, raw_offer: SupplierRawOffer) -> list[dict]:
+    source_code = str(getattr(raw_offer.source, "code", "") or "").lower()
+    if source_code != "gpl":
+        return []
+    return extract_gpl_price_levels(item=raw_offer.raw_payload or {}, default_currency=raw_offer.currency)
 
 
 def resolve_brand(*, raw_offer: SupplierRawOffer, brand_cache: dict[str, Brand]) -> Brand:

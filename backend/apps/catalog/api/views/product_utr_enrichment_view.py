@@ -17,5 +17,6 @@ class ProductUtrEnrichmentAPIView(APIView):
         if isinstance(request.data, dict) and "enqueue" in request.data:
             enqueue = bool(request.data.get("enqueue"))
 
-        rows = request_visible_utr_enrichment(product_ids=product_ids, request=request, enqueue=enqueue)
+        mode = request.data.get("mode", "detail") if isinstance(request.data, dict) else "detail"
+        rows = request_visible_utr_enrichment(product_ids=product_ids, request=request, enqueue=enqueue, mode=mode)
         return Response({"results": rows})

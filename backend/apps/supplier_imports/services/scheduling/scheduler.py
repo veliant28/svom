@@ -5,6 +5,7 @@ from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.conf import settings
+from django.core.cache import cache
 from django.db.models import Q
 from django.utils import timezone as dj_timezone
 
@@ -22,6 +23,7 @@ class ImportScheduleDispatchResult:
 
 class ScheduledImportService:
     DEFAULT_STALE_TIMEOUT_MINUTES = 180
+    DEFAULT_DISPATCH_LOCK_SECONDS = 60 * 60
 
     def list_due_sources(self, *, now: datetime | None = None) -> list[ImportSource]:
         moment = now or dj_timezone.now()
@@ -42,7 +44,21 @@ class ScheduledImportService:
         self.close_stale_running_runs(now=now)
         results: list[ImportScheduleDispatchResult] = []
         for source in self.list_due_sources(now=now):
+            due_at = self._resolve_due_at(source=source, now=now or dj_timezone.now())
+            if due_at is None:
+                continue
+            if not self._acquire_dispatch_lock(source=source, due_at=due_at):
+                results.append(
+                    ImportScheduleDispatchResult(
+                        source_code=source.code,
+                        status="skipped",
+                        task_id=None,
+                        reason="dispatch_locked",
+                    )
+                )
+                continue
             if ImportRun.objects.filter(source=source, status=ImportRun.STATUS_RUNNING).exists():
+                self._clear_dispatch_lock(source=source, due_at=due_at)
                 results.append(
                     ImportScheduleDispatchResult(
                         source_code=source.code,
@@ -53,9 +69,13 @@ class ScheduledImportService:
                 )
                 continue
 
-            task = run_scheduled_supplier_pipeline_task.delay(
-                source_code=source.code,
-            )
+            try:
+                task = run_scheduled_supplier_pipeline_task.delay(
+                    source_code=source.code,
+                )
+            except Exception:
+                self._clear_dispatch_lock(source=source, due_at=due_at)
+                raise
             results.append(
                 ImportScheduleDispatchResult(
                     source_code=source.code,
@@ -99,30 +119,44 @@ class ScheduledImportService:
         return closed
 
     def is_source_due(self, *, source: ImportSource, now: datetime) -> bool:
+        return self._resolve_due_at(source=source, now=now) is not None
+
+    def _resolve_due_at(self, *, source: ImportSource, now: datetime) -> datetime | None:
         if not source.schedule_cron:
-            return False
+            return None
 
         timezone = self._resolve_timezone(source.schedule_timezone)
         if timezone is None:
-            return False
+            return None
 
         try:
             cron = CronExpression.parse(source.schedule_cron)
         except ValueError:
-            return False
+            return None
 
         local_now = now.astimezone(timezone).replace(second=0, microsecond=0)
         start_date = self._resolve_schedule_start_date(source=source)
         if start_date and local_now.date() < start_date:
-            return False
-        if not cron.matches(local_now):
-            return False
+            return None
+
+        if cron.matches(local_now):
+            due_at = local_now
+        else:
+            if not self._schedule_catch_up_enabled(source=source):
+                return None
+            due_at = self._resolve_previous_scheduled_at(cron=cron, local_now=local_now)
+            if due_at is None:
+                return None
+            if start_date and due_at.date() < start_date:
+                return None
 
         if source.last_started_at is None:
-            return True
+            return due_at
 
         last_local = source.last_started_at.astimezone(timezone).replace(second=0, microsecond=0)
-        return last_local < local_now
+        if last_local < due_at:
+            return due_at
+        return None
 
     def get_next_run(self, *, source: ImportSource, now: datetime | None = None) -> datetime | None:
         timezone_name = source.schedule_timezone or settings.TIME_ZONE
@@ -156,6 +190,47 @@ class ScheduledImportService:
             return date.fromisoformat(str(raw_value))
         except ValueError:
             return None
+
+    def _schedule_catch_up_enabled(self, *, source: ImportSource) -> bool:
+        parser_options = source.parser_options if isinstance(source.parser_options, dict) else {}
+        raw_value = parser_options.get("schedule_catch_up_enabled")
+        if raw_value is None:
+            return True
+        return str(raw_value).strip().lower() not in {"0", "false", "no", "off"}
+
+    def _resolve_previous_scheduled_at(self, *, cron: CronExpression, local_now: datetime) -> datetime | None:
+        probe = local_now - timedelta(minutes=1)
+        horizon = local_now - timedelta(days=60)
+        while probe >= horizon:
+            if cron.matches(probe):
+                return probe
+            probe -= timedelta(minutes=1)
+        return None
+
+    def _acquire_dispatch_lock(self, *, source: ImportSource, due_at: datetime) -> bool:
+        timeout = self._dispatch_lock_seconds()
+        try:
+            return bool(cache.add(self._dispatch_lock_key(source=source, due_at=due_at), "1", timeout=timeout))
+        except Exception:
+            return True
+
+    def _clear_dispatch_lock(self, *, source: ImportSource, due_at: datetime) -> None:
+        try:
+            cache.delete(self._dispatch_lock_key(source=source, due_at=due_at))
+        except Exception:
+            pass
+
+    def _dispatch_lock_key(self, *, source: ImportSource, due_at: datetime) -> str:
+        due_key = due_at.isoformat()
+        return f"supplier_imports:scheduled_dispatch:{source.id}:{due_key}"
+
+    def _dispatch_lock_seconds(self) -> int:
+        raw = getattr(settings, "SUPPLIER_IMPORT_SCHEDULE_DISPATCH_LOCK_SECONDS", self.DEFAULT_DISPATCH_LOCK_SECONDS)
+        try:
+            value = int(raw)
+        except (TypeError, ValueError):
+            return self.DEFAULT_DISPATCH_LOCK_SECONDS
+        return value if value > 0 else self.DEFAULT_DISPATCH_LOCK_SECONDS
 
     def _stale_timeout_minutes(self) -> int:
         raw = getattr(settings, "SUPPLIER_IMPORT_STALE_RUN_TIMEOUT_MINUTES", self.DEFAULT_STALE_TIMEOUT_MINUTES)

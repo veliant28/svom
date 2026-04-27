@@ -9,7 +9,12 @@ from rest_framework.test import APITestCase
 
 from apps.autocatalog.models import CarMake, CarModel, CarModification, UtrArticleDetailMap, UtrDetailCarMap
 from apps.catalog.models import Brand, Category, Product, ProductImage, UtrProductEnrichment
-from apps.catalog.services.utr_product_enrichment import request_visible_utr_enrichment
+from apps.catalog.services.utr_product_enrichment import (
+    apply_utr_search_detail_to_matching_products,
+    enrich_utr_catalog_products,
+    enrich_utr_product,
+    request_visible_utr_enrichment,
+)
 from apps.compatibility.models import ProductFitment
 from apps.pricing.models import ProductPrice, Supplier
 from apps.supplier_imports.models import ImportRun, ImportSource, SupplierRawOffer
@@ -233,6 +238,40 @@ class CatalogFitmentAPITests(APITestCase):
         fitments = response.data["fitments"]
         self.assertTrue(any(item["make"] == "Toyota UTR" and item["model"] == "Camry UTR" for item in fitments))
 
+    def test_visible_utr_enrichment_status_includes_fitments_count(self):
+        product = Product.objects.create(
+            sku="UTR-STATUS-FITMENT-001",
+            article="UTR-STATUS-FITMENT-001",
+            name="UTR Status Fitment Product",
+            slug="utr-status-fitment-product",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        ProductPrice.objects.create(product=product, final_price="100.00", currency="UAH")
+
+        detail_id = "5051"
+        UtrArticleDetailMap.objects.create(
+            article=product.article,
+            normalized_article=normalize_article(product.article),
+            brand_name=self.brand.name,
+            normalized_brand=normalize_brand(self.brand.name),
+            utr_detail_id=detail_id,
+        )
+        UtrDetailCarMap.objects.create(
+            utr_detail_id=detail_id,
+            car_modification=self.autocatalog_modification,
+        )
+        self._create_utr_raw_offer(
+            product=product,
+            article=product.article,
+            brand_name=self.brand.name,
+        )
+
+        status_rows = request_visible_utr_enrichment(product_ids=[str(product.id)], enqueue=False, mode="detail")
+
+        self.assertEqual(status_rows[0]["fitments_count"], 1)
+
     def test_product_fitment_options_return_full_utr_make_and_model_facets(self):
         product = Product.objects.create(
             sku="UTR-FACETS-001",
@@ -414,13 +453,11 @@ class CatalogFitmentAPITests(APITestCase):
                     "apps.catalog.services.utr_product_enrichment._download_image",
                     return_value=(b"fake-image", "image/webp"),
                 ):
-                    status_rows = request_visible_utr_enrichment(product_ids=[str(product.id)], enqueue=True)
+                    result = enrich_utr_product(product_id=str(product.id), mode="detail")
 
-                self.assertEqual(status_rows[0]["status"], UtrProductEnrichment.STATUS_FETCHED)
-                self.assertEqual(status_rows[0]["utr_detail_id"], "93001")
-                self.assertEqual(status_rows[0]["characteristics_count"], 1)
-                self.assertFalse(status_rows[0]["queued"])
-                self.assertTrue(status_rows[0]["processed"])
+                self.assertEqual(result["status"], UtrProductEnrichment.STATUS_FETCHED)
+                self.assertEqual(result["utr_detail_id"], "93001")
+                self.assertEqual(result["characteristics_count"], 1)
 
                 product.refresh_from_db()
                 self.assertEqual(product.utr_detail_id, "93001")
@@ -437,6 +474,179 @@ class CatalogFitmentAPITests(APITestCase):
         self.assertEqual(enrichment.characteristics_payload[0]["value"], "12V")
         self.assertEqual(enrichment.images_payload[0]["fullImagePath"], "https://cdn.example.test/lazy-utr-001.webp")
         self.assertTrue(UtrDetailCarMap.objects.filter(utr_detail_id="93001").exists())
+
+    @patch("apps.catalog.tasks.enrich_visible_utr_catalog_products_task.apply_async")
+    def test_visible_utr_enrichment_queues_catalog_mode_without_blocking_on_utr(self, apply_async_mock):
+        cache.clear()
+        product = Product.objects.create(
+            sku="LAZY-QUEUE-001-SKU",
+            article="LAZY-QUEUE-001",
+            name="Lazy Queue UTR Product",
+            slug="lazy-queue-utr-product",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        ProductPrice.objects.create(product=product, final_price="100.00", currency="UAH")
+        self._create_utr_raw_offer(product=product, article=product.article, brand_name=self.brand.name)
+
+        status_rows = request_visible_utr_enrichment(product_ids=[str(product.id)], enqueue=True, mode="catalog")
+
+        self.assertEqual(status_rows[0]["status"], UtrProductEnrichment.STATUS_QUEUED)
+        self.assertTrue(status_rows[0]["queued"])
+        self.assertFalse(status_rows[0]["processed"])
+        apply_async_mock.assert_called_once_with(kwargs={"product_ids": [str(product.id)]})
+
+        enrichment = UtrProductEnrichment.objects.get(product=product)
+        self.assertEqual(enrichment.status, UtrProductEnrichment.STATUS_QUEUED)
+
+    @patch("apps.catalog.services.utr_product_enrichment._resolve_utr_access_token", return_value="test-token")
+    @patch("apps.catalog.services.utr_product_enrichment.UtrClient")
+    def test_catalog_batch_enrichment_uses_utr_batch_search_images(self, client_class, _token_mock):
+        cache.clear()
+        products = []
+        for index in range(3):
+            product = Product.objects.create(
+                sku=f"LAZY-BATCH-{index}-SKU",
+                article=f"LAZY-BATCH-{index}",
+                name=f"Lazy Batch UTR Product {index}",
+                slug=f"lazy-batch-utr-product-{index}",
+                brand=self.brand,
+                category=self.category,
+                is_active=True,
+            )
+            ProductPrice.objects.create(product=product, final_price="100.00", currency="UAH")
+            self._create_utr_raw_offer(product=product, article=product.article, brand_name=self.brand.name)
+            products.append(product)
+
+        client = client_class.return_value
+        client.search_details_batch.return_value.rows = [
+            {
+                "details": [
+                    {
+                        "id": f"9300{index}",
+                        "article": product.article,
+                        "displayBrand": self.brand.name,
+                        "images": [{"fullImagePath": f"https://cdn.example.test/lazy-batch-{index}.webp"}],
+                    }
+                ]
+            }
+            for index, product in enumerate(products)
+        ]
+        client.search_details_batch.return_value.access_token = "test-token"
+
+        with tempfile.TemporaryDirectory() as media_root:
+            with override_settings(
+                MEDIA_ROOT=media_root,
+                UTR_LAZY_CATALOG_BATCH_SIZE=25,
+                UTR_LAZY_CATALOG_APPLICABILITY_ENABLED=False,
+            ):
+                with patch(
+                    "apps.catalog.services.utr_product_enrichment._download_image",
+                    return_value=(b"fake-image", "image/webp"),
+                ):
+                    result = enrich_utr_catalog_products(product_ids=[str(product.id) for product in products])
+
+        self.assertEqual(result["processed"], 3)
+        self.assertEqual(result["created_images"], 3)
+        self.assertEqual(result["batches"], 1)
+        client.search_details_batch.assert_called_once()
+        self.assertFalse(client.fetch_detail.called)
+        self.assertEqual(ProductImage.objects.filter(product__in=products).count(), 3)
+
+    def test_apply_utr_search_detail_to_matching_products_uses_batch_search_images(self):
+        product = Product.objects.create(
+            sku="RESOLVE-IMG-001",
+            article="RESOLVE-IMG-001",
+            name="Resolved Image Product",
+            slug="resolved-image-product",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        ProductPrice.objects.create(product=product, final_price="100.00", currency="UAH")
+
+        with tempfile.TemporaryDirectory() as media_root:
+            with override_settings(MEDIA_ROOT=media_root):
+                with patch(
+                    "apps.catalog.services.utr_product_enrichment._download_image",
+                    return_value=(b"fake-image", "image/webp"),
+                ):
+                    result = apply_utr_search_detail_to_matching_products(
+                        article=product.article,
+                        normalized_article=normalize_article(product.article),
+                        brand_name=self.brand.name,
+                        normalized_brand=normalize_brand(self.brand.name),
+                        detail={
+                            "id": "97001",
+                            "article": product.article,
+                            "displayBrand": self.brand.name,
+                            "images": [{"fullImagePath": "https://cdn.example.test/resolve-img.webp"}],
+                        },
+                    )
+
+        product.refresh_from_db()
+        self.assertEqual(result["products_enriched"], 1)
+        self.assertEqual(result["created_images"], 1)
+        self.assertEqual(product.utr_detail_id, "97001")
+        self.assertEqual(ProductImage.objects.filter(product=product).count(), 1)
+
+    @patch("apps.catalog.tasks.enrich_visible_utr_applicability_task.apply_async")
+    @patch("apps.catalog.services.utr_product_enrichment._resolve_utr_access_token", return_value="test-token")
+    @patch("apps.catalog.services.utr_product_enrichment.UtrClient")
+    def test_catalog_batch_enrichment_queues_top_visible_applicability(
+        self,
+        client_class,
+        _token_mock,
+        applicability_apply_async_mock,
+    ):
+        cache.clear()
+        products = []
+        for index in range(3):
+            product = Product.objects.create(
+                sku=f"LAZY-APPL-{index}-SKU",
+                article=f"LAZY-APPL-{index}",
+                name=f"Lazy Applicability UTR Product {index}",
+                slug=f"lazy-applicability-utr-product-{index}",
+                brand=self.brand,
+                category=self.category,
+                is_active=True,
+            )
+            ProductPrice.objects.create(product=product, final_price="100.00", currency="UAH")
+            self._create_utr_raw_offer(product=product, article=product.article, brand_name=self.brand.name)
+            products.append(product)
+
+        client = client_class.return_value
+        client.search_details_batch.return_value.rows = [
+            {
+                "details": [
+                    {
+                        "id": f"9400{index}",
+                        "article": product.article,
+                        "displayBrand": self.brand.name,
+                        "images": [{"fullImagePath": f"https://cdn.example.test/lazy-appl-{index}.webp"}],
+                    }
+                ]
+            }
+            for index, product in enumerate(products)
+        ]
+        client.search_details_batch.return_value.access_token = "test-token"
+
+        with tempfile.TemporaryDirectory() as media_root:
+            with override_settings(
+                MEDIA_ROOT=media_root,
+                UTR_LAZY_CATALOG_BATCH_SIZE=25,
+                UTR_LAZY_CATALOG_APPLICABILITY_ENABLED=True,
+                UTR_LAZY_CATALOG_APPLICABILITY_TOP_N=2,
+            ):
+                with patch(
+                    "apps.catalog.services.utr_product_enrichment._download_image",
+                    return_value=(b"fake-image", "image/webp"),
+                ):
+                    result = enrich_utr_catalog_products(product_ids=[str(product.id) for product in products])
+
+        self.assertEqual(result["applicability_queued"], 2)
+        applicability_apply_async_mock.assert_called_once_with(kwargs={"detail_ids": ["94000", "94001"]})
 
     def test_products_filter_by_car_modification_supports_utr_detail_and_article_map(self):
         product_with_detail = Product.objects.create(

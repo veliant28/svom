@@ -3,10 +3,11 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from django.test import TestCase
+from django.utils import timezone
 
 from apps.backoffice.api.serializers import BackofficeCatalogProductSerializer
 from apps.catalog.models import Brand, Category, Product
-from apps.pricing.models import Supplier
+from apps.pricing.models import Supplier, SupplierOffer
 from apps.supplier_imports.models import ImportRun, ImportSource, SupplierRawOffer
 from apps.users.models import User
 
@@ -73,6 +74,16 @@ class CatalogProductSerializerCategorySyncTests(TestCase):
             is_valid=True,
             raw_payload={},
         )
+        self.offer_seen_at = timezone.now()
+        self.supplier_offer = SupplierOffer.objects.create(
+            supplier=self.supplier,
+            product=self.product,
+            supplier_sku="SYNC-001",
+            purchase_price="100.00",
+            stock_qty=2,
+            is_available=True,
+            last_seen_at=self.offer_seen_at,
+        )
 
     def test_category_change_syncs_raw_offer_manual_mapping(self):
         serializer = BackofficeCatalogProductSerializer(
@@ -98,3 +109,8 @@ class CatalogProductSerializerCategorySyncTests(TestCase):
             SupplierRawOffer.CATEGORY_MAPPING_REASON_MANUAL,
         )
         self.assertEqual(self.raw_offer.category_mapped_by_id, self.actor.id)
+
+    def test_serializer_exposes_supplier_offer_seen_at(self):
+        serializer = BackofficeCatalogProductSerializer(self.product)
+
+        self.assertEqual(serializer.data["supplier_offer_seen_at"], self.offer_seen_at)

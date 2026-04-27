@@ -81,6 +81,7 @@ def resolve_contexts_with_batch_search(
             if len(detail_ids) == 1:
                 context.status = "resolved"
                 context.detail_id = detail_ids[0]
+                context.detail_payload = _select_detail_payload(details=details, detail_id=detail_ids[0])
                 context.resolved_stage = stage_name_for_context
                 continue
             if len(detail_ids) > 1:
@@ -201,3 +202,11 @@ def fetch_stage_queries_in_batches(
             )
 
     return outcomes, False, current_access_token
+
+
+def _select_detail_payload(*, details: list[dict], detail_id: str) -> dict | None:
+    normalized_detail_id = str(detail_id or "").strip()
+    for item in details:
+        if str(item.get("id") or "").strip() == normalized_detail_id:
+            return item
+    return None

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { BadgeDollarSign, CheckCircle2, Flame, Sparkles, Star, XCircle, type LucideIcon } from "lucide-react";
 
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
@@ -6,6 +6,7 @@ import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/
 import { ProductRowActions } from "@/features/backoffice/components/products/product-row-actions";
 import type { BackofficeColumn } from "@/features/backoffice/components/table/backoffice-table";
 import type { BackofficeCatalogProduct } from "@/features/backoffice/types/catalog.types";
+import { formatBackofficeDate } from "@/features/backoffice/lib/supplier-workspace";
 
 import { buildProductPriceMeta } from "./price-utils";
 import { extractWarehouseSegments, formatWarehouseLabel, formatWarehouseQty, resolveWarehouseTone } from "./warehouse-utils";
@@ -14,20 +15,22 @@ type Translator = (key: string, values?: Record<string, string | number>) => str
 
 function StatusIconChip({
   label,
+  tooltipContent,
   tone,
   icon,
 }: {
   label: string;
+  tooltipContent?: ReactNode;
   tone: BackofficeStatusChipTone;
   icon: LucideIcon;
 }) {
   return (
     <BackofficeTooltip
-      content={label}
+      content={tooltipContent || label}
       placement="top"
       align="center"
       wrapperClassName="inline-flex"
-      tooltipClassName="whitespace-nowrap"
+      tooltipClassName={tooltipContent ? "min-w-[190px]" : "whitespace-nowrap"}
     >
       <BackofficeStatusChip
         tone={tone}
@@ -168,7 +171,7 @@ export function createProductColumns({
       label: t("products.table.columns.price"),
       className: "w-[14%]",
       render: (item) => {
-        if (!item.final_price) {
+        if (!item.final_price && !item.supplier_price && !(item.supplier_price_levels ?? []).length) {
           return <span>-</span>;
         }
 
@@ -186,6 +189,18 @@ export function createProductColumns({
                   <span style={{ color: "var(--muted)" }}>{t("products.tooltips.supplierPrice")}:</span>{" "}
                   {priceMeta.supplierPrice}
                 </span>
+                {priceMeta.supplierPriceLevels.length ? (
+                  <span className="grid gap-0.5 border-t pt-1" style={{ borderColor: "var(--border)" }}>
+                    {priceMeta.supplierPriceLevels.map((level) => (
+                      <span key={`${item.id}-supplier-price-level-${level.key}`}>
+                        <span style={{ color: level.is_primary ? "var(--text)" : "var(--muted)" }}>
+                          {level.label}{level.is_primary ? " *" : ""}:
+                        </span>{" "}
+                        {level.formattedValue}
+                      </span>
+                    ))}
+                  </span>
+                ) : null}
                 <span>
                   <span style={{ color: "var(--muted)" }}>{t("products.tooltips.appliedMarkup")}:</span>{" "}
                   {priceMeta.appliedMarkup}
@@ -212,7 +227,7 @@ export function createProductColumns({
               icon={BadgeDollarSign}
               className="w-full max-w-full min-w-0 cursor-help justify-start overflow-hidden"
             >
-              <span className="block min-w-0 truncate tabular-nums">{priceMeta.displayPrice}</span>
+              <span className="block min-w-0 truncate tabular-nums">{priceMeta.badgeLabel}</span>
             </BackofficeStatusChip>
           </BackofficeTooltip>
         );
@@ -222,18 +237,37 @@ export function createProductColumns({
       key: "status",
       label: t("products.table.columns.status"),
       className: "w-[8%]",
-      render: (item) => (
-        <div className="flex flex-wrap gap-1">
-          <StatusIconChip
-            label={item.is_active ? t("statuses.active") : t("statuses.inactive")}
-            tone={item.is_active ? "success" : "gray"}
-            icon={item.is_active ? CheckCircle2 : XCircle}
-          />
-          {item.is_featured ? <StatusIconChip label={t("products.flags.featured")} tone="info" icon={Star} /> : null}
-          {item.is_new ? <StatusIconChip label={t("products.flags.new")} tone="orange" icon={Sparkles} /> : null}
-          {item.is_bestseller ? <StatusIconChip label={t("products.flags.bestseller")} tone="blue" icon={Flame} /> : null}
-        </div>
-      ),
+      render: (item) => {
+        const statusLabel = item.is_active ? t("statuses.active") : t("statuses.inactive");
+        const supplierOfferSeenAtLabel = item.supplier_offer_seen_at
+          ? formatBackofficeDate(item.supplier_offer_seen_at)
+          : t("products.tooltips.notSet");
+
+        return (
+          <div className="flex flex-wrap gap-1">
+            <StatusIconChip
+              label={statusLabel}
+              tooltipContent={(
+                <span className="grid gap-1">
+                  <span>
+                    <span style={{ color: "var(--muted)" }}>{t("products.table.columns.status")}:</span>{" "}
+                    {statusLabel}
+                  </span>
+                  <span>
+                    <span style={{ color: "var(--muted)" }}>{t("products.tooltips.importedFromPriceAt")}:</span>{" "}
+                    {supplierOfferSeenAtLabel}
+                  </span>
+                </span>
+              )}
+              tone={item.is_active ? "success" : "gray"}
+              icon={item.is_active ? CheckCircle2 : XCircle}
+            />
+            {item.is_featured ? <StatusIconChip label={t("products.flags.featured")} tone="info" icon={Star} /> : null}
+            {item.is_new ? <StatusIconChip label={t("products.flags.new")} tone="orange" icon={Sparkles} /> : null}
+            {item.is_bestseller ? <StatusIconChip label={t("products.flags.bestseller")} tone="blue" icon={Flame} /> : null}
+          </div>
+        );
+      },
     },
     {
       key: "warehouses",

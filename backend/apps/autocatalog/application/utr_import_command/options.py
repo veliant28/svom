@@ -20,6 +20,7 @@ def normalize_options(raw_options: Mapping[str, Any]) -> UtrImportCommandOptions
         raw_options.get("resolve_utr_articles") or resolve_until_empty or retry_unresolved or resolve_only
     )
     products_only = bool(raw_options.get("products_only"))
+    missing_applicability_only = bool(raw_options.get("missing_applicability_only"))
     resolve_limit = raw_options.get("resolve_limit")
     resolve_offset = max(0, int(raw_options.get("resolve_offset") or 0))
 
@@ -38,6 +39,7 @@ def normalize_options(raw_options: Mapping[str, Any]) -> UtrImportCommandOptions
         retry_unresolved=retry_unresolved,
         resolve_only=resolve_only,
         products_only=products_only,
+        missing_applicability_only=missing_applicability_only,
         batch_size=batch_size,
     )
     validate_options(options)

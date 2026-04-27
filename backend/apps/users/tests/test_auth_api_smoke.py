@@ -1,5 +1,6 @@
 from django.urls import reverse
 from django.core import mail
+from django.core.cache import cache
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
@@ -8,6 +9,7 @@ from apps.users.models import User
 
 class AuthAPISmokeTests(APITestCase):
     def setUp(self):
+        cache.clear()
         self.password = "demo12345"
         self.user = User.objects.create_user(
             email="auth-demo@test.local",
@@ -178,3 +180,17 @@ class AuthAPISmokeTests(APITestCase):
             format="json",
         )
         self.assertEqual(login_response.status_code, status.HTTP_200_OK)
+
+    def test_password_reset_unknown_email_is_silent(self):
+        reset_response = self.client.post(
+            reverse("users_api:auth-password-reset"),
+            {
+                "email": "missing-customer@test.local",
+                "locale": "ru",
+            },
+            format="json",
+            HTTP_ORIGIN="https://svom.test",
+        )
+
+        self.assertEqual(reset_response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(mail.outbox), 0)

@@ -1,5 +1,7 @@
 export type BackofficeEmailSettings = {
+  provider: "resend_smtp" | "manual_smtp";
   is_enabled: boolean;
+  from_name: string;
   from_email: string;
   host: string;
   port: number;
@@ -15,7 +17,9 @@ export type BackofficeEmailSettings = {
 };
 
 export type BackofficeEmailSettingsPayload = Partial<{
+  provider: "resend_smtp" | "manual_smtp";
   is_enabled: boolean;
+  from_name: string;
   from_email: string;
   host: string;
   port: number;

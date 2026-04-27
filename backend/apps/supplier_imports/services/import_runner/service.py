@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
 from django.utils import timezone
@@ -45,6 +46,8 @@ class SupplierImportRunner:
         perform_reprice = source.auto_reprice_after_import if reprice is None else reprice
         perform_reindex = source.auto_reindex_after_import if reindex is None else reindex
         started_at = timezone.now()
+        run_timer_started = time.perf_counter()
+        timings: dict[str, float | list[dict[str, object]]] = {}
 
         source.last_started_at = started_at
         source.save(update_fields=("last_started_at", "updated_at"))
@@ -58,15 +61,25 @@ class SupplierImportRunner:
         )
 
         parser = get_parser(source.parser_type)
-        matcher = ProductMatcher()
         supplier_offer_sync = SupplierOfferSyncService()
         quality_service = ImportQualityService()
         article_normalizer = ArticleNormalizerService()
         brand_resolver = BrandAliasResolverService()
+
+        matcher_started = time.perf_counter()
+        matcher = ProductMatcher(
+            article_normalizer=article_normalizer,
+            brand_resolver=brand_resolver,
+            lightweight_products=persistence.uses_current_offer_persistence(source=source),
+        )
+        timings["matcher_init_sec"] = self._elapsed_seconds(matcher_started)
+
         affected_products: set[str] = set()
 
         try:
+            collect_started = time.perf_counter()
             files = self._collect_files(source=source, file_paths=file_paths)
+            timings["collect_files_sec"] = self._elapsed_seconds(collect_started)
             if not files:
                 self._create_row_error(
                     run=run,
@@ -77,7 +90,8 @@ class SupplierImportRunner:
                 run.errors_count = 1
                 run.status = ImportRun.STATUS_FAILED
                 run.finished_at = timezone.now()
-                run.summary = {"files_processed": 0}
+                timings["total_sec"] = self._elapsed_seconds(run_timer_started)
+                run.summary = {"files_processed": 0, "timings": timings}
                 run.save(update_fields=("errors_count", "status", "finished_at", "summary", "updated_at"))
                 self._finalize_source_timestamps(source=source, run=run)
                 integration_state.mark_import_failure(
@@ -87,10 +101,20 @@ class SupplierImportRunner:
                 quality_service.refresh_for_run(run=run)
                 return self._as_result(run)
 
+            file_timings: list[dict[str, object]] = []
             for file_path in files:
+                file_timing: dict[str, object] = {"path": str(file_path)}
+                artifact_started = time.perf_counter()
                 artifact = self._create_artifact(run=run, source=source, file_path=file_path)
-                parse_result = self._parse_artifact(source=source, artifact=artifact, parser=parser)
+                file_timing["artifact_sec"] = self._elapsed_seconds(artifact_started)
 
+                parse_started = time.perf_counter()
+                parse_result = self._parse_artifact(source=source, artifact=artifact, parser=parser)
+                file_timing["parse_sec"] = self._elapsed_seconds(parse_started)
+                file_timing["parsed_offers"] = len(parse_result.offers)
+                file_timing["parse_issues"] = len(parse_result.issues)
+
+                persist_started = time.perf_counter()
                 created, updated, skipped, artifact_errors, product_ids = self._persist_parsed_rows(
                     run=run,
                     source=source,
@@ -102,6 +126,13 @@ class SupplierImportRunner:
                     article_normalizer=article_normalizer,
                     brand_resolver=brand_resolver,
                 )
+                file_timing["persist_sec"] = self._elapsed_seconds(persist_started)
+                file_timing["offers_created"] = created
+                file_timing["offers_updated"] = updated
+                file_timing["offers_skipped"] = skipped
+                file_timing["errors"] = artifact_errors
+                file_timing["affected_products"] = len(product_ids)
+                file_timings.append(file_timing)
 
                 affected_products.update(product_ids)
 
@@ -122,23 +153,31 @@ class SupplierImportRunner:
                         "updated_at",
                     )
                 )
+            timings["files"] = file_timings
 
             if not dry_run and affected_products and perform_reprice:
+                reprice_started = time.perf_counter()
                 repricing_stats = self._reprice_products(affected_product_ids=list(affected_products), source=source, run=run)
+                timings["reprice_sec"] = self._elapsed_seconds(reprice_started)
                 run.repriced_products = int(repricing_stats.get("repriced", 0))
 
             if not dry_run and affected_products and perform_reindex:
+                reindex_started = time.perf_counter()
                 reindex_stats = followup.reindex_products(affected_product_ids=list(affected_products))
+                timings["reindex_sec"] = self._elapsed_seconds(reindex_started)
                 run.reindexed_products = int(reindex_stats.get("indexed", 0))
                 run.summary["reindex"] = reindex_stats
 
             run.status = self._resolve_run_status(run)
             run.finished_at = timezone.now()
+            timings["total_sec"] = self._elapsed_seconds(run_timer_started)
             run.summary = {
                 **run.summary,
                 "files_processed": len(files),
                 "affected_products": len(affected_products),
                 "dry_run": dry_run,
+                "timings": timings,
+                "cache_stats": matcher.cache_stats(),
             }
             run.save(update_fields=("status", "finished_at", "summary", "repriced_products", "reindexed_products", "updated_at"))
         except SupplierCooldownError:
@@ -147,7 +186,13 @@ class SupplierImportRunner:
             run.status = ImportRun.STATUS_FAILED
             run.finished_at = timezone.now()
             run.note = str(exc)[:1000]
-            run.summary = {**(run.summary or {}), "exception": str(exc)}
+            timings["total_sec"] = self._elapsed_seconds(run_timer_started)
+            run.summary = {
+                **(run.summary or {}),
+                "exception": str(exc),
+                "timings": timings,
+                "cache_stats": matcher.cache_stats(),
+            }
             run.save(update_fields=("status", "finished_at", "note", "summary", "updated_at"))
             self._finalize_source_timestamps(source=source, run=run)
             integration_state.mark_import_failure(integration=integration, message=str(exc))
@@ -168,6 +213,10 @@ class SupplierImportRunner:
         }
         run.save(update_fields=("summary", "updated_at"))
         return self._as_result(run)
+
+    @staticmethod
+    def _elapsed_seconds(started_at: float) -> float:
+        return round(time.perf_counter() - started_at, 3)
 
     # Back-compat wrappers
     def _collect_files(self, *, source: ImportSource, file_paths: list[str] | None) -> list[Path]:

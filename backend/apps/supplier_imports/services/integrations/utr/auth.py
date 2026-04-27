@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 import logging
+import time
+from uuid import uuid4
 from dataclasses import dataclass
+
+from django.core.cache import cache
+from django.utils import timezone
 
 from apps.supplier_imports.services.integrations.exceptions import SupplierClientError
 from apps.supplier_imports.selectors import get_supplier_integration_by_code
@@ -73,7 +78,38 @@ def refresh_token(client, *, refresh_token: str, browser_fingerprint: str) -> Su
 
 
 def recover_access_token_for_utr(client) -> tuple[str, str]:
+    owner_token = uuid4().hex
+    lock_key = "utr:auth_recovery_lock"
+    for _attempt in range(120):
+        try:
+            if cache.add(lock_key, owner_token, timeout=90):
+                break
+        except Exception:
+            break
+        time.sleep(0.5)
+    else:
+        logger.warning("[UTR] token recovery lock wait timed out.")
+        return "", ""
+
+    try:
+        return _recover_access_token_for_utr_unlocked(client)
+    finally:
+        try:
+            if cache.get(lock_key) == owner_token:
+                cache.delete(lock_key)
+        except Exception:
+            pass
+
+
+def _recover_access_token_for_utr_unlocked(client) -> tuple[str, str]:
     integration = get_supplier_integration_by_code(source_code="utr")
+    current_token = str(integration.access_token or "").strip()
+    if current_token and (
+        integration.access_token_expires_at is None
+        or integration.access_token_expires_at > timezone.now()
+    ):
+        return current_token, "existing"
+
     browser_fingerprint = integration.browser_fingerprint or "svom-backoffice"
 
     if integration.refresh_token:

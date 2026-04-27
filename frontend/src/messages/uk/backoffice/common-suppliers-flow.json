@@ -22,6 +22,7 @@
           "saveSchedule": "Зберегти розклад",
           "runNow": "Запустити сценарій",
           "runningNow": "Виконується...",
+          "refresh": "Оновити",
           "saveDefaults": "Зберегти типові значення"
         },
         "messages": {

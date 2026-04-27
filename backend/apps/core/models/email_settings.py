@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from email.utils import formataddr
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -8,10 +10,18 @@ from apps.core.db.mixins import TimestampedMixin, UUIDPrimaryKeyMixin
 
 class EmailDeliverySettings(UUIDPrimaryKeyMixin, TimestampedMixin):
     DEFAULT_CODE = "default"
+    PROVIDER_RESEND_SMTP = "resend_smtp"
+    PROVIDER_MANUAL_SMTP = "manual_smtp"
+    PROVIDER_CHOICES = (
+        (PROVIDER_RESEND_SMTP, _("Resend SMTP")),
+        (PROVIDER_MANUAL_SMTP, _("Manual SMTP")),
+    )
 
     code = models.CharField(_("Код профиля"), max_length=32, unique=True, default=DEFAULT_CODE)
+    provider = models.CharField(_("SMTP provider"), max_length=32, choices=PROVIDER_CHOICES, default=PROVIDER_MANUAL_SMTP)
     is_enabled = models.BooleanField(_("SMTP отправка включена"), default=False)
 
+    from_name = models.CharField(_("Имя отправителя"), max_length=255, blank=True)
     from_email = models.CharField(_("Email отправителя"), max_length=255, blank=True)
     host = models.CharField(_("SMTP host"), max_length=255, blank=True)
     port = models.PositiveIntegerField(_("SMTP port"), default=587)
@@ -32,6 +42,14 @@ class EmailDeliverySettings(UUIDPrimaryKeyMixin, TimestampedMixin):
 
     def __str__(self) -> str:
         return f"EmailDeliverySettings:{self.code}"
+
+    @property
+    def formatted_from_email(self) -> str:
+        address = (self.from_email or "").strip()
+        name = (self.from_name or "").strip()
+        if name and address:
+            return formataddr((name, address))
+        return address
 
     @property
     def host_password_masked(self) -> str:

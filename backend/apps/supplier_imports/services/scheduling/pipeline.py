@@ -8,7 +8,9 @@ from typing import Any
 
 from django.utils import timezone
 
-from apps.pricing.models import SupplierOffer
+from apps.catalog.models import Product
+from apps.pricing.models import PriceHistory, SupplierOffer
+from apps.pricing.services import ProductRepricer
 from apps.search.services import ProductIndexer
 from apps.supplier_imports.models import ImportRun
 from apps.supplier_imports.selectors import ensure_default_import_sources, get_import_source_by_code, get_supplier_integration_by_code
@@ -101,19 +103,37 @@ class ScheduledSupplierImportPipelineService:
         if not run_id:
             raise SupplierIntegrationError("Импорт завершился без run_id.")
 
-        published = workspace_service.publish_mapped_products(
-            supplier_code=source_code,
-            run_id=run_id,
-            include_needs_review=False,
-            dry_run=False,
-            reprice_after_publish=True,
-        )
-
         product_ids = self._collect_reindex_product_ids(
             source_code=source_code,
             run_id=run_id,
             started_at=started_at,
         )
+        import_result = imported.get("result", {}) if isinstance(imported, dict) else {}
+        if isinstance(import_result, dict) and import_result.get("persistence_mode") == "current_offers":
+            reprice_summary = self._reprice_product_ids(
+                product_ids=product_ids,
+                source_code=source_code,
+                run_id=run_id,
+            )
+            published = {
+                "mode": "current_offers",
+                "raw_publish_skipped": True,
+                "repricing": reprice_summary,
+            }
+        else:
+            published = workspace_service.publish_mapped_products(
+                supplier_code=source_code,
+                run_id=run_id,
+                include_needs_review=False,
+                dry_run=False,
+                reprice_after_publish=True,
+            )
+            product_ids = self._collect_reindex_product_ids(
+                source_code=source_code,
+                run_id=run_id,
+                started_at=started_at,
+            )
+
         reindex_summary: dict[str, Any]
         if product_ids:
             reindex_summary = ProductIndexer().reindex_products(product_ids=product_ids)
@@ -305,6 +325,16 @@ class ScheduledSupplierImportPipelineService:
             if item
         }
         return sorted(normalized)
+
+    def _reprice_product_ids(self, *, product_ids: list[str], source_code: str, run_id: str) -> dict[str, int]:
+        if not product_ids:
+            return {"repriced": 0, "skipped": 0, "errors": 0}
+        queryset = Product.objects.filter(id__in=product_ids).select_related("brand", "category")
+        return ProductRepricer().recalculate_products(
+            queryset,
+            source=PriceHistory.SOURCE_IMPORT,
+            trigger_note=f"scheduled-import:{source_code}:run:{run_id}",
+        )
 
     @staticmethod
     def _require_credentials(*, integration) -> None:

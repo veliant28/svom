@@ -60,6 +60,11 @@ class Command(BaseCommand):
             help=_("Брать detail_id только из Product.utr_detail_id, без резолва по артикулам."),
         )
         parser.add_argument(
+            "--missing-applicability-only",
+            action="store_true",
+            help=_("Импортировать только utr_detail_id, для которых еще нет UtrDetailCarMap."),
+        )
+        parser.add_argument(
             "--batch-size",
             type=int,
             default=None,

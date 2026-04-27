@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Iterable
 from typing import Any
 
 from apps.supplier_imports.parsers.base import ParseIssue, ParsedOffer, ParseResult, ParserContext
@@ -36,9 +37,26 @@ _RRC_PRICE_FIELDS: tuple[str, ...] = (
     "rrp",
 )
 
+_GPL_PRICE_LEVELS: tuple[tuple[str, tuple[str, ...], bool, int], ...] = (
+    ("ОПТ2", ("Ціна ОПТ2 грн.", "ОПТ2", "opt2", "opt2_currency_980"), False, 2),
+    ("ОПТ4", ("Ціна ОПТ4 грн.", "ОПТ4", "opt4", "opt4_currency_980"), False, 4),
+    ("ОПТ10", ("Ціна ОПТ10 грн.", "ОПТ10", "opt10", "opt10_currency_980"), False, 10),
+    ("РРЦ", _RRC_PRICE_FIELDS, True, 100),
+)
+
 
 class GPLParser:
     parser_code = "gpl"
+
+    def parse_rows(
+        self,
+        rows: Iterable[tuple[int, dict[str, str]]],
+        *,
+        file_name: str,
+        context: ParserContext,
+    ) -> ParseResult:
+        offers, issues = self._parse_table_rows(rows=rows, context=context)
+        return ParseResult(offers=offers, issues=issues)
 
     def parse_content(self, content: str, *, file_name: str, context: ParserContext) -> ParseResult:
         try:
@@ -127,6 +145,7 @@ class GPLParser:
             price_field = self._select_rrc_price_field(item=item)
             price = parse_decimal(item.get(price_field) if price_field else None)
             currency = self._resolve_currency(item=item, price_field=price_field, default=context.default_currency)
+            price_levels = extract_gpl_price_levels(item=item, default_currency=context.default_currency)
 
             stock_qty = self._extract_stock_quantity(item)
             lead_time_days = parse_int(item.get("lead_time") or item.get("lead_time_days") or item.get("delivery_days"))
@@ -155,6 +174,7 @@ class GPLParser:
                     stock_qty=max(stock_qty, 0),
                     lead_time_days=max(lead_time_days, 0),
                     raw_payload=item,
+                    price_levels=price_levels,
                 )
             )
 
@@ -217,6 +237,14 @@ class GPLParser:
         )
 
     def _parse_table(self, *, content: str, context: ParserContext) -> tuple[list[ParsedOffer], list[ParseIssue]]:
+        return self._parse_table_rows(rows=parse_table_rows(content), context=context)
+
+    def _parse_table_rows(
+        self,
+        *,
+        rows: Iterable[tuple[int, dict[str, str]]],
+        context: ParserContext,
+    ) -> tuple[list[ParsedOffer], list[ParseIssue]]:
         mapping = context.mapping_config
 
         article_fields = resolve_field_names(mapping, "article_fields", ["article", "sku", "cid", "Артикул", "Артикул ТД"])
@@ -242,7 +270,7 @@ class GPLParser:
         offers: list[ParsedOffer] = []
         issues: list[ParseIssue] = []
 
-        for row_number, row in parse_table_rows(content):
+        for row_number, row in rows:
             article = str(extract_value(row, article_fields) or "").strip()
             external_sku = str(extract_value(row, external_sku_fields) or article).strip()
             brand_name = str(extract_value(row, brand_fields) or "").strip()
@@ -257,6 +285,7 @@ class GPLParser:
             price = parse_decimal(price_value)
 
             currency = str(extract_value(row, currency_fields) or context.default_currency).upper()
+            price_levels = extract_gpl_price_levels(item=row, default_currency=currency)
             stock_qty = parse_int(extract_value(row, stock_fields))
             if stock_qty == 0:
                 stock_qty = sum(
@@ -291,7 +320,57 @@ class GPLParser:
                     stock_qty=max(stock_qty, 0),
                     lead_time_days=max(lead_time_days, 0),
                     raw_payload=row,
+                    price_levels=price_levels,
                 )
             )
 
         return offers, issues
+
+
+def extract_gpl_price_levels(*, item: dict[str, Any], default_currency: str = "UAH") -> list[dict[str, Any]]:
+    levels: list[dict[str, Any]] = []
+    seen_keys: set[str] = set()
+    for label, field_names, is_primary, order in _GPL_PRICE_LEVELS:
+        matched_key = _find_price_level_key(item=item, field_names=field_names, label=label)
+        if not matched_key or matched_key in seen_keys:
+            continue
+        seen_keys.add(matched_key)
+
+        raw_value = item.get(matched_key)
+        parsed_value = parse_decimal(raw_value)
+        if parsed_value is None:
+            continue
+
+        levels.append(
+            {
+                "key": matched_key,
+                "label": label,
+                "value": f"{parsed_value:.2f}",
+                "currency": _resolve_price_level_currency(key=matched_key, default=default_currency),
+                "is_primary": is_primary,
+                "order": order,
+            }
+        )
+    return levels
+
+
+def _find_price_level_key(*, item: dict[str, Any], field_names: tuple[str, ...], label: str) -> str | None:
+    for field_name in field_names:
+        if field_name in item:
+            return field_name
+
+    normalized_label = label.lower().replace(" ", "")
+    for key in item.keys():
+        if not isinstance(key, str):
+            continue
+        normalized_key = key.lower().replace(" ", "").replace("_", "")
+        if normalized_label in normalized_key:
+            return key
+    return None
+
+
+def _resolve_price_level_currency(*, key: str, default: str) -> str:
+    match = re.search(r"_(\d{3})$", key)
+    if match:
+        return _CURRENCY_BY_NUMERIC.get(match.group(1), default).upper()
+    return default.upper()

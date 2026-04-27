@@ -1,5 +1,10 @@
+import hashlib
+import logging
+
+from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.tokens import default_token_generator
+from django.core.cache import cache
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from rest_framework import status
@@ -20,6 +25,9 @@ from apps.users.api.serializers import (
 )
 from apps.users.models import User
 from apps.core.services import get_configured_frontend_base_url, send_configured_mail
+from apps.core.services.email_delivery import sanitize_smtp_error_message
+
+logger = logging.getLogger(__name__)
 
 
 def _build_frontend_url(request, path: str) -> str:
@@ -59,6 +67,21 @@ def _password_reset_email_content(locale: str, reset_url: str) -> tuple[str, str
         ),
     }
     return messages.get(locale, messages[User.LANGUAGE_UK])
+
+
+def _hashed_cache_part(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _password_reset_request_allowed(request, email: str) -> bool:
+    timeout = int(getattr(settings, "PASSWORD_RESET_EMAIL_COOLDOWN_SECONDS", 60) or 60)
+    remote_addr = str(request.META.get("REMOTE_ADDR") or "unknown").strip()
+    key = f"password-reset:{_hashed_cache_part(f'{email.lower()}:{remote_addr}')}"
+    try:
+        return bool(cache.add(key, "1", timeout=timeout))
+    except Exception:
+        logger.warning("Password reset rate-limit cache is unavailable", exc_info=False)
+        return True
 
 
 class AuthLoginAPIView(APIView):
@@ -161,18 +184,28 @@ class PasswordResetRequestAPIView(APIView):
         email = serializer.validated_data["email"]
         locale = serializer.validated_data["locale"]
 
+        if not _password_reset_request_allowed(request, email):
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
         user = User.objects.filter(email__iexact=email, is_active=True).first()
         if user:
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
             reset_url = _build_frontend_url(request, f"/{locale}/reset-password/{uid}/{token}")
             subject, message = _password_reset_email_content(locale, reset_url)
-            send_configured_mail(
-                subject=subject,
-                message=message,
-                recipient_list=[user.email],
-                fail_silently=False,
-            )
+            try:
+                send_configured_mail(
+                    subject=subject,
+                    message=message,
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Password reset email delivery failed safely: error_type=%s message=%s",
+                    exc.__class__.__name__,
+                    sanitize_smtp_error_message(exc),
+                )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 

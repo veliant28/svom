@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from django.conf import settings
 
 from apps.autocatalog.models import UtrArticleDetailMap
@@ -8,6 +10,8 @@ from apps.supplier_imports.services.integrations.utr_client import UtrClient
 
 from . import diagnostics, persistence, planner, selector, stages
 from .types import ResolveContext, UtrArticleResolveProgress, UtrArticleResolveSummary
+
+logger = logging.getLogger(__name__)
 
 
 class UtrArticleDetailResolverService:
@@ -85,6 +89,7 @@ class UtrArticleDetailResolverService:
                     summary.resolved_updated += 1
                 summary.resolve_pairs_resolved_total += 1
                 self._increment_stage_resolved_counter(summary=summary, stage_name=context.resolved_stage)
+                self._enrich_products_from_resolved_detail(context=context, summary=summary)
                 continue
 
             if context.status == "ambiguous":
@@ -260,3 +265,31 @@ class UtrArticleDetailResolverService:
 
     def _track_unresolved(self, *, pair: dict[str, str], summary: UtrArticleResolveSummary) -> None:
         persistence.track_unresolved(pair=pair, summary=summary, upsert_func=self._upsert_mapping)
+
+    def _enrich_products_from_resolved_detail(self, *, context: ResolveContext, summary: UtrArticleResolveSummary) -> None:
+        if not bool(getattr(settings, "UTR_RESOLVE_ENRICH_PRODUCTS_FROM_SEARCH", True)):
+            return
+        detail = context.detail_payload
+        if not isinstance(detail, dict):
+            return
+        try:
+            from apps.catalog.services.utr_product_enrichment import apply_utr_search_detail_to_matching_products
+
+            result = apply_utr_search_detail_to_matching_products(
+                article=context.pair["article"],
+                normalized_article=context.pair["normalized_article"],
+                brand_name=context.pair["brand_name"],
+                normalized_brand=context.pair["normalized_brand"],
+                detail=detail,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "utr_article_detail_product_enrichment_failed article=%s brand=%s detail_id=%s error=%s",
+                context.pair.get("article"),
+                context.pair.get("brand_name"),
+                context.detail_id,
+                exc,
+            )
+            return
+        summary.resolved_products_enriched_total += int(result.get("products_enriched", 0))
+        summary.resolved_product_images_created_total += int(result.get("created_images", 0))

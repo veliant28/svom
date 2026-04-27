@@ -95,7 +95,7 @@ export function Header({ initialCategories = [] }: { initialCategories?: Categor
                     alt="V"
                     width={64}
                     height={64}
-                    className="inline-block h-[64px] w-[64px] align-[-0.06em]"
+                    className="inline-block h-10 w-10 align-[-0.06em]"
                     priority
                   />
                   <span>{brandSuffix}</span>

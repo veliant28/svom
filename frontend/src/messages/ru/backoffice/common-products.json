@@ -255,7 +255,8 @@
           "policyGlobal": "Общая наценка",
           "policyCategory": "Наценка по категориям",
           "notSet": "Не задано",
-          "updatedAt": "Обновлено"
+          "updatedAt": "Обновлено",
+          "importedFromPriceAt": "В прайсе"
         },
         "table": {
           "supplierArticle": "Артикул поставщика",

@@ -36,6 +36,7 @@ out/
 dist/
 build/
 *.tsbuildinfo
+test-results/
 
 # generated artifacts
 category_mapping_exports/

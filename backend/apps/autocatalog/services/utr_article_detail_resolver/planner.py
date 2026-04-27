@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from apps.autocatalog.models import UtrArticleDetailMap
+from apps.pricing.models import SupplierOffer
 from apps.supplier_imports.models import SupplierRawOffer
 
 from .normalizers import normalize_article_value, normalize_brand_value
@@ -21,29 +22,15 @@ def collect_article_brand_pairs(
             )
         )
 
-    queryset = (
-        SupplierRawOffer.objects.filter(source__code="utr")
-        .exclude(external_sku="")
-        .values("external_sku", "article", "brand_name")
-        .distinct()
-        .order_by("external_sku", "article", "brand_name")
-    )
-
     pairs: list[dict[str, str]] = []
     seen_keys: set[tuple[str, str]] = set()
     skipped = 0
-    for row in queryset.iterator(chunk_size=2000):
-        article = str(row.get("external_sku") or "").strip()
-        if not article:
+    for row in _iter_utr_pair_rows():
+        pair = _normalize_pair_row(row=row)
+        if pair is None:
             continue
 
-        normalized_article = normalize_article_value(article)
-        if not normalized_article:
-            continue
-
-        brand_name = str(row.get("brand_name") or "").strip()
-        normalized_brand = normalize_brand_value(brand_name)
-        key = (normalized_article, normalized_brand)
+        key = (pair["normalized_article"], pair["normalized_brand"])
         if key in seen_keys:
             continue
         seen_keys.add(key)
@@ -54,16 +41,7 @@ def collect_article_brand_pairs(
             skipped += 1
             continue
 
-        fallback_article = str(row.get("article") or "").strip()
-        pairs.append(
-            {
-                "article": article,
-                "fallback_article": fallback_article,
-                "normalized_article": normalized_article,
-                "brand_name": brand_name,
-                "normalized_brand": normalized_brand,
-            }
-        )
+        pairs.append(pair)
         if limit and limit > 0 and len(pairs) >= limit:
             break
     return pairs
@@ -100,25 +78,58 @@ def collect_unresolved_pairs(*, limit: int | None, offset: int) -> list[dict[str
 
 
 def count_raw_pairs() -> int:
-    queryset = (
+    seen_keys: set[tuple[str, str]] = set()
+    for row in _iter_utr_pair_rows():
+        pair = _normalize_pair_row(row=row)
+        if pair is None:
+            continue
+        seen_keys.add((pair["normalized_article"], pair["normalized_brand"]))
+    return len(seen_keys)
+
+
+def _iter_utr_pair_rows():
+    raw_queryset = (
         SupplierRawOffer.objects.filter(source__code="utr")
         .exclude(external_sku="")
-        .values("external_sku", "brand_name")
+        .values("external_sku", "article", "brand_name")
         .distinct()
-        .order_by("external_sku", "brand_name")
+        .order_by("external_sku", "article", "brand_name")
     )
-    seen_keys: set[tuple[str, str]] = set()
-    for row in queryset.iterator(chunk_size=2000):
-        article = str(row.get("external_sku") or "").strip()
-        if not article:
-            continue
-        normalized_article = normalize_article_value(article)
-        if not normalized_article:
-            continue
-        brand_name = str(row.get("brand_name") or "").strip()
-        key = (normalized_article, normalize_brand_value(brand_name))
-        seen_keys.add(key)
-    return len(seen_keys)
+    yield from raw_queryset.iterator(chunk_size=2000)
+
+    current_queryset = (
+        SupplierOffer.objects.filter(supplier__code="utr")
+        .exclude(supplier_sku="")
+        .values("supplier_sku", "product__article", "product__brand__name")
+        .distinct()
+        .order_by("supplier_sku", "product__article", "product__brand__name")
+    )
+    for row in current_queryset.iterator(chunk_size=2000):
+        yield {
+            "external_sku": row.get("supplier_sku") or "",
+            "article": row.get("product__article") or "",
+            "brand_name": row.get("product__brand__name") or "",
+        }
+
+
+def _normalize_pair_row(*, row: dict) -> dict[str, str] | None:
+    article = str(row.get("external_sku") or "").strip()
+    if not article:
+        return None
+
+    normalized_article = normalize_article_value(article)
+    if not normalized_article:
+        return None
+
+    brand_name = str(row.get("brand_name") or "").strip()
+    fallback_article = str(row.get("article") or "").strip()
+    return {
+        "article": article,
+        "fallback_article": fallback_article,
+        "normalized_article": normalized_article,
+        "brand_name": brand_name,
+        "normalized_brand": normalize_brand_value(brand_name),
+    }
 
 
 def build_search_stages(

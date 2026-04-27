@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import { Check, Power, RotateCcw } from "lucide-react";
+import { Check, Power, RefreshCw, RotateCcw } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { getBackofficeImportRun, getBackofficeImportSchedules, runBackofficeImportSchedule, updateBackofficeImportSchedule } from "@/features/backoffice/api/backoffice-api";
@@ -302,7 +302,23 @@ export function ImportSchedulesPage() {
 
   return (
     <section>
-      <PageHeader title={t("importSchedules.title")} description={t("importSchedules.subtitle")} />
+      <PageHeader
+        title={t("importSchedules.title")}
+        description={t("importSchedules.subtitle")}
+        actions={
+          <button
+            type="button"
+            className="inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold transition-colors"
+            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+            onClick={() => {
+              void refetch();
+            }}
+          >
+            <RefreshCw size={16} className="animate-spin" style={{ animationDuration: "2.2s" }} />
+            {t("importSchedules.actions.refresh")}
+          </button>
+        }
+      />
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <input

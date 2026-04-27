@@ -109,17 +109,18 @@ export function useProductDetail(slug: string) {
 
     async function warmProductDetail() {
       try {
-        let statuses = await requestUtrProductEnrichment([currentProduct.id], true);
+        let statuses = await requestUtrProductEnrichment([currentProduct.id], true, "detail");
         for (let attempt = 0; attempt < 60; attempt += 1) {
           const status = statuses[0];
           const hasNewImage = Boolean(status?.primary_image) && currentProduct.images.length === 0;
           const hasNewCharacteristics = Number(status?.characteristics_count || 0) > 0 && currentProduct.attributes.length === 0;
+          const hasNewFitments = Number(status?.fitments_count || 0) > 0 && currentProduct.fitments.length === 0;
           const hasProcessedUpdate = Boolean(status?.processed);
           const isStillRunning =
             Boolean(status?.needs_enrichment) || status?.status === "queued" || status?.status === "in_progress" || status?.queued;
 
-          if (hasNewImage || hasNewCharacteristics || hasProcessedUpdate || !isStillRunning) {
-            if (!isCancelled && (hasNewImage || hasNewCharacteristics || hasProcessedUpdate)) {
+          if (hasNewImage || hasNewCharacteristics || hasNewFitments || hasProcessedUpdate || !isStillRunning) {
+            if (!isCancelled && (hasNewImage || hasNewCharacteristics || hasNewFitments || hasProcessedUpdate)) {
               const refreshed = await getProductDetail(slug, locale, vehicleParams);
               if (!isCancelled) {
                 setProduct(refreshed);
@@ -132,7 +133,7 @@ export function useProductDetail(slug: string) {
           if (isCancelled) {
             return;
           }
-          statuses = await requestUtrProductEnrichment([currentProduct.id], true);
+          statuses = await requestUtrProductEnrichment([currentProduct.id], true, "detail");
         }
       } catch {
         // UTR enrichment is a non-blocking fallback for missing local data.

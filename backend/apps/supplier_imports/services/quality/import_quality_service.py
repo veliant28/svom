@@ -144,6 +144,11 @@ class ImportQualityService:
         }
 
     def _collect_status_counts(self, *, run: ImportRun) -> dict[str, int]:
+        summary = run.summary if isinstance(run.summary, dict) else {}
+        from_summary = summary.get("match_status_counts")
+        if isinstance(from_summary, dict):
+            return {str(key): int(value) for key, value in from_summary.items()}
+
         buckets = (
             run.raw_offers.values("match_status")
             .annotate(total=Count("id"))

@@ -25,6 +25,7 @@ class ParsedOffer:
     stock_qty: int
     lead_time_days: int
     raw_payload: dict[str, Any]
+    price_levels: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass(frozen=True)

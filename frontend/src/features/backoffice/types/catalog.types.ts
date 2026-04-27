@@ -39,6 +39,14 @@ export type BackofficeCatalogProduct = {
   price_updated_at: string | null;
   supplier_price: string | null;
   supplier_currency: string | null;
+  supplier_price_levels: Array<{
+    key: string;
+    label: string;
+    value: string;
+    currency: string;
+    is_primary: boolean;
+    order: number;
+  }>;
   applied_markup_percent: string | null;
   applied_markup_policy_name: string;
   applied_markup_policy_scope: string;
@@ -48,6 +56,7 @@ export type BackofficeCatalogProduct = {
     source_code: string;
   }>;
   supplier_sku: string;
+  supplier_offer_seen_at: string | null;
   short_description: string;
   description: string;
   is_active: boolean;

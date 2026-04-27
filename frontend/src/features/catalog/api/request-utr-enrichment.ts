@@ -6,6 +6,7 @@ export type UtrEnrichmentStatus = {
   utr_detail_id: string;
   primary_image: string;
   characteristics_count: number;
+  fitments_count: number;
   needs_enrichment: boolean;
   processed: boolean;
   queued: boolean;
@@ -15,16 +16,23 @@ type UtrEnrichmentResponse = {
   results: UtrEnrichmentStatus[];
 };
 
-export async function requestUtrProductEnrichment(productIds: string[], enqueue = true): Promise<UtrEnrichmentStatus[]> {
+export type UtrEnrichmentMode = "catalog" | "detail";
+
+export async function requestUtrProductEnrichment(
+  productIds: string[],
+  enqueue = true,
+  mode: UtrEnrichmentMode = "detail",
+): Promise<UtrEnrichmentStatus[]> {
   if (productIds.length === 0) {
     return [];
   }
 
-  const response = await postJson<UtrEnrichmentResponse, { product_ids: string[]; enqueue: boolean }>(
+  const response = await postJson<UtrEnrichmentResponse, { product_ids: string[]; enqueue: boolean; mode: UtrEnrichmentMode }>(
     "/catalog/products/utr-enrichment/",
     {
       product_ids: productIds,
       enqueue,
+      mode,
     },
   );
   return response.results;

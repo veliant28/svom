@@ -26,6 +26,8 @@ class UtrArticleResolveSummary:
     resolve_pairs_auth_failures_total: int = 0
     resolve_pairs_transport_failures_total: int = 0
     resolve_pairs_supplier_errors_total: int = 0
+    resolved_products_enriched_total: int = 0
+    resolved_product_images_created_total: int = 0
     stage_primary_brandless_attempted_total: int = 0
     stage_primary_brandless_resolved_total: int = 0
     stage_fallback_brandless_attempted_total: int = 0
@@ -58,6 +60,7 @@ class ResolveContext:
     stages: list[dict[str, str]]
     status: str = "pending"
     detail_id: str = ""
+    detail_payload: dict | None = None
     resolved_stage: str = ""
     auth_failed: bool = False
     transport_failed: bool = False

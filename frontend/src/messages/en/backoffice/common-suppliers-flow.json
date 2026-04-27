@@ -22,6 +22,7 @@
           "saveSchedule": "Save schedule",
           "runNow": "Run scenario",
           "runningNow": "Running...",
+          "refresh": "Refresh",
           "saveDefaults": "Save defaults"
         },
         "messages": {

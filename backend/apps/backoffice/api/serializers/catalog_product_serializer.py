@@ -8,6 +8,7 @@ from apps.backoffice.services import ProductOperationsService
 from apps.catalog.models import Brand, Category, Product
 from apps.catalog.services import generate_unique_product_slug, sanitize_product_name
 from apps.pricing.models import SupplierOffer
+from apps.supplier_imports.parsers.gpl_parser import extract_gpl_price_levels
 
 
 class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
@@ -20,11 +21,13 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
     price_updated_at = serializers.SerializerMethodField()
     supplier_price = serializers.SerializerMethodField()
     supplier_currency = serializers.SerializerMethodField()
+    supplier_price_levels = serializers.SerializerMethodField()
     applied_markup_percent = serializers.SerializerMethodField()
     applied_markup_policy_name = serializers.SerializerMethodField()
     applied_markup_policy_scope = serializers.SerializerMethodField()
     warehouse_segments = serializers.SerializerMethodField()
     supplier_sku = serializers.SerializerMethodField()
+    supplier_offer_seen_at = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -43,11 +46,13 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
             "price_updated_at",
             "supplier_price",
             "supplier_currency",
+            "supplier_price_levels",
             "applied_markup_percent",
             "applied_markup_policy_name",
             "applied_markup_policy_scope",
             "warehouse_segments",
             "supplier_sku",
+            "supplier_offer_seen_at",
             "short_description",
             "description",
             "is_active",
@@ -138,19 +143,21 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
         return product_price
 
     @staticmethod
-    def _resolve_supplier_purchase_price(obj: Product) -> tuple[Decimal | None, str | None]:
+    def _resolve_supplier_offer(obj: Product) -> SupplierOffer | None:
         prefetched = getattr(obj, "backoffice_supplier_offers", None)
         if prefetched:
-            best_offer = prefetched[0]
-            if best_offer.purchase_price and best_offer.purchase_price > 0:
-                return best_offer.purchase_price, best_offer.currency
+            return prefetched[0]
 
-        offer = (
+        return (
             SupplierOffer.objects.filter(product=obj)
             .select_related("supplier")
             .order_by("supplier__priority", "-updated_at", "id")
             .first()
         )
+
+    @classmethod
+    def _resolve_supplier_purchase_price(cls, obj: Product) -> tuple[Decimal | None, str | None]:
+        offer = cls._resolve_supplier_offer(obj)
         if offer and offer.purchase_price and offer.purchase_price > 0:
             return offer.purchase_price, offer.currency
 
@@ -187,6 +194,33 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
 
         _, supplier_currency = self._resolve_supplier_purchase_price(obj)
         return supplier_currency
+
+    def get_supplier_price_levels(self, obj: Product):
+        prefetched_offers = getattr(obj, "backoffice_supplier_offers", None)
+        offers = prefetched_offers
+        if offers is None:
+            offers = SupplierOffer.objects.filter(product=obj).select_related("supplier").order_by("supplier__priority", "-updated_at", "id")
+
+        for offer in offers:
+            if isinstance(offer.price_levels, list) and offer.price_levels:
+                return offer.price_levels
+
+        prefetched = getattr(obj, "backoffice_raw_offers", None)
+        raw_offers = prefetched
+        if raw_offers is None:
+            raw_offers = (
+                obj.raw_supplier_offers.select_related("source", "supplier")
+                .order_by("supplier__priority", "source__code", "-updated_at", "-id")
+            )
+
+        for raw_offer in raw_offers:
+            source_code = str(getattr(raw_offer.source, "code", "") or "").lower()
+            if source_code != "gpl":
+                continue
+            levels = extract_gpl_price_levels(item=raw_offer.raw_payload or {}, default_currency=raw_offer.currency)
+            if levels:
+                return levels
+        return []
 
     def get_applied_markup_percent(self, obj: Product):
         product_price = self._resolve_product_price(obj)
@@ -273,3 +307,17 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
         if offer and offer.supplier_sku:
             return offer.supplier_sku
         return obj.sku
+
+    def get_supplier_offer_seen_at(self, obj: Product):
+        prefetched = getattr(obj, "backoffice_supplier_offers", None)
+        if prefetched is not None:
+            offers = prefetched
+        else:
+            offers = SupplierOffer.objects.filter(product=obj).only("last_seen_at", "updated_at")
+
+        seen_values = [
+            offer.last_seen_at or offer.updated_at
+            for offer in offers
+            if offer.last_seen_at or offer.updated_at
+        ]
+        return max(seen_values) if seen_values else None

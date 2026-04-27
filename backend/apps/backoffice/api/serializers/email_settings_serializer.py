@@ -1,18 +1,35 @@
 from __future__ import annotations
 
+from email.utils import parseaddr
+
 from rest_framework import serializers
 
 from apps.core.models import EmailDeliverySettings
+from apps.core.services.email_delivery import sanitize_smtp_error_message
+
+
+RESEND_SMTP_PRESET = {
+    "host": "smtp.resend.com",
+    "port": 587,
+    "host_user": "resend",
+    "use_tls": True,
+    "use_ssl": False,
+    "timeout": 10,
+    "frontend_base_url": "https://svom.com.ua",
+}
 
 
 class EmailDeliverySettingsSerializer(serializers.ModelSerializer):
+    from_email = serializers.EmailField(required=False, allow_blank=True)
     host_password = serializers.CharField(write_only=True, required=False, allow_blank=False, trim_whitespace=False)
     host_password_masked = serializers.CharField(read_only=True)
 
     class Meta:
         model = EmailDeliverySettings
         fields = (
+            "provider",
             "is_enabled",
+            "from_name",
             "from_email",
             "host",
             "port",
@@ -29,6 +46,10 @@ class EmailDeliverySettingsSerializer(serializers.ModelSerializer):
         )
 
     def validate(self, attrs: dict) -> dict:
+        provider = attrs.get("provider", getattr(self.instance, "provider", EmailDeliverySettings.PROVIDER_MANUAL_SMTP))
+        if provider == EmailDeliverySettings.PROVIDER_RESEND_SMTP:
+            attrs.update(RESEND_SMTP_PRESET)
+
         use_tls = attrs.get("use_tls", getattr(self.instance, "use_tls", False))
         use_ssl = attrs.get("use_ssl", getattr(self.instance, "use_ssl", False))
         if use_tls and use_ssl:
@@ -43,7 +64,15 @@ class EmailDeliverySettingsSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance: EmailDeliverySettings) -> dict:
         data = super().to_representation(instance)
+        if not data.get("from_name") and "<" in str(data.get("from_email") or ""):
+            from_name, from_email = parseaddr(str(data.get("from_email") or ""))
+            data["from_name"] = from_name
+            data["from_email"] = from_email
         data["host_password_masked"] = instance.host_password_masked
+        data["last_connection_message"] = sanitize_smtp_error_message(
+            str(instance.last_connection_message or ""),
+            settings=instance,
+        ) if instance.last_connection_message else ""
         return data
 
     def update(self, instance: EmailDeliverySettings, validated_data: dict) -> EmailDeliverySettings:

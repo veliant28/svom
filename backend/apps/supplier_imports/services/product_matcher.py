@@ -3,12 +3,23 @@ from __future__ import annotations
 from apps.catalog.models import Product
 from apps.pricing.models import Supplier
 from apps.supplier_imports.models import ImportSource
+from apps.supplier_imports.services.normalization import ArticleNormalizerService, BrandAliasResolverService
 from apps.supplier_imports.services.matching import MatchDecision, OfferMatcher
 
 
 class ProductMatcher:
-    def __init__(self) -> None:
-        self._matcher = OfferMatcher()
+    def __init__(
+        self,
+        *,
+        article_normalizer: ArticleNormalizerService | None = None,
+        brand_resolver: BrandAliasResolverService | None = None,
+        lightweight_products: bool = False,
+    ) -> None:
+        self._matcher = OfferMatcher(
+            article_normalizer=article_normalizer,
+            brand_resolver=brand_resolver,
+            lightweight_products=lightweight_products,
+        )
 
     def match(
         self,
@@ -61,3 +72,6 @@ class ProductMatcher:
             source=source,
             supplier=supplier,
         )
+
+    def cache_stats(self) -> dict[str, dict[str, int]]:
+        return self._matcher.cache_stats()

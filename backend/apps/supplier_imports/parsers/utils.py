@@ -112,12 +112,20 @@ _XLSX_NS = {
     "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
     "p": "http://schemas.openxmlformats.org/package/2006/relationships",
 }
+_XLSX_MAIN_NS = _XLSX_NS["x"]
+_XLSX_ROW_TAG = f"{{{_XLSX_MAIN_NS}}}row"
+_XLSX_CELL_TAG = f"{{{_XLSX_MAIN_NS}}}c"
+_XLSX_VALUE_TAG = f"{{{_XLSX_MAIN_NS}}}v"
+_XLSX_INLINE_STRING_TAG = f"{{{_XLSX_MAIN_NS}}}is"
+_XLSX_TEXT_TAG = f"{{{_XLSX_MAIN_NS}}}t"
 
 
 def _column_index(cell_ref: str) -> int:
-    column = "".join(char for char in cell_ref if char.isalpha()).upper()
     value = 0
-    for char in column:
+    for char in cell_ref:
+        if not char.isalpha():
+            break
+        char = char.upper()
         value = (value * 26) + (ord(char) - ord("A") + 1)
     return max(value - 1, 0)
 
@@ -155,65 +163,70 @@ def parse_xlsx_rows(file_path: Path) -> list[tuple[int, dict[str, str]]]:
             sheet_target = f"xl/{sheet_target}"
 
         sheet_xml = ET.fromstring(archive.read(sheet_target))
-        rows_xml = sheet_xml.findall(".//x:sheetData/x:row", _XLSX_NS)
 
-        matrix: list[tuple[int, list[str]]] = []
-        max_index = 0
+        unique_headers: list[str] | None = None
+        result: list[tuple[int, dict[str, str]]] = []
 
-        for row_xml in rows_xml:
-            row_number = int(row_xml.attrib.get("r", str(len(matrix) + 1)))
+        for fallback_row_number, row_xml in enumerate(sheet_xml.iter(_XLSX_ROW_TAG), start=1):
+            row_number = int(row_xml.attrib.get("r", str(fallback_row_number)))
             row_values: dict[int, str] = {}
+            max_index = 0
 
-            for cell in row_xml.findall("x:c", _XLSX_NS):
+            for cell in row_xml:
+                if cell.tag != _XLSX_CELL_TAG:
+                    continue
+
                 ref = cell.attrib.get("r", "")
                 index = _column_index(ref)
+                max_index = max(max_index, index)
 
                 cell_type = cell.attrib.get("t")
-                value_node = cell.find("x:v", _XLSX_NS)
-                inline_node = cell.find("x:is", _XLSX_NS)
+                value_text = ""
+                inline_node = None
+                for child in cell:
+                    if child.tag == _XLSX_VALUE_TAG:
+                        value_text = child.text or ""
+                    elif child.tag == _XLSX_INLINE_STRING_TAG:
+                        inline_node = child
 
                 value = ""
-                if cell_type == "s" and value_node is not None and value_node.text is not None:
-                    shared_index = int(value_node.text)
+                if cell_type == "s" and value_text:
+                    shared_index = int(value_text)
                     if 0 <= shared_index < len(shared_strings):
                         value = shared_strings[shared_index]
                 elif cell_type == "inlineStr" and inline_node is not None:
-                    value = "".join(node.text or "" for node in inline_node.findall(".//x:t", _XLSX_NS))
-                elif value_node is not None and value_node.text is not None:
-                    value = value_node.text
+                    value = "".join(node.text or "" for node in inline_node.iter(_XLSX_TEXT_TAG))
+                else:
+                    value = value_text
 
                 row_values[index] = value.strip()
-                max_index = max(max_index, index)
 
-            line = ["" for _ in range(max_index + 1)]
-            for index, value in row_values.items():
-                if index < len(line):
-                    line[index] = value
+            if unique_headers is None:
+                header_values = [row_values.get(index, "") for index in range(max_index + 1)]
+                unique_headers = _unique_headers(header_values)
+                continue
 
-            matrix.append((row_number, line))
-
-        if not matrix:
-            return []
-
-        header_row_number, header_values = matrix[0]
-        _ = header_row_number  # intentionally unused for now.
-        headers = [_header or f"column_{idx + 1}" for idx, _header in enumerate(header_values)]
-
-        unique_headers: list[str] = []
-        seen_headers: dict[str, int] = {}
-        for header in headers:
-            normalized = header.strip() or "column"
-            count = seen_headers.get(normalized, 0)
-            seen_headers[normalized] = count + 1
-            unique_headers.append(normalized if count == 0 else f"{normalized}_{count + 1}")
-
-        result: list[tuple[int, dict[str, str]]] = []
-        for row_number, values in matrix[1:]:
-            row = {header: (values[index] if index < len(values) else "") for index, header in enumerate(unique_headers)}
+            row = {header: row_values.get(index, "") for index, header in enumerate(unique_headers)}
             if any(value.strip() for value in row.values()):
                 result.append((row_number, row))
 
+        if unique_headers is None:
+            return []
+
         return result
+
+
+def _unique_headers(header_values: list[str]) -> list[str]:
+    headers = [_header or f"column_{idx + 1}" for idx, _header in enumerate(header_values)]
+
+    unique_headers: list[str] = []
+    seen_headers: dict[str, int] = {}
+    for header in headers:
+        normalized = header.strip() or "column"
+        count = seen_headers.get(normalized, 0)
+        seen_headers[normalized] = count + 1
+        unique_headers.append(normalized if count == 0 else f"{normalized}_{count + 1}")
+    return unique_headers
 
 
 def rows_to_csv_content(rows: list[tuple[int, dict[str, str]]]) -> str:
@@ -295,6 +308,10 @@ def extract_json_payloads(content: str) -> list[Any]:
 
 
 def extract_value(row: dict[str, Any], field_names: list[str]) -> Any:
+    for field_name in field_names:
+        if field_name in row:
+            return row.get(field_name)
+
     lowered = {key.lower(): key for key in row.keys()}
     for field_name in field_names:
         lookup = lowered.get(field_name.lower())

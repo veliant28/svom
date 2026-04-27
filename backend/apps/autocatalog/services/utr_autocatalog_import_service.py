@@ -11,6 +11,7 @@ from django.utils.text import slugify
 
 from apps.autocatalog.models import CarMake, CarModel, CarModification, UtrDetailCarMap
 from apps.autocatalog.models.normalization import collapse_spaces, normalize_name
+from apps.catalog.models import UtrProductEnrichment
 from apps.supplier_imports.services.integrations.exceptions import SupplierClientError
 from apps.supplier_imports.services.integrations.utr_client import UtrClient
 
@@ -25,6 +26,8 @@ class AutocatalogImportSummary:
     detail_ids_skipped_cached: int = 0
     detail_ids_skipped_disabled: int = 0
     detail_ids_empty_applicability: int = 0
+    detail_ids_prefiltered_no_applicability: int = 0
+    detail_ids_suspicious_empty_applicability: int = 0
     stopped_due_to_circuit_breaker: int = 0
     makes_created: int = 0
     models_created: int = 0
@@ -66,6 +69,7 @@ class UtrAutocatalogImportService:
         if not normalized_detail_ids:
             return summary
 
+        current_access_token = str(access_token or "").strip()
         persisted_with_mappings: set[str] = set()
         if not effective_force_refresh:
             persisted_with_mappings = set(
@@ -73,6 +77,12 @@ class UtrAutocatalogImportService:
                 .values_list("utr_detail_id", flat=True)
                 .distinct()
             )
+
+        has_applicability_by_id = self._collect_has_applicability_flags(
+            detail_ids=normalized_detail_ids,
+            access_token=current_access_token,
+            force_refresh=effective_force_refresh,
+        )
 
         total = len(normalized_detail_ids)
         for index, normalized_detail_id in enumerate(normalized_detail_ids, start=1):
@@ -85,14 +95,42 @@ class UtrAutocatalogImportService:
                     summary.detail_ids_skipped_cached += 1
                     continue
 
+            has_applicability = has_applicability_by_id.get(normalized_detail_id)
+            if has_applicability is False:
+                summary.detail_ids_empty_applicability += 1
+                summary.detail_ids_prefiltered_no_applicability += 1
+                self._mark_detail_done(normalized_detail_id)
+                if on_progress is not None:
+                    on_progress(index, total, normalized_detail_id)
+                continue
+
             summary.detail_ids_processed += 1
             try:
-                applicability_rows = self.client.fetch_applicability(
-                    access_token=access_token,
-                    detail_id=normalized_detail_id,
-                    force_refresh=effective_force_refresh,
-                    request_reason="autocatalog:detail_applicability_import",
-                )
+                try:
+                    applicability_rows = self.client.fetch_applicability(
+                        access_token=current_access_token,
+                        detail_id=normalized_detail_id,
+                        force_refresh=effective_force_refresh,
+                        request_reason="autocatalog:detail_applicability_import",
+                    )
+                except SupplierClientError as exc:
+                    if not self.client.is_expired_token_error(exc):
+                        raise
+                    recovered_token, auth_method = self.client._recover_access_token_for_utr()
+                    if not recovered_token:
+                        raise
+                    current_access_token = recovered_token
+                    logger.info(
+                        "[UTR] applicability-auth-retry method=%s detail_id=%s",
+                        auth_method,
+                        normalized_detail_id,
+                    )
+                    applicability_rows = self.client.fetch_applicability(
+                        access_token=current_access_token,
+                        detail_id=normalized_detail_id,
+                        force_refresh=effective_force_refresh,
+                        request_reason="autocatalog:detail_applicability_import",
+                    )
             except SupplierClientError as exc:
                 summary.detail_ids_failed += 1
                 if self.client.is_circuit_open_error(exc):
@@ -110,6 +148,11 @@ class UtrAutocatalogImportService:
 
             if not applicability_rows:
                 summary.detail_ids_empty_applicability += 1
+                if has_applicability is True:
+                    summary.detail_ids_suspicious_empty_applicability += 1
+                    if on_progress is not None:
+                        on_progress(index, total, normalized_detail_id)
+                    continue
 
             self._import_applicability_rows(
                 detail_id=normalized_detail_id,
@@ -121,6 +164,58 @@ class UtrAutocatalogImportService:
                 on_progress(index, total, normalized_detail_id)
 
         return summary
+
+    def _collect_has_applicability_flags(
+        self,
+        *,
+        detail_ids: list[str],
+        access_token: str,
+        force_refresh: bool,
+    ) -> dict[str, bool]:
+        if not detail_ids:
+            return {}
+        flags = self._collect_persisted_has_applicability_flags(detail_ids=detail_ids)
+        pending_detail_ids = [detail_id for detail_id in detail_ids if detail_id not in flags]
+        if not pending_detail_ids:
+            return flags
+        try:
+            result = self.client.search_details_batch(
+                access_token=access_token,
+                details=[{"id": detail_id} for detail_id in pending_detail_ids],
+                force_refresh=force_refresh,
+                request_reason="autocatalog:applicability_prefilter",
+            )
+        except SupplierClientError as exc:
+            logger.warning("[UTR][applicability-prefilter] failed error=%s", exc)
+            return flags
+
+        for detail_id, row in zip(pending_detail_ids, result.rows, strict=False):
+            details = row.get("details") if isinstance(row, dict) else None
+            if not isinstance(details, list) or not details:
+                continue
+            first_detail = details[0]
+            if not isinstance(first_detail, dict) or "hasApplicability" not in first_detail:
+                continue
+            flags[detail_id] = bool(first_detail.get("hasApplicability"))
+        return flags
+
+    def _collect_persisted_has_applicability_flags(self, *, detail_ids: list[str]) -> dict[str, bool]:
+        flags: dict[str, bool] = {}
+        rows = (
+            UtrProductEnrichment.objects.filter(utr_detail_id__in=detail_ids)
+            .exclude(detail_payload={})
+            .values("utr_detail_id", "detail_payload")
+            .iterator(chunk_size=1000)
+        )
+        for row in rows:
+            detail_id = str(row.get("utr_detail_id") or "").strip()
+            if not detail_id or detail_id in flags:
+                continue
+            detail_payload = row.get("detail_payload")
+            if not isinstance(detail_payload, dict) or "hasApplicability" not in detail_payload:
+                continue
+            flags[detail_id] = bool(detail_payload.get("hasApplicability"))
+        return flags
 
     @transaction.atomic
     def _import_applicability_rows(

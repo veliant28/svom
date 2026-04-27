@@ -19,21 +19,41 @@
         "title": "Email",
         "subtitle": "SMTP settings for password recovery emails and system notifications.",
         "form": {
-          "title": "SMTP delivery",
-          "helper": "Enable SMTP to send messages to real email addresses. An empty password field keeps the saved password unchanged."
+          "title": "Resend SMTP",
+          "helper": "Enable delivery so password reset emails are sent through backend SMTP. An empty API key field keeps the saved key unchanged."
+        },
+        "provider": {
+          "title": "Email provider",
+          "helper": "Choose Resend SMTP to fill host, port, username, TLS and SSL automatically.",
+          "resend": "Resend SMTP",
+          "manual": "Manual SMTP / Other SMTP"
+        },
+        "resend": {
+          "title": "Resend SMTP",
+          "verified": "Domain svom.com.ua is verified in Resend.",
+          "sender": "Use SVOM (no-reply@svom.com.ua) for password recovery.",
+          "tracking": "Enable tracking metrics is not needed for password recovery.",
+          "receiving": "Enable Receiving is not needed.",
+          "tls": "Resend TLS can stay Opportunistic; Django uses EMAIL_USE_TLS=1.",
+          "warning": "Do not paste the API key into frontend code or GitHub."
         },
         "fields": {
           "enabled": "Enable real email delivery",
+          "fromName": "From name",
           "fromEmail": "From email",
           "frontendBaseUrl": "Frontend base URL for reset links",
           "host": "SMTP host",
           "port": "Port",
           "timeout": "Timeout, sec",
           "hostUser": "SMTP user",
-          "hostPassword": "SMTP password",
-          "savedPassword": "Saved password",
+          "hostPassword": "SMTP password / API key",
+          "savedPassword": "Saved API key",
           "useTls": "TLS",
           "useSsl": "SSL"
+        },
+        "hints": {
+          "fromEmail": "Domain svom.com.ua must be verified in Resend.",
+          "hostPassword": "Paste the Resend API key. It is used as the SMTP password."
         },
         "actions": {
           "save": "Save",
@@ -44,11 +64,12 @@
         "test": {
           "title": "Test delivery",
           "helper": "Save the settings first, then send a test email to a real address.",
-          "recipient": "Recipient"
+          "recipient": "Test email"
         },
         "status": {
           "title": "Status",
           "enabled": "SMTP enabled",
+          "provider": "Provider",
           "connection": "Last check",
           "lastChecked": "Check time",
           "message": "Message",

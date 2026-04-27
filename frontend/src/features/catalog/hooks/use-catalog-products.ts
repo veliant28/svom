@@ -133,18 +133,18 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
 
     async function warmVisibleProducts() {
       try {
-        let statuses = await requestUtrProductEnrichment(productIds, true);
+        let statuses = await requestUtrProductEnrichment(productIds, true, "catalog");
         if (isCancelled) {
           return;
         }
         applyStatuses(statuses);
 
-        for (let attempt = 0; attempt < Math.max(productIds.length * 2, 45) && shouldContinue(statuses); attempt += 1) {
-          await new Promise((resolve) => window.setTimeout(resolve, 1000));
+        for (let attempt = 0; attempt < Math.max(productIds.length * 4, 120) && shouldContinue(statuses); attempt += 1) {
+          await new Promise((resolve) => window.setTimeout(resolve, 3000));
           if (isCancelled) {
             return;
           }
-          statuses = await requestUtrProductEnrichment(productIds, true);
+          statuses = await requestUtrProductEnrichment(productIds, true, "catalog");
           if (isCancelled) {
             return;
           }

@@ -255,7 +255,8 @@
           "policyGlobal": "Global markup",
           "policyCategory": "Category markup",
           "notSet": "Not set",
-          "updatedAt": "Updated"
+          "updatedAt": "Updated",
+          "importedFromPriceAt": "In price list"
         },
         "table": {
           "supplierArticle": "Supplier article",

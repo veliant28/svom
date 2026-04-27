@@ -29,6 +29,10 @@ from apps.supplier_imports.services.integrations.utr.client import UtrClient
 logger = logging.getLogger(__name__)
 
 _MAX_VISIBLE_ENRICHMENT_PRODUCTS = 60
+_ENRICHMENT_MODE_CATALOG = "catalog"
+_ENRICHMENT_MODE_DETAIL = "detail"
+_ENRICHMENT_MODES = {_ENRICHMENT_MODE_CATALOG, _ENRICHMENT_MODE_DETAIL}
+_QUEUED_RETRY_AFTER = timedelta(minutes=5)
 _IN_PROGRESS_RETRY_AFTER = timedelta(seconds=30)
 _FAILED_RETRY_AFTER = timedelta(hours=6)
 _UNAVAILABLE_RETRY_AFTER = timedelta(hours=24)
@@ -50,6 +54,7 @@ class UtrEnrichmentStatus:
     utr_detail_id: str
     primary_image: str
     characteristics_count: int
+    fitments_count: int
     needs_enrichment: bool = False
     processed: bool = False
     queued: bool = False
@@ -61,16 +66,24 @@ class UtrEnrichmentStatus:
             "utr_detail_id": self.utr_detail_id,
             "primary_image": self.primary_image,
             "characteristics_count": self.characteristics_count,
+            "fitments_count": self.fitments_count,
             "needs_enrichment": self.needs_enrichment,
             "processed": self.processed,
             "queued": self.queued,
         }
 
 
-def request_visible_utr_enrichment(*, product_ids: list[str], request=None, enqueue: bool = True) -> list[dict[str, object]]:
+def request_visible_utr_enrichment(
+    *,
+    product_ids: list[str],
+    request=None,
+    enqueue: bool = True,
+    mode: str = _ENRICHMENT_MODE_DETAIL,
+) -> list[dict[str, object]]:
     normalized_ids = _normalize_product_ids(product_ids)[:_MAX_VISIBLE_ENRICHMENT_PRODUCTS]
     if not normalized_ids:
         return []
+    enrichment_mode = _normalize_enrichment_mode(mode)
 
     products = list(
         Product.objects.filter(id__in=normalized_ids)
@@ -79,32 +92,29 @@ def request_visible_utr_enrichment(*, product_ids: list[str], request=None, enqu
     )
     product_by_id = {str(product.id): product for product in products}
     rows: list[dict[str, object]] = []
-    sync_limit = _resolve_sync_enrichment_limit(product_count=len(normalized_ids)) if enqueue else 0
-    processed_ids: set[str] = set()
+    queued_ids: list[str] = []
+    queued_id_set: set[str] = set()
 
-    if sync_limit > 0:
-        for product_id in normalized_ids:
-            product = product_by_id.get(product_id)
-            if product is None:
-                continue
-            enrichment = getattr(product, "utr_enrichment", None)
-            if enrichment is None:
-                enrichment, _ = UtrProductEnrichment.objects.get_or_create(product=product)
-            if not _should_enqueue(product=product, enrichment=enrichment):
-                continue
+    if enqueue:
+        if enrichment_mode == _ENRICHMENT_MODE_CATALOG:
+            visible_products = [product_by_id[product_id] for product_id in normalized_ids if product_id in product_by_id]
+            queued_ids = _enqueue_visible_catalog_enrichment(products=visible_products)
+            _enqueue_visible_catalog_applicability(detail_ids=_visible_catalog_detail_ids(products=visible_products))
+        else:
+            for product_id in normalized_ids:
+                product = product_by_id.get(product_id)
+                if product is None:
+                    continue
+                enrichment = getattr(product, "utr_enrichment", None)
+                if enrichment is None:
+                    enrichment, _ = UtrProductEnrichment.objects.get_or_create(product=product)
+                    product.utr_enrichment = enrichment
+                if not _should_enqueue(product=product, enrichment=enrichment, mode=enrichment_mode):
+                    continue
 
-            enrich_utr_product(product_id=str(product.id))
-            processed_ids.add(str(product.id))
-            if len(processed_ids) >= sync_limit:
-                break
-
-    if processed_ids:
-        refreshed_products = list(
-            Product.objects.filter(id__in=processed_ids)
-            .select_related("brand", "utr_enrichment")
-            .prefetch_related("images")
-        )
-        product_by_id.update({str(product.id): product for product in refreshed_products})
+                if _enqueue_utr_product_enrichment(product=product, enrichment=enrichment, mode=enrichment_mode):
+                    queued_ids.append(str(product.id))
+        queued_id_set = set(queued_ids)
 
     for product_id in normalized_ids:
         product = product_by_id.get(product_id)
@@ -115,14 +125,17 @@ def request_visible_utr_enrichment(*, product_ids: list[str], request=None, enqu
                 product=product,
                 request=request,
                 enqueue=False,
-                processed=str(product.id) in processed_ids,
+                mode=enrichment_mode,
+                processed=False,
+                queued=str(product.id) in queued_id_set,
             ).as_dict()
         )
 
     return rows
 
 
-def enrich_utr_product(*, product_id: str) -> dict[str, object]:
+def enrich_utr_product(*, product_id: str, mode: str = _ENRICHMENT_MODE_DETAIL) -> dict[str, object]:
+    enrichment_mode = _normalize_enrichment_mode(mode)
     product = Product.objects.select_related("brand").filter(id=product_id).first()
     if product is None:
         return {"product_id": product_id, "status": "missing_product"}
@@ -172,8 +185,12 @@ def enrich_utr_product(*, product_id: str) -> dict[str, object]:
         images_payload = _extract_images_payload(detail_payload)
         created_images = _create_missing_product_images(product=product, images_payload=images_payload)
 
-        characteristics_payload: list[dict] = []
-        if bool(getattr(settings, "UTR_LAZY_ENRICH_CHARACTERISTICS_ENABLED", True)):
+        characteristics_payload = (
+            enrichment.characteristics_payload
+            if isinstance(enrichment.characteristics_payload, list)
+            else []
+        )
+        if enrichment_mode == _ENRICHMENT_MODE_DETAIL and _lazy_characteristics_enabled():
             try:
                 characteristics_payload = client.fetch_characteristics(
                     access_token=access_token,
@@ -189,7 +206,7 @@ def enrich_utr_product(*, product_id: str) -> dict[str, object]:
                 )
 
         applicability_summary = None
-        if bool(getattr(settings, "UTR_LAZY_ENRICH_APPLICABILITY_ENABLED", True)):
+        if enrichment_mode == _ENRICHMENT_MODE_DETAIL and _lazy_applicability_enabled():
             try:
                 applicability_summary = UtrAutocatalogImportService(client=client).import_from_detail_ids(
                     detail_ids=[detail_id],
@@ -245,6 +262,139 @@ def enrich_utr_product(*, product_id: str) -> dict[str, object]:
             "utr_detail_id": detail_id,
             "error": enrichment.error_message,
         }
+
+
+def enrich_utr_catalog_products(*, product_ids: list[str]) -> dict[str, object]:
+    normalized_ids = _normalize_product_ids(product_ids)[:_MAX_VISIBLE_ENRICHMENT_PRODUCTS]
+    if not normalized_ids:
+        return {"requested": 0, "processed": 0, "created_images": 0, "batches": 0, "applicability_queued": 0}
+
+    products = list(
+        Product.objects.filter(id__in=normalized_ids)
+        .select_related("brand", "utr_enrichment")
+        .prefetch_related("images")
+    )
+    product_by_id = {str(product.id): product for product in products}
+    products = [product_by_id[product_id] for product_id in normalized_ids if product_id in product_by_id]
+    if not products:
+        return {"requested": len(normalized_ids), "processed": 0, "created_images": 0, "batches": 0, "applicability_queued": 0}
+
+    now = timezone.now()
+    enrichments: dict[str, UtrProductEnrichment] = {}
+    eligible_products: list[Product] = []
+    for product in products:
+        enrichment = getattr(product, "utr_enrichment", None)
+        if enrichment is None:
+            enrichment, _ = UtrProductEnrichment.objects.get_or_create(product=product)
+            product.utr_enrichment = enrichment
+        enrichments[str(product.id)] = enrichment
+        if _has_complete_image_set(product=product, enrichment=enrichment):
+            continue
+        eligible_products.append(product)
+
+    if not eligible_products:
+        return {
+            "requested": len(normalized_ids),
+            "processed": 0,
+            "created_images": 0,
+            "batches": 0,
+            "applicability_queued": _enqueue_visible_catalog_applicability(
+                detail_ids=_visible_catalog_detail_ids(products=products)
+            ),
+        }
+
+    UtrProductEnrichment.objects.filter(product_id__in=[product.id for product in eligible_products]).update(
+        status=UtrProductEnrichment.STATUS_IN_PROGRESS,
+        last_attempt_at=now,
+        error_message="",
+        updated_at=now,
+    )
+
+    client = UtrClient()
+    access_token = _resolve_utr_access_token(client=client)
+    batch_size = max(int(getattr(settings, "UTR_LAZY_CATALOG_BATCH_SIZE", 25)), 1)
+    processed = 0
+    created_images = 0
+    batches = 0
+    unresolved_products = eligible_products
+    resolved_detail_ids: list[str] = []
+
+    for stage_index in range(4):
+        queries: list[dict[str, str]] = []
+        contexts: list[tuple[Product, dict[str, str]]] = []
+        for product in unresolved_products:
+            query = _build_catalog_batch_query(product=product, stage_index=stage_index)
+            if query is None:
+                continue
+            queries.append(query)
+            contexts.append((product, query))
+        if not queries:
+            break
+
+        next_unresolved: list[Product] = []
+        for start in range(0, len(queries), batch_size):
+            chunk = queries[start : start + batch_size]
+            context_chunk = contexts[start : start + batch_size]
+            batches += 1
+            batch_result = client.search_details_batch(
+                access_token=access_token,
+                details=chunk,
+                request_reason="lazy_catalog_batch_image_enrichment",
+            )
+            access_token = batch_result.access_token
+            for row, context in zip(batch_result.rows, context_chunk, strict=False):
+                product, query = context
+                detail = _select_catalog_batch_detail(row=row, query=query)
+                if detail is None:
+                    next_unresolved.append(product)
+                    continue
+                enrichment = enrichments[str(product.id)]
+                result = _apply_catalog_batch_detail(product=product, enrichment=enrichment, detail=detail)
+                processed += 1
+                created_images += result["created_images"]
+                detail_id = str(result.get("detail_id") or "").strip()
+                if detail_id:
+                    resolved_detail_ids.append(detail_id)
+
+        unresolved_products = next_unresolved
+        if not unresolved_products:
+            break
+
+    if unresolved_products:
+        retry_at = timezone.now() + _UNAVAILABLE_RETRY_AFTER
+        UtrProductEnrichment.objects.filter(product_id__in=[product.id for product in unresolved_products]).update(
+            status=UtrProductEnrichment.STATUS_UNAVAILABLE,
+            next_retry_at=retry_at,
+            error_message="UTR detail_id is not available for product.",
+            updated_at=timezone.now(),
+        )
+
+    return {
+        "requested": len(normalized_ids),
+        "processed": processed,
+        "created_images": created_images,
+        "batches": batches,
+        "unresolved": len(unresolved_products),
+        "applicability_queued": _enqueue_visible_catalog_applicability(detail_ids=resolved_detail_ids),
+    }
+
+
+def enrich_visible_utr_applicability(*, detail_ids: list[str]) -> dict[str, object]:
+    normalized_detail_ids = _normalize_detail_ids(detail_ids)
+    if not normalized_detail_ids:
+        return {"requested": 0, "processed": 0, "skipped_cached": 0, "failed": 0}
+    if not _lazy_catalog_applicability_enabled():
+        return {"requested": len(normalized_detail_ids), "processed": 0, "skipped_disabled": len(normalized_detail_ids), "failed": 0}
+
+    client = UtrClient()
+    access_token = _resolve_utr_access_token(client=client)
+    summary = UtrAutocatalogImportService(client=client).import_from_detail_ids(
+        detail_ids=normalized_detail_ids,
+        access_token=access_token,
+        continue_on_error=True,
+        force_refresh=False,
+    )
+    return summary.to_dict()
 
 
 def resolve_utr_detail_id(*, product: Product) -> str:
@@ -345,6 +495,163 @@ def _build_detail_resolution_candidates(*, product: Product, brand_name: str) ->
     return candidates
 
 
+def _build_catalog_batch_query(*, product: Product, stage_index: int) -> dict[str, str] | None:
+    detail_id = resolve_utr_detail_id(product=product)
+    if detail_id:
+        if stage_index == 0:
+            return {"id": detail_id}
+        return None
+
+    brand_name = str(getattr(product.brand, "name", "") or "").strip()
+    candidates = _build_detail_resolution_candidates(product=product, brand_name=brand_name)
+    if stage_index >= len(candidates):
+        return None
+    candidate = candidates[stage_index]
+    query = {
+        "oem": candidate["article"],
+        "brand": candidate["brand"],
+        "normalized_article": candidate["normalized_article"],
+        "normalized_brand": normalize_brand(brand_name) if candidate["brand"] else "",
+    }
+    return query
+
+
+def _select_catalog_batch_detail(*, row: dict, query: dict[str, str]) -> dict | None:
+    details = row.get("details") if isinstance(row, dict) else None
+    if not isinstance(details, list):
+        return None
+    normalized_details = [item for item in details if isinstance(item, dict)]
+    detail_id = str(query.get("id") or "").strip()
+    if detail_id:
+        for item in normalized_details:
+            if str(item.get("id") or "").strip() == detail_id:
+                return item
+        return normalized_details[0] if normalized_details else None
+
+    detail_ids = select_candidate_ids(
+        details=normalized_details,
+        normalized_article=str(query.get("normalized_article") or ""),
+        normalized_brand=str(query.get("normalized_brand") or ""),
+    )
+    if len(detail_ids) != 1:
+        return None
+    selected_id = detail_ids[0]
+    for item in normalized_details:
+        if str(item.get("id") or "").strip() == selected_id:
+            return item
+    return None
+
+
+def _apply_catalog_batch_detail(*, product: Product, enrichment: UtrProductEnrichment, detail: dict) -> dict[str, int | str]:
+    detail_id = str(detail.get("id") or "").strip()
+    images_payload = _extract_images_payload(detail)
+    created_images = _create_missing_product_images(product=product, images_payload=images_payload)
+    characteristics_payload = enrichment.characteristics_payload if isinstance(enrichment.characteristics_payload, list) else []
+
+    if detail_id:
+        article = str(product.article or product.sku or "").strip()
+        normalized_article = normalize_article(article)
+        brand_name = str(getattr(product.brand, "name", "") or "").strip()
+        normalized_brand = normalize_brand(brand_name)
+        if normalized_article:
+            upsert_utr_article_detail_mapping(
+                article=article,
+                normalized_article=normalized_article,
+                brand_name=brand_name,
+                normalized_brand=normalized_brand,
+                utr_detail_id=detail_id,
+            )
+        if str(product.utr_detail_id or "").strip() != detail_id:
+            Product.objects.filter(id=product.id).update(utr_detail_id=detail_id, updated_at=timezone.now())
+            product.utr_detail_id = detail_id
+
+    enrichment.utr_detail_id = detail_id or enrichment.utr_detail_id
+    enrichment.detail_payload = detail
+    enrichment.images_payload = images_payload
+    enrichment.characteristics_payload = characteristics_payload
+    enrichment.status = UtrProductEnrichment.STATUS_FETCHED
+    enrichment.fetched_at = timezone.now()
+    enrichment.next_retry_at = None
+    enrichment.error_message = ""
+    enrichment.save(
+        update_fields=(
+            "utr_detail_id",
+            "detail_payload",
+            "images_payload",
+            "characteristics_payload",
+            "status",
+            "fetched_at",
+            "next_retry_at",
+            "error_message",
+            "updated_at",
+        )
+    )
+    return {"detail_id": detail_id, "created_images": created_images}
+
+
+def apply_utr_search_detail_to_matching_products(
+    *,
+    article: str,
+    normalized_article: str,
+    brand_name: str,
+    normalized_brand: str,
+    detail: dict,
+) -> dict[str, int]:
+    detail_id = str(detail.get("id") or "").strip()
+    images_payload = _extract_images_payload(detail)
+    if not detail_id and not images_payload:
+        return {"products_matched": 0, "products_enriched": 0, "created_images": 0}
+
+    raw_article = str(article or "").strip()
+    normalized_article_value = str(normalized_article or "").strip()
+    normalized_brand_value = str(normalized_brand or "").strip()
+    if not raw_article or not normalized_article_value:
+        return {"products_matched": 0, "products_enriched": 0, "created_images": 0}
+
+    candidates = list(
+        Product.objects.filter(Q(article__iexact=raw_article) | Q(sku__iexact=raw_article))
+        .select_related("brand", "utr_enrichment")
+        .prefetch_related("images")[:20]
+    )
+
+    matched_products: list[Product] = []
+    for product in candidates:
+        product_article = normalize_article(product.article or product.sku)
+        if product_article != normalized_article_value:
+            continue
+        product_brand = normalize_brand(getattr(product.brand, "name", ""))
+        if normalized_brand_value and product_brand != normalized_brand_value:
+            continue
+        matched_products.append(product)
+
+    products_enriched = 0
+    created_images = 0
+    fallback_brand_name = str(brand_name or "").strip()
+    for product in matched_products:
+        enrichment = getattr(product, "utr_enrichment", None)
+        if enrichment is None:
+            enrichment, _ = UtrProductEnrichment.objects.get_or_create(product=product)
+            product.utr_enrichment = enrichment
+        result = _apply_catalog_batch_detail(product=product, enrichment=enrichment, detail=detail)
+        products_enriched += 1
+        created_images += int(result.get("created_images") or 0)
+
+        if detail_id and not getattr(product, "brand_id", None) and fallback_brand_name:
+            logger.debug(
+                "utr_search_detail_product_enriched_without_brand product_id=%s article=%s brand=%s detail_id=%s",
+                product.id,
+                raw_article,
+                fallback_brand_name,
+                detail_id,
+            )
+
+    return {
+        "products_matched": len(matched_products),
+        "products_enriched": products_enriched,
+        "created_images": created_images,
+    }
+
+
 def build_utr_characteristic_attributes(*, product: Product) -> list[dict[str, str]]:
     enrichment = getattr(product, "utr_enrichment", None)
     if enrichment is None or not isinstance(enrichment.characteristics_payload, list):
@@ -374,8 +681,11 @@ def _prepare_product_enrichment_status(
     product: Product,
     request,
     enqueue: bool,
+    mode: str,
     processed: bool = False,
+    queued: bool = False,
 ) -> UtrEnrichmentStatus:
+    enrichment_mode = _normalize_enrichment_mode(mode)
     detail_id = resolve_utr_detail_id(product=product)
     primary_image = _build_primary_image_url(product=product, request=request)
     enrichment = getattr(product, "utr_enrichment", None)
@@ -397,38 +707,209 @@ def _prepare_product_enrichment_status(
             utr_detail_id="",
             primary_image=primary_image,
             characteristics_count=_characteristics_count(enrichment),
+            fitments_count=_fitments_count(detail_id=""),
             needs_enrichment=False,
             processed=processed,
-            queued=False,
+            queued=queued,
         )
 
-    needs_enrichment = _should_enqueue(product=product, enrichment=enrichment)
+    needs_enrichment = _should_enqueue(product=product, enrichment=enrichment, mode=enrichment_mode)
     return UtrEnrichmentStatus(
         product_id=str(product.id),
         status=enrichment.status,
         utr_detail_id=detail_id,
         primary_image=primary_image,
         characteristics_count=_characteristics_count(enrichment),
+        fitments_count=_fitments_count(detail_id=detail_id) if enrichment_mode == _ENRICHMENT_MODE_DETAIL else 0,
         needs_enrichment=needs_enrichment,
         processed=processed,
-        queued=False,
+        queued=queued,
     )
 
 
-def _should_enqueue(*, product: Product, enrichment: UtrProductEnrichment) -> bool:
+def _should_enqueue(*, product: Product, enrichment: UtrProductEnrichment, mode: str) -> bool:
     now = timezone.now()
+    enrichment_mode = _normalize_enrichment_mode(mode)
     detail_id = resolve_utr_detail_id(product=product) or str(enrichment.utr_detail_id or "").strip()
     has_image = _has_complete_image_set(product=product, enrichment=enrichment)
-    has_characteristics = _characteristics_count(enrichment) > 0
-    has_applicability = _has_applicability_result(detail_id=detail_id)
-    if has_image and has_characteristics and has_applicability:
-        return False
+    if enrichment_mode == _ENRICHMENT_MODE_CATALOG:
+        if has_image:
+            return False
+    else:
+        has_characteristics = (not _lazy_characteristics_enabled()) or _characteristics_count(enrichment) > 0
+        has_applicability = (not _lazy_applicability_enabled()) or _has_applicability_result(detail_id=detail_id)
+        if has_image and has_characteristics and has_applicability:
+            return False
+    if enrichment.status == UtrProductEnrichment.STATUS_QUEUED:
+        if enrichment.updated_at and enrichment.updated_at >= now - _QUEUED_RETRY_AFTER:
+            return False
     if enrichment.status == UtrProductEnrichment.STATUS_IN_PROGRESS:
         if enrichment.updated_at and enrichment.updated_at >= now - _IN_PROGRESS_RETRY_AFTER:
             return False
     if enrichment.next_retry_at and enrichment.next_retry_at > now:
         return False
     return True
+
+
+def _enqueue_utr_product_enrichment(*, product: Product, enrichment: UtrProductEnrichment, mode: str) -> bool:
+    enrichment_mode = _normalize_enrichment_mode(mode)
+    product_id = str(product.id)
+    lock_key = _enrichment_queue_lock_key(product_id=product_id)
+    lock_ttl = max(int(getattr(settings, "UTR_LAZY_ENRICH_QUEUE_LOCK_SECONDS", 10 * 60)), 60)
+    try:
+        if not cache.add(lock_key, enrichment_mode, timeout=lock_ttl):
+            return False
+    except Exception:
+        pass
+
+    try:
+        from apps.catalog.tasks import enrich_utr_product_task
+
+        enrichment.status = UtrProductEnrichment.STATUS_QUEUED
+        enrichment.error_message = ""
+        enrichment.save(update_fields=("status", "error_message", "updated_at"))
+        enrich_utr_product_task.apply_async(kwargs={"product_id": product_id, "mode": enrichment_mode})
+        return True
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("utr_product_enrichment_enqueue_failed product_id=%s mode=%s error=%s", product_id, enrichment_mode, exc)
+        _clear_enrichment_queue_lock(product_id=product_id)
+        enrichment.status = UtrProductEnrichment.STATUS_FAILED
+        enrichment.next_retry_at = timezone.now() + _FAILED_RETRY_AFTER
+        enrichment.error_message = str(exc)[:2000]
+        enrichment.save(update_fields=("status", "next_retry_at", "error_message", "updated_at"))
+        return False
+
+
+def _enqueue_visible_catalog_enrichment(*, products: list[Product]) -> list[str]:
+    queued_ids: list[str] = []
+    queued_id_set: set[str] = set()
+    lock_ttl = max(int(getattr(settings, "UTR_LAZY_ENRICH_QUEUE_LOCK_SECONDS", 10 * 60)), 60)
+    for product in products:
+        enrichment = getattr(product, "utr_enrichment", None)
+        if enrichment is None:
+            enrichment, _ = UtrProductEnrichment.objects.get_or_create(product=product)
+            product.utr_enrichment = enrichment
+        if not _should_enqueue(product=product, enrichment=enrichment, mode=_ENRICHMENT_MODE_CATALOG):
+            continue
+        product_id = str(product.id)
+        if product_id in queued_id_set:
+            continue
+        try:
+            if not cache.add(_enrichment_queue_lock_key(product_id=product_id), _ENRICHMENT_MODE_CATALOG, timeout=lock_ttl):
+                continue
+        except Exception:
+            pass
+        enrichment.status = UtrProductEnrichment.STATUS_QUEUED
+        enrichment.error_message = ""
+        queued_ids.append(product_id)
+        queued_id_set.add(product_id)
+
+    if not queued_ids:
+        return []
+
+    try:
+        from apps.catalog.tasks import enrich_visible_utr_catalog_products_task
+
+        now = timezone.now()
+        UtrProductEnrichment.objects.filter(product_id__in=queued_id_set).update(
+            status=UtrProductEnrichment.STATUS_QUEUED,
+            error_message="",
+            updated_at=now,
+        )
+        enrich_visible_utr_catalog_products_task.apply_async(kwargs={"product_ids": queued_ids})
+        return queued_ids
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("utr_visible_catalog_enrichment_enqueue_failed count=%s error=%s", len(queued_ids), exc)
+        for product_id in queued_ids:
+            _clear_enrichment_queue_lock(product_id=product_id)
+        retry_at = timezone.now() + _FAILED_RETRY_AFTER
+        UtrProductEnrichment.objects.filter(product_id__in=queued_id_set).update(
+            status=UtrProductEnrichment.STATUS_FAILED,
+            next_retry_at=retry_at,
+            error_message=str(exc)[:2000],
+            updated_at=timezone.now(),
+        )
+        return []
+
+
+def _enqueue_visible_catalog_applicability(*, detail_ids: list[str]) -> int:
+    if not _lazy_catalog_applicability_enabled():
+        return 0
+
+    top_n = max(int(getattr(settings, "UTR_LAZY_CATALOG_APPLICABILITY_TOP_N", 12)), 0)
+    if top_n <= 0:
+        return 0
+
+    queued_detail_ids: list[str] = []
+    lock_ttl = max(int(getattr(settings, "UTR_LAZY_APPLICABILITY_QUEUE_LOCK_SECONDS", 30 * 60)), 60)
+    for detail_id in _normalize_detail_ids(detail_ids):
+        if len(queued_detail_ids) >= top_n:
+            break
+        if _has_applicability_result(detail_id=detail_id):
+            continue
+        try:
+            if not cache.add(_applicability_queue_lock_key(detail_id=detail_id), "catalog", timeout=lock_ttl):
+                continue
+        except Exception:
+            pass
+        queued_detail_ids.append(detail_id)
+
+    if not queued_detail_ids:
+        return 0
+
+    try:
+        from apps.catalog.tasks import enrich_visible_utr_applicability_task
+
+        enrich_visible_utr_applicability_task.apply_async(kwargs={"detail_ids": queued_detail_ids})
+        return len(queued_detail_ids)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("utr_visible_catalog_applicability_enqueue_failed count=%s error=%s", len(queued_detail_ids), exc)
+        clear_utr_catalog_applicability_queue_locks(detail_ids=queued_detail_ids)
+        return 0
+
+
+def _visible_catalog_detail_ids(*, products: list[Product]) -> list[str]:
+    detail_ids: list[str] = []
+    for product in products:
+        detail_id = resolve_utr_detail_id(product=product)
+        if not detail_id:
+            enrichment = getattr(product, "utr_enrichment", None)
+            detail_id = str(getattr(enrichment, "utr_detail_id", "") or "").strip()
+        if detail_id:
+            detail_ids.append(detail_id)
+    return detail_ids
+
+
+def _enrichment_queue_lock_key(*, product_id: str) -> str:
+    return f"utr:product_enrichment:queued:{product_id}"
+
+
+def _applicability_queue_lock_key(*, detail_id: str) -> str:
+    return f"utr:catalog_applicability:queued:{detail_id}"
+
+
+def clear_utr_product_enrichment_queue_lock(*, product_id: str) -> None:
+    _clear_enrichment_queue_lock(product_id=product_id)
+
+
+def clear_utr_product_enrichment_queue_locks(*, product_ids: list[str]) -> None:
+    for product_id in _normalize_product_ids(product_ids):
+        _clear_enrichment_queue_lock(product_id=product_id)
+
+
+def clear_utr_catalog_applicability_queue_locks(*, detail_ids: list[str]) -> None:
+    for detail_id in _normalize_detail_ids(detail_ids):
+        try:
+            cache.delete(_applicability_queue_lock_key(detail_id=detail_id))
+        except Exception:
+            pass
+
+
+def _clear_enrichment_queue_lock(*, product_id: str) -> None:
+    try:
+        cache.delete(_enrichment_queue_lock_key(product_id=product_id))
+    except Exception:
+        pass
 
 
 def _resolve_sync_enrichment_limit(*, product_count: int) -> int:
@@ -450,7 +931,7 @@ def _has_complete_image_set(*, product: Product, enrichment: UtrProductEnrichmen
 
 
 def _has_applicability_result(*, detail_id: str) -> bool:
-    if not bool(getattr(settings, "UTR_LAZY_ENRICH_APPLICABILITY_ENABLED", True)):
+    if not _lazy_applicability_enabled():
         return True
     normalized_detail_id = str(detail_id or "").strip()
     if not normalized_detail_id:
@@ -461,6 +942,25 @@ def _has_applicability_result(*, detail_id: str) -> bool:
         return bool(cache.get(f"utr:autocatalog:applicability_done:{normalized_detail_id}"))
     except Exception:
         return False
+
+
+def _lazy_characteristics_enabled() -> bool:
+    return bool(getattr(settings, "UTR_LAZY_ENRICH_CHARACTERISTICS_ENABLED", True))
+
+
+def _lazy_applicability_enabled() -> bool:
+    return bool(getattr(settings, "UTR_LAZY_ENRICH_APPLICABILITY_ENABLED", True))
+
+
+def _lazy_catalog_applicability_enabled() -> bool:
+    return bool(getattr(settings, "UTR_LAZY_CATALOG_APPLICABILITY_ENABLED", True))
+
+
+def _normalize_enrichment_mode(mode: str) -> str:
+    normalized = str(mode or "").strip().lower()
+    if normalized in _ENRICHMENT_MODES:
+        return normalized
+    return _ENRICHMENT_MODE_DETAIL
 
 
 def _has_utr_source(*, product: Product) -> bool:
@@ -640,11 +1140,30 @@ def _characteristics_count(enrichment: UtrProductEnrichment | None) -> int:
     return len(enrichment.characteristics_payload)
 
 
+def _fitments_count(*, detail_id: str) -> int:
+    normalized_detail_id = str(detail_id or "").strip()
+    if not normalized_detail_id:
+        return 0
+    return UtrDetailCarMap.objects.filter(utr_detail_id=normalized_detail_id).count()
+
+
 def _normalize_product_ids(product_ids: list[str]) -> list[str]:
     result: list[str] = []
     seen: set[str] = set()
     for product_id in product_ids:
         normalized = str(product_id or "").strip()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        result.append(normalized)
+    return result
+
+
+def _normalize_detail_ids(detail_ids: list[str]) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for detail_id in detail_ids:
+        normalized = str(detail_id or "").strip()
         if not normalized or normalized in seen:
             continue
         seen.add(normalized)

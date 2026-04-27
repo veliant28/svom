@@ -3,7 +3,11 @@ export function formatBackofficeDate(value: string | null | undefined) {
     return "-";
   }
   try {
-    return new Date(value).toLocaleString();
+    return new Intl.DateTimeFormat("uk-UA", {
+      dateStyle: "short",
+      timeStyle: "short",
+      timeZone: "Europe/Kyiv",
+    }).format(new Date(value));
   } catch {
     return value;
   }

@@ -19,21 +19,41 @@
         "title": "Email",
         "subtitle": "SMTP налаштування для листів відновлення пароля та системних сповіщень.",
         "form": {
-          "title": "SMTP відправка",
-          "helper": "Увімкніть SMTP, щоб листи надходили на реальні email. Порожнє поле пароля не змінює збережений пароль."
+          "title": "Resend SMTP",
+          "helper": "Увімкніть відправку, щоб листи відновлення пароля надсилалися через backend SMTP. Порожнє поле API key не змінює збережений ключ."
+        },
+        "provider": {
+          "title": "Провайдер пошти",
+          "helper": "Оберіть Resend SMTP, щоб host, port, username, TLS та SSL заповнилися автоматично.",
+          "resend": "Resend SMTP",
+          "manual": "Manual SMTP / Інший SMTP"
+        },
+        "resend": {
+          "title": "Resend SMTP",
+          "verified": "Домен svom.com.ua verified у Resend.",
+          "sender": "Для відновлення пароля використовуйте відправника SVOM (no-reply@svom.com.ua).",
+          "tracking": "Enable tracking metrics не потрібен для відновлення пароля.",
+          "receiving": "Enable Receiving не потрібен.",
+          "tls": "TLS у Resend можна залишити Opportunistic, у Django використовуємо EMAIL_USE_TLS=1.",
+          "warning": "Не вставляйте API key у frontend або GitHub."
         },
         "fields": {
           "enabled": "Увімкнути реальну відправку листів",
+          "fromName": "From name",
           "fromEmail": "Email відправника",
           "frontendBaseUrl": "Frontend base URL для reset-посилань",
           "host": "SMTP host",
           "port": "Порт",
           "timeout": "Timeout, сек",
           "hostUser": "SMTP user",
-          "hostPassword": "SMTP password",
-          "savedPassword": "Збережений пароль",
+          "hostPassword": "SMTP password / API key",
+          "savedPassword": "Збережений API key",
           "useTls": "TLS",
           "useSsl": "SSL"
+        },
+        "hints": {
+          "fromEmail": "Домен svom.com.ua має бути verified у Resend.",
+          "hostPassword": "Вставте Resend API key. Він використовується як SMTP password."
         },
         "actions": {
           "save": "Зберегти",
@@ -44,11 +64,12 @@
         "test": {
           "title": "Тестова відправка",
           "helper": "Спочатку збережіть налаштування, потім надішліть тестовий лист на реальну адресу.",
-          "recipient": "Отримувач"
+          "recipient": "Тестовий email"
         },
         "status": {
           "title": "Статус",
           "enabled": "SMTP увімкнено",
+          "provider": "Провайдер",
           "connection": "Остання перевірка",
           "lastChecked": "Час перевірки",
           "message": "Повідомлення",

@@ -15,6 +15,7 @@ class UtrImportCommandOptions:
     retry_unresolved: bool
     resolve_only: bool
     products_only: bool
+    missing_applicability_only: bool
     batch_size: int
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Any
 
 from apps.supplier_imports.parsers.base import ParseIssue, ParsedOffer, ParseResult, ParserContext
@@ -16,6 +17,16 @@ from apps.supplier_imports.parsers.utils import (
 
 class UTRParser:
     parser_code = "utr"
+
+    def parse_rows(
+        self,
+        rows: Iterable[tuple[int, dict[str, str]]],
+        *,
+        file_name: str,
+        context: ParserContext,
+    ) -> ParseResult:
+        offers, issues = self._parse_table_rows(rows=rows, context=context)
+        return ParseResult(offers=offers, issues=issues)
 
     def parse_content(self, content: str, *, file_name: str, context: ParserContext) -> ParseResult:
         json_offers: list[ParsedOffer] = []
@@ -146,6 +157,14 @@ class UTRParser:
         )
 
     def _parse_table(self, *, content: str, context: ParserContext) -> tuple[list[ParsedOffer], list[ParseIssue]]:
+        return self._parse_table_rows(rows=parse_table_rows(content), context=context)
+
+    def _parse_table_rows(
+        self,
+        *,
+        rows: Iterable[tuple[int, dict[str, str]]],
+        context: ParserContext,
+    ) -> tuple[list[ParsedOffer], list[ParseIssue]]:
         mapping = context.mapping_config
 
         article_fields = resolve_field_names(mapping, "article_fields", ["article", "oem", "sku", "Артикул"])
@@ -160,11 +179,20 @@ class UTRParser:
         currency_fields = resolve_field_names(mapping, "currency_fields", ["currency", "currency_code", "Валюта"])
         stock_fields = resolve_field_names(mapping, "stock_fields", ["remain", "stock", "stock_qty", "quantity", "Кількість"])
         lead_time_fields = resolve_field_names(mapping, "lead_time_fields", ["lead_time", "lead_time_days", "delivery_days"])
+        excluded_stock_keys = {
+            *article_fields,
+            *external_sku_fields,
+            *brand_fields,
+            *name_fields,
+            *price_fields,
+            *currency_fields,
+            *lead_time_fields,
+        }
 
         offers: list[ParsedOffer] = []
         issues: list[ParseIssue] = []
 
-        for row_number, row in parse_table_rows(content):
+        for row_number, row in rows:
             article = str(extract_value(row, article_fields) or "").strip()
             external_sku = str(extract_value(row, external_sku_fields) or article).strip()
             brand_name = str(extract_value(row, brand_fields) or "").strip()
@@ -173,20 +201,13 @@ class UTRParser:
             currency = str(extract_value(row, currency_fields) or context.default_currency).upper()
             stock_qty = parse_int(extract_value(row, stock_fields))
             if stock_qty == 0:
-                excluded_keys = {
-                    *article_fields,
-                    *external_sku_fields,
-                    *brand_fields,
-                    *name_fields,
-                    *price_fields,
-                    *currency_fields,
-                    *lead_time_fields,
-                }
-                stock_qty = sum(
-                    parse_int(value)
-                    for key, value in row.items()
-                    if key not in excluded_keys and parse_int(value) > 0
-                )
+                stock_qty = 0
+                for key, value in row.items():
+                    if key in excluded_stock_keys:
+                        continue
+                    parsed_stock = parse_int(value)
+                    if parsed_stock > 0:
+                        stock_qty += parsed_stock
             lead_time_days = parse_int(extract_value(row, lead_time_fields))
 
             if not external_sku and not article:

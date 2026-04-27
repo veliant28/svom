@@ -255,7 +255,8 @@
           "policyGlobal": "Загальна націнка",
           "policyCategory": "Націнка за категоріями",
           "notSet": "Не задано",
-          "updatedAt": "Оновлено"
+          "updatedAt": "Оновлено",
+          "importedFromPriceAt": "У прайсі"
         },
         "table": {
           "supplierArticle": "Артикул постачальника",

@@ -3,14 +3,25 @@ from __future__ import annotations
 from apps.pricing.models import Supplier
 from apps.supplier_imports.models import ImportSource
 from apps.supplier_imports.models import SupplierRawOffer
-from apps.supplier_imports.services.matching.normalizers import normalize_article, normalize_brand
+from apps.supplier_imports.parsers.utils import normalize_article as simple_normalize_article
+from apps.supplier_imports.parsers.utils import normalize_brand as simple_normalize_brand
 from apps.supplier_imports.services.matching.product_index import ProductMatchIndex
 from apps.supplier_imports.services.matching.types import MatchDecision
+from apps.supplier_imports.services.normalization import ArticleNormalizerService, BrandAliasResolverService
 
 
 class OfferMatcher:
-    def __init__(self, index: ProductMatchIndex | None = None) -> None:
-        self._index = index or ProductMatchIndex()
+    def __init__(
+        self,
+        index: ProductMatchIndex | None = None,
+        *,
+        article_normalizer: ArticleNormalizerService | None = None,
+        brand_resolver: BrandAliasResolverService | None = None,
+        lightweight_products: bool = False,
+    ) -> None:
+        self._index = index or ProductMatchIndex(lightweight_products=lightweight_products)
+        self._article_normalizer = article_normalizer or ArticleNormalizerService()
+        self._brand_resolver = brand_resolver or BrandAliasResolverService()
 
     def evaluate(
         self,
@@ -22,7 +33,7 @@ class OfferMatcher:
         supplier: Supplier | None = None,
     ) -> MatchDecision:
         article_keys = self._build_article_keys(article=article, external_sku=external_sku, source=source)
-        brand_key = normalize_brand(brand_name, source=source, supplier=supplier)
+        brand_key = self._normalize_brand(value=brand_name, source=source, supplier=supplier)
 
         if not article_keys:
             return MatchDecision(
@@ -95,11 +106,37 @@ class OfferMatcher:
         )
         return decision.candidate_products
 
+    def cache_stats(self) -> dict[str, dict[str, int]]:
+        return {
+            "article_normalizer": self._article_normalizer.cache_stats(),
+            "brand_resolver": self._brand_resolver.cache_stats(),
+        }
+
     def _build_article_keys(self, *, article: str, external_sku: str, source: ImportSource | None) -> list[str]:
-        article_norm = normalize_article(article, source=source)
-        external_norm = normalize_article(external_sku, source=source)
+        article_norm = self._normalize_article(value=article, source=source)
+        external_norm = self._normalize_article(value=external_sku, source=source)
         keys = [value for value in (article_norm, external_norm) if value]
         return list(dict.fromkeys(keys))
+
+    def _normalize_article(self, *, value: str | None, source: ImportSource | None) -> str:
+        if source is None:
+            return simple_normalize_article(value or "")
+        return self._article_normalizer.normalize(article=value or "", source=source).normalized_article
+
+    def _normalize_brand(
+        self,
+        *,
+        value: str | None,
+        source: ImportSource | None,
+        supplier: Supplier | None,
+    ) -> str:
+        if source is None and supplier is None:
+            return simple_normalize_brand(value or "")
+        return self._brand_resolver.resolve(
+            brand_name=value or "",
+            source=source,
+            supplier=supplier,
+        ).normalized_brand
 
     def _collect_unique_candidates_by_brand(self, *, article_keys: list[str], brand_key: str):
         unique = {}
