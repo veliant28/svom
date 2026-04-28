@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { Boxes, CheckCircle2, ChevronLeft, XCircle } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
@@ -37,6 +37,21 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   const fitments = remoteFitments ?? productFitments;
   const catalogQuery = searchParams.toString();
   const backToCatalogHref = catalogQuery ? `/catalog?${catalogQuery}` : "/catalog";
+  const handleBackToCatalogClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const previousState = window.history.state as { as?: string; url?: string } | null;
+    const previousUrl = typeof previousState?.as === "string"
+      ? previousState.as
+      : typeof previousState?.url === "string"
+        ? previousState.url
+        : "";
+    if (previousUrl.includes("/catalog") && window.history.length > 1) {
+      event.preventDefault();
+      window.history.back();
+    }
+  };
   const primaryImage = images.find((image) => image.is_primary) ?? images[0];
   const totalStockQty = product?.total_stock_qty ?? 0;
   const stockTone: BackofficeStatusChipTone = totalStockQty <= 0 ? "red" : totalStockQty <= 5 ? "orange" : "blue";
@@ -230,6 +245,8 @@ export function ProductDetailPage({ slug }: { slug: string }) {
     <section className="mx-auto max-w-6xl px-4 py-8">
       <Link
         href={backToCatalogHref}
+        scroll={false}
+        onClick={handleBackToCatalogClick}
         className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium transition hover:opacity-80"
         style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", color: "var(--fg)" }}
       >

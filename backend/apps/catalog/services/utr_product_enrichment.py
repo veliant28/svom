@@ -36,6 +36,8 @@ _QUEUED_RETRY_AFTER = timedelta(minutes=5)
 _IN_PROGRESS_RETRY_AFTER = timedelta(seconds=30)
 _FAILED_RETRY_AFTER = timedelta(hours=6)
 _UNAVAILABLE_RETRY_AFTER = timedelta(hours=24)
+_SYNC_FALLBACK_STUCK_QUEUED_AFTER = timedelta(seconds=20)
+_SYNC_FALLBACK_STUCK_IN_PROGRESS_AFTER = timedelta(seconds=20)
 _MAX_IMAGE_BYTES = 10 * 1024 * 1024
 _MIME_EXTENSION_OVERRIDES = {
     "image/webp": ".webp",
@@ -55,6 +57,7 @@ class UtrEnrichmentStatus:
     primary_image: str
     characteristics_count: int
     fitments_count: int
+    applicability_ready: bool
     needs_enrichment: bool = False
     processed: bool = False
     queued: bool = False
@@ -67,6 +70,7 @@ class UtrEnrichmentStatus:
             "primary_image": self.primary_image,
             "characteristics_count": self.characteristics_count,
             "fitments_count": self.fitments_count,
+            "applicability_ready": self.applicability_ready,
             "needs_enrichment": self.needs_enrichment,
             "processed": self.processed,
             "queued": self.queued,
@@ -79,6 +83,7 @@ def request_visible_utr_enrichment(
     request=None,
     enqueue: bool = True,
     mode: str = _ENRICHMENT_MODE_DETAIL,
+    allow_sync_fallback: bool = True,
 ) -> list[dict[str, object]]:
     normalized_ids = _normalize_product_ids(product_ids)[:_MAX_VISIBLE_ENRICHMENT_PRODUCTS]
     if not normalized_ids:
@@ -94,12 +99,18 @@ def request_visible_utr_enrichment(
     rows: list[dict[str, object]] = []
     queued_ids: list[str] = []
     queued_id_set: set[str] = set()
+    processed_id_set: set[str] = set()
+    sync_candidate_ids: list[str] = []
 
     if enqueue:
         if enrichment_mode == _ENRICHMENT_MODE_CATALOG:
             visible_products = [product_by_id[product_id] for product_id in normalized_ids if product_id in product_by_id]
             queued_ids = _enqueue_visible_catalog_enrichment(products=visible_products)
             _enqueue_visible_catalog_applicability(detail_ids=_visible_catalog_detail_ids(products=visible_products))
+            sync_candidate_ids = _find_stuck_visible_enrichment_candidates(
+                products=visible_products,
+                mode=enrichment_mode,
+            )
         else:
             for product_id in normalized_ids:
                 product = product_by_id.get(product_id)
@@ -114,6 +125,21 @@ def request_visible_utr_enrichment(
 
                 if _enqueue_utr_product_enrichment(product=product, enrichment=enrichment, mode=enrichment_mode):
                     queued_ids.append(str(product.id))
+            visible_products = [product_by_id[product_id] for product_id in normalized_ids if product_id in product_by_id]
+            sync_candidate_ids = _find_stuck_visible_enrichment_candidates(
+                products=visible_products,
+                mode=enrichment_mode,
+            )
+        if allow_sync_fallback:
+            processed_id_set = _run_sync_visible_enrichment(queued_ids=sync_candidate_ids, mode=enrichment_mode)
+        if processed_id_set:
+            refreshed_products = list(
+                Product.objects.filter(id__in=list(processed_id_set))
+                .select_related("brand", "utr_enrichment")
+                .prefetch_related("images")
+            )
+            for refreshed in refreshed_products:
+                product_by_id[str(refreshed.id)] = refreshed
         queued_id_set = set(queued_ids)
 
     for product_id in normalized_ids:
@@ -126,8 +152,8 @@ def request_visible_utr_enrichment(
                 request=request,
                 enqueue=False,
                 mode=enrichment_mode,
-                processed=False,
-                queued=str(product.id) in queued_id_set,
+                processed=str(product.id) in processed_id_set,
+                queued=(str(product.id) in queued_id_set) and (str(product.id) not in processed_id_set),
             ).as_dict()
         )
 
@@ -288,11 +314,24 @@ def enrich_utr_catalog_products(*, product_ids: list[str]) -> dict[str, object]:
             enrichment, _ = UtrProductEnrichment.objects.get_or_create(product=product)
             product.utr_enrichment = enrichment
         enrichments[str(product.id)] = enrichment
-        if _has_complete_image_set(product=product, enrichment=enrichment):
+        if not _catalog_needs_enrichment(product=product, enrichment=enrichment):
             continue
         eligible_products.append(product)
 
     if not eligible_products:
+        stale_status_ids = [
+            product.id
+            for product in products
+            if enrichments[str(product.id)].status
+            in {UtrProductEnrichment.STATUS_QUEUED, UtrProductEnrichment.STATUS_IN_PROGRESS}
+        ]
+        if stale_status_ids:
+            UtrProductEnrichment.objects.filter(product_id__in=stale_status_ids).update(
+                status=UtrProductEnrichment.STATUS_FETCHED,
+                next_retry_at=None,
+                error_message="",
+                updated_at=timezone.now(),
+            )
         return {
             "requested": len(normalized_ids),
             "processed": 0,
@@ -318,6 +357,15 @@ def enrich_utr_catalog_products(*, product_ids: list[str]) -> dict[str, object]:
     batches = 0
     unresolved_products = eligible_products
     resolved_detail_ids: list[str] = []
+    applicability_top_n = max(int(getattr(settings, "UTR_LAZY_CATALOG_APPLICABILITY_TOP_N", 12)), 0)
+    applicability_budget = applicability_top_n
+    if applicability_budget > 0:
+        already_known_ids = _visible_catalog_detail_ids(products=products)
+        queued_now = _enqueue_visible_catalog_applicability(
+            detail_ids=already_known_ids,
+            max_to_queue=applicability_budget,
+        )
+        applicability_budget = max(applicability_budget - queued_now, 0)
 
     for stage_index in range(4):
         queries: list[dict[str, str]] = []
@@ -355,6 +403,12 @@ def enrich_utr_catalog_products(*, product_ids: list[str]) -> dict[str, object]:
                 detail_id = str(result.get("detail_id") or "").strip()
                 if detail_id:
                     resolved_detail_ids.append(detail_id)
+            if applicability_budget > 0 and resolved_detail_ids:
+                queued_now = _enqueue_visible_catalog_applicability(
+                    detail_ids=resolved_detail_ids,
+                    max_to_queue=applicability_budget,
+                )
+                applicability_budget = max(applicability_budget - queued_now, 0)
 
         unresolved_products = next_unresolved
         if not unresolved_products:
@@ -375,7 +429,7 @@ def enrich_utr_catalog_products(*, product_ids: list[str]) -> dict[str, object]:
         "created_images": created_images,
         "batches": batches,
         "unresolved": len(unresolved_products),
-        "applicability_queued": _enqueue_visible_catalog_applicability(detail_ids=resolved_detail_ids),
+        "applicability_queued": max(applicability_top_n - applicability_budget, 0),
     }
 
 
@@ -708,19 +762,35 @@ def _prepare_product_enrichment_status(
             primary_image=primary_image,
             characteristics_count=_characteristics_count(enrichment),
             fitments_count=_fitments_count(detail_id=""),
+            applicability_ready=False,
             needs_enrichment=False,
             processed=processed,
             queued=queued,
         )
 
     needs_enrichment = _should_enqueue(product=product, enrichment=enrichment, mode=enrichment_mode)
+    normalized_status = enrichment.status
+    if (
+        not _needs_enrichment_without_retry_throttle(product=product, enrichment=enrichment, mode=enrichment_mode)
+        and normalized_status in {UtrProductEnrichment.STATUS_QUEUED, UtrProductEnrichment.STATUS_IN_PROGRESS}
+    ):
+        normalized_status = UtrProductEnrichment.STATUS_FETCHED
+        enrichment.status = UtrProductEnrichment.STATUS_FETCHED
+        enrichment.next_retry_at = None
+        enrichment.error_message = ""
+        enrichment.save(update_fields=("status", "next_retry_at", "error_message", "updated_at"))
+
+    applicability_ready = _has_applicability_result(detail_id=detail_id)
+    fitments_count = _fitments_count(detail_id=detail_id) if applicability_ready else 0
+
     return UtrEnrichmentStatus(
         product_id=str(product.id),
-        status=enrichment.status,
+        status=normalized_status,
         utr_detail_id=detail_id,
         primary_image=primary_image,
         characteristics_count=_characteristics_count(enrichment),
-        fitments_count=_fitments_count(detail_id=detail_id) if enrichment_mode == _ENRICHMENT_MODE_DETAIL else 0,
+        fitments_count=fitments_count,
+        applicability_ready=applicability_ready,
         needs_enrichment=needs_enrichment,
         processed=processed,
         queued=queued,
@@ -730,10 +800,10 @@ def _prepare_product_enrichment_status(
 def _should_enqueue(*, product: Product, enrichment: UtrProductEnrichment, mode: str) -> bool:
     now = timezone.now()
     enrichment_mode = _normalize_enrichment_mode(mode)
-    detail_id = resolve_utr_detail_id(product=product) or str(enrichment.utr_detail_id or "").strip()
+    detail_id = _resolve_product_detail_id(product=product, enrichment=enrichment)
     has_image = _has_complete_image_set(product=product, enrichment=enrichment)
     if enrichment_mode == _ENRICHMENT_MODE_CATALOG:
-        if has_image:
+        if not _catalog_needs_enrichment(product=product, enrichment=enrichment):
             return False
     else:
         has_characteristics = (not _lazy_characteristics_enabled()) or _characteristics_count(enrichment) > 0
@@ -742,7 +812,8 @@ def _should_enqueue(*, product: Product, enrichment: UtrProductEnrichment, mode:
             return False
     if enrichment.status == UtrProductEnrichment.STATUS_QUEUED:
         if enrichment.updated_at and enrichment.updated_at >= now - _QUEUED_RETRY_AFTER:
-            return False
+            if _has_enrichment_queue_lock(product_id=str(product.id)):
+                return False
     if enrichment.status == UtrProductEnrichment.STATUS_IN_PROGRESS:
         if enrichment.updated_at and enrichment.updated_at >= now - _IN_PROGRESS_RETRY_AFTER:
             return False
@@ -832,11 +903,13 @@ def _enqueue_visible_catalog_enrichment(*, products: list[Product]) -> list[str]
         return []
 
 
-def _enqueue_visible_catalog_applicability(*, detail_ids: list[str]) -> int:
+def _enqueue_visible_catalog_applicability(*, detail_ids: list[str], max_to_queue: int | None = None) -> int:
     if not _lazy_catalog_applicability_enabled():
         return 0
 
     top_n = max(int(getattr(settings, "UTR_LAZY_CATALOG_APPLICABILITY_TOP_N", 12)), 0)
+    if max_to_queue is not None:
+        top_n = min(top_n, max(int(max_to_queue), 0))
     if top_n <= 0:
         return 0
 
@@ -912,12 +985,99 @@ def _clear_enrichment_queue_lock(*, product_id: str) -> None:
         pass
 
 
+def _has_enrichment_queue_lock(*, product_id: str) -> bool:
+    try:
+        return bool(cache.get(_enrichment_queue_lock_key(product_id=product_id)))
+    except Exception:
+        return False
+
+
 def _resolve_sync_enrichment_limit(*, product_count: int) -> int:
     if product_count <= 0:
         return 0
     if product_count == 1:
         return 1
     return max(int(getattr(settings, "UTR_SYNC_ENRICH_MAX_PRODUCTS", 1)), 1)
+
+
+def _run_sync_visible_enrichment(*, queued_ids: list[str], mode: str) -> set[str]:
+    product_ids = _normalize_product_ids(queued_ids)
+    if not product_ids:
+        return set()
+    sync_limit = _resolve_sync_enrichment_limit(product_count=len(product_ids))
+    if sync_limit <= 0:
+        return set()
+
+    sync_ids = product_ids[:sync_limit]
+    processed_ids: set[str] = set()
+    if not sync_ids:
+        return processed_ids
+
+    try:
+        if mode == _ENRICHMENT_MODE_CATALOG:
+            enrich_utr_catalog_products(product_ids=sync_ids)
+            processed_ids.update(sync_ids)
+        else:
+            for product_id in sync_ids:
+                enrich_utr_product(product_id=product_id, mode=mode)
+                processed_ids.add(product_id)
+        return processed_ids
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("utr_sync_visible_enrichment_failed mode=%s count=%s error=%s", mode, len(sync_ids), exc)
+        return set()
+    finally:
+        clear_utr_product_enrichment_queue_locks(product_ids=sync_ids)
+
+
+def _find_stuck_visible_enrichment_candidates(*, products: list[Product], mode: str) -> list[str]:
+    enrichment_mode = _normalize_enrichment_mode(mode)
+    now = timezone.now()
+    product_ids: list[str] = []
+    for product in products:
+        enrichment = getattr(product, "utr_enrichment", None)
+        if enrichment is None:
+            enrichment, _ = UtrProductEnrichment.objects.get_or_create(product=product)
+            product.utr_enrichment = enrichment
+        if enrichment.next_retry_at and enrichment.next_retry_at > now:
+            continue
+        if not _needs_enrichment_without_retry_throttle(product=product, enrichment=enrichment, mode=enrichment_mode):
+            continue
+        if enrichment.status == UtrProductEnrichment.STATUS_QUEUED:
+            if not enrichment.updated_at or enrichment.updated_at > now - _SYNC_FALLBACK_STUCK_QUEUED_AFTER:
+                continue
+        elif enrichment.status == UtrProductEnrichment.STATUS_IN_PROGRESS:
+            if not enrichment.updated_at or enrichment.updated_at > now - _SYNC_FALLBACK_STUCK_IN_PROGRESS_AFTER:
+                continue
+        else:
+            continue
+        product_ids.append(str(product.id))
+    return product_ids
+
+
+def _needs_enrichment_without_retry_throttle(*, product: Product, enrichment: UtrProductEnrichment, mode: str) -> bool:
+    enrichment_mode = _normalize_enrichment_mode(mode)
+    detail_id = _resolve_product_detail_id(product=product, enrichment=enrichment)
+    has_image = _has_complete_image_set(product=product, enrichment=enrichment)
+    if enrichment_mode == _ENRICHMENT_MODE_CATALOG:
+        return _catalog_needs_enrichment(product=product, enrichment=enrichment)
+    has_characteristics = (not _lazy_characteristics_enabled()) or _characteristics_count(enrichment) > 0
+    has_applicability = (not _lazy_applicability_enabled()) or _has_applicability_result(detail_id=detail_id)
+    return not (has_image and has_characteristics and has_applicability)
+
+
+def _resolve_product_detail_id(*, product: Product, enrichment: UtrProductEnrichment | None = None) -> str:
+    detail_id = resolve_utr_detail_id(product=product)
+    if detail_id:
+        return detail_id
+    if enrichment is None:
+        enrichment = getattr(product, "utr_enrichment", None)
+    return str(getattr(enrichment, "utr_detail_id", "") or "").strip()
+
+
+def _catalog_needs_enrichment(*, product: Product, enrichment: UtrProductEnrichment) -> bool:
+    if not _has_complete_image_set(product=product, enrichment=enrichment):
+        return True
+    return _resolve_product_detail_id(product=product, enrichment=enrichment) == ""
 
 
 def _has_complete_image_set(*, product: Product, enrichment: UtrProductEnrichment) -> bool:

@@ -7,6 +7,7 @@ export type UtrEnrichmentStatus = {
   primary_image: string;
   characteristics_count: number;
   fitments_count: number;
+  applicability_ready: boolean;
   needs_enrichment: boolean;
   processed: boolean;
   queued: boolean;

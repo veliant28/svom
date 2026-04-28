@@ -12,7 +12,7 @@ from apps.catalog.services.utr_product_enrichment import (
 )
 
 
-@shared_task(name="catalog.enrich_utr_product")
+@shared_task(name="catalog.enrich_utr_product", queue="utr_fast")
 def enrich_utr_product_task(product_id: str, mode: str = "detail") -> dict[str, object]:
     try:
         return enrich_utr_product(product_id=product_id, mode=mode)
@@ -20,7 +20,7 @@ def enrich_utr_product_task(product_id: str, mode: str = "detail") -> dict[str, 
         clear_utr_product_enrichment_queue_lock(product_id=product_id)
 
 
-@shared_task(name="catalog.enrich_visible_utr_catalog_products")
+@shared_task(name="catalog.enrich_visible_utr_catalog_products", queue="utr_fast")
 def enrich_visible_utr_catalog_products_task(product_ids: list[str]) -> dict[str, object]:
     try:
         return enrich_utr_catalog_products(product_ids=product_ids)
@@ -28,7 +28,7 @@ def enrich_visible_utr_catalog_products_task(product_ids: list[str]) -> dict[str
         clear_utr_product_enrichment_queue_locks(product_ids=product_ids)
 
 
-@shared_task(name="catalog.enrich_visible_utr_applicability")
+@shared_task(name="catalog.enrich_visible_utr_applicability", queue="utr_applicability")
 def enrich_visible_utr_applicability_task(detail_ids: list[str]) -> dict[str, object]:
     try:
         return enrich_visible_utr_applicability(detail_ids=detail_ids)

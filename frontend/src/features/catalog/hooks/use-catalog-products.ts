@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "next-intl";
 
 import { getProducts } from "@/features/catalog/api/get-products";
-import { requestUtrProductEnrichment, type UtrEnrichmentStatus } from "@/features/catalog/api/request-utr-enrichment";
+import { buildCatalogCacheKey, readCachedCatalogPayload, writeCachedCatalogPayload } from "@/features/catalog/lib/catalog-page-cache";
 import { useActiveVehicle } from "@/features/garage/hooks/use-active-vehicle";
 import type { CatalogFilters, CatalogProduct } from "@/features/catalog/types";
 
@@ -67,8 +67,8 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
     baseParams,
   ]);
   const paramsKey = JSON.stringify({ ...effectiveParams, locale });
+  const cacheKey = useMemo(() => buildCatalogCacheKey(paramsKey), [paramsKey]);
   const isEnabled = options.enabled ?? true;
-  const productIdsKey = useMemo(() => products.map((product) => product.id).join("|"), [products]);
 
   useEffect(() => {
     if (!isEnabled) {
@@ -81,20 +81,30 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
     let isMounted = true;
 
     async function loadProducts() {
-      setIsLoading(true);
+      const cached = readCachedCatalogPayload(cacheKey);
+      if (cached) {
+        setProducts(cached.products);
+        setTotalCount(cached.totalCount);
+        setIsLoading(false);
+      } else {
+        setIsLoading(true);
+        setProducts([]);
+      }
       try {
         const response = await getProducts({ ...effectiveParams, pageSize: effectiveParams.pageSize, locale });
         if (isMounted) {
           setProducts(response.results);
           setTotalCount(response.count);
+          setIsLoading(false);
+          writeCachedCatalogPayload(cacheKey, {
+            products: response.results,
+            totalCount: response.count,
+          });
         }
       } catch {
-        if (isMounted) {
+        if (isMounted && !cached) {
           setProducts([]);
           setTotalCount(0);
-        }
-      } finally {
-        if (isMounted) {
           setIsLoading(false);
         }
       }
@@ -105,62 +115,7 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
     return () => {
       isMounted = false;
     };
-  }, [effectiveParams, isEnabled, locale, paramsKey]);
+  }, [cacheKey, effectiveParams, isEnabled, locale, paramsKey]);
 
-  useEffect(() => {
-    if (!isEnabled || isLoading || !productIdsKey) {
-      return;
-    }
-
-    let isCancelled = false;
-    const productIds = productIdsKey.split("|").filter(Boolean);
-
-    const applyStatuses = (statuses: UtrEnrichmentStatus[]) => {
-      const statusByProductId = new Map(statuses.map((item) => [item.product_id, item]));
-      setProducts((current) =>
-        current.map((product) => {
-          const status = statusByProductId.get(product.id);
-          if (!status?.primary_image || status.primary_image === product.primary_image) {
-            return product;
-          }
-          return { ...product, primary_image: status.primary_image };
-        }),
-      );
-    };
-
-    const shouldContinue = (statuses: UtrEnrichmentStatus[]) =>
-      statuses.some((item) => item.needs_enrichment || item.status === "queued" || item.status === "in_progress" || item.queued);
-
-    async function warmVisibleProducts() {
-      try {
-        let statuses = await requestUtrProductEnrichment(productIds, true, "catalog");
-        if (isCancelled) {
-          return;
-        }
-        applyStatuses(statuses);
-
-        for (let attempt = 0; attempt < Math.max(productIds.length * 4, 120) && shouldContinue(statuses); attempt += 1) {
-          await new Promise((resolve) => window.setTimeout(resolve, 3000));
-          if (isCancelled) {
-            return;
-          }
-          statuses = await requestUtrProductEnrichment(productIds, true, "catalog");
-          if (isCancelled) {
-            return;
-          }
-          applyStatuses(statuses);
-        }
-      } catch {
-        // Enrichment is opportunistic; catalog rendering must not depend on UTR.
-      }
-    }
-
-    void warmVisibleProducts();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [isEnabled, isLoading, productIdsKey]);
-
-  return { products, totalCount, isLoading };
+  return { products, totalCount, isLoading, cacheKey };
 }

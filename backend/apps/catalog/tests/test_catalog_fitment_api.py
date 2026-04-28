@@ -1,4 +1,5 @@
 import tempfile
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.core.cache import cache
@@ -191,6 +192,18 @@ class CatalogFitmentAPITests(APITestCase):
 
         self.assertFalse(results["unknown-fit-product"]["has_fitment_data"])
 
+    @patch("apps.catalog.api.views.product_list_view.request_visible_utr_enrichment")
+    def test_product_list_enqueues_visible_utr_enrichment_in_catalog_mode(self, enqueue_mock):
+        response = self.client.get(reverse("catalog_api:product-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        enqueue_mock.assert_called_once()
+        call_kwargs = enqueue_mock.call_args.kwargs
+        self.assertEqual(call_kwargs["mode"], "catalog")
+        self.assertTrue(call_kwargs["enqueue"])
+        self.assertEqual(len(call_kwargs["product_ids"]), response.data["count"])
+        self.assertEqual(set(call_kwargs["product_ids"]), {item["id"] for item in response.data["results"]})
+
     def test_product_detail_contains_fitments(self):
         response = self.client.get(reverse("catalog_api:product-detail", kwargs={"slug": "camry-fit-product"}))
 
@@ -200,6 +213,17 @@ class CatalogFitmentAPITests(APITestCase):
         self.assertEqual(fitment["make"], "Toyota")
         self.assertEqual(fitment["model"], "Camry")
         self.assertEqual(fitment["modification"], "Sedan")
+
+    @patch("apps.catalog.api.views.product_detail_view.request_visible_utr_enrichment")
+    def test_product_detail_enqueues_visible_utr_enrichment_in_detail_mode(self, enqueue_mock):
+        response = self.client.get(reverse("catalog_api:product-detail", kwargs={"slug": "camry-fit-product"}))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        enqueue_mock.assert_called_once()
+        call_kwargs = enqueue_mock.call_args.kwargs
+        self.assertEqual(call_kwargs["mode"], "detail")
+        self.assertTrue(call_kwargs["enqueue"])
+        self.assertEqual(call_kwargs["product_ids"], [str(self.product_camry.id)])
 
     def test_product_detail_contains_utr_fitments_when_manual_fitments_missing(self):
         product = Product.objects.create(
@@ -270,6 +294,41 @@ class CatalogFitmentAPITests(APITestCase):
 
         status_rows = request_visible_utr_enrichment(product_ids=[str(product.id)], enqueue=False, mode="detail")
 
+        self.assertEqual(status_rows[0]["fitments_count"], 1)
+
+    def test_visible_utr_enrichment_catalog_status_includes_applicability_readiness(self):
+        product = Product.objects.create(
+            sku="UTR-STATUS-CATALOG-001",
+            article="UTR-STATUS-CATALOG-001",
+            name="UTR Status Catalog Product",
+            slug="utr-status-catalog-product",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        ProductPrice.objects.create(product=product, final_price="100.00", currency="UAH")
+
+        detail_id = "5052"
+        UtrArticleDetailMap.objects.create(
+            article=product.article,
+            normalized_article=normalize_article(product.article),
+            brand_name=self.brand.name,
+            normalized_brand=normalize_brand(self.brand.name),
+            utr_detail_id=detail_id,
+        )
+        UtrDetailCarMap.objects.create(
+            utr_detail_id=detail_id,
+            car_modification=self.autocatalog_modification,
+        )
+        self._create_utr_raw_offer(
+            product=product,
+            article=product.article,
+            brand_name=self.brand.name,
+        )
+
+        status_rows = request_visible_utr_enrichment(product_ids=[str(product.id)], enqueue=False, mode="catalog")
+
+        self.assertTrue(status_rows[0]["applicability_ready"])
         self.assertEqual(status_rows[0]["fitments_count"], 1)
 
     def test_product_fitment_options_return_full_utr_make_and_model_facets(self):
@@ -499,6 +558,196 @@ class CatalogFitmentAPITests(APITestCase):
 
         enrichment = UtrProductEnrichment.objects.get(product=product)
         self.assertEqual(enrichment.status, UtrProductEnrichment.STATUS_QUEUED)
+
+    @patch("apps.catalog.services.utr_product_enrichment.clear_utr_product_enrichment_queue_locks")
+    @patch("apps.catalog.services.utr_product_enrichment.enrich_utr_catalog_products")
+    @patch("apps.catalog.tasks.enrich_visible_utr_catalog_products_task.apply_async")
+    def test_visible_utr_enrichment_catalog_mode_runs_sync_fallback_for_stuck_queued(
+        self,
+        apply_async_mock,
+        enrich_catalog_mock,
+        clear_locks_mock,
+    ):
+        cache.clear()
+        product = Product.objects.create(
+            sku="LAZY-SYNC-CAT-STUCK-001-SKU",
+            article="LAZY-SYNC-CAT-STUCK-001",
+            name="Lazy Sync Catalog Stuck Product",
+            slug="lazy-sync-catalog-stuck-product",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        ProductPrice.objects.create(product=product, final_price="100.00", currency="UAH")
+        self._create_utr_raw_offer(product=product, article=product.article, brand_name=self.brand.name)
+        UtrProductEnrichment.objects.create(
+            product=product,
+            status=UtrProductEnrichment.STATUS_QUEUED,
+            images_payload=[],
+            detail_payload={},
+            characteristics_payload=[],
+        )
+
+        with patch("apps.catalog.services.utr_product_enrichment.timezone.now") as now_mock:
+            base = UtrProductEnrichment.objects.get(product=product).updated_at
+            now_mock.return_value = base + timedelta(seconds=31)
+            status_rows = request_visible_utr_enrichment(
+                product_ids=[str(product.id)],
+                enqueue=True,
+                mode="catalog",
+            )
+
+        apply_async_mock.assert_called_once_with(kwargs={"product_ids": [str(product.id)]})
+        enrich_catalog_mock.assert_called_once_with(product_ids=[str(product.id)])
+        clear_locks_mock.assert_called_once_with(product_ids=[str(product.id)])
+        self.assertTrue(status_rows[0]["processed"])
+        self.assertFalse(status_rows[0]["queued"])
+
+    @patch("apps.catalog.services.utr_product_enrichment.clear_utr_product_enrichment_queue_locks")
+    @patch("apps.catalog.services.utr_product_enrichment.enrich_utr_product")
+    @patch("apps.catalog.services.utr_product_enrichment._enqueue_utr_product_enrichment", return_value=False)
+    def test_visible_utr_enrichment_detail_mode_runs_sync_fallback_for_stuck_queued(
+        self,
+        enqueue_mock,
+        enrich_product_mock,
+        clear_locks_mock,
+    ):
+        cache.clear()
+        product = Product.objects.create(
+            sku="LAZY-SYNC-DETAIL-001-SKU",
+            article="LAZY-SYNC-DETAIL-001",
+            name="Lazy Sync Detail Product",
+            slug="lazy-sync-detail-product",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        ProductPrice.objects.create(product=product, final_price="100.00", currency="UAH")
+        self._create_utr_raw_offer(product=product, article=product.article, brand_name=self.brand.name)
+        UtrProductEnrichment.objects.create(
+            product=product,
+            status=UtrProductEnrichment.STATUS_QUEUED,
+            images_payload=[],
+            detail_payload={},
+            characteristics_payload=[],
+        )
+
+        with patch("apps.catalog.services.utr_product_enrichment.timezone.now") as now_mock:
+            base = UtrProductEnrichment.objects.get(product=product).updated_at
+            now_mock.return_value = base + timedelta(seconds=31)
+            status_rows = request_visible_utr_enrichment(product_ids=[str(product.id)], enqueue=True, mode="detail")
+
+        enqueue_mock.assert_called_once()
+        enrich_product_mock.assert_called_once_with(product_id=str(product.id), mode="detail")
+        clear_locks_mock.assert_called_once_with(product_ids=[str(product.id)])
+        self.assertTrue(status_rows[0]["processed"])
+        self.assertFalse(status_rows[0]["queued"])
+
+    @patch("apps.catalog.tasks.enrich_visible_utr_catalog_products_task.apply_async")
+    def test_visible_utr_enrichment_catalog_mode_queues_when_detail_id_missing_even_if_images_complete(
+        self,
+        apply_async_mock,
+    ):
+        cache.clear()
+        product = Product.objects.create(
+            sku="LAZY-QUEUE-DETAIL-001-SKU",
+            article="LAZY-QUEUE-DETAIL-001",
+            name="Lazy Queue Missing Detail Product",
+            slug="lazy-queue-missing-detail-product",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        ProductPrice.objects.create(product=product, final_price="100.00", currency="UAH")
+        self._create_utr_raw_offer(product=product, article=product.article, brand_name=self.brand.name)
+        UtrProductEnrichment.objects.create(
+            product=product,
+            status=UtrProductEnrichment.STATUS_FETCHED,
+            images_payload=[],
+            detail_payload={},
+            characteristics_payload=[],
+        )
+
+        status_rows = request_visible_utr_enrichment(product_ids=[str(product.id)], enqueue=True, mode="catalog")
+
+        self.assertEqual(status_rows[0]["status"], UtrProductEnrichment.STATUS_QUEUED)
+        self.assertTrue(status_rows[0]["queued"])
+        apply_async_mock.assert_called_once_with(kwargs={"product_ids": [str(product.id)]})
+
+    @patch("apps.catalog.tasks.enrich_visible_utr_catalog_products_task.apply_async")
+    def test_visible_utr_enrichment_requeues_recent_queued_when_lock_is_missing(self, apply_async_mock):
+        cache.clear()
+        product = Product.objects.create(
+            sku="LAZY-QUEUE-RECOVER-001-SKU",
+            article="LAZY-QUEUE-RECOVER-001",
+            name="Lazy Queue Recover Product",
+            slug="lazy-queue-recover-product",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        ProductPrice.objects.create(product=product, final_price="100.00", currency="UAH")
+        self._create_utr_raw_offer(product=product, article=product.article, brand_name=self.brand.name)
+        UtrProductEnrichment.objects.create(
+            product=product,
+            status=UtrProductEnrichment.STATUS_QUEUED,
+            images_payload=[],
+            detail_payload={},
+            characteristics_payload=[],
+        )
+
+        status_rows = request_visible_utr_enrichment(product_ids=[str(product.id)], enqueue=True, mode="catalog")
+
+        self.assertTrue(status_rows[0]["queued"])
+        apply_async_mock.assert_called_once_with(kwargs={"product_ids": [str(product.id)]})
+
+    @patch("apps.catalog.services.utr_product_enrichment._resolve_utr_access_token", return_value="test-token")
+    @patch("apps.catalog.services.utr_product_enrichment.UtrClient")
+    def test_catalog_batch_enrichment_resolves_missing_detail_id_even_when_images_complete(self, client_class, _token_mock):
+        cache.clear()
+        product = Product.objects.create(
+            sku="LAZY-BATCH-DETAIL-001-SKU",
+            article="LAZY-BATCH-DETAIL-001",
+            name="Lazy Batch Missing Detail Product",
+            slug="lazy-batch-missing-detail-product",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        ProductPrice.objects.create(product=product, final_price="100.00", currency="UAH")
+        self._create_utr_raw_offer(product=product, article=product.article, brand_name=self.brand.name)
+        UtrProductEnrichment.objects.create(
+            product=product,
+            status=UtrProductEnrichment.STATUS_FETCHED,
+            images_payload=[],
+            detail_payload={},
+            characteristics_payload=[],
+        )
+
+        client = client_class.return_value
+        client.search_details_batch.return_value.rows = [
+            {
+                "details": [
+                    {
+                        "id": "95001",
+                        "article": product.article,
+                        "displayBrand": self.brand.name,
+                        "images": [],
+                    }
+                ]
+            }
+        ]
+        client.search_details_batch.return_value.access_token = "test-token"
+
+        with override_settings(UTR_LAZY_CATALOG_APPLICABILITY_ENABLED=False):
+            result = enrich_utr_catalog_products(product_ids=[str(product.id)])
+
+        self.assertEqual(result["processed"], 1)
+        self.assertEqual(result["created_images"], 0)
+        client.search_details_batch.assert_called_once()
+
+        product.refresh_from_db()
+        self.assertEqual(product.utr_detail_id, "95001")
 
     @patch("apps.catalog.services.utr_product_enrichment._resolve_utr_access_token", return_value="test-token")
     @patch("apps.catalog.services.utr_product_enrichment.UtrClient")
