@@ -59,8 +59,6 @@ class ProductListSerializer(serializers.ModelSerializer):
         )
 
     def get_primary_image(self, obj: Product) -> str:
-        request = self.context.get("request")
-
         primary_images = getattr(obj, "primary_images", None)
         image = primary_images[0].image if primary_images else None
         if image is None:
@@ -71,9 +69,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         if not image:
             return ""
 
-        if request is None:
-            return image.url
-        return request.build_absolute_uri(image.url)
+        return image.url
 
     def _snapshot(self, obj: Product):
         cached = getattr(obj, "_sellable_snapshot", None)

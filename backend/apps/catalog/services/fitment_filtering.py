@@ -60,14 +60,17 @@ class FitmentFilteringService:
     def apply(self, *, queryset: QuerySet, params) -> tuple[QuerySet, str | None]:
         selected_modification_id, selected_utr_detail_ids = self._resolve_selection(params)
         vehicle_fitment_disabled = self._is_vehicle_fitment_disabled(params=params)
+        fitment_mode = (params.get("fitment") or "").strip().lower()
+        include_utr_raw_offer_map = fitment_mode in {FITMENT_UNKNOWN, FITMENT_WITH_DATA}
         queryset = self._annotate_compatibility(
             queryset=queryset,
             selected_modification_id=selected_modification_id,
             selected_utr_detail_ids=selected_utr_detail_ids,
+            include_utr_raw_offer_map=include_utr_raw_offer_map,
         )
         queryset = self._apply_fitment_mode(
             queryset=queryset,
-            fitment_mode=(params.get("fitment") or "").strip().lower(),
+            fitment_mode=fitment_mode,
             has_selected_vehicle=bool(selected_modification_id or selected_utr_detail_ids),
             vehicle_fitment_disabled=vehicle_fitment_disabled,
         )
@@ -136,13 +139,16 @@ class FitmentFilteringService:
         queryset: QuerySet,
         selected_modification_id: str | None,
         selected_utr_detail_ids: list[str],
+        include_utr_raw_offer_map: bool,
     ) -> QuerySet:
         fitments_subquery = ProductFitment.objects.filter(product_id=OuterRef("pk"))
-        utr_any_map_subquery = self._build_utr_raw_offer_any_map_subquery()
+        queryset = queryset.annotate(_has_fitment_relations=Exists(fitments_subquery))
+        if include_utr_raw_offer_map:
+            utr_any_map_subquery = self._build_utr_raw_offer_any_map_subquery()
+            queryset = queryset.annotate(_has_utr_article_map=Exists(utr_any_map_subquery))
+        else:
+            queryset = queryset.annotate(_has_utr_article_map=Value(False, output_field=BooleanField()))
         queryset = queryset.annotate(
-            _has_fitment_relations=Exists(fitments_subquery),
-            _has_utr_article_map=Exists(utr_any_map_subquery),
-        ).annotate(
             has_fitment_data=Case(
                 When(
                     Q(_has_fitment_relations=True) | Q(_has_utr_article_map=True) | Q(utr_detail_id__gt=""),

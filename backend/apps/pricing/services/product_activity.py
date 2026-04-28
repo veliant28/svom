@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from apps.catalog.models import Product
 from apps.pricing.models import PriceOverride, SupplierOffer
+from apps.pricing.services.product_stock_cache import refresh_available_stock_qty_cache
 
 DEFAULT_PRICE_FRESHNESS_HOURS = 24
 
@@ -89,16 +90,20 @@ def sync_products_activity_by_price_freshness(
         id__in=eligible_product_ids,
     ).update(is_active=False)
 
-    supplier_offers_zeroed = SupplierOffer.objects.filter(
+    stale_offer_queryset = SupplierOffer.objects.filter(
         product__is_active=False,
     ).filter(
         Q(last_seen_at__isnull=True) | Q(last_seen_at__lt=cutoff),
     ).filter(
         Q(stock_qty__gt=0) | Q(is_available=True),
-    ).update(
+    )
+    stale_offer_product_ids = list(stale_offer_queryset.values_list("product_id", flat=True).distinct())
+    supplier_offers_zeroed = stale_offer_queryset.update(
         stock_qty=0,
         is_available=False,
     )
+    if stale_offer_product_ids:
+        refresh_available_stock_qty_cache(product_ids=stale_offer_product_ids)
 
     return ProductActivitySyncResult(
         activated=int(activated),

@@ -35,7 +35,4 @@ class PromoBannerSerializer(serializers.ModelSerializer):
         return getattr(obj, f"description_{lang}", "") or obj.description_uk
 
     def get_image_url(self, obj: PromoBanner) -> str:
-        request = self.context.get("request")
-        if request is None:
-            return obj.image.url
-        return request.build_absolute_uri(obj.image.url)
+        return obj.image.url

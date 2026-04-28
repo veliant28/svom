@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { useSearchParams } from "next/navigation";
 
@@ -45,6 +45,7 @@ export function useProductDetail(slug: string) {
   } = useActiveVehicle();
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const hasResolvedInitialLoadRef = useRef(false);
   const vehicleParams = useMemo(
     () =>
       resolveVehicleParams({
@@ -71,7 +72,9 @@ export function useProductDetail(slug: string) {
     let isMounted = true;
 
     async function load() {
-      setIsLoading(true);
+      if (!hasResolvedInitialLoadRef.current) {
+        setIsLoading(true);
+      }
       try {
         const data = await getProductDetail(slug, locale, vehicleParams);
         if (isMounted) {
@@ -83,6 +86,7 @@ export function useProductDetail(slug: string) {
         }
       } finally {
         if (isMounted) {
+          hasResolvedInitialLoadRef.current = true;
           setIsLoading(false);
         }
       }
@@ -133,7 +137,7 @@ export function useProductDetail(slug: string) {
           if (isCancelled) {
             return;
           }
-          statuses = await requestUtrProductEnrichment([currentProduct.id], true, "detail");
+          statuses = await requestUtrProductEnrichment([currentProduct.id], false, "detail");
         }
       } catch {
         // UTR enrichment is a non-blocking fallback for missing local data.

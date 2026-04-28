@@ -229,7 +229,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
     return Array.from(deduped.values());
   }, [fitments, selectedMake, selectedModel]);
 
-  if (isLoading) {
+  if (isLoading && !product) {
     return <ProductDetailSkeleton />;
   }
 

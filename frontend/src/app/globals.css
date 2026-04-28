@@ -35,6 +35,14 @@
   --hero-fallback-text: #f8fafc;
   --hero-slide-text: #f8fafc;
   --hero-subtitle-text: rgba(226, 232, 240, 0.88);
+  --page-bg-layer-1: radial-gradient(120% 140% at 8% 4%, rgba(255, 166, 77, 0.26) 0%, rgba(255, 166, 77, 0) 54%);
+  --page-bg-layer-2: radial-gradient(120% 140% at 94% 12%, rgba(56, 189, 248, 0.2) 0%, rgba(56, 189, 248, 0) 58%);
+  --page-bg-layer-3: linear-gradient(135deg, #f4f6f7 0%, #e6edf3 48%, #dbe4ed 100%);
+  --footer-bg-layer-1: radial-gradient(130% 180% at 0% 0%, rgba(72, 118, 162, 0.3) 0%, rgba(72, 118, 162, 0) 62%);
+  --footer-bg-layer-2: radial-gradient(130% 180% at 100% 100%, rgba(197, 118, 86, 0.28) 0%, rgba(197, 118, 86, 0) 62%);
+  --footer-bg-layer-3: linear-gradient(120deg, #223240 0%, #32485a 46%, #3e5a70 100%);
+  --footer-caption-color: color-mix(in srgb, #f8fbff 84%, #d8e4ee 16%);
+  --footer-caption-shadow: 0 1px 2px rgba(15, 23, 42, 0.35);
 }
 
 .theme-dark {
@@ -71,6 +79,14 @@
   --hero-fallback-text: #f8fafc;
   --hero-slide-text: #f8fafc;
   --hero-subtitle-text: rgba(226, 232, 240, 0.9);
+  --page-bg-layer-1: radial-gradient(125% 145% at 10% 0%, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0) 56%);
+  --page-bg-layer-2: radial-gradient(120% 145% at 90% 10%, rgba(56, 189, 248, 0.18) 0%, rgba(56, 189, 248, 0) 58%);
+  --page-bg-layer-3: linear-gradient(135deg, #101619 0%, #18242b 45%, #121d23 100%);
+  --footer-bg-layer-1: radial-gradient(130% 180% at 0% 0%, rgba(77, 121, 166, 0.32) 0%, rgba(77, 121, 166, 0) 62%);
+  --footer-bg-layer-2: radial-gradient(130% 180% at 100% 100%, rgba(196, 116, 84, 0.28) 0%, rgba(196, 116, 84, 0) 62%);
+  --footer-bg-layer-3: linear-gradient(120deg, #1b252d 0%, #2e3d48 45%, #3a4d59 100%);
+  --footer-caption-color: color-mix(in srgb, #f8fbff 82%, #d8e4ee 18%);
+  --footer-caption-shadow: 0 1px 2px rgba(15, 23, 42, 0.35);
 }
 
 * {
@@ -86,12 +102,10 @@ body {
 
 body {
   font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  background: radial-gradient(circle at 10% 0%, #fef3ea 0%, var(--bg) 45%);
+  background-image: var(--page-bg-layer-1), var(--page-bg-layer-2), var(--page-bg-layer-3);
+  background-size: 220% 220%, 210% 210%, 170% 170%;
+  animation: pageCanvasShift 26s cubic-bezier(0.42, 0, 0.2, 1) infinite;
   color: var(--text);
-}
-
-.theme-dark body {
-  background: radial-gradient(circle at 85% -15%, #2f1d17 0%, var(--bg) 45%);
 }
 
 a {
@@ -403,6 +417,23 @@ label:has(select:disabled) {
   .header-contact-sticker {
     animation: none;
   }
+
+  body,
+  .footer-hero-surface {
+    animation: none;
+  }
+}
+
+@keyframes pageCanvasShift {
+  0% {
+    background-position: 0% 8%, 100% 22%, 0% 50%;
+  }
+  50% {
+    background-position: 100% 82%, 0% 76%, 100% 50%;
+  }
+  100% {
+    background-position: 0% 8%, 100% 22%, 0% 50%;
+  }
 }
 
 @keyframes promoBannerEnterFade {
@@ -677,9 +708,9 @@ label:has(select:disabled) {
 
 .footer-hero-surface {
   background-image:
-    radial-gradient(130% 180% at 0% 0%, rgba(77, 121, 166, 0.32) 0%, rgba(77, 121, 166, 0) 62%),
-    radial-gradient(130% 180% at 100% 100%, rgba(196, 116, 84, 0.28) 0%, rgba(196, 116, 84, 0) 62%),
-    linear-gradient(120deg, #1b252d 0%, #2e3d48 45%, #3a4d59 100%);
+    var(--footer-bg-layer-1),
+    var(--footer-bg-layer-2),
+    var(--footer-bg-layer-3);
   background-size: 210% 210%, 210% 210%, 170% 170%;
   animation: footerHeroShift 20s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }

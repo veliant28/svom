@@ -23,5 +23,8 @@ export const siteConfig = {
 };
 
 export function getRuntimeApiBaseUrl(): string {
-  return typeof window === "undefined" ? siteConfig.serverApiBaseUrl : siteConfig.apiBaseUrl;
+  if (typeof window === "undefined") {
+    return siteConfig.serverApiBaseUrl;
+  }
+  return `${window.location.origin}/backend-api`;
 }

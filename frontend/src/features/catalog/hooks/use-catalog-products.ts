@@ -4,7 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "next-intl";
 
 import { getProducts } from "@/features/catalog/api/get-products";
-import { buildCatalogCacheKey, readCachedCatalogPayload, writeCachedCatalogPayload } from "@/features/catalog/lib/catalog-page-cache";
+import {
+  buildCatalogCacheKey,
+  CATALOG_CACHE_UPDATED_EVENT,
+  type CachedCatalogPayload,
+  readCachedCatalogPayload,
+  writeCachedCatalogPayload,
+} from "@/features/catalog/lib/catalog-page-cache";
 import { useActiveVehicle } from "@/features/garage/hooks/use-active-vehicle";
 import type { CatalogFilters, CatalogProduct } from "@/features/catalog/types";
 
@@ -116,6 +122,32 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
       isMounted = false;
     };
   }, [cacheKey, effectiveParams, isEnabled, locale, paramsKey]);
+
+  useEffect(() => {
+    if (!isEnabled || typeof window === "undefined") {
+      return;
+    }
+
+    const handleCacheUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        cacheKey?: string;
+        payload?: CachedCatalogPayload;
+      }>;
+      const updatedKey = customEvent.detail?.cacheKey;
+      const payload = customEvent.detail?.payload;
+      if (updatedKey !== cacheKey || !payload) {
+        return;
+      }
+      setProducts(payload.products);
+      setTotalCount(payload.totalCount);
+      setIsLoading(false);
+    };
+
+    window.addEventListener(CATALOG_CACHE_UPDATED_EVENT, handleCacheUpdated);
+    return () => {
+      window.removeEventListener(CATALOG_CACHE_UPDATED_EVENT, handleCacheUpdated);
+    };
+  }, [cacheKey, isEnabled]);
 
   return { products, totalCount, isLoading, cacheKey };
 }

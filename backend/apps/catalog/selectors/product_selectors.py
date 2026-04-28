@@ -27,14 +27,14 @@ def get_public_products_queryset() -> QuerySet[Product]:
     all_images = ProductImage.objects.order_by("sort_order")
     supplier_offers = SupplierOffer.objects.select_related("supplier").order_by("supplier__priority", "supplier__name", "id")
     return (
-        with_available_stock_qty(Product.objects.filter(is_active=True))
+        Product.objects.filter(is_active=True)
         .select_related("brand", "category", "category__parent", "category__parent__parent", "product_price")
         .prefetch_related(
             Prefetch("images", queryset=primary_images, to_attr="primary_images"),
             Prefetch("images", queryset=all_images, to_attr="all_images"),
             Prefetch("supplier_offers", queryset=supplier_offers),
         )
-        .order_by("-available_stock_qty", "name", "id")
+        .order_by("name", "id")
     )
 
 

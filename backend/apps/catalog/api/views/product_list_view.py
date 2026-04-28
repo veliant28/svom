@@ -1,6 +1,7 @@
 import logging
 
 from django.conf import settings
+from django.db.models import F
 from rest_framework.generics import ListAPIView
 from rest_framework.pagination import PageNumberPagination
 
@@ -23,11 +24,13 @@ class ProductListAPIView(ListAPIView):
     serializer_class = ProductListSerializer
     pagination_class = CatalogProductPagination
     filterset_class = ProductFilterSet
-    ordering_fields = ("name", "created_at", "product_price__final_price", "available_stock_qty")
+    ordering_fields = ("name", "created_at", "product_price__final_price", "available_stock_qty", "available_stock_qty_cached")
     ordering = ("-available_stock_qty", "name", "id")
 
     def get_queryset(self):
-        queryset = get_public_products_queryset()
+        queryset = get_public_products_queryset().annotate(
+            available_stock_qty=F("available_stock_qty_cached")
+        )
         query = self.request.query_params.get("q", "").strip()
         if query:
             queryset = ProductSearchService().apply(queryset, query)

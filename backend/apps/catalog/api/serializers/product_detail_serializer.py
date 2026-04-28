@@ -24,10 +24,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
         fields = ("id", "image_url", "alt_text", "is_primary", "sort_order")
 
     def get_image_url(self, obj: ProductImage) -> str:
-        request = self.context.get("request")
-        if request is None:
-            return obj.image.url
-        return request.build_absolute_uri(obj.image.url)
+        return obj.image.url
 
 
 class ProductAttributeSerializer(serializers.ModelSerializer):

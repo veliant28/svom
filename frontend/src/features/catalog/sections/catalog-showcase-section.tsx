@@ -13,6 +13,7 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 
 const CATALOG_PAGE_SIZE = 52;
 const CATALOG_SCROLL_KEY_PREFIX = "catalog:scroll:";
+const CATALOG_SCROLL_SKIP_RESTORE_ONCE_KEY = "catalog:scroll:skip_restore_once";
 const CATALOG_SCROLL_TTL_MS = 30 * 60 * 1000;
 const CATALOG_RESTORE_MAX_WAIT_MS = 120 * 1000;
 
@@ -92,7 +93,14 @@ export function CatalogShowcaseSection({
   const legacyScrollStorageKey = useMemo(() => buildCatalogScrollKey(browserCatalogUrl, ""), [browserCatalogUrl]);
   const { products, totalCount, isLoading, cacheKey } = useCatalogProducts(
     { ...normalizedFilters, page, pageSize: CATALOG_PAGE_SIZE },
-    { useActiveVehicle: Boolean(filters) },
+    {
+      useActiveVehicle: Boolean(
+        normalizedFilters.fitment
+          || normalizedFilters.garage_vehicle
+          || normalizedFilters.car_modification
+          || normalizedFilters.modification,
+      ),
+    },
   );
   const productIds = useMemo(() => products.map((product) => product.id), [products]);
   const showSkeleton = isLoading && products.length === 0;
@@ -306,6 +314,18 @@ export function CatalogShowcaseSection({
     if (!syncPageWithUrl || typeof window === "undefined") {
       return;
     }
+    try {
+      const skipOnceKey = window.sessionStorage.getItem(CATALOG_SCROLL_SKIP_RESTORE_ONCE_KEY);
+      if (skipOnceKey && skipOnceKey === scrollStorageKey) {
+        window.sessionStorage.removeItem(CATALOG_SCROLL_SKIP_RESTORE_ONCE_KEY);
+        skipRestoreForScrollKeyRef.current = null;
+        restoredScrollKeyRef.current = scrollStorageKey;
+        window.scrollTo({ top: 0, behavior: "auto" });
+        return;
+      }
+    } catch {
+      // ignore storage failures
+    }
     if (skipRestoreForScrollKeyRef.current === scrollStorageKey) {
       skipRestoreForScrollKeyRef.current = null;
       restoredScrollKeyRef.current = scrollStorageKey;
@@ -375,6 +395,7 @@ export function CatalogShowcaseSection({
       return;
     }
     const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete("_cs");
     if (nextPage <= 1) {
       nextParams.delete("page");
     } else {
@@ -383,7 +404,14 @@ export function CatalogShowcaseSection({
     const query = nextParams.toString();
     const nextUrl = query ? `${pathname}?${query}` : pathname;
     const normalizedNextUrl = normalizeCatalogUrl(nextUrl);
-    skipRestoreForScrollKeyRef.current = buildCatalogScrollKey(normalizedNextUrl, "");
+    const nextScrollStorageKey = buildCatalogScrollKey(normalizedNextUrl, "");
+    skipRestoreForScrollKeyRef.current = nextScrollStorageKey;
+    try {
+      window.sessionStorage.setItem(CATALOG_SCROLL_SKIP_RESTORE_ONCE_KEY, nextScrollStorageKey);
+      window.sessionStorage.removeItem(nextScrollStorageKey);
+    } catch {
+      // ignore storage failures
+    }
     router.replace(nextUrl);
   };
 

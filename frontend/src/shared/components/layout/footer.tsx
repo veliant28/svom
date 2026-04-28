@@ -61,8 +61,8 @@ export function Footer() {
         <div
           className="pt-1 text-[11px]"
           style={{
-            color: "color-mix(in srgb, #f8fbff 82%, #d8e4ee 18%)",
-            textShadow: "0 1px 2px rgba(15,23,42,.35)",
+            color: "var(--footer-caption-color)",
+            textShadow: "var(--footer-caption-shadow)",
           }}
         >
           © {new Date().getFullYear()} {t("header.brand")}

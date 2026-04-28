@@ -4,5 +4,5 @@ export default proxy;
 export { proxy };
 
 export const config = {
-  matcher: ["/", "/((?!api|_next|_vercel|.*\\..*).*)"],
+  matcher: ["/", "/((?!api|backend-api|_next|_vercel|.*\\..*).*)"],
 };

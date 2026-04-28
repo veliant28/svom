@@ -101,10 +101,10 @@ export function CatalogWarmupProvider({ children }: { children: React.ReactNode 
       statuses.some(
         (item) =>
           item.needs_enrichment
+          || item.status === "pending"
           || item.status === "queued"
           || item.status === "in_progress"
           || item.queued
-          || (!!item.utr_detail_id && !item.applicability_ready),
       );
 
     const applyStatusesToCache = (statuses: Awaited<ReturnType<typeof requestUtrProductEnrichment>>) => {
@@ -152,6 +152,7 @@ export function CatalogWarmupProvider({ children }: { children: React.ReactNode 
 
     async function runWarmup() {
       let attempt = 0;
+      let enqueued = false;
       while (!isCancelled) {
         if (typeof document !== "undefined" && document.hidden) {
           return;
@@ -171,7 +172,8 @@ export function CatalogWarmupProvider({ children }: { children: React.ReactNode 
 
         let statuses: Awaited<ReturnType<typeof requestUtrProductEnrichment>>;
         try {
-          statuses = await requestUtrProductEnrichment(priorityIds, true, "catalog");
+          statuses = await requestUtrProductEnrichment(priorityIds, !enqueued, "catalog");
+          enqueued = true;
         } catch {
           return;
         }

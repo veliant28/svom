@@ -20,6 +20,37 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [getBackendImageRemotePattern()],
   },
+  async rewrites() {
+    const rawApiBaseUrl = process.env.NEXT_SERVER_API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api";
+    const apiBaseUrl = rawApiBaseUrl.replace(/\/+$/, "");
+    const backendBaseUrl = apiBaseUrl.replace(/\/api$/, "");
+    return [
+      {
+        source: "/media/:path*",
+        destination: `${backendBaseUrl}/media/:path*`,
+      },
+      {
+        source: "/:locale(uk|ru|en)/media/:path*",
+        destination: `${backendBaseUrl}/media/:path*`,
+      },
+      {
+        source: "/:locale(uk|ru|en)/backend-api/:path*",
+        destination: `${apiBaseUrl}/:path*/`,
+      },
+      {
+        source: "/backend-api/:path*",
+        destination: `${apiBaseUrl}/:path*/`,
+      },
+      {
+        source: "/:locale(uk|ru|en)/api/:path*",
+        destination: `${apiBaseUrl}/:path*/`,
+      },
+      {
+        source: "/api/:path*",
+        destination: `${apiBaseUrl}/:path*/`,
+      },
+    ];
+  },
 };
 
 export default withNextIntl(nextConfig);

@@ -66,7 +66,13 @@ async function requestJson<T>(
   options: RequestOptions = {},
   body?: unknown,
 ): Promise<T> {
-  const requestUrl = `${getRuntimeApiBaseUrl()}${path}${toSearchParams(options.params)}`;
+  const baseUrl = getRuntimeApiBaseUrl();
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const runtimePath =
+    typeof window !== "undefined" && baseUrl === "/api"
+      ? normalizedPath.replace(/\/$/, "")
+      : normalizedPath;
+  const requestUrl = `${baseUrl}${runtimePath}${toSearchParams(options.params)}`;
   const isServerRequest = typeof window === "undefined";
   const requestId = isServerRequest ? (options.requestId ?? createRequestTimingId("api")) : options.requestId;
   const startedAt = performance.now();

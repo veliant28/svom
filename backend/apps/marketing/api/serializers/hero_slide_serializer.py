@@ -43,13 +43,7 @@ class HeroSlideSerializer(serializers.ModelSerializer):
         return self._localized(obj, "subtitle")
 
     def get_desktop_image_url(self, obj: HeroSlide) -> str:
-        request = self.context.get("request")
-        if request is None:
-            return obj.desktop_image.url
-        return request.build_absolute_uri(obj.desktop_image.url)
+        return obj.desktop_image.url
 
     def get_mobile_image_url(self, obj: HeroSlide) -> str:
-        request = self.context.get("request")
-        if request is None:
-            return obj.mobile_image.url
-        return request.build_absolute_uri(obj.mobile_image.url)
+        return obj.mobile_image.url

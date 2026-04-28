@@ -4,6 +4,7 @@ from django.db import transaction
 
 from apps.catalog.models import Brand, Product
 from apps.pricing.models import Supplier, SupplierOffer
+from apps.pricing.services.product_stock_cache import refresh_available_stock_qty_cache
 from apps.supplier_imports.models import SupplierRawOffer
 from apps.supplier_imports.selectors import get_import_source_by_code
 
@@ -137,6 +138,8 @@ class SupplierMappedOffersPublishService:
             stats = self._reprice_products(affected_product_ids=affected_product_ids, supplier_code=supplier_code)
             counters.repricing_stats = stats
             counters.repriced_products = int(stats.get("repriced", 0))
+        if affected_product_ids:
+            refresh_available_stock_qty_cache(product_ids=affected_product_ids)
 
         return reporting.build_result(
             counters=counters,

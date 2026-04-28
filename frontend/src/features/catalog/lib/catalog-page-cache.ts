@@ -3,7 +3,8 @@
 import type { CatalogProduct } from "@/features/catalog/types";
 
 export const CATALOG_CACHE_TTL_MS = 10 * 60 * 1000;
-export const CATALOG_CACHE_KEY_PREFIX = "catalog:products:";
+export const CATALOG_CACHE_KEY_PREFIX = "catalog:products:v2:";
+export const CATALOG_CACHE_UPDATED_EVENT = "catalog:cache-updated";
 
 export type CachedCatalogPayload = {
   savedAt: number;
@@ -43,15 +44,23 @@ export function writeCachedCatalogPayload(cacheKey: string, payload: Omit<Cached
     return;
   }
   try {
+    const nextPayload = {
+      ...payload,
+      savedAt: Date.now(),
+    } satisfies CachedCatalogPayload;
     window.sessionStorage.setItem(
       cacheKey,
-      JSON.stringify({
-        ...payload,
-        savedAt: Date.now(),
-      } satisfies CachedCatalogPayload),
+      JSON.stringify(nextPayload),
+    );
+    window.dispatchEvent(
+      new CustomEvent(CATALOG_CACHE_UPDATED_EVENT, {
+        detail: {
+          cacheKey,
+          payload: nextPayload,
+        },
+      }),
     );
   } catch {
     // Best-effort cache only.
   }
 }
-

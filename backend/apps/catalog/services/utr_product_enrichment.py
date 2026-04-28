@@ -1289,9 +1289,7 @@ def _build_primary_image_url(*, product: Product, request) -> str:
         primary = images[0]
     if primary is None or not primary.image:
         return ""
-    if request is None:
-        return primary.image.url
-    return request.build_absolute_uri(primary.image.url)
+    return primary.image.url
 
 
 def _characteristics_count(enrichment: UtrProductEnrichment | None) -> int:
