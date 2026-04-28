@@ -163,6 +163,12 @@ BACKOFFICE_CAPABILITIES: tuple[BackofficeCapabilityDefinition, ...] = (
         description="Read and manage payment provider settings.",
     ),
     BackofficeCapabilityDefinition(
+        code="checkout.methods.manage",
+        permission_codename="bo_cap_checkout_methods_manage",
+        title="Checkout methods manage",
+        description="Manage delivery and payment methods visible in storefront checkout.",
+    ),
+    BackofficeCapabilityDefinition(
         code="vchasno_kasa.manage",
         permission_codename="bo_cap_vchasno_kasa_manage",
         title="Vchasno Kasa manage",

@@ -64,6 +64,13 @@ export function normalizeWaybillPhone(value: string): string {
   return value.replace(/\s+/g, "").trim();
 }
 
+export function orderHasDeliveryLoyaltyPromo(order: BackofficeOrderOperational | null): boolean {
+  return Boolean(
+    (order?.applied_promo_code || "").trim()
+    && order?.discount_breakdown?.discount_type === "delivery_fee",
+  );
+}
+
 export function buildWaybillInitialPayload(
   order: BackofficeOrderOperational | null,
   waybill: BackofficeOrderNovaPoshtaWaybill | null,
@@ -190,11 +197,12 @@ export function buildWaybillInitialPayload(
     cargo_type: "Parcel",
     special_cargo: false,
   });
+  const deliveryLoyaltyPromoApplied = orderHasDeliveryLoyaltyPromo(order);
 
   return {
     sender_profile_id: senderId,
     delivery_type: normalizedSeedDeliveryType,
-    payer_type: "Recipient",
+    payer_type: deliveryLoyaltyPromoApplied ? "Sender" : "Recipient",
     payment_method: "Cash",
     cargo_type: "Parcel",
     description: "",

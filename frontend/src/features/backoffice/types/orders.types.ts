@@ -102,6 +102,12 @@ export type BackofficeOrderOperational = {
   receipt: BackofficeOrderReceipt;
   subtotal: string;
   delivery_fee: string;
+  discount_total: string;
+  applied_promo_code: string;
+  discount_breakdown: {
+    discount_type?: "delivery_fee" | "product_markup" | string;
+    [key: string]: unknown;
+  };
   total: string;
   currency: string;
   items_count: number;

@@ -126,6 +126,15 @@ export function OrderViewModal({
   const orderCurrency = order?.currency || "";
   const deliveryMethodLabel = t("orders.modals.view.summary.deliveryMethod");
   const paymentMethodLabel = t("orders.modals.view.summary.paymentMethod");
+  const loyaltyDiscountType = typeof order?.discount_breakdown?.discount_type === "string" ? order.discount_breakdown.discount_type : "";
+  const loyaltyTypeLabel = loyaltyDiscountType === "delivery_fee"
+    ? t("loyalty.types.delivery")
+    : loyaltyDiscountType === "product_markup"
+      ? t("loyalty.types.product")
+      : "";
+  const loyaltyLabel = loyaltyTypeLabel
+    ? `${t("orders.modals.view.summary.loyalty")} (${loyaltyTypeLabel})`
+    : t("orders.modals.view.summary.loyalty");
   const itemsLabel = extractLabel(t("orders.modals.view.summary.items", { count: 0 }));
   const activeActionLabel = actionOptions.find((option) => option.value === selectedAction)?.label ?? t("orders.actions.refresh");
   const isMonobankPayment = (order?.payment?.provider || "").trim().toLowerCase() === "monobank";
@@ -423,6 +432,7 @@ export function OrderViewModal({
                   <div className="mt-3 grid gap-2">
                     <OrderViewValueField label={deliveryMethodLabel} value={resolveDeliveryMethodLabel(order.delivery_method, t)} />
                     <OrderViewValueField label={paymentMethodLabel} value={resolveOrderPaymentMethodLabel(order.payment_method, t)} />
+                    <OrderViewValueField label={loyaltyLabel} value={order.applied_promo_code || "-"} />
                     <OrderViewValueField label={t("orders.table.columns.created")} value={formatOrderDate(order.placed_at)} />
                     <OrderReceiptField
                       receipt={order.receipt}

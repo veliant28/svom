@@ -19,6 +19,7 @@ type LookupRootRef = RefObject<HTMLLabelElement | null>;
 
 export function CheckoutDeliverySection({
   deliveryOption,
+  availableDeliveryOptions,
   npDestinationLine1,
   npDestinationLine2,
   cityLookupRootRef,
@@ -61,6 +62,7 @@ export function CheckoutDeliverySection({
   onStreetSelect,
 }: {
   deliveryOption: CheckoutDeliveryOption;
+  availableDeliveryOptions: CheckoutDeliveryOption[];
   npDestinationLine1: string;
   npDestinationLine2: string;
   cityLookupRootRef: LookupRootRef;
@@ -102,53 +104,60 @@ export function CheckoutDeliverySection({
   onWarehouseSelect: (item: CheckoutNovaPoshtaWarehouse) => void;
   onStreetSelect: (item: CheckoutNovaPoshtaStreet) => void;
 }) {
+  const deliveryOptions = new Set(availableDeliveryOptions);
   return (
     <>
       <h2 className="mt-5 text-lg font-semibold">{t("sections.delivery")}</h2>
       <div className="mt-3 grid gap-3">
-        <div className="grid gap-2 sm:grid-cols-3">
-          <button
-            type="button"
-            className="inline-flex h-[3.75rem] items-center justify-center gap-2 rounded-md border px-3 text-sm font-semibold"
-            style={{
-              borderColor: deliveryOption === "pickup" ? "var(--accent)" : "var(--border)",
-              backgroundColor: deliveryOption === "pickup" ? "color-mix(in srgb, var(--accent) 12%, var(--surface))" : "var(--surface)",
-            }}
-            onClick={() => setDeliveryOption("pickup")}
-          >
-            <Store size={30} className="shrink-0" />
-            <span className="leading-tight">{t("deliveryOptions.pickup")}</span>
-          </button>
-          <button
-            type="button"
-            className="inline-flex h-[3.75rem] items-center justify-between gap-2 rounded-md border px-3 text-sm font-semibold"
-            style={{
-              borderColor: deliveryOption === "nova_poshta_warehouse" ? "var(--accent)" : "var(--border)",
-              backgroundColor: deliveryOption === "nova_poshta_warehouse" ? "color-mix(in srgb, var(--accent) 12%, var(--surface))" : "var(--surface)",
-            }}
-            onClick={() => setDeliveryOption("nova_poshta_warehouse")}
-          >
-            <span className="inline-flex min-w-0 items-center gap-2 leading-none">
-              <Image src="/icons/nova-poshta.svg" alt="" width={30} height={30} className="h-[30px] w-[30px] shrink-0" aria-hidden />
-              <span className="whitespace-nowrap">{t("delivery.novaPoshta")}</span>
-            </span>
-            <span className="shrink-0 text-right leading-[1.05]">
-              <span className="block">{npDestinationLine1}</span>
-              {npDestinationLine2 ? <span className="block">{npDestinationLine2}</span> : null}
-            </span>
-          </button>
-          <button
-            type="button"
-            className="inline-flex h-[3.75rem] items-center justify-center gap-2 rounded-md border px-3 text-sm font-semibold"
-            style={{
-              borderColor: deliveryOption === "nova_poshta_courier" ? "var(--accent)" : "var(--border)",
-              backgroundColor: deliveryOption === "nova_poshta_courier" ? "color-mix(in srgb, var(--accent) 12%, var(--surface))" : "var(--surface)",
-            }}
-            onClick={() => setDeliveryOption("nova_poshta_courier")}
-          >
-            <Image src="/icons/nova-poshta.svg" alt="" width={30} height={30} className="h-[30px] w-[30px] shrink-0" aria-hidden />
-            <span className="leading-tight">{t("deliveryOptions.novaPoshtaCourier")}</span>
-          </button>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[repeat(auto-fit,minmax(13.5rem,1fr))]">
+          {deliveryOptions.has("pickup") ? (
+            <button
+              type="button"
+              className="inline-flex h-[3.75rem] items-center justify-center gap-2 rounded-md border px-3 text-sm font-semibold"
+              style={{
+                borderColor: deliveryOption === "pickup" ? "var(--accent)" : "var(--border)",
+                backgroundColor: deliveryOption === "pickup" ? "color-mix(in srgb, var(--accent) 12%, var(--surface))" : "var(--surface)",
+              }}
+              onClick={() => setDeliveryOption("pickup")}
+            >
+              <Store size={30} className="shrink-0" />
+              <span className="leading-tight">{t("deliveryOptions.pickup")}</span>
+            </button>
+          ) : null}
+          {deliveryOptions.has("nova_poshta_warehouse") ? (
+            <button
+              type="button"
+              className="inline-flex h-[3.75rem] min-w-0 flex-col items-center justify-center gap-0.5 rounded-md border px-3 text-sm font-semibold"
+              style={{
+                borderColor: deliveryOption === "nova_poshta_warehouse" ? "var(--accent)" : "var(--border)",
+                backgroundColor: deliveryOption === "nova_poshta_warehouse" ? "color-mix(in srgb, var(--accent) 12%, var(--surface))" : "var(--surface)",
+              }}
+              onClick={() => setDeliveryOption("nova_poshta_warehouse")}
+            >
+              <span className="inline-flex min-w-0 max-w-full items-center justify-center gap-2 leading-tight">
+                <Image src="/icons/nova-poshta.svg" alt="" width={24} height={24} className="h-6 w-6 shrink-0" aria-hidden />
+                <span className="truncate">{t("delivery.novaPoshta")}</span>
+              </span>
+              <span className="block max-w-full truncate text-center text-[11px] font-medium leading-[1.05]">{`${npDestinationLine1}${npDestinationLine2}`}</span>
+            </button>
+          ) : null}
+          {deliveryOptions.has("nova_poshta_courier") ? (
+            <button
+              type="button"
+              className="inline-flex h-[3.75rem] min-w-0 flex-col items-center justify-center gap-0.5 rounded-md border px-3 text-sm font-semibold"
+              style={{
+                borderColor: deliveryOption === "nova_poshta_courier" ? "var(--accent)" : "var(--border)",
+                backgroundColor: deliveryOption === "nova_poshta_courier" ? "color-mix(in srgb, var(--accent) 12%, var(--surface))" : "var(--surface)",
+              }}
+              onClick={() => setDeliveryOption("nova_poshta_courier")}
+            >
+              <span className="inline-flex min-w-0 max-w-full items-center justify-center gap-2 leading-tight">
+                <Image src="/icons/nova-poshta.svg" alt="" width={24} height={24} className="h-6 w-6 shrink-0" aria-hidden />
+                <span className="truncate">{t("delivery.novaPoshta")}</span>
+              </span>
+              <span className="block max-w-full truncate text-center text-[11px] font-medium leading-[1.05]">{t("delivery.courier")}</span>
+            </button>
+          ) : null}
         </div>
 
         {deliveryOption !== "pickup" ? (

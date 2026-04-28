@@ -1,5 +1,6 @@
 from .cart_views import CartItemCreateAPIView, CartItemUpdateDeleteAPIView, CartRetrieveAPIView
 from .checkout_views import (
+    CheckoutMethodsAPIView,
     CheckoutMonobankSelectorWidgetAPIView,
     CheckoutPromoApplyAPIView,
     CheckoutPromoClearAPIView,
@@ -32,6 +33,7 @@ __all__ = [
     "CartItemCreateAPIView",
     "CartItemUpdateDeleteAPIView",
     "CheckoutPreviewAPIView",
+    "CheckoutMethodsAPIView",
     "CheckoutSubmitAPIView",
     "CheckoutMonobankSelectorWidgetAPIView",
     "CheckoutPromoApplyAPIView",

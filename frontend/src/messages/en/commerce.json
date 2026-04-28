@@ -170,7 +170,8 @@
       "errors": {
         "deliveryCityRequired": "Select Nova Poshta delivery city.",
         "deliveryDestinationRequired": "Select Nova Poshta branch or parcel locker.",
-        "deliveryStreetRequired": "Select street and enter house number for courier delivery."
+        "deliveryStreetRequired": "Select street and enter house number for courier delivery.",
+        "methodsLoadFailed": "Failed to load available delivery and payment methods."
       },
       "submitError": "Failed to place order. Check required fields."
     },

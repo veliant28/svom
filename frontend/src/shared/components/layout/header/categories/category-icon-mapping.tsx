@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 type CategoryIconProps = {
   slug: string;
   name: string;
@@ -17,15 +19,15 @@ type CategoryToken =
   | "parts";
 
 const CATEGORY_ICON_SRC: Record<CategoryToken, string> = {
-  suspension: "/icons/categories/suspension.svg",
+  suspension: "/icons/categories/street-wheel.svg",
   brake: "/icons/categories/brakes.svg",
   cooling: "/icons/categories/cooling.svg",
-  engine: "/icons/categories/engine.svg",
+  engine: "/icons/categories/energy.svg",
   transmission: "/icons/categories/clutch.svg",
   electrics: "/icons/categories/electricity.svg",
   body: "/icons/categories/body.svg",
   fluids: "/icons/categories/chemicals.svg",
-  wheels: "/icons/categories/tires.svg",
+  wheels: "/icons/categories/wheel.svg",
   parts: "/icons/categories/engine.svg",
 };
 
@@ -65,9 +67,7 @@ function resolveCategoryToken(slug: string, name: string): CategoryToken {
 
 function RasterIcon({ src, size = 18 }: { src: string; size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 512 512" fill="none" aria-hidden="true">
-      <image href={src} x="0" y="0" width="512" height="512" preserveAspectRatio="xMidYMid meet" />
-    </svg>
+    <Image src={src} width={size} height={size} alt="" aria-hidden />
   );
 }
 

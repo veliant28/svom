@@ -4,6 +4,7 @@ from .brand_aliases_views import BrandAliasListCreateAPIView, BrandAliasRetrieve
 from .catalog_brands_views import BackofficeCatalogBrandListCreateAPIView, BackofficeCatalogBrandRetrieveUpdateDestroyAPIView
 from .catalog_categories_views import BackofficeCatalogCategoryListCreateAPIView, BackofficeCatalogCategoryRetrieveUpdateDestroyAPIView
 from .catalog_products_views import BackofficeCatalogProductListCreateAPIView, BackofficeCatalogProductRetrieveUpdateDestroyAPIView
+from .database_backup_views import DatabaseBackupRunAPIView, DatabaseBackupSettingsAPIView
 from .import_actions_views import (
     ImportAllActionAPIView,
     RepriceAfterImportActionAPIView,
@@ -62,6 +63,7 @@ from .order_actions_view import (
     ShippedOrderActionAPIView,
 )
 from .payment_views import (
+    BackofficeCheckoutMethodSettingsAPIView,
     BackofficeLiqPayConnectionTestAPIView,
     BackofficeLiqPaySettingsAPIView,
     BackofficeMonobankConnectionTestAPIView,
@@ -191,6 +193,8 @@ __all__ = [
     "BackofficeCatalogCategoryRetrieveUpdateDestroyAPIView",
     "BackofficeCatalogProductListCreateAPIView",
     "BackofficeCatalogProductRetrieveUpdateDestroyAPIView",
+    "DatabaseBackupRunAPIView",
+    "DatabaseBackupSettingsAPIView",
     "BackofficeSummaryAPIView",
     "BackofficeStaffActivityAPIView",
     "ImportSourceListAPIView",
@@ -230,6 +234,7 @@ __all__ = [
     "OrderItemSupplierRecommendationAPIView",
     "OrderItemSupplierOverrideAPIView",
     "BackofficeMonobankSettingsAPIView",
+    "BackofficeCheckoutMethodSettingsAPIView",
     "BackofficeMonobankConnectionTestAPIView",
     "BackofficeMonobankCurrencyAPIView",
     "BackofficeNovaPayConnectionTestAPIView",

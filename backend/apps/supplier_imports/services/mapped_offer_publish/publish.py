@@ -51,6 +51,7 @@ def upsert_product(
     resolved_sku = selection.build_product_sku(supplier_sku=supplier_sku)
     existing_offer = supplier_offer_cache.get(supplier_sku)
     product = raw_offer.matched_product or (existing_offer.product if existing_offer is not None else None)
+    is_manual_category = raw_offer.category_mapping_status == SupplierRawOffer.CATEGORY_MAPPING_STATUS_MANUAL_MAPPED
 
     if product is None:
         product = product_cache.get(resolved_sku)
@@ -65,6 +66,7 @@ def upsert_product(
                 slug=generate_unique_product_slug(name=name, preferred_slug=preferred_slug),
                 brand=brand,
                 category=raw_offer.mapped_category,
+                category_manually_locked=is_manual_category,
                 is_active=True,
                 published_at=now,
             )
@@ -81,9 +83,17 @@ def upsert_product(
         product_cache[resolved_sku] = product
         changed_fields.add("sku")
 
-    if raw_offer.mapped_category_id and product.category_id != raw_offer.mapped_category_id:
+    if (
+        raw_offer.mapped_category_id
+        and product.category_id != raw_offer.mapped_category_id
+        and not product.category_manually_locked
+    ):
         product.category = raw_offer.mapped_category
         changed_fields.add("category")
+
+    if is_manual_category and not product.category_manually_locked:
+        product.category_manually_locked = True
+        changed_fields.add("category_manually_locked")
 
     if not product.is_active:
         product.is_active = True

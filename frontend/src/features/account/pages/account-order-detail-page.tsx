@@ -106,6 +106,9 @@ function resolvePaymentMethodLabel(value: Order["payment_method"], locale: strin
   if (value === "monobank") {
     return "Monobank";
   }
+  if (value === "novapay") {
+    return "Nova Pay";
+  }
   if (value === "liqpay") {
     return "LiqPay";
   }

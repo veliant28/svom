@@ -10,6 +10,7 @@ from apps.backoffice.api.serializers import (
     BackofficeMonobankPaymentActionResponseSerializer,
     BackofficeMonobankPaymentActionSerializer,
     BackofficeOrderPaymentSerializer,
+    CheckoutMethodSettingsSerializer,
     LiqPaySettingsSerializer,
     MonobankConnectionCheckSerializer,
     MonobankCurrencyResponseSerializer,
@@ -38,6 +39,7 @@ from apps.commerce.services.liqpay import (
     refresh_liqpay_payment_status,
     test_liqpay_connection,
 )
+from apps.commerce.services import get_checkout_method_settings
 from apps.commerce.services.novapay import get_novapay_settings, test_novapay_connection
 
 
@@ -114,6 +116,21 @@ class BackofficeLiqPayConnectionTestAPIView(BackofficeAPIView):
         result = test_liqpay_connection()
         serializer = PaymentConnectionCheckSerializer(result)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class BackofficeCheckoutMethodSettingsAPIView(BackofficeAPIView):
+    required_capability = "checkout.methods.manage"
+
+    def get(self, request):
+        serializer = CheckoutMethodSettingsSerializer(get_checkout_method_settings())
+        return Response(serializer.data)
+
+    def patch(self, request):
+        settings = get_checkout_method_settings()
+        serializer = CheckoutMethodSettingsSerializer(settings, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
 
 class BackofficeOrderPaymentRefreshAPIView(BackofficeAPIView):

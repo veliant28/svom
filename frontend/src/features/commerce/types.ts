@@ -182,7 +182,7 @@ export type Order = {
   delivery_city_label: string;
   delivery_destination_label: string;
   delivery_waybill_seed: OrderDeliveryWaybillSeed;
-  payment_method: "cash_on_delivery" | "monobank" | "liqpay" | "card_placeholder";
+  payment_method: "cash_on_delivery" | "monobank" | "novapay" | "liqpay" | "card_placeholder";
   payment?: OrderPayment | null;
   receipt: OrderReceipt;
   subtotal: string;

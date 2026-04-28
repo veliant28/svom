@@ -4,6 +4,7 @@ import { normalizePaginatedListResponse } from "@/shared/api/normalize-list-resp
 import type {
   BackofficeActionResponse,
   BackofficeCategoryMappingCategoryOption,
+  BackofficeDatabaseBackupSchedule,
   BackofficeImportError,
   BackofficeImportQuality,
   BackofficeImportQualityComparison,
@@ -56,6 +57,38 @@ export async function runBackofficeImportSchedule(
   result?: Record<string, unknown>;
 }> {
   return postJson(`/backoffice/import-schedules/${sourceId}/run/`, payload ?? { dispatch_async: true }, undefined, { token });
+}
+
+export async function getBackofficeDatabaseBackupSchedule(token: string): Promise<BackofficeDatabaseBackupSchedule> {
+  return getJson<BackofficeDatabaseBackupSchedule>("/backoffice/database-backup/schedule/", undefined, { token });
+}
+
+export async function updateBackofficeDatabaseBackupSchedule(
+  token: string,
+  payload: Partial<{
+    is_enabled: boolean;
+    schedule_cron: string;
+    schedule_timezone: string;
+    schedule_run_time: string;
+    schedule_every_day: boolean;
+    backup_directory: string;
+    retention_count: number;
+  }>,
+): Promise<BackofficeDatabaseBackupSchedule> {
+  return patchJson<BackofficeDatabaseBackupSchedule, typeof payload>("/backoffice/database-backup/schedule/", payload, undefined, { token });
+}
+
+export async function runBackofficeDatabaseBackup(
+  token: string,
+  payload?: {
+    dispatch_async?: boolean;
+  },
+): Promise<{
+  mode: "async" | "sync";
+  task_id?: string;
+  result?: Record<string, unknown>;
+}> {
+  return postJson("/backoffice/database-backup/run/", payload ?? { dispatch_async: true }, undefined, { token });
 }
 
 export async function getBackofficeImportRuns(token: string, params?: BackofficeListQuery) {

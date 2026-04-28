@@ -24,6 +24,20 @@ class NovaPoshtaPaymentRulesTests(SimpleTestCase):
         self.assertEqual(rule.payment_method, "Cash")
         self.assertEqual(rule.afterpayment_amount, Decimal("1200.00"))
 
+    def test_delivery_promo_forces_sender_cash_payment(self):
+        rule = resolve_payment_rule(
+            sender_type="private_person",
+            requested_afterpayment=Decimal("500.00"),
+            order_total=Decimal("1200.00"),
+            requested_payer_type="Recipient",
+            requested_payment_method="NonCash",
+            force_sender_cash_delivery_payment=True,
+        )
+
+        self.assertEqual(rule.payer_type, "Sender")
+        self.assertEqual(rule.payment_method, "Cash")
+        self.assertEqual(rule.afterpayment_amount, Decimal("1200.00"))
+
     def test_business_sender_uses_control_payment_when_supported(self):
         rule = resolve_payment_rule(
             sender_type="business",

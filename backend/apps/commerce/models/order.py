@@ -50,11 +50,13 @@ class Order(UUIDPrimaryKeyMixin, TimestampedMixin):
 
     PAYMENT_CASH_ON_DELIVERY = "cash_on_delivery"
     PAYMENT_MONOBANK = "monobank"
+    PAYMENT_NOVAPAY = "novapay"
     PAYMENT_LIQPAY = "liqpay"
     PAYMENT_CARD_PLACEHOLDER = "card_placeholder"
 
     PAYMENT_METHOD_CHOICES = (
         (PAYMENT_MONOBANK, _("Monobank")),
+        (PAYMENT_NOVAPAY, _("Nova Pay")),
         (PAYMENT_LIQPAY, _("LiqPay")),
         (PAYMENT_CASH_ON_DELIVERY, _("Наложенный платеж")),
         (PAYMENT_CARD_PLACEHOLDER, _("Оплата картой (legacy)")),

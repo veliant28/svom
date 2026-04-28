@@ -74,6 +74,7 @@ class CommerceAPISmokeTests(APITestCase):
         )
         self.assertEqual(preview_response.status_code, status.HTTP_200_OK)
         self.assertEqual(preview_response.data["checkout_preview"]["items_count"], 3)
+        self.assertEqual(str(preview_response.data["checkout_preview"]["delivery_fee"]), "0.00")
 
         submit_response = self.client.post(
             reverse("commerce_api:checkout-submit"),
@@ -83,7 +84,7 @@ class CommerceAPISmokeTests(APITestCase):
                 "contact_email": "commerce@test.local",
                 "delivery_method": Order.DELIVERY_COURIER,
                 "delivery_address": "Kyiv, Demo street 1",
-                "payment_method": Order.PAYMENT_CARD_PLACEHOLDER,
+                "payment_method": Order.PAYMENT_CASH_ON_DELIVERY,
                 "customer_comment": "Please call before delivery",
             },
             format="json",
@@ -91,6 +92,7 @@ class CommerceAPISmokeTests(APITestCase):
         )
         self.assertEqual(submit_response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(submit_response.data["status"], Order.STATUS_NEW)
+        self.assertEqual(str(submit_response.data["delivery_fee"]), "0.00")
 
         orders_response = self.client.get(reverse("commerce_api:order-list"), **self.auth)
         self.assertEqual(orders_response.status_code, status.HTTP_200_OK)

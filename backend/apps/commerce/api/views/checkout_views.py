@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.commerce.api.serializers import (
+    CheckoutMethodsSerializer,
     CheckoutNovaPoshtaLookupQuerySerializer,
     CheckoutPromoApplySerializer,
     CheckoutPromoClearSerializer,
@@ -30,6 +31,7 @@ from apps.commerce.services import (
     get_order_payment,
     handle_liqpay_webhook,
     submit_checkout,
+    serialize_checkout_methods,
 )
 from apps.commerce.services.nova_poshta import NovaPoshtaLookupService, NovaPoshtaSenderProfileService
 from apps.commerce.services.nova_poshta.errors import NovaPoshtaBusinessRuleError, NovaPoshtaIntegrationError
@@ -49,8 +51,25 @@ class CheckoutPreviewAPIView(APIView):
             preview = build_checkout_preview(user=request.user, delivery_method=delivery_method, promo_code=promo_code)
         except LoyaltyPromoValidationError as exc:
             raise ValidationError(detail={"promo_code": str(exc.message), "promo_code_error": exc.code})
+        except DjangoValidationError as exc:
+            raise ValidationError(detail=exc.message_dict)
 
         return Response(_build_checkout_preview_response(request=request, preview=preview))
+
+
+class CheckoutMethodsAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        payload = serialize_checkout_methods()
+        serializer = CheckoutMethodsSerializer(
+            {
+                "delivery_methods": payload.delivery_methods,
+                "payment_methods": payload.payment_methods,
+            }
+        )
+        return Response(serializer.data)
 
 
 class CheckoutPromoApplyAPIView(APIView):
@@ -67,6 +86,8 @@ class CheckoutPromoApplyAPIView(APIView):
             preview = build_checkout_preview(user=request.user, delivery_method=delivery_method, promo_code=promo_code)
         except LoyaltyPromoValidationError as exc:
             raise ValidationError(detail={"promo_code": str(exc.message), "promo_code_error": exc.code})
+        except DjangoValidationError as exc:
+            raise ValidationError(detail=exc.message_dict)
         return Response(_build_checkout_preview_response(request=request, preview=preview))
 
 
@@ -79,7 +100,10 @@ class CheckoutPromoClearAPIView(APIView):
         serializer.is_valid(raise_exception=True)
 
         delivery_method = serializer.validated_data.get("delivery_method")
-        preview = build_checkout_preview(user=request.user, delivery_method=delivery_method)
+        try:
+            preview = build_checkout_preview(user=request.user, delivery_method=delivery_method)
+        except DjangoValidationError as exc:
+            raise ValidationError(detail=exc.message_dict)
         payload = _build_checkout_preview_response(request=request, preview=preview)
         payload["cleared"] = True
         return Response(payload)

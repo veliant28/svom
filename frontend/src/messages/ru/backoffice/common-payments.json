@@ -92,6 +92,59 @@
           "liqpayConnectionFailed": "Не удалось проверить соединение LiqPay.",
           "liqpayConnectionOk": "Соединение LiqPay успешно."
         }
+      },
+      "checkoutMethods": {
+        "title": "Методы checkout",
+        "subtitle": "Управление способами доставки и оплаты, которые видны покупателю при оформлении заказа.",
+        "delivery": {
+          "title": "Способы доставки",
+          "description": "Выключенные способы полностью скрываются в checkout."
+        },
+        "payment": {
+          "title": "Способы оплаты",
+          "description": "Выключенные способы нельзя выбрать на сайте и нельзя отправить через API."
+        },
+        "fields": {
+          "pickup_enabled": {
+            "title": "Самовывоз",
+            "description": "Покупатель забирает заказ самостоятельно."
+          },
+          "nova_poshta_enabled": {
+            "title": "Новая Почта",
+            "description": "Доставка в отделение или почтомат Новой Почты."
+          },
+          "courier_enabled": {
+            "title": "Курьер Новой Почты",
+            "description": "Адресная доставка курьером."
+          },
+          "cash_on_delivery_enabled": {
+            "title": "Наложенный платеж",
+            "description": "Оплата при получении заказа."
+          },
+          "monobank_enabled": {
+            "title": "Monobank",
+            "description": "Онлайн-оплата через Monobank."
+          },
+          "novapay_enabled": {
+            "title": "Nova Pay",
+            "description": "Оплата через Nova Pay."
+          },
+          "liqpay_enabled": {
+            "title": "LiqPay",
+            "description": "Онлайн-оплата через LiqPay."
+          }
+        },
+        "actions": {
+          "save": "Сохранить",
+          "saving": "Сохраняем...",
+          "reset": "Сбросить"
+        },
+        "messages": {
+          "saved": "Методы checkout сохранены.",
+          "saveFailed": "Не удалось сохранить методы checkout.",
+          "needDelivery": "Должен быть включен хотя бы один способ доставки.",
+          "needPayment": "Должен быть включен хотя бы один способ оплаты."
+        }
       }
     }
   }

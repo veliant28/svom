@@ -91,7 +91,7 @@ class LoyaltyCommerceAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data.get("promo_code_error"), "not_owned")
 
-    def test_apply_checkout_promo_returns_breakdown(self):
+    def test_apply_checkout_delivery_promo_is_rejected_without_checkout_delivery_fee(self):
         add_product_to_cart(user=self.user, product=self.product, quantity=1)
         promo = issue_loyalty_promo(
             customer=self.user,
@@ -109,8 +109,5 @@ class LoyaltyCommerceAPITests(APITestCase):
             format="json",
             **self.auth,
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        preview = response.data["checkout_preview"]
-        self.assertEqual(preview["promo"]["code"], promo.code)
-        self.assertEqual(preview["promo"]["discount_type"], "delivery_fee")
-        self.assertEqual(str(preview["discount_total"]), "75.00")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data.get("promo_code_error"), "delivery_zero")

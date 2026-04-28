@@ -15,6 +15,7 @@ export function SupplierAuthorizationCard({
   activeCode,
   login,
   password,
+  hasPassword,
   fingerprint,
   isEnabled,
   onLoginChange,
@@ -30,6 +31,7 @@ export function SupplierAuthorizationCard({
   activeCode: string;
   login: string;
   password: string;
+  hasPassword: boolean;
   fingerprint: string;
   isEnabled: boolean;
   onLoginChange: (value: string) => void;
@@ -57,6 +59,7 @@ export function SupplierAuthorizationCard({
             <input
               value={login}
               onChange={(event) => onLoginChange(event.target.value)}
+              autoComplete="username"
               className="h-10 rounded-md border px-3 text-sm"
               style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
             />
@@ -69,6 +72,8 @@ export function SupplierAuthorizationCard({
               type="password"
               value={password}
               onChange={(event) => onPasswordChange(event.target.value)}
+              placeholder={hasPassword ? "********" : undefined}
+              autoComplete="current-password"
               className="h-10 rounded-md border px-3 text-sm"
               style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
             />

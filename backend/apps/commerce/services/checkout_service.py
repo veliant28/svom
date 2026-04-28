@@ -13,6 +13,10 @@ from apps.commerce.models import Order, OrderItem
 from apps.commerce.services.liqpay.service import LiqPayApiError, build_checkout_data
 from apps.commerce.services.cart_calculations import calculate_cart_totals, get_line_total, quantize_money
 from apps.commerce.services.cart_service import get_or_create_user_cart
+from apps.commerce.services.checkout_methods import (
+    validate_checkout_delivery_method_availability,
+    validate_checkout_method_availability,
+)
 from apps.commerce.services.delivery_snapshot import build_delivery_snapshot_from_checkout
 from apps.commerce.services.loyalty_service import (
     LoyaltyDiscountComputation,
@@ -40,12 +44,7 @@ class CheckoutPreview:
 
 
 def resolve_delivery_fee(delivery_method: str) -> Decimal:
-    delivery_fee_map = {
-        Order.DELIVERY_PICKUP: Decimal("0.00"),
-        Order.DELIVERY_COURIER: Decimal("150.00"),
-        Order.DELIVERY_NOVA_POSHTA: Decimal("100.00"),
-    }
-    return delivery_fee_map.get(delivery_method, Decimal("0.00"))
+    return Decimal("0.00")
 
 
 def build_checkout_preview(
@@ -67,6 +66,7 @@ def build_checkout_preview(
     )
     totals = calculate_cart_totals(items)
     method = delivery_method or Order.DELIVERY_PICKUP
+    validate_checkout_delivery_method_availability(delivery_method=method)
     delivery_fee = quantize_money(resolve_delivery_fee(method))
     warnings: list[dict] = []
     for item in items:
@@ -138,6 +138,7 @@ def submit_checkout(
 
     delivery_method = payload["delivery_method"]
     payment_method = payload["payment_method"]
+    validate_checkout_method_availability(delivery_method=delivery_method, payment_method=payment_method)
     delivery_address = payload.get("delivery_address", "")
     delivery_snapshot = build_delivery_snapshot_from_checkout(
         delivery_method=delivery_method,
@@ -362,6 +363,34 @@ def submit_checkout(
                 "failure_reason",
                 "raw_create_payload",
                 "raw_create_response",
+                "updated_at",
+            )
+        )
+    elif payment_method == Order.PAYMENT_NOVAPAY:
+        payment.provider = payment.PROVIDER_NOVAPAY
+        payment.method = payment.METHOD_NOVAPAY
+        payment.status = payment.STATUS_PENDING
+        payment.monobank_invoice_id = ""
+        payment.monobank_reference = ""
+        payment.monobank_page_url = ""
+        payment.liqpay_payment_id = ""
+        payment.liqpay_order_id = ""
+        payment.liqpay_page_url = ""
+        payment.failure_reason = ""
+        payment.save(
+            update_fields=(
+                "provider",
+                "method",
+                "status",
+                "amount",
+                "currency",
+                "monobank_invoice_id",
+                "monobank_reference",
+                "monobank_page_url",
+                "liqpay_payment_id",
+                "liqpay_order_id",
+                "liqpay_page_url",
+                "failure_reason",
                 "updated_at",
             )
         )

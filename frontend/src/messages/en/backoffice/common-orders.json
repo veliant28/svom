@@ -252,6 +252,7 @@
               "delivery": "Delivery: {value}",
               "deliveryMethod": "Delivery method",
               "paymentMethod": "Payment method",
+              "loyalty": "Loyalty",
               "deliveryCity": "Delivery city",
               "deliveryDestination": "Warehouse / postomat / address",
               "total": "Total",
@@ -598,11 +599,13 @@
             "providers": {
               "cash_on_delivery": "Cash on delivery",
               "monobank": "Monobank",
+              "novapay": "Nova Pay",
               "liqpay": "LiqPay"
             },
             "methods": {
               "cash_on_delivery": "Cash on delivery",
               "monobank": "Monobank",
+              "novapay": "Nova Pay",
               "liqpay": "LiqPay",
               "card_placeholder": "Card payment"
             },

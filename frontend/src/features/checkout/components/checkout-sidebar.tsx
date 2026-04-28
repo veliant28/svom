@@ -113,15 +113,12 @@ export function CheckoutSidebar({
 
       <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
         <h2 className="text-sm font-semibold">{t("sections.orderReview")}</h2>
-        <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>
-          {t("review.deliveryFee", { fee: preview?.delivery_fee ?? "0.00", currency: cart.currency })}
-        </p>
         {(preview?.discount_total ?? "0.00") !== "0.00" ? (
-          <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
+          <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>
             {t("review.discount", { amount: preview?.discount_total ?? "0.00", currency: cart.currency })}
           </p>
         ) : null}
-        <p className="mt-1 text-sm font-semibold">
+        <p className={`${(preview?.discount_total ?? "0.00") !== "0.00" ? "mt-1" : "mt-2"} text-sm font-semibold`}>
           {t("review.total", { total: preview?.total ?? cart.summary.subtotal, currency: cart.currency })}
         </p>
       </div>

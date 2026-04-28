@@ -1,5 +1,6 @@
 from .cart import Cart
 from .cart_item import CartItem
+from .checkout_method_settings import CheckoutMethodSettings
 from .liqpay_settings import LiqPaySettings
 from .loyalty import LoyaltyPromoCode, LoyaltyPromoEvent, LoyaltyPromoRedemption
 from .nova_poshta_sender_profile import NovaPoshtaSenderProfile
@@ -17,6 +18,7 @@ __all__ = [
     "WishlistItem",
     "Cart",
     "CartItem",
+    "CheckoutMethodSettings",
     "Order",
     "OrderPayment",
     "OrderReceipt",

@@ -28,6 +28,7 @@ export const BACKOFFICE_CAPABILITIES = {
   seoManage: "seo.manage",
   autocatalogView: "autocatalog.view",
   paymentsView: "payments.view",
+  checkoutMethodsManage: "checkout.methods.manage",
   vchasnoKasaManage: "vchasno_kasa.manage",
   novaPoshtaSettings: "nova_poshta.settings",
   settingsManage: "settings.manage",

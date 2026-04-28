@@ -1,3 +1,4 @@
+from .database_backup import DatabaseBackupDispatchResult, DatabaseBackupResult, DatabaseBackupService
 from .email_delivery import (
     EmailDeliveryError,
     get_configured_frontend_base_url,
@@ -6,6 +7,9 @@ from .email_delivery import (
 )
 
 __all__ = [
+    "DatabaseBackupDispatchResult",
+    "DatabaseBackupResult",
+    "DatabaseBackupService",
     "EmailDeliveryError",
     "get_configured_frontend_base_url",
     "send_configured_mail",

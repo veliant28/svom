@@ -92,6 +92,59 @@
           "liqpayConnectionFailed": "Не вдалося перевірити з’єднання LiqPay.",
           "liqpayConnectionOk": "З’єднання LiqPay успішне."
         }
+      },
+      "checkoutMethods": {
+        "title": "Методи checkout",
+        "subtitle": "Керування способами доставки та оплати, які бачить покупець під час оформлення замовлення.",
+        "delivery": {
+          "title": "Способи доставки",
+          "description": "Вимкнені способи повністю приховуються в checkout."
+        },
+        "payment": {
+          "title": "Способи оплати",
+          "description": "Вимкнені способи не можна вибрати на сайті та не можна відправити через API."
+        },
+        "fields": {
+          "pickup_enabled": {
+            "title": "Самовивіз",
+            "description": "Покупець забирає замовлення самостійно."
+          },
+          "nova_poshta_enabled": {
+            "title": "Нова Пошта",
+            "description": "Доставка у відділення або поштомат Нової Пошти."
+          },
+          "courier_enabled": {
+            "title": "Кур'єр Нової Пошти",
+            "description": "Адресна доставка кур'єром."
+          },
+          "cash_on_delivery_enabled": {
+            "title": "Післяплата",
+            "description": "Оплата під час отримання замовлення."
+          },
+          "monobank_enabled": {
+            "title": "Monobank",
+            "description": "Онлайн-оплата через Monobank."
+          },
+          "novapay_enabled": {
+            "title": "Nova Pay",
+            "description": "Оплата через Nova Pay."
+          },
+          "liqpay_enabled": {
+            "title": "LiqPay",
+            "description": "Онлайн-оплата через LiqPay."
+          }
+        },
+        "actions": {
+          "save": "Зберегти",
+          "saving": "Зберігаємо...",
+          "reset": "Скинути"
+        },
+        "messages": {
+          "saved": "Методи checkout збережено.",
+          "saveFailed": "Не вдалося зберегти методи checkout.",
+          "needDelivery": "Має бути увімкнений хоча б один спосіб доставки.",
+          "needPayment": "Має бути увімкнений хоча б один спосіб оплати."
+        }
       }
     }
   }

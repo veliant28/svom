@@ -8,21 +8,25 @@ from apps.core.db.mixins import TimestampedMixin, UUIDPrimaryKeyMixin
 
 class OrderPayment(UUIDPrimaryKeyMixin, TimestampedMixin):
     PROVIDER_MONOBANK = "monobank"
+    PROVIDER_NOVAPAY = "novapay"
     PROVIDER_LIQPAY = "liqpay"
     PROVIDER_COD = "cash_on_delivery"
 
     PROVIDER_CHOICES = (
         (PROVIDER_MONOBANK, _("Monobank")),
+        (PROVIDER_NOVAPAY, _("Nova Pay")),
         (PROVIDER_LIQPAY, _("LiqPay")),
         (PROVIDER_COD, _("Наложенный платеж")),
     )
 
     METHOD_MONOBANK = "monobank"
+    METHOD_NOVAPAY = "novapay"
     METHOD_LIQPAY = "liqpay"
     METHOD_CASH_ON_DELIVERY = "cash_on_delivery"
 
     METHOD_CHOICES = (
         (METHOD_MONOBANK, _("Monobank")),
+        (METHOD_NOVAPAY, _("Nova Pay")),
         (METHOD_LIQPAY, _("LiqPay")),
         (METHOD_CASH_ON_DELIVERY, _("Наложенный платеж")),
     )

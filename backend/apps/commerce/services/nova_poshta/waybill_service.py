@@ -8,7 +8,7 @@ from typing import Any
 from django.core.cache import cache
 from django.db import transaction
 
-from apps.commerce.models import NovaPoshtaSenderProfile, Order, OrderNovaPoshtaWaybill, OrderNovaPoshtaWaybillEvent
+from apps.commerce.models import LoyaltyPromoCode, NovaPoshtaSenderProfile, Order, OrderNovaPoshtaWaybill, OrderNovaPoshtaWaybillEvent
 
 from .client import NovaPoshtaApiClient
 from .constants import WAYBILL_ADDITIONAL_INFO_TEMPLATE, WAYBILL_DESCRIPTION
@@ -41,6 +41,14 @@ def _collect_sender_type_hints(profile: NovaPoshtaSenderProfile) -> tuple[str, .
         str(profile.contact_name or ""),
     )
     return tuple(item.strip() for item in candidates if str(item or "").strip())
+
+
+def _order_has_delivery_loyalty_promo(order: Order) -> bool:
+    breakdown = order.discount_breakdown if isinstance(order.discount_breakdown, dict) else {}
+    return bool(
+        (order.applied_promo_code or "").strip()
+        and breakdown.get("discount_type") == LoyaltyPromoCode.DISCOUNT_DELIVERY_FEE
+    )
 
 
 class NovaPoshtaWaybillService:
@@ -88,6 +96,7 @@ class NovaPoshtaWaybillService:
                 sender_options=sender_validation.get("options", {}),
                 requested_payer_type=payload.payer_type,
                 requested_payment_method=payload.payment_method,
+                force_sender_cash_delivery_payment=_order_has_delivery_loyalty_promo(order),
             )
 
             client = NovaPoshtaApiClient(api_token=payload.sender_profile.api_token)

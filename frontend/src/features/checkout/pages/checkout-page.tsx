@@ -7,6 +7,7 @@ import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useCart } from "@/features/cart/hooks/use-cart";
 import { applyCheckoutPromo } from "@/features/checkout/api/apply-checkout-promo";
 import { clearCheckoutPromo } from "@/features/checkout/api/clear-checkout-promo";
+import { getCheckoutMethods } from "@/features/checkout/api/get-checkout-methods";
 import { getCheckoutPreview } from "@/features/checkout/api/get-checkout-preview";
 import {
   lookupCheckoutNovaPoshtaSettlements,
@@ -35,6 +36,7 @@ import {
   scrollDropdownOptionIntoView,
   type CheckoutDeliveryOption,
 } from "@/features/checkout/lib/checkout-page.helpers";
+import type { CheckoutMethods } from "@/features/checkout/types/methods";
 import type { CheckoutPaymentMethod, MonobankWidgetResponse } from "@/features/checkout/types/payment";
 import type { CheckoutPreview } from "@/features/commerce/types";
 import { isApiRequestError } from "@/shared/api/http-client";
@@ -43,6 +45,11 @@ import {
   formatPhoneInput,
   isPhoneInputValid,
 } from "@/shared/lib/phone-input";
+
+const DEFAULT_CHECKOUT_METHODS: CheckoutMethods = {
+  delivery_methods: ["pickup", "nova_poshta", "courier"],
+  payment_methods: ["cash_on_delivery", "monobank", "novapay", "liqpay"],
+};
 
 export function CheckoutPage() {
   const t = useTranslations("commerce.checkout");
@@ -89,6 +96,7 @@ export function CheckoutPage() {
   const [apartment, setApartment] = useState("");
 
   const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("monobank");
+  const [checkoutMethods, setCheckoutMethods] = useState<CheckoutMethods | null>(null);
   const [comment, setComment] = useState("");
   const [monobankWidgetState, setMonobankWidgetState] = useState<MonobankWidgetResponse | null>(null);
   const [monobankWidgetLoading, setMonobankWidgetLoading] = useState(false);
@@ -117,6 +125,37 @@ export function CheckoutPage() {
   }, [isLastNameDirty, isMiddleNameDirty, isPhoneDirty, isFirstNameDirty, user?.first_name, user?.last_name, user?.middle_name, user?.phone]);
 
   useEffect(() => {
+    let isMounted = true;
+
+    async function loadCheckoutMethods() {
+      if (!token || !isAuthenticated) {
+        if (isMounted) {
+          setCheckoutMethods(null);
+        }
+        return;
+      }
+
+      try {
+        const methods = await getCheckoutMethods(token);
+        if (isMounted) {
+          setCheckoutMethods(methods);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setCheckoutMethods(DEFAULT_CHECKOUT_METHODS);
+          showApiError(error, t("errors.methodsLoadFailed"));
+        }
+      }
+    }
+
+    void loadCheckoutMethods();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated, showApiError, t, token]);
+
+  useEffect(() => {
     if (paymentMethod !== "monobank") {
       setMonobankWidgetState(null);
     }
@@ -127,6 +166,38 @@ export function CheckoutPage() {
   }, [locale]);
 
   const effectiveDeliveryMethod = useMemo(() => resolveEffectiveDeliveryMethod(deliveryOption), [deliveryOption]);
+
+  const availableDeliveryOptions = useMemo<CheckoutDeliveryOption[]>(() => {
+    const methods = new Set((checkoutMethods ?? DEFAULT_CHECKOUT_METHODS).delivery_methods);
+    const options: CheckoutDeliveryOption[] = [];
+    if (methods.has("pickup")) {
+      options.push("pickup");
+    }
+    if (methods.has("nova_poshta")) {
+      options.push("nova_poshta_warehouse");
+    }
+    if (methods.has("courier")) {
+      options.push("nova_poshta_courier");
+    }
+    return options;
+  }, [checkoutMethods]);
+
+  const availablePaymentMethods = useMemo<CheckoutPaymentMethod[]>(() => {
+    const supported = new Set<CheckoutPaymentMethod>(["cash_on_delivery", "monobank", "novapay", "liqpay"]);
+    return (checkoutMethods ?? DEFAULT_CHECKOUT_METHODS).payment_methods.filter((method): method is CheckoutPaymentMethod => supported.has(method));
+  }, [checkoutMethods]);
+
+  useEffect(() => {
+    if (availableDeliveryOptions.length > 0 && !availableDeliveryOptions.includes(deliveryOption)) {
+      setDeliveryOption(availableDeliveryOptions[0]);
+    }
+  }, [availableDeliveryOptions, deliveryOption]);
+
+  useEffect(() => {
+    if (availablePaymentMethods.length > 0 && !availablePaymentMethods.includes(paymentMethod)) {
+      setPaymentMethod(availablePaymentMethods[0]);
+    }
+  }, [availablePaymentMethods, paymentMethod]);
 
   const resolvedDeliveryAddress = useMemo(() => {
     return resolveCheckoutDeliveryAddress({
@@ -214,6 +285,9 @@ export function CheckoutPage() {
         }
         return;
       }
+      if (!checkoutMethods) {
+        return;
+      }
 
       try {
         const response = await getCheckoutPreview(token, effectiveDeliveryMethod, appliedPromoCode || undefined);
@@ -243,7 +317,7 @@ export function CheckoutPage() {
     return () => {
       isMounted = false;
     };
-  }, [token, isAuthenticated, effectiveDeliveryMethod, cart?.updated_at, appliedPromoCode, showApiError, t]);
+  }, [token, isAuthenticated, checkoutMethods, effectiveDeliveryMethod, cart?.updated_at, appliedPromoCode, showApiError, t]);
 
   useEffect(() => {
     if (!token || !isAuthenticated || deliveryOption === "pickup") {
@@ -537,11 +611,6 @@ export function CheckoutPage() {
               showError(t("errors.deliveryStreetRequired"));
               return;
             }
-            if (paymentMethod === "novapay") {
-              showError(t("payment.novapayComingSoon"));
-              return;
-            }
-
             setIsSubmitting(true);
             try {
               const order = await submitCheckout(token, {
@@ -622,6 +691,7 @@ export function CheckoutPage() {
 
           <CheckoutDeliverySection
             deliveryOption={deliveryOption}
+            availableDeliveryOptions={availableDeliveryOptions}
             npDestinationLine1={npDestinationLine1}
             npDestinationLine2={npDestinationLine2}
             cityLookupRootRef={cityLookupRootRef}
@@ -666,6 +736,7 @@ export function CheckoutPage() {
 
           <CheckoutPaymentSection
             paymentMethod={paymentMethod}
+            availablePaymentMethods={availablePaymentMethods}
             comment={comment}
             monobankWidgetLoading={monobankWidgetLoading}
             monobankWidgetState={monobankWidgetState}

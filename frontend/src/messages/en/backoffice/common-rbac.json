@@ -161,6 +161,14 @@
               "description": "Allows viewing and managing payment provider settings."
             }
           },
+          "checkout": {
+            "methods": {
+              "manage": {
+                "title": "Manage checkout methods",
+                "description": "Allows managing delivery and payment methods visible to customers during checkout."
+              }
+            }
+          },
           "vchasno_kasa": {
             "manage": {
               "title": "Manage Vchasno.Kasa",

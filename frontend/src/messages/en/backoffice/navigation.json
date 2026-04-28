@@ -21,6 +21,7 @@
       "footerSettings": "Footer",
       "emailSettings": "Email",
       "payments": "Payments",
+      "checkoutMethods": "Checkout Methods",
       "vchasnoKasa": "Vchasno.Kasa",
       "users": "Users",
       "groups": "Groups",

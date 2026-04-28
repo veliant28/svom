@@ -24,6 +24,10 @@ class BackofficeCapabilityRulesTest(SimpleTestCase):
             ("payments.view",),
         )
         self.assertEqual(
+            resolve_required_capabilities_for_request("/api/backoffice/payments/checkout-methods/", "PATCH"),
+            ("checkout.methods.manage",),
+        )
+        self.assertEqual(
             resolve_required_capabilities_for_request("/api/backoffice/nova-poshta/senders/", "GET"),
             ("nova_poshta.settings",),
         )

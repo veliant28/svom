@@ -34,6 +34,7 @@ class LoyaltyBackofficeAPITests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn("code", response.data)
+        self.assertEqual(response.data["discount_percent"], "100.00")
 
     def test_operator_with_default_capability_can_issue_promo(self):
         response = self.client.post(
@@ -50,3 +51,4 @@ class LoyaltyBackofficeAPITests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn("code", response.data)
+        self.assertEqual(response.data["discount_percent"], "100.00")

@@ -92,6 +92,59 @@
           "liqpayConnectionFailed": "Failed to test LiqPay connection.",
           "liqpayConnectionOk": "LiqPay connection successful."
         }
+      },
+      "checkoutMethods": {
+        "title": "Checkout Methods",
+        "subtitle": "Manage delivery and payment methods visible to customers during checkout.",
+        "delivery": {
+          "title": "Delivery Methods",
+          "description": "Disabled methods are fully hidden in checkout."
+        },
+        "payment": {
+          "title": "Payment Methods",
+          "description": "Disabled methods cannot be selected on the site or submitted through the API."
+        },
+        "fields": {
+          "pickup_enabled": {
+            "title": "Pickup",
+            "description": "Customer picks up the order manually."
+          },
+          "nova_poshta_enabled": {
+            "title": "Nova Poshta",
+            "description": "Delivery to a Nova Poshta branch or postomat."
+          },
+          "courier_enabled": {
+            "title": "Nova Poshta courier",
+            "description": "Address delivery by courier."
+          },
+          "cash_on_delivery_enabled": {
+            "title": "Cash on delivery",
+            "description": "Payment when receiving the order."
+          },
+          "monobank_enabled": {
+            "title": "Monobank",
+            "description": "Online payment through Monobank."
+          },
+          "novapay_enabled": {
+            "title": "Nova Pay",
+            "description": "Payment through Nova Pay."
+          },
+          "liqpay_enabled": {
+            "title": "LiqPay",
+            "description": "Online payment through LiqPay."
+          }
+        },
+        "actions": {
+          "save": "Save",
+          "saving": "Saving...",
+          "reset": "Reset"
+        },
+        "messages": {
+          "saved": "Checkout methods saved.",
+          "saveFailed": "Failed to save checkout methods.",
+          "needDelivery": "At least one delivery method must be enabled.",
+          "needPayment": "At least one payment method must be enabled."
+        }
       }
     }
   }

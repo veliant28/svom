@@ -94,15 +94,17 @@ def issue_loyalty_promo(
         raise ValidationError({"reason": "Reason is required."})
 
     safe_limit = max(int(usage_limit or 1), 1)
-    safe_percent = Decimal(str(discount_percent or 0)).quantize(Decimal("0.01"))
-    if safe_percent < Decimal("0") or safe_percent > Decimal("100"):
-        raise ValidationError({"discount_percent": "Discount percent must be between 0 and 100."})
-
     if discount_type not in {
         LoyaltyPromoCode.DISCOUNT_DELIVERY_FEE,
         LoyaltyPromoCode.DISCOUNT_PRODUCT_MARKUP,
     }:
         raise ValidationError({"discount_type": "Unsupported discount type."})
+
+    safe_percent = Decimal(str(discount_percent or 0)).quantize(Decimal("0.01"))
+    if discount_type == LoyaltyPromoCode.DISCOUNT_DELIVERY_FEE:
+        safe_percent = Decimal("100.00")
+    if safe_percent < Decimal("0") or safe_percent > Decimal("100"):
+        raise ValidationError({"discount_percent": "Discount percent must be between 0 and 100."})
 
     promo = LoyaltyPromoCode.objects.create(
         code=generate_unique_promo_code(),
@@ -151,7 +153,11 @@ def compute_loyalty_discount_for_checkout(
     delivery_before_discount = quantize_money(Decimal(delivery_fee or 0))
     total_before_discount = quantize_money(subtotal_before_discount + delivery_before_discount)
 
-    requested_percent = Decimal(promo.discount_percent).quantize(Decimal("0.01"))
+    requested_percent = (
+        Decimal("100.00")
+        if promo.discount_type == LoyaltyPromoCode.DISCOUNT_DELIVERY_FEE
+        else Decimal(promo.discount_percent).quantize(Decimal("0.01"))
+    )
     product_markup_total = Decimal("0.00")
     requested_discount_amount = Decimal("0.00")
     product_discount = Decimal("0.00")
@@ -263,7 +269,11 @@ def serialize_loyalty_promo_for_ui(*, promo: LoyaltyPromoCode, now=None) -> dict
         "id": str(promo.id),
         "code": promo.code,
         "discount_type": promo.discount_type,
-        "discount_percent": str(Decimal(promo.discount_percent).quantize(Decimal("0.01"))),
+        "discount_percent": str(
+            Decimal("100.00")
+            if promo.discount_type == LoyaltyPromoCode.DISCOUNT_DELIVERY_FEE
+            else Decimal(promo.discount_percent).quantize(Decimal("0.01"))
+        ),
         "usage_limit": int(promo.usage_limit),
         "usage_count": int(promo.usage_count),
         "reason": promo.reason,

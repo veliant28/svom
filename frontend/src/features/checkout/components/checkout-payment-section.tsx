@@ -8,6 +8,7 @@ type Translator = (key: string, values?: Record<string, string | number>) => str
 
 export function CheckoutPaymentSection({
   paymentMethod,
+  availablePaymentMethods,
   comment,
   monobankWidgetLoading,
   monobankWidgetState,
@@ -16,6 +17,7 @@ export function CheckoutPaymentSection({
   setComment,
 }: {
   paymentMethod: CheckoutPaymentMethod;
+  availablePaymentMethods: CheckoutPaymentMethod[];
   comment: string;
   monobankWidgetLoading: boolean;
   monobankWidgetState: MonobankWidgetResponse | null;
@@ -30,6 +32,7 @@ export function CheckoutPaymentSection({
         <PaymentMethodToggle
           value={paymentMethod}
           onChange={setPaymentMethod}
+          availableMethods={availablePaymentMethods}
           labels={{
             monobankTitle: t("payment.monobank"),
             monobankHint: t("payment.monobankHint"),

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from apps.commerce.models import LiqPaySettings, MonobankSettings, NovaPaySettings, OrderPayment
+from apps.commerce.models import CheckoutMethodSettings, LiqPaySettings, MonobankSettings, NovaPaySettings, OrderPayment
 
 
 class MonobankSettingsSerializer(serializers.ModelSerializer):
@@ -129,6 +129,32 @@ class LiqPaySettingsSerializer(serializers.ModelSerializer):
             setattr(instance, field, value)
         instance.save()
         return instance
+
+
+class CheckoutMethodSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CheckoutMethodSettings
+        fields = (
+            "pickup_enabled",
+            "nova_poshta_enabled",
+            "courier_enabled",
+            "cash_on_delivery_enabled",
+            "monobank_enabled",
+            "novapay_enabled",
+            "liqpay_enabled",
+        )
+
+    def validate(self, attrs: dict) -> dict:
+        current = self.instance
+        values = {
+            field: bool(attrs[field]) if field in attrs else bool(getattr(current, field, True))
+            for field in self.Meta.fields
+        }
+        if not any(values[field] for field in ("pickup_enabled", "nova_poshta_enabled", "courier_enabled")):
+            raise serializers.ValidationError({"delivery_methods": "At least one delivery method must be enabled."})
+        if not any(values[field] for field in ("cash_on_delivery_enabled", "monobank_enabled", "novapay_enabled", "liqpay_enabled")):
+            raise serializers.ValidationError({"payment_methods": "At least one payment method must be enabled."})
+        return attrs
 
 
 class MonobankConnectionCheckSerializer(serializers.Serializer):

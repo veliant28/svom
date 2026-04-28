@@ -31,6 +31,7 @@ export function useSuppliersPage() {
       return;
     }
     setLogin(scope.workspace.connection.login ?? "");
+    setPassword("");
     setIsEnabled(scope.workspace.supplier.is_enabled);
   }, [scope.workspace]);
 

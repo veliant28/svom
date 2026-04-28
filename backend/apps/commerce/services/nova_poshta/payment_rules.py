@@ -22,10 +22,14 @@ def resolve_payment_rule(
     sender_options: dict[str, Any] | None = None,
     requested_payer_type: str | None = None,
     requested_payment_method: str | None = None,
+    force_sender_cash_delivery_payment: bool = False,
 ) -> PaymentRuleResolution:
     normalized_sender_type = resolve_effective_sender_type(sender_type=sender_type)
     payer_type = _resolve_payer_type(requested_payer_type)
     payment_method = _resolve_payment_method(normalized_sender_type, requested_payment_method)
+    if force_sender_cash_delivery_payment:
+        payer_type = "Sender"
+        payment_method = "Cash"
     normalized_order_total = Decimal(str(order_total or "0"))
 
     if payer_type == "ThirdPerson" and payment_method != "NonCash":
@@ -39,8 +43,8 @@ def resolve_payment_rule(
         if amount <= 0:
             amount = None
         return PaymentRuleResolution(
-            payer_type="Recipient",
-            payment_method="Cash",
+            payer_type=payer_type if force_sender_cash_delivery_payment else "Recipient",
+            payment_method=payment_method if force_sender_cash_delivery_payment else "Cash",
             afterpayment_amount=amount,
         )
 

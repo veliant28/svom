@@ -58,6 +58,7 @@ export function SuppliersPage() {
                 activeCode={scope.activeCode}
                 login={login}
                 password={password}
+                hasPassword={scope.workspace.connection.has_password}
                 fingerprint={fingerprint}
                 isEnabled={isEnabled}
                 onLoginChange={setLogin}

@@ -8,6 +8,26 @@
           "daily": "Daily 7/7",
           "time": "Time:"
         },
+        "databaseBackup": {
+          "title": "PostgreSQL backup",
+          "subtitle": "Full database dump to the Backup folder. The schedule catches missed runs and keeps only the latest files.",
+          "time": "Time",
+          "retention": "Keep",
+          "nextRun": "Next run: {value}",
+          "lastSuccess": "Last success: {value}",
+          "lastFile": "File: {value}",
+          "lastSize": "Size: {value}",
+          "actions": {
+            "runNow": "Backup now",
+            "running": "Running..."
+          },
+          "messages": {
+            "saved": "Database backup settings saved.",
+            "runQueued": "Database backup queued.",
+            "runFailed": "Failed to start database backup.",
+            "actionFailed": "Unable to update database backup settings."
+          }
+        },
         "filters": {
           "search": "Search source"
         },

@@ -23,6 +23,7 @@ class SupplierPublishMappedProductsAPISmokeTests(APITestCase):
             first_name="supplier-publish-ops",
             password="demo12345",
             is_staff=True,
+            is_superuser=True,
         )
         self.staff_token = Token.objects.create(user=self.staff)
         self.auth = {"HTTP_AUTHORIZATION": f"Token {self.staff_token.key}"}
@@ -184,6 +185,8 @@ class SupplierPublishMappedProductsAPISmokeTests(APITestCase):
 
         self.assertEqual(Product.objects.filter(sku="A-001").count(), 1)
         self.assertEqual(Product.objects.filter(sku="B-001").count(), 1)
+        self.assertTrue(Product.objects.get(sku="A-001").category_manually_locked)
+        self.assertTrue(Product.objects.get(sku="B-001").category_manually_locked)
         self.assertEqual(SupplierOffer.objects.filter(supplier=self.supplier).count(), 2)
         self.assertEqual(ProductImage.objects.filter(product__sku="A-001").count(), 1)
         self.assertEqual(ProductImage.objects.filter(product__sku="B-001").count(), 1)
@@ -209,3 +212,49 @@ class SupplierPublishMappedProductsAPISmokeTests(APITestCase):
         self.assertEqual(Product.objects.filter(sku="A-001").count(), 1)
         self.assertEqual(Product.objects.filter(sku="B-001").count(), 1)
         self.assertEqual(SupplierOffer.objects.filter(supplier=self.supplier).count(), 2)
+
+    def test_publish_mapped_products_does_not_override_locked_category(self):
+        locked_category = Category.objects.create(name="Manual Category", slug="manual-category", is_active=True)
+        locked_product = Product.objects.create(
+            sku="LOCKED-001",
+            article="LOCKED-001",
+            name="Locked Product",
+            slug="locked-product",
+            brand=self.brand,
+            category=locked_category,
+            category_manually_locked=True,
+            is_active=True,
+        )
+        SupplierRawOffer.objects.create(
+            run=self.run_new,
+            source=self.source,
+            supplier=self.supplier,
+            external_sku="LOCKED-001",
+            article="LOCKED-001",
+            normalized_article="LOCKED001",
+            brand_name="BOSCH",
+            normalized_brand="BOSCH",
+            product_name="Locked Product",
+            currency="UAH",
+            price=Decimal("150.00"),
+            stock_qty=2,
+            matched_product=locked_product,
+            mapped_category=self.category,
+            category_mapping_status=SupplierRawOffer.CATEGORY_MAPPING_STATUS_MANUAL_MAPPED,
+        )
+
+        with patch(
+            "apps.supplier_imports.services.mapped_offer_publish.images._download_image",
+            return_value=(b"fake-image-bytes", "image/webp"),
+        ):
+            response = self.client.post(
+                reverse("backoffice_api:supplier-publish-mapped-products", kwargs={"code": "gpl"}),
+                {"reprice_after_publish": False},
+                format="json",
+                **self.auth,
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        locked_product.refresh_from_db()
+        self.assertEqual(locked_product.category_id, locked_category.id)
+        self.assertTrue(locked_product.category_manually_locked)

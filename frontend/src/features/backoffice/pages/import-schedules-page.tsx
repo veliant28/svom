@@ -1,19 +1,28 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import { Check, Power, RefreshCw, RotateCcw } from "lucide-react";
+import { Check, DatabaseBackup, Minus, Plus, Power, RefreshCw, RotateCcw } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { getBackofficeImportRun, getBackofficeImportSchedules, runBackofficeImportSchedule, updateBackofficeImportSchedule } from "@/features/backoffice/api/backoffice-api";
+import {
+  getBackofficeDatabaseBackupSchedule,
+  getBackofficeImportRun,
+  getBackofficeImportSchedules,
+  runBackofficeDatabaseBackup,
+  runBackofficeImportSchedule,
+  updateBackofficeDatabaseBackupSchedule,
+  updateBackofficeImportSchedule,
+} from "@/features/backoffice/api/backoffice-api";
 import { BackofficeTable } from "@/features/backoffice/components/table/backoffice-table";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { ActionIconButton } from "@/features/backoffice/components/widgets/action-icon-button";
+import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
 import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
 import { useBackofficeQuery } from "@/features/backoffice/hooks/use-backoffice-query";
 import { formatBackofficeDate } from "@/features/backoffice/lib/supplier-workspace";
-import type { BackofficeImportRun, BackofficeImportSource } from "@/features/backoffice/types/backoffice";
+import type { BackofficeDatabaseBackupSchedule, BackofficeImportRun, BackofficeImportSource } from "@/features/backoffice/types/backoffice";
 import { useTheme } from "@/shared/components/theme/theme-provider";
 
 type ScheduleDraft = {
@@ -22,10 +31,22 @@ type ScheduleDraft = {
   schedule_every_day: boolean;
 };
 
+type DatabaseBackupDraft = {
+  is_enabled: boolean;
+  schedule_run_time: string;
+  schedule_timezone: string;
+  backup_directory: string;
+  retention_count: number;
+};
+
 type ScenarioStep = {
   label: string;
   order: number;
 };
+
+type ImportScheduleRow =
+  | { kind: "backup" }
+  | { kind: "source"; source: BackofficeImportSource };
 
 function splitScenarioSteps(raw: string): ScenarioStep[] {
   return raw
@@ -56,6 +77,26 @@ function buildDraft(item: BackofficeImportSource): ScheduleDraft {
     schedule_timezone: item.schedule_timezone || "Europe/Kyiv",
     schedule_every_day: item.schedule_every_day !== false,
   };
+}
+
+function buildBackupDraft(item: BackofficeDatabaseBackupSchedule | null): DatabaseBackupDraft {
+  return {
+    is_enabled: item?.is_enabled ?? true,
+    schedule_run_time: item?.schedule_run_time || "23:00",
+    schedule_timezone: item?.schedule_timezone || "Europe/Kyiv",
+    backup_directory: item?.backup_directory || "Backup",
+    retention_count: item?.retention_count || 3,
+  };
+}
+
+function formatBackupSize(value: number): string {
+  if (!value) {
+    return "-";
+  }
+  if (value < 1024 * 1024) {
+    return `${Math.max(1, Math.round(value / 1024))} KB`;
+  }
+  return `${(value / 1024 / 1024).toFixed(1)} MB`;
 }
 
 const ACTIVE_IMPORT_RUN_STATUSES = new Set(["pending", "running"]);
@@ -152,6 +193,8 @@ export function ImportSchedulesPage() {
   const monoActiveText = isDark ? "#111111" : "#ffffff";
   const [q, setQ] = useState("");
   const [drafts, setDrafts] = useState<Record<string, ScheduleDraft>>({});
+  const [backupDraft, setBackupDraft] = useState<DatabaseBackupDraft | null>(null);
+  const [backupRunning, setBackupRunning] = useState(false);
   const [runningBySource, setRunningBySource] = useState<Record<string, boolean>>({});
   const { showApiError, showSuccess } = useBackofficeFeedback();
 
@@ -164,7 +207,14 @@ export function ImportSchedulesPage() {
   );
 
   const { token, data, isLoading, error, refetch } = useBackofficeQuery<{ count: number; results: BackofficeImportSource[] }>(queryFn, [q]);
+  const backupQueryFn = useCallback((token: string) => getBackofficeDatabaseBackupSchedule(token), []);
+  const {
+    data: backupSchedule,
+    isLoading: isBackupLoading,
+    refetch: refetchBackupSchedule,
+  } = useBackofficeQuery<BackofficeDatabaseBackupSchedule>(backupQueryFn, []);
   const rows = useMemo(() => data?.results ?? [], [data?.results]);
+  const currentBackupDraft = backupDraft ?? buildBackupDraft(backupSchedule);
   const getDraft = useCallback(
     (item: BackofficeImportSource): ScheduleDraft => drafts[item.id] ?? buildDraft(item),
     [drafts],
@@ -259,8 +309,59 @@ export function ImportSchedulesPage() {
     }
   }
 
+  async function saveBackupSchedule(nextDraft: DatabaseBackupDraft = currentBackupDraft, options?: { silent?: boolean }) {
+    if (!token) return false;
+    try {
+      await updateBackofficeDatabaseBackupSchedule(token, {
+        is_enabled: nextDraft.is_enabled,
+        schedule_run_time: nextDraft.schedule_run_time || "23:00",
+        schedule_every_day: true,
+        schedule_timezone: nextDraft.schedule_timezone || "Europe/Kyiv",
+        backup_directory: nextDraft.backup_directory || "Backup",
+        retention_count: Math.max(1, nextDraft.retention_count || 3),
+      });
+      if (!options?.silent) {
+        showSuccess(t("importSchedules.databaseBackup.messages.saved"));
+      }
+      setBackupDraft(null);
+      await refetchBackupSchedule();
+      return true;
+    } catch (error: unknown) {
+      showApiError(error, t("importSchedules.databaseBackup.messages.actionFailed"));
+      return false;
+    }
+  }
+
+  async function toggleBackupSchedule() {
+    const nextDraft = {
+      ...currentBackupDraft,
+      is_enabled: !currentBackupDraft.is_enabled,
+    };
+    setBackupDraft(nextDraft);
+    await saveBackupSchedule(nextDraft);
+  }
+
+  async function runBackupNow() {
+    if (!token || backupRunning || backupSchedule?.last_status === "running") return;
+    try {
+      setBackupRunning(true);
+      await saveBackupSchedule(currentBackupDraft, { silent: true });
+      await runBackofficeDatabaseBackup(token, { dispatch_async: true });
+      showSuccess(t("importSchedules.databaseBackup.messages.runQueued"));
+      await refetchBackupSchedule();
+    } catch (error: unknown) {
+      showApiError(error, t("importSchedules.databaseBackup.messages.runFailed"));
+    } finally {
+      setBackupRunning(false);
+    }
+  }
+
   const scenarioLabel = t("importSchedules.table.pipelineScenario");
   const scenarioSteps = useMemo(() => splitScenarioSteps(scenarioLabel), [scenarioLabel]);
+  const tableRows = useMemo<ImportScheduleRow[]>(
+    () => [{ kind: "backup" }, ...rows.map((source): ImportScheduleRow => ({ kind: "source", source }))],
+    [rows],
+  );
   const scenarioView = useMemo(() => {
     if (!scenarioSteps.length) {
       return (
@@ -330,28 +431,71 @@ export function ImportSchedulesPage() {
         />
       </div>
 
-      <AsyncState isLoading={isLoading} error={error} empty={!rows.length} emptyLabel={t("importSchedules.states.empty")}>
+      <AsyncState isLoading={isLoading} error={error} empty={!tableRows.length} emptyLabel={t("importSchedules.states.empty")}>
         <BackofficeTable
           emptyLabel={t("importSchedules.states.empty")}
-          rows={rows}
+          rows={tableRows}
           columns={[
             {
               key: "source",
               label: t("importSchedules.table.columns.source"),
-              render: (item) => (
-                <div>
-                  <p className="font-semibold">{item.name}</p>
-                  <p className="text-xs" style={{ color: "var(--muted)" }}>
-                    {item.code} / {item.supplier_code}
-                  </p>
-                </div>
-              ),
+              render: (row) =>
+                row.kind === "backup" ? (
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <DatabaseBackup size={16} />
+                      <p className="font-semibold">{t("importSchedules.databaseBackup.title")}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="font-semibold">{row.source.name}</p>
+                    <p className="text-xs" style={{ color: "var(--muted)" }}>
+                      {row.source.code} / {row.source.supplier_code}
+                    </p>
+                  </div>
+                ),
             },
             {
               key: "schedule",
               label: t("importSchedules.table.columns.cron"),
-              render: (item) => {
-                const draft = getDraft(item);
+              render: (row) => {
+                if (row.kind === "backup") {
+                  return (
+                    <div className="grid gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-semibold" style={{ color: "var(--muted)" }}>
+                          {t("importSchedules.schedule.daily")}
+                        </span>
+                        <span className="text-xs" style={{ color: "var(--muted)" }}>
+                          {currentBackupDraft.schedule_timezone || "Europe/Kyiv"}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs" style={{ color: "var(--muted)" }}>
+                          {t("importSchedules.databaseBackup.time")}
+                        </span>
+                        <input
+                          type="time"
+                          value={currentBackupDraft.schedule_run_time}
+                          className="h-8 rounded-md border px-2 text-xs"
+                          style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+                          onChange={(event) =>
+                            setBackupDraft((prev) => ({
+                              ...(prev ?? currentBackupDraft),
+                              schedule_run_time: event.target.value,
+                            }))
+                          }
+                          onBlur={() => {
+                            void saveBackupSchedule();
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+
+                const draft = getDraft(row.source);
                 return (
                   <div className="grid gap-2">
                     <div className="flex flex-wrap items-center gap-2">
@@ -375,14 +519,14 @@ export function ImportSchedulesPage() {
                           const value = event.target.value;
                           setDrafts((prev) => ({
                             ...prev,
-                            [item.id]: {
-                              ...(prev[item.id] ?? buildDraft(item)),
+                            [row.source.id]: {
+                              ...(prev[row.source.id] ?? buildDraft(row.source)),
                               schedule_run_time: value,
                             },
                           }));
                         }}
                         onBlur={() => {
-                          void saveScheduleTime(item, draft.schedule_run_time);
+                          void saveScheduleTime(row.source, draft.schedule_run_time);
                         }}
                       />
                     </div>
@@ -393,32 +537,57 @@ export function ImportSchedulesPage() {
             {
               key: "enabled",
               label: t("importSchedules.table.columns.enabled"),
-              render: (item) => <StatusChip status={item.is_auto_import_enabled ? "enabled" : "disabled"} />,
+              render: (row) =>
+                row.kind === "backup" ? (
+                  <StatusChip status={currentBackupDraft.is_enabled ? "enabled" : "disabled"} />
+                ) : (
+                  <StatusChip status={row.source.is_auto_import_enabled ? "enabled" : "disabled"} />
+                ),
             },
             {
               key: "nextRun",
               label: t("importSchedules.table.columns.nextRun"),
-              render: (item) => formatBackofficeDate(item.next_run),
+              render: (row) => formatBackofficeDate(row.kind === "backup" ? backupSchedule?.next_run ?? null : row.source.next_run),
             },
             {
               key: "lastResult",
               label: t("importSchedules.table.columns.lastResult"),
-              render: (item) =>
-                item.last_run ? (
+              render: (row) =>
+                row.kind === "backup" ? (
                   <div>
-                    <StatusChip status={item.last_run.status} />
+                    {backupSchedule?.last_status ? <StatusChip status={backupSchedule.last_status} /> : "-"}
                     <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
-                      {t("importSchedules.table.lastRunSummary", {
-                        rows: item.last_run.processed_rows,
-                        skipped: item.last_run.offers_skipped,
+                      {t("importSchedules.databaseBackup.lastSuccess", {
+                        value: formatBackofficeDate(backupSchedule?.last_success_at ?? null),
                       })}
                     </p>
                     <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
-                      {t("importSchedules.table.lastRunStarted", { value: formatBackofficeDate(item.last_run.created_at) })}
+                      {t("importSchedules.databaseBackup.lastFile", { value: backupSchedule?.last_backup_filename || "-" })}
                     </p>
-                    {item.last_run.finished_at ? (
+                    <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
+                      {t("importSchedules.databaseBackup.lastSize", { value: formatBackupSize(backupSchedule?.last_backup_size ?? 0) })}
+                    </p>
+                    {backupSchedule?.last_message ? (
                       <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
-                        {t("importSchedules.table.lastRunFinished", { value: formatBackofficeDate(item.last_run.finished_at) })}
+                        {backupSchedule.last_message}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : row.source.last_run ? (
+                  <div>
+                    <StatusChip status={row.source.last_run.status} />
+                    <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
+                      {t("importSchedules.table.lastRunSummary", {
+                        rows: row.source.last_run.processed_rows,
+                        skipped: row.source.last_run.offers_skipped,
+                      })}
+                    </p>
+                    <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
+                      {t("importSchedules.table.lastRunStarted", { value: formatBackofficeDate(row.source.last_run.created_at) })}
+                    </p>
+                    {row.source.last_run.finished_at ? (
+                      <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
+                        {t("importSchedules.table.lastRunFinished", { value: formatBackofficeDate(row.source.last_run.finished_at) })}
                       </p>
                     ) : null}
                   </div>
@@ -429,36 +598,138 @@ export function ImportSchedulesPage() {
             {
               key: "scenario",
               label: t("importSchedules.table.columns.pipeline"),
-              render: () => scenarioView,
+              render: (row) =>
+                row.kind === "backup" ? (
+                  <p className="text-xs" style={{ color: "var(--muted)" }}>
+                    {t("importSchedules.databaseBackup.subtitle")}
+                  </p>
+                ) : (
+                  scenarioView
+                ),
             },
             {
               key: "actions",
               label: t("importSchedules.table.columns.actions"),
-              render: (item) => (
+              render: (row) =>
+                row.kind === "backup" ? (
+                  <div className="grid gap-2">
+                    <div className="flex items-center gap-1 whitespace-nowrap">
+                      <BackofficeTooltip
+                        content={currentBackupDraft.is_enabled ? t("importSchedules.actions.disable") : t("importSchedules.actions.enable")}
+                        placement="top"
+                        align="center"
+                        wrapperClassName="inline-flex"
+                      >
+                        <button
+                          type="button"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors"
+                          aria-label={currentBackupDraft.is_enabled ? t("importSchedules.actions.disable") : t("importSchedules.actions.enable")}
+                          style={{
+                            borderColor: currentBackupDraft.is_enabled ? monoActiveBackground : "var(--border)",
+                            backgroundColor: currentBackupDraft.is_enabled ? monoActiveBackground : "var(--surface)",
+                            color: currentBackupDraft.is_enabled ? monoActiveText : "var(--text)",
+                          }}
+                          onClick={() => {
+                            void toggleBackupSchedule();
+                          }}
+                          disabled={isBackupLoading}
+                        >
+                          <Power className="h-4 w-4" />
+                        </button>
+                      </BackofficeTooltip>
+                      <ActionIconButton
+                        label={
+                          backupRunning || backupSchedule?.last_status === "running"
+                            ? t("importSchedules.databaseBackup.actions.running")
+                            : t("importSchedules.databaseBackup.actions.runNow")
+                        }
+                        icon={Check}
+                        onClick={() => {
+                          void runBackupNow();
+                        }}
+                        disabled={backupRunning || backupSchedule?.last_status === "running"}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="inline-flex items-center rounded-full border p-1"
+                        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                      >
+                        <BackofficeTooltip content={`${t("importSchedules.databaseBackup.retention")} -`} placement="top" align="center" wrapperClassName="inline-flex">
+                          <button
+                            type="button"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-full border transition-colors hover:opacity-90 disabled:opacity-50"
+                            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+                            aria-label={`${t("importSchedules.databaseBackup.retention")} -`}
+                            disabled={currentBackupDraft.retention_count <= 1}
+                            onClick={() => {
+                              const nextDraft = {
+                                ...currentBackupDraft,
+                                retention_count: Math.max(1, currentBackupDraft.retention_count - 1),
+                              };
+                              setBackupDraft(nextDraft);
+                              void saveBackupSchedule(nextDraft, { silent: true });
+                            }}
+                          >
+                            <Minus className="h-3.5 w-3.5" />
+                          </button>
+                        </BackofficeTooltip>
+                        <span className="inline-flex h-7 min-w-[2rem] items-center justify-center px-2 text-xs font-semibold tabular-nums">
+                          {currentBackupDraft.retention_count}
+                        </span>
+                        <BackofficeTooltip content={`${t("importSchedules.databaseBackup.retention")} +`} placement="top" align="center" wrapperClassName="inline-flex">
+                          <button
+                            type="button"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-full border transition-colors hover:opacity-90"
+                            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+                            aria-label={`${t("importSchedules.databaseBackup.retention")} +`}
+                            onClick={() => {
+                              const nextDraft = {
+                                ...currentBackupDraft,
+                                retention_count: currentBackupDraft.retention_count + 1,
+                              };
+                              setBackupDraft(nextDraft);
+                              void saveBackupSchedule(nextDraft, { silent: true });
+                            }}
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                          </button>
+                        </BackofficeTooltip>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
                   <div className="flex items-center gap-1 whitespace-nowrap">
-                    <button
-                      type="button"
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors"
-                      aria-label={item.is_auto_import_enabled ? t("importSchedules.actions.disable") : t("importSchedules.actions.enable")}
-                      style={{
-                        borderColor: item.is_auto_import_enabled ? monoActiveBackground : "var(--border)",
-                        backgroundColor: item.is_auto_import_enabled ? monoActiveBackground : "var(--surface)",
-                        color: item.is_auto_import_enabled ? monoActiveText : "var(--text)",
-                      }}
-                      onClick={() => {
-                        void toggleAutoImport(item);
-                      }}
+                    <BackofficeTooltip
+                      content={row.source.is_auto_import_enabled ? t("importSchedules.actions.disable") : t("importSchedules.actions.enable")}
+                      placement="top"
+                      align="center"
+                      wrapperClassName="inline-flex"
                     >
-                      <Power className="h-4 w-4" />
-                    </button>
+                      <button
+                        type="button"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors"
+                        aria-label={row.source.is_auto_import_enabled ? t("importSchedules.actions.disable") : t("importSchedules.actions.enable")}
+                        style={{
+                          borderColor: row.source.is_auto_import_enabled ? monoActiveBackground : "var(--border)",
+                          backgroundColor: row.source.is_auto_import_enabled ? monoActiveBackground : "var(--surface)",
+                          color: row.source.is_auto_import_enabled ? monoActiveText : "var(--text)",
+                        }}
+                        onClick={() => {
+                          void toggleAutoImport(row.source);
+                        }}
+                      >
+                        <Power className="h-4 w-4" />
+                      </button>
+                    </BackofficeTooltip>
                     <ScheduleRunActionButton
-                      item={item}
+                      item={row.source}
                       token={token}
-                      localRunning={Boolean(runningBySource[item.id])}
+                      localRunning={Boolean(runningBySource[row.source.id])}
                       runLabel={t("importSchedules.actions.runNow")}
                       runningLabel={t("importSchedules.actions.runningNow")}
                       onRun={() => {
-                        void runScenario(item);
+                        void runScenario(row.source);
                       }}
                       onRunFinished={refreshAfterRunFinished}
                     />
@@ -473,13 +744,13 @@ export function ImportSchedulesPage() {
                         };
                         setDrafts((prev) => ({
                           ...prev,
-                          [item.id]: nextDraft,
+                          [row.source.id]: nextDraft,
                         }));
-                        void saveScheduleTime(item, nextDraft.schedule_run_time);
+                        void saveScheduleTime(row.source, nextDraft.schedule_run_time);
                       }}
                     />
                   </div>
-              ),
+                ),
             },
           ]}
         />

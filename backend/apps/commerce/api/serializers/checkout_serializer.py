@@ -15,6 +15,11 @@ class CheckoutPreviewQuerySerializer(serializers.Serializer):
     promo_code = serializers.CharField(required=False, allow_blank=True, max_length=64)
 
 
+class CheckoutMethodsSerializer(serializers.Serializer):
+    delivery_methods = serializers.ListField(child=serializers.CharField())
+    payment_methods = serializers.ListField(child=serializers.CharField())
+
+
 class CheckoutNovaPoshtaLookupQuerySerializer(serializers.Serializer):
     query = serializers.CharField(required=False, allow_blank=True, default="")
     locale = serializers.CharField(required=False, allow_blank=True, default="uk")

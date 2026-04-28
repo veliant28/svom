@@ -53,6 +53,32 @@ class OfferMatcher:
                     candidate_products=tuple(exact_candidates),
                 )
             if len(exact_candidates) > 1:
+                specific_candidate = self._select_specific_candidate(
+                    candidates=exact_candidates,
+                    article=article,
+                    external_sku=external_sku,
+                    source=source,
+                )
+                if specific_candidate is not None:
+                    return MatchDecision(
+                        status=SupplierRawOffer.MATCH_STATUS_AUTO_MATCHED,
+                        reason="",
+                        matched_product=specific_candidate,
+                        candidate_products=(specific_candidate,),
+                    )
+                duplicate_candidate = self._select_equivalent_duplicate_candidate(
+                    candidates=exact_candidates,
+                    article=article,
+                    external_sku=external_sku,
+                    source=source,
+                )
+                if duplicate_candidate is not None:
+                    return MatchDecision(
+                        status=SupplierRawOffer.MATCH_STATUS_AUTO_MATCHED,
+                        reason="",
+                        matched_product=duplicate_candidate,
+                        candidate_products=(duplicate_candidate,),
+                    )
                 return MatchDecision(
                     status=SupplierRawOffer.MATCH_STATUS_MANUAL_REQUIRED,
                     reason=SupplierRawOffer.MATCH_REASON_AMBIGUOUS,
@@ -151,3 +177,92 @@ class OfferMatcher:
             for product in self._index.find_by_article(article_key=article_key):
                 unique[str(product.id)] = product
         return list(unique.values())
+
+    def _select_specific_candidate(
+        self,
+        *,
+        candidates,
+        article: str,
+        external_sku: str,
+        source: ImportSource | None,
+    ):
+        external_key = self._normalize_article(value=external_sku, source=source)
+        if external_key:
+            sku_matches = [
+                product
+                for product in candidates
+                if self._normalize_article(value=getattr(product, "sku", ""), source=source) == external_key
+            ]
+            if len(sku_matches) == 1:
+                return sku_matches[0]
+
+        article_key = self._normalize_article(value=article, source=source)
+        if article_key:
+            article_matches = [
+                product
+                for product in candidates
+                if self._normalize_article(value=getattr(product, "article", ""), source=source) == article_key
+            ]
+            if len(article_matches) == 1:
+                return article_matches[0]
+
+        return None
+
+    def _select_equivalent_duplicate_candidate(
+        self,
+        *,
+        candidates,
+        article: str,
+        external_sku: str,
+        source: ImportSource | None,
+    ):
+        input_keys = {
+            key
+            for key in (
+                self._normalize_article(value=article, source=source),
+                self._normalize_article(value=external_sku, source=source),
+            )
+            if key
+        }
+        if not input_keys:
+            return None
+
+        candidate_key_sets = []
+        category_ids = set()
+        brand_ids = set()
+        for product in candidates:
+            product_keys = {
+                key
+                for key in (
+                    self._normalize_article(value=getattr(product, "article", ""), source=source),
+                    self._normalize_article(value=getattr(product, "sku", ""), source=source),
+                )
+                if key
+            }
+            if not product_keys:
+                return None
+            candidate_key_sets.append(product_keys)
+            category_ids.add(getattr(product, "category_id", None))
+            brand_ids.add(getattr(product, "brand_id", None))
+
+        common_keys = set.intersection(*candidate_key_sets)
+        if len(common_keys) != 1 or not common_keys.issubset(input_keys):
+            return None
+        if any(keys != common_keys for keys in candidate_key_sets):
+            return None
+        if len(category_ids) != 1 or len(brand_ids) != 1:
+            return None
+
+        compact_key = next(iter(common_keys))
+
+        def rank(product):
+            sku = str(getattr(product, "sku", "") or "")
+            article_value = str(getattr(product, "article", "") or "")
+            return (
+                0 if sku.upper() == compact_key else 1,
+                len(sku),
+                0 if article_value.upper() == compact_key else 1,
+                str(product.id),
+            )
+
+        return sorted(candidates, key=rank)[0]

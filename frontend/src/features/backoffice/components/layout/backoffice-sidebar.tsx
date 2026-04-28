@@ -22,6 +22,7 @@ import {
   ImageUp,
   Globe2,
   Mail,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -50,6 +51,7 @@ type SidebarNavItem = {
     | "novaPoshtaSenders"
     | "footerSettings"
     | "emailSettings"
+    | "checkoutMethods"
     | "promoBanners"
     | "users"
     | "groups"
@@ -75,6 +77,12 @@ const NAV_ITEMS: SidebarNavItem[] = [
     requiredCapability: BACKOFFICE_CAPABILITIES.novaPoshtaSettings,
   },
   { href: "/backoffice/payments", icon: Wallet2, key: "payments", requiredCapability: BACKOFFICE_CAPABILITIES.paymentsView },
+  {
+    href: "/backoffice/checkout-methods",
+    icon: SlidersHorizontal,
+    key: "checkoutMethods",
+    requiredCapability: BACKOFFICE_CAPABILITIES.checkoutMethodsManage,
+  },
   { href: "/backoffice/vchasno-kasa", icon: ReceiptText, key: "vchasnoKasa", requiredCapability: BACKOFFICE_CAPABILITIES.vchasnoKasaManage },
   { href: "/backoffice/brands", icon: Tags, key: "brands", requiredCapability: BACKOFFICE_CAPABILITIES.brandsView },
   { href: "/backoffice/categories", icon: Shapes, key: "categories", requiredCapability: BACKOFFICE_CAPABILITIES.categoriesView },

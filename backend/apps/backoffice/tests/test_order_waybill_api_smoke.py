@@ -97,6 +97,8 @@ class BackofficeOrderWaybillAPISmokeTests(APITestCase):
             "recipient_city_label": "Київ",
             "recipient_address_ref": "warehouse-ref",
             "recipient_address_label": "Відділення №1",
+            "recipient_counterparty_ref": "recipient-counterparty-ref",
+            "recipient_contact_ref": "recipient-contact-ref",
             "recipient_name": "Петро Петров",
             "recipient_phone": "+380671234567",
             "seats_amount": 1,
@@ -250,6 +252,39 @@ class BackofficeOrderWaybillAPISmokeTests(APITestCase):
     @patch("apps.commerce.services.nova_poshta.client.NovaPoshtaApiClient.get_tracking_status")
     @patch("apps.commerce.services.nova_poshta.client.NovaPoshtaApiClient.create_waybill")
     @patch("apps.commerce.services.nova_poshta.client.NovaPoshtaApiClient.get_counterparty_options")
+    def test_delivery_loyalty_promo_forces_sender_cash_delivery_payment(
+        self,
+        mock_options,
+        mock_create,
+        mock_tracking,
+    ):
+        self.order.applied_promo_code = "SVDELIVERY100"
+        self.order.discount_breakdown = {"discount_type": "delivery_fee", "code": "SVDELIVERY100"}
+        self.order.save(update_fields=("applied_promo_code", "discount_breakdown", "updated_at"))
+        mock_options.return_value = _np_response({"success": True, "data": [{"CanAfterpaymentOnGoodsCost": True, "CanNonCashPayment": True}]})
+        mock_create.return_value = _np_response({"success": True, "data": [{"Ref": "np-ref-delivery", "IntDocNumber": "20451234567893"}]})
+        mock_tracking.return_value = _np_response({"success": True, "data": [{"StatusCode": "1", "Status": "Створено"}]})
+
+        payload = self._payload()
+        payload.update({"payer_type": "Recipient", "payment_method": "NonCash"})
+
+        response = self.client.post(
+            reverse("backoffice_api:order-waybill-create", kwargs={"order_id": self.order.id}),
+            payload,
+            format="json",
+            **self._auth(self.staff_token.key),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        request_payload = mock_create.call_args.kwargs["method_properties"]
+        self.assertEqual(request_payload["PayerType"], "Sender")
+        self.assertEqual(request_payload["PaymentMethod"], "Cash")
+        self.assertEqual(response.data["payer_type"], "Sender")
+        self.assertEqual(response.data["payment_method"], "Cash")
+
+    @patch("apps.commerce.services.nova_poshta.client.NovaPoshtaApiClient.get_tracking_status")
+    @patch("apps.commerce.services.nova_poshta.client.NovaPoshtaApiClient.create_waybill")
+    @patch("apps.commerce.services.nova_poshta.client.NovaPoshtaApiClient.get_counterparty_options")
     def test_business_sender_uses_order_total_and_keeps_multi_seat_packaging(
         self,
         mock_options,
@@ -287,6 +322,8 @@ class BackofficeOrderWaybillAPISmokeTests(APITestCase):
                 "recipient_city_label": "Миколаїв",
                 "recipient_address_ref": "warehouse-ref-39",
                 "recipient_address_label": "Відділення №39",
+                "recipient_counterparty_ref": "recipient-business-counterparty-ref",
+                "recipient_contact_ref": "recipient-business-contact-ref",
                 "recipient_name": "Сухин Валерий Геннадиевич",
                 "recipient_phone": "+380660002702",
                 "seats_amount": 3,

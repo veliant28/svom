@@ -252,6 +252,7 @@
               "delivery": "Доставка: {value}",
               "deliveryMethod": "Способ доставки",
               "paymentMethod": "Способ оплаты",
+              "loyalty": "Лояльность",
               "deliveryCity": "Город доставки",
               "deliveryDestination": "Отделение / почтомат / адрес",
               "total": "Итог",
@@ -598,11 +599,13 @@
             "providers": {
               "cash_on_delivery": "Наложенный платеж",
               "monobank": "Monobank",
+              "novapay": "Nova Pay",
               "liqpay": "LiqPay"
             },
             "methods": {
               "cash_on_delivery": "Наложенный платеж",
               "monobank": "Monobank",
+              "novapay": "Nova Pay",
               "liqpay": "LiqPay",
               "card_placeholder": "Оплата картой"
             },

@@ -97,6 +97,7 @@ class CatalogProductSerializerCategorySyncTests(TestCase):
 
         self.product.refresh_from_db()
         self.assertEqual(self.product.category_id, self.category_new.id)
+        self.assertTrue(self.product.category_manually_locked)
 
         self.raw_offer.refresh_from_db()
         self.assertEqual(self.raw_offer.mapped_category_id, self.category_new.id)

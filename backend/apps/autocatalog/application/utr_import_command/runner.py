@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Mapping
 from typing import Any
 
@@ -33,8 +34,10 @@ def run_utr_import_command(*, raw_options: Mapping[str, Any], output: CommandOut
         observability.write_observability(output, run_counters=run_counters)
         return
 
+    lock_key = _resolve_lock_key()
+    output.write(f"[utr-lock] lock_key={lock_key}")
     lock_service = UtrRunLockService(
-        lock_key=int(getattr(settings, "UTR_SINGLE_RUN_LOCK_KEY", 804721451)),
+        lock_key=lock_key,
         cache_ttl_seconds=int(getattr(settings, "UTR_SINGLE_RUN_LOCK_TTL_SECONDS", 60 * 60)),
     )
 
@@ -53,3 +56,13 @@ def run_utr_import_command(*, raw_options: Mapping[str, Any], output: CommandOut
             )
     finally:
         observability.write_observability(output, run_counters=run_counters)
+
+
+def _resolve_lock_key() -> int:
+    raw_value = os.getenv("UTR_SINGLE_RUN_LOCK_KEY")
+    if raw_value:
+        try:
+            return int(raw_value)
+        except ValueError:
+            pass
+    return int(getattr(settings, "UTR_SINGLE_RUN_LOCK_KEY", 804721451))

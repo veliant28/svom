@@ -6,7 +6,6 @@ from django.test import TestCase
 from apps.catalog.models import Brand, Category, Product
 from apps.commerce.models import CartItem, Order
 from apps.commerce.services import add_product_to_cart, get_or_create_user_cart, submit_checkout
-from apps.commerce.services.checkout_service import resolve_delivery_fee
 from apps.commerce.services.loyalty_service import (
     LoyaltyPromoValidationError,
     compute_loyalty_discount_for_checkout,
@@ -91,17 +90,18 @@ class LoyaltyServicesTests(TestCase):
             usage_limit=1,
         )
 
+        self.assertEqual(promo.discount_percent, Decimal("100.00"))
         computation = compute_loyalty_discount_for_checkout(
             user=self.user,
             promo_code_value=promo.code,
             items=self._cart_items(),
-            delivery_fee=resolve_delivery_fee(Order.DELIVERY_COURIER),
+            delivery_fee=Decimal("150.00"),
             currency="UAH",
         )
 
-        self.assertEqual(computation.delivery_discount, Decimal("75.00"))
+        self.assertEqual(computation.delivery_discount, Decimal("150.00"))
         self.assertEqual(computation.product_discount, Decimal("0.00"))
-        self.assertEqual(computation.total_discount, Decimal("75.00"))
+        self.assertEqual(computation.total_discount, Decimal("150.00"))
 
     def test_delivery_discount_rejected_when_delivery_is_zero(self):
         add_product_to_cart(user=self.user, product=self.product, quantity=1)
@@ -125,6 +125,31 @@ class LoyaltyServicesTests(TestCase):
             )
 
         self.assertEqual(exc.exception.code, "delivery_zero")
+
+    def test_legacy_delivery_discount_is_applied_as_full_delivery_discount(self):
+        add_product_to_cart(user=self.user, product=self.product, quantity=1)
+        promo = issue_loyalty_promo(
+            customer=self.user,
+            issued_by=self.staff,
+            reason="Legacy delivery promo",
+            discount_type="delivery_fee",
+            discount_percent=Decimal("100.00"),
+            expires_at=None,
+            usage_limit=1,
+        )
+        promo.discount_percent = Decimal("10.00")
+        promo.save(update_fields=("discount_percent", "updated_at"))
+
+        computation = compute_loyalty_discount_for_checkout(
+            user=self.user,
+            promo_code_value=promo.code,
+            items=self._cart_items(),
+            delivery_fee=Decimal("150.00"),
+            currency="UAH",
+        )
+
+        self.assertEqual(computation.requested_percent, Decimal("100.00"))
+        self.assertEqual(computation.delivery_discount, Decimal("150.00"))
 
     def test_product_discount_respects_markup_cap(self):
         add_product_to_cart(user=self.user, product=self.product, quantity=2)

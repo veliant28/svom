@@ -1,6 +1,13 @@
 from .cart_calculations import CartTotals, calculate_cart_totals, get_line_total, get_product_unit_price
 from .cart_service import add_product_to_cart, get_or_create_user_cart, remove_cart_item, set_cart_item_quantity
 from .checkout_service import CheckoutPreview, build_checkout_preview, submit_checkout
+from .checkout_methods import (
+    CheckoutMethodsPayload,
+    get_checkout_method_settings,
+    serialize_checkout_methods,
+    validate_checkout_delivery_method_availability,
+    validate_checkout_method_availability,
+)
 from .loyalty_service import (
     LoyaltyDiscountComputation,
     LoyaltyPromoValidationError,
@@ -64,6 +71,7 @@ from .sellable_state import build_cart_item_warning, get_cart_item_sellable_snap
 __all__ = [
     "CartTotals",
     "CheckoutPreview",
+    "CheckoutMethodsPayload",
     "calculate_cart_totals",
     "get_line_total",
     "get_product_unit_price",
@@ -72,6 +80,10 @@ __all__ = [
     "set_cart_item_quantity",
     "remove_cart_item",
     "build_checkout_preview",
+    "get_checkout_method_settings",
+    "serialize_checkout_methods",
+    "validate_checkout_delivery_method_availability",
+    "validate_checkout_method_availability",
     "submit_checkout",
     "LoyaltyDiscountComputation",
     "LoyaltyPromoValidationError",

@@ -29,6 +29,9 @@ export function resolvePaymentMethodLabel(value: string, t: Translator): string 
   if (normalized === "monobank") {
     return t("orders.payment.values.methods.monobank");
   }
+  if (normalized === "novapay") {
+    return t("orders.payment.values.methods.novapay");
+  }
   if (normalized === "liqpay") {
     return t("orders.payment.values.methods.liqpay");
   }
@@ -97,6 +100,9 @@ export function resolveOrderPaymentMethodLabel(value: string, t: Translator): st
   }
   if (normalized === "monobank") {
     return t("orders.payment.values.methods.monobank");
+  }
+  if (normalized === "novapay") {
+    return t("orders.payment.values.methods.novapay");
   }
   if (normalized === "liqpay") {
     return t("orders.payment.values.methods.liqpay");

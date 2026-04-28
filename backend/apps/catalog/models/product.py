@@ -22,6 +22,7 @@ class Product(UUIDPrimaryKeyMixin, TimestampedMixin, PublishableMixin):
         related_name="products",
         verbose_name=_("Категория"),
     )
+    category_manually_locked = models.BooleanField(_("Категория закреплена вручную"), default=False)
     short_description = models.TextField(_("Короткое описание"), blank=True)
     description = models.TextField(_("Описание"), blank=True)
     is_featured = models.BooleanField(_("Рекомендуемый"), default=False)

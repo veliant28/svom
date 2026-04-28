@@ -39,6 +39,30 @@ export type BackofficeImportSource = {
   updated_at: string;
 };
 
+export type BackofficeDatabaseBackupSchedule = {
+  id: string;
+  code: string;
+  is_enabled: boolean;
+  schedule_cron: string;
+  schedule_timezone: string;
+  schedule_run_time: string;
+  schedule_every_day: boolean;
+  backup_directory: string;
+  retention_count: number;
+  last_started_at: string | null;
+  last_finished_at: string | null;
+  last_success_at: string | null;
+  last_failed_at: string | null;
+  last_status: "never_run" | "running" | "success" | "failed" | "skipped" | string;
+  last_message: string;
+  last_backup_path: string;
+  last_backup_filename: string;
+  last_backup_size: number;
+  next_run: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type BackofficeSupplierBrandAlias = {
   id: string;
   source: string | null;

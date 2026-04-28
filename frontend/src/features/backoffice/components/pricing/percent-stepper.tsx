@@ -16,6 +16,7 @@ type PercentStepperProps = {
   integerOnly?: boolean;
   inputWidthClassName?: string;
   containerClassName?: string;
+  disabled?: boolean;
 };
 
 function clampPercent(value: number, min: number, max: number): number {
@@ -52,6 +53,7 @@ export function PercentStepper({
   integerOnly = false,
   inputWidthClassName = "w-16",
   containerClassName = "",
+  disabled = false,
 }: PercentStepperProps) {
   const safeValue = clampPercent(value, min, max);
   const hasSuffix = suffix.trim().length > 0;
@@ -66,6 +68,7 @@ export function PercentStepper({
         className="inline-flex h-7 w-7 items-center justify-center rounded-full border transition-colors hover:opacity-90"
         style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
         aria-label={minusLabel}
+        disabled={disabled}
         onClick={() => onChange(clampPercent(safeValue - step, min, max))}
       >
         <Minus className="h-3.5 w-3.5" />
@@ -78,6 +81,7 @@ export function PercentStepper({
           autoComplete="off"
           value={safeValue}
           aria-label={inputLabel}
+          disabled={disabled}
           className={`h-7 border-0 bg-transparent px-1 text-center text-sm font-semibold outline-none ${inputWidthClassName} ${hasSuffix ? "pr-4" : "pr-1"}`}
           onChange={(event) => onChange(parsePercentInput(event.target.value, min, max, safeValue, integerOnly))}
           onKeyDown={(event) => {
@@ -102,6 +106,7 @@ export function PercentStepper({
         className="inline-flex h-7 w-7 items-center justify-center rounded-full border transition-colors hover:opacity-90"
         style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
         aria-label={plusLabel}
+        disabled={disabled}
         onClick={() => onChange(clampPercent(safeValue + step, min, max))}
       >
         <Plus className="h-3.5 w-3.5" />

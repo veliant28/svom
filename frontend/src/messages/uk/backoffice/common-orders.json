@@ -252,6 +252,7 @@
               "delivery": "Доставка: {value}",
               "deliveryMethod": "Спосіб доставки",
               "paymentMethod": "Спосіб оплати",
+              "loyalty": "Лояльність",
               "deliveryCity": "Місто доставки",
               "deliveryDestination": "Відділення / поштомат / адреса",
               "total": "Підсумок",
@@ -598,11 +599,13 @@
             "providers": {
               "cash_on_delivery": "Післяплата",
               "monobank": "Monobank",
+              "novapay": "Nova Pay",
               "liqpay": "LiqPay"
             },
             "methods": {
               "cash_on_delivery": "Післяплата",
               "monobank": "Monobank",
+              "novapay": "Nova Pay",
               "liqpay": "LiqPay",
               "card_placeholder": "Оплата карткою"
             },

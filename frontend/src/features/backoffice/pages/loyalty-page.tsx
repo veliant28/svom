@@ -76,7 +76,7 @@ export function LoyaltyPage() {
 
   const [reason, setReason] = useState("");
   const [discountType, setDiscountType] = useState<typeof DISCOUNT_TYPE_DELIVERY | typeof DISCOUNT_TYPE_PRODUCT>(DISCOUNT_TYPE_DELIVERY);
-  const [discountPercent, setDiscountPercent] = useState(15);
+  const [discountPercent, setDiscountPercent] = useState(100);
   const [expiresAt, setExpiresAt] = useState("");
   const [usageLimit, setUsageLimit] = useState(1);
   const [isIssuing, setIsIssuing] = useState(false);
@@ -163,6 +163,8 @@ export function LoyaltyPage() {
     return value === DISCOUNT_TYPE_DELIVERY ? t("loyalty.issuances.types.delivery") : t("loyalty.issuances.types.product");
   }
 
+  const isDeliveryDiscountType = discountType === DISCOUNT_TYPE_DELIVERY;
+
   async function handleIssuePromo() {
     if (!issuances.token || !selectedCustomer) {
       return;
@@ -178,7 +180,7 @@ export function LoyaltyPage() {
         customer_id: customerId,
         reason: reason.trim(),
         discount_type: discountType,
-        discount_percent: discountPercent,
+        discount_percent: isDeliveryDiscountType ? 100 : discountPercent,
         expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
         usage_limit: Math.max(1, usageLimit),
       });
@@ -413,6 +415,7 @@ export function LoyaltyPage() {
                     minusLabel={t("loyalty.issue.actions.percentMinus")}
                     plusLabel={t("loyalty.issue.actions.percentPlus")}
                     inputLabel={t("loyalty.issue.fields.percent")}
+                    disabled={isDeliveryDiscountType}
                   />
                 </div>
 
@@ -420,7 +423,13 @@ export function LoyaltyPage() {
                   <span>{t("loyalty.issue.fields.type")}</span>
                   <select
                     value={discountType}
-                    onChange={(event) => setDiscountType(event.target.value as typeof DISCOUNT_TYPE_DELIVERY | typeof DISCOUNT_TYPE_PRODUCT)}
+                    onChange={(event) => {
+                      const nextType = event.target.value as typeof DISCOUNT_TYPE_DELIVERY | typeof DISCOUNT_TYPE_PRODUCT;
+                      setDiscountType(nextType);
+                      if (nextType === DISCOUNT_TYPE_DELIVERY) {
+                        setDiscountPercent(100);
+                      }
+                    }}
                     className="h-9 w-full rounded-md border px-3"
                     style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
                   >

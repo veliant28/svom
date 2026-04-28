@@ -200,10 +200,9 @@ export function StatusChip({
   const [secondsLeft, setSecondsLeft] = useState(initialCountdown);
 
   let label = normalizeStatusLabel(status) || t("statuses.unknown");
-  try {
-    label = t(`statuses.${key}`);
-  } catch {
-    // Keep fallback label when translation key is missing.
+  const translationKey = `statuses.${key}` as never;
+  if (t.has(translationKey)) {
+    label = t(translationKey);
   }
 
   useEffect(() => {

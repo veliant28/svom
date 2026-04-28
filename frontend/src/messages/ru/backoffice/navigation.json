@@ -21,6 +21,7 @@
       "footerSettings": "Футер",
       "emailSettings": "Email",
       "payments": "Оплата",
+      "checkoutMethods": "Методы checkout",
       "vchasnoKasa": "Вчасно.Каса",
       "users": "Пользователи",
       "groups": "Группы",

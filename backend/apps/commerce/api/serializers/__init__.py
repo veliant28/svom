@@ -1,5 +1,6 @@
 from .cart_serializer import CartItemCreateSerializer, CartItemQuantityUpdateSerializer, CartSerializer
 from .checkout_serializer import (
+    CheckoutMethodsSerializer,
     CheckoutNovaPoshtaLookupQuerySerializer,
     CheckoutPromoApplySerializer,
     CheckoutPromoClearSerializer,
@@ -20,6 +21,7 @@ __all__ = [
     "CartItemCreateSerializer",
     "CartItemQuantityUpdateSerializer",
     "CheckoutPreviewQuerySerializer",
+    "CheckoutMethodsSerializer",
     "CheckoutPromoApplySerializer",
     "CheckoutPromoClearSerializer",
     "CheckoutNovaPoshtaLookupQuerySerializer",

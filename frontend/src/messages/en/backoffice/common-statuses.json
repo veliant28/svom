@@ -4,6 +4,7 @@
       "statuses": {
         "unknown": "Unknown",
         "pending": "Pending",
+        "never_run": "Never run",
         "running": "Running",
         "generating": "Generating",
         "ready": "Ready",
