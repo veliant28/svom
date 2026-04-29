@@ -68,6 +68,14 @@ class Order(UUIDPrimaryKeyMixin, TimestampedMixin):
         related_name="orders",
         verbose_name=_("Пользователь"),
     )
+    last_action_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="orders_last_action",
+        blank=True,
+        null=True,
+        verbose_name=_("Последнее действие выполнил"),
+    )
     order_number = models.CharField(_("Номер заказа"), max_length=32, unique=True)
     status = models.CharField(_("Статус"), max_length=32, choices=STATUS_CHOICES, default=STATUS_NEW)
 
@@ -106,3 +114,52 @@ class Order(UUIDPrimaryKeyMixin, TimestampedMixin):
 
     def __str__(self) -> str:
         return self.order_number
+
+
+class OrderEvent(UUIDPrimaryKeyMixin, TimestampedMixin):
+    EVENT_STATUS_CHANGE = "status_change"
+    EVENT_RESERVE_ITEMS = "reserve_items"
+    EVENT_SUPPLIER_OVERRIDE = "supplier_override"
+    EVENT_SUPPLIER_ORDER_CREATE = "supplier_order_create"
+    EVENT_SUPPLIER_ORDER_CANCEL = "supplier_order_cancel"
+    EVENT_NOTE_UPDATE = "note_update"
+
+    EVENT_TYPE_CHOICES = (
+        (EVENT_STATUS_CHANGE, _("Смена статуса")),
+        (EVENT_RESERVE_ITEMS, _("Резервирование позиций")),
+        (EVENT_SUPPLIER_OVERRIDE, _("Замена предложения поставщика")),
+        (EVENT_SUPPLIER_ORDER_CREATE, _("Создание заказа поставщику")),
+        (EVENT_SUPPLIER_ORDER_CANCEL, _("Отмена заказа поставщику")),
+        (EVENT_NOTE_UPDATE, _("Обновление заметки")),
+    )
+
+    order = models.ForeignKey(
+        "commerce.Order",
+        on_delete=models.CASCADE,
+        related_name="events",
+        verbose_name=_("Заказ"),
+    )
+    event_type = models.CharField(_("Тип события"), max_length=48, choices=EVENT_TYPE_CHOICES)
+    action_label = models.CharField(_("Действие"), max_length=255)
+    message = models.CharField(_("Комментарий"), max_length=500, blank=True)
+    payload = models.JSONField(_("Payload"), default=dict, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="order_events",
+        blank=True,
+        null=True,
+        verbose_name=_("Создал"),
+    )
+
+    class Meta:
+        ordering = ("-created_at",)
+        verbose_name = _("Событие заказа")
+        verbose_name_plural = _("События заказа")
+        indexes = [
+            models.Index(fields=("order", "-created_at"), name="com_ord_evt_ord_created_idx"),
+            models.Index(fields=("event_type",), name="com_ord_evt_type_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.order_id}:{self.event_type}"

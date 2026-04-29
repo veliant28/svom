@@ -144,6 +144,8 @@ export function createOrderColumns({
   onToggleSelected,
   onOpen,
   onWaybill,
+  onOpenOrderHistory,
+  onOpenWaybillHistory,
   onSupplierOrder,
   onDelete,
 }: {
@@ -160,6 +162,8 @@ export function createOrderColumns({
   onToggleSelected: (id: string) => void;
   onOpen: (item: BackofficeOrderOperational) => void;
   onWaybill: (item: BackofficeOrderOperational) => void;
+  onOpenOrderHistory: (item: BackofficeOrderOperational) => void;
+  onOpenWaybillHistory: (item: BackofficeOrderOperational) => void;
   onSupplierOrder: (item: BackofficeOrderOperational) => void;
   onDelete: (item: BackofficeOrderOperational) => void;
 }): Array<BackofficeColumn<BackofficeOrderOperational>> {
@@ -217,7 +221,17 @@ export function createOrderColumns({
       key: "status",
       label: t("orders.table.columns.status"),
       className: "w-[13%]",
-      render: (item) => <StatusChip status={item.status} />,
+      render: (item) => (
+        <button
+          type="button"
+          className="inline-flex"
+          onClick={() => onOpenOrderHistory(item)}
+          aria-label={t("orders.tooltips.statusHistory")}
+          title={t("orders.tooltips.statusHistory")}
+        >
+          <StatusChip status={item.status} />
+        </button>
+      ),
     },
     {
       key: "totals",
@@ -260,9 +274,17 @@ export function createOrderColumns({
             wrapperClassName="inline-flex"
             tooltipClassName="whitespace-nowrap"
           >
-            <BackofficeStatusChip tone="success" icon={ScanBarcode}>
-              {item.nova_poshta_waybill_number}
-            </BackofficeStatusChip>
+            <button
+              type="button"
+              className="inline-flex"
+              onClick={() => onOpenWaybillHistory(item)}
+              aria-label={t("orders.tooltips.waybillHistory")}
+              title={t("orders.tooltips.waybillHistory")}
+            >
+              <BackofficeStatusChip tone="success" icon={ScanBarcode}>
+                {item.nova_poshta_waybill_number}
+              </BackofficeStatusChip>
+            </button>
           </BackofficeTooltip>
         );
       },

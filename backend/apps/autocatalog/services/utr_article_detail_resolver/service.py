@@ -3,8 +3,10 @@ from __future__ import annotations
 import logging
 
 from django.conf import settings
+from django.db.models import Q
 
 from apps.autocatalog.models import UtrArticleDetailMap
+from apps.catalog.models import Product
 from apps.supplier_imports.services.integrations.exceptions import SupplierClientError
 from apps.supplier_imports.services.integrations.utr_client import UtrClient
 
@@ -89,6 +91,7 @@ class UtrArticleDetailResolverService:
                     summary.resolved_updated += 1
                 summary.resolve_pairs_resolved_total += 1
                 self._increment_stage_resolved_counter(summary=summary, stage_name=context.resolved_stage)
+                summary.resolved_products_enriched_total += self._sync_resolved_detail_id_to_matched_products(context=context)
                 self._enrich_products_from_resolved_detail(context=context, summary=summary)
                 continue
 
@@ -293,3 +296,18 @@ class UtrArticleDetailResolverService:
             return
         summary.resolved_products_enriched_total += int(result.get("products_enriched", 0))
         summary.resolved_product_images_created_total += int(result.get("created_images", 0))
+
+    def _sync_resolved_detail_id_to_matched_products(self, *, context: ResolveContext) -> int:
+        detail_id = str(context.detail_id or "").strip()
+        normalized_article = str(context.pair.get("normalized_article") or "").strip()
+        normalized_brand = str(context.pair.get("normalized_brand") or "").strip()
+        if not detail_id or not normalized_article:
+            return 0
+
+        return Product.objects.filter(
+            Q(utr_detail_id="") | Q(utr_detail_id__isnull=True),
+            raw_supplier_offers__normalized_article=normalized_article,
+            raw_supplier_offers__normalized_brand=normalized_brand,
+        ).filter(
+            Q(raw_supplier_offers__source__code="utr") | Q(raw_supplier_offers__supplier__code="utr")
+        ).update(utr_detail_id=detail_id)

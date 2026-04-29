@@ -6,6 +6,7 @@ import { useOrdersActions } from "@/features/backoffice/hooks/orders/use-orders-
 import { useOrdersBulkActions } from "@/features/backoffice/hooks/orders/use-orders-bulk-actions";
 import { useOrdersDerivedState } from "@/features/backoffice/hooks/orders/use-orders-derived-state";
 import { useOrdersFilters } from "@/features/backoffice/hooks/orders/use-orders-filters";
+import { useOrdersHistoryFlow } from "@/features/backoffice/hooks/orders/use-orders-history-flow";
 import { useOrdersPageData } from "@/features/backoffice/hooks/orders/use-orders-page-data";
 import { useOrdersSupplierFlow } from "@/features/backoffice/hooks/orders/use-orders-supplier-flow";
 import { useOrdersWaybillFlow } from "@/features/backoffice/hooks/orders/use-orders-waybill-flow";
@@ -33,6 +34,10 @@ export function useOrdersPage() {
     token,
     refetch,
     feedback: { showApiError, showSuccess },
+  });
+  const historyFlow = useOrdersHistoryFlow({
+    token,
+    feedback: { showApiError, showInfo },
   });
 
   const orderActions = useOrdersActions({
@@ -131,6 +136,12 @@ export function useOrdersPage() {
     waybillDeleting: waybillFlow.waybillDeleting,
     waybillSenderProfiles: waybillFlow.senderProfiles,
     bulkActions,
+    orderHistoryOpen: historyFlow.orderHistoryOpen,
+    waybillHistoryOpen: historyFlow.waybillHistoryOpen,
+    historyLoading: historyFlow.historyLoading,
+    historyTarget: historyFlow.historyTarget,
+    orderHistoryEvents: historyFlow.orderHistoryEvents,
+    waybillHistoryEvents: historyFlow.waybillHistoryEvents,
     openOrderView: orderActions.openOrderView,
     closeOrderView: orderActions.closeOrderView,
     runOrderAction: orderActions.runOrderAction,
@@ -141,6 +152,10 @@ export function useOrdersPage() {
     runMonobankPaymentAction: orderActions.runMonobankPaymentAction,
     openSupplierModalFromRow: supplierFlow.openSupplierModalFromRow,
     openWaybillModalFromRow: waybillFlow.openWaybillModalFromRow,
+    openOrderHistoryFromRow: historyFlow.openOrderHistoryFromRow,
+    openWaybillHistoryFromRow: historyFlow.openWaybillHistoryFromRow,
+    closeOrderHistory: historyFlow.closeOrderHistory,
+    closeWaybillHistory: historyFlow.closeWaybillHistory,
     closeSupplierModal: supplierFlow.closeSupplierModal,
     closeWaybillModal: waybillFlow.closeWaybillModal,
     refreshSupplierPreview: supplierFlow.refreshSupplierPreview,

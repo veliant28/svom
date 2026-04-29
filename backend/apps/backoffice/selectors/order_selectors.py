@@ -12,7 +12,9 @@ from apps.pricing.models import SupplierOffer
 
 WAYBILL_PREFETCH = Prefetch(
     "nova_poshta_waybills",
-    queryset=OrderNovaPoshtaWaybill.objects.select_related("sender_profile").filter(is_deleted=False).order_by("-created_at"),
+    queryset=OrderNovaPoshtaWaybill.objects.select_related("sender_profile", "created_by", "updated_by")
+    .filter(is_deleted=False)
+    .order_by("-created_at"),
     to_attr="backoffice_active_waybills",
 )
 
@@ -32,7 +34,7 @@ ITEM_PREFETCH = Prefetch(
 
 
 def get_operational_orders_queryset() -> QuerySet[Order]:
-    queryset = Order.objects.select_related("user")
+    queryset = Order.objects.select_related("user", "last_action_by")
     if _order_payment_table_exists():
         queryset = queryset.select_related("payment")
     if _order_receipt_table_exists():

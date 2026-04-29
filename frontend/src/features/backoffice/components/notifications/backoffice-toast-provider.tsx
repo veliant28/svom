@@ -216,7 +216,7 @@ export function BackofficeToastProvider({ children }: { children: ReactNode }) {
       <div
         aria-live="polite"
         aria-relevant="additions removals"
-        className="pointer-events-none fixed bottom-4 right-4 z-[80] flex w-[min(92vw,24rem)] flex-col gap-2"
+        className="pointer-events-none fixed bottom-4 right-4 z-[2200] flex w-[min(92vw,24rem)] flex-col gap-2"
       >
         {toasts.map((toast) => {
           const palette = TOAST_COLORS[toast.variant];

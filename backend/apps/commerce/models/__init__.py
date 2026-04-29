@@ -5,7 +5,7 @@ from .liqpay_settings import LiqPaySettings
 from .loyalty import LoyaltyPromoCode, LoyaltyPromoEvent, LoyaltyPromoRedemption
 from .nova_poshta_sender_profile import NovaPoshtaSenderProfile
 from .novapay_settings import NovaPaySettings
-from .order import Order
+from .order import Order, OrderEvent
 from .order_payment import OrderPayment
 from .order_receipt import OrderReceipt
 from .monobank_settings import MonobankSettings
@@ -20,6 +20,7 @@ __all__ = [
     "CartItem",
     "CheckoutMethodSettings",
     "Order",
+    "OrderEvent",
     "OrderPayment",
     "OrderReceipt",
     "MonobankSettings",

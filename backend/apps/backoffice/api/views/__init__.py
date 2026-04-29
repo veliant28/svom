@@ -62,6 +62,10 @@ from .order_actions_view import (
     ReserveOrderItemsActionAPIView,
     ShippedOrderActionAPIView,
 )
+from .order_history_views import (
+    OrderHistoryAPIView,
+    OrderWaybillHistoryAPIView,
+)
 from .payment_views import (
     BackofficeCheckoutMethodSettingsAPIView,
     BackofficeLiqPayConnectionTestAPIView,
@@ -246,6 +250,8 @@ __all__ = [
     "ReadyToShipOrderActionAPIView",
     "ResetOrderToNewActionAPIView",
     "ShippedOrderActionAPIView",
+    "OrderHistoryAPIView",
+    "OrderWaybillHistoryAPIView",
     "CompleteOrderActionAPIView",
     "CancelOrderActionAPIView",
     "DeleteOrderActionAPIView",

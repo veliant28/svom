@@ -1,3 +1,5 @@
+import type { BackofficeStaffActor } from "@/features/backoffice/types/orders.types";
+
 export type NovaPoshtaSenderType = "private_person" | "fop" | "business" | "organization";
 
 export type BackofficeNovaPoshtaSenderProfile = {
@@ -166,6 +168,7 @@ export type BackofficeOrderNovaPoshtaWaybill = {
   deleted_at: string | null;
   created_by_id: string | null;
   updated_by_id: string | null;
+  last_actor: BackofficeStaffActor | null;
   created_at: string;
   updated_at: string;
   events_count: number;

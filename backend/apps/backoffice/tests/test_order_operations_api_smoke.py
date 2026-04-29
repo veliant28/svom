@@ -115,6 +115,24 @@ class BackofficeOrderOperationsAPISmokeTests(APITestCase):
         self.assertEqual(confirm_response.status_code, status.HTTP_200_OK)
         self.order.refresh_from_db()
         self.assertEqual(self.order.status, Order.STATUS_PROCESSING)
+        self.assertEqual(self.order.last_action_by_id, self.staff.id)
+
+        detail_after_confirm = self.client.get(
+            reverse("backoffice_api:order-operational-detail", kwargs={"id": str(self.order.id)}),
+            **self.auth,
+        )
+        self.assertEqual(detail_after_confirm.status_code, status.HTTP_200_OK)
+        self.assertEqual(detail_after_confirm.data["last_actor"]["user_id"], str(self.staff.id))
+        self.assertEqual(detail_after_confirm.data["last_actor"]["role_code"], "administrator")
+
+        history_response = self.client.get(
+            reverse("backoffice_api:order-history", kwargs={"order_id": str(self.order.id)}),
+            **self.auth,
+        )
+        self.assertEqual(history_response.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(len(history_response.data["results"]), 1)
+        self.assertEqual(history_response.data["results"][0]["source"], "order")
+        self.assertEqual(history_response.data["results"][0]["actor"]["user_id"], str(self.staff.id))
 
         awaiting_response = self.client.post(
             reverse("backoffice_api:order-action-awaiting-procurement"),

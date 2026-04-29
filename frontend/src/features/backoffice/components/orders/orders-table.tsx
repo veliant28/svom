@@ -27,6 +27,8 @@ export function OrdersTable({
   onToggleSelected,
   onOpen,
   onWaybill,
+  onOpenOrderHistory,
+  onOpenWaybillHistory,
   onSupplierOrder,
   onDelete,
   onPageChange,
@@ -50,6 +52,8 @@ export function OrdersTable({
   onToggleSelected: (id: string) => void;
   onOpen: (item: BackofficeOrderOperational) => void;
   onWaybill: (item: BackofficeOrderOperational) => void;
+  onOpenOrderHistory: (item: BackofficeOrderOperational) => void;
+  onOpenWaybillHistory: (item: BackofficeOrderOperational) => void;
   onSupplierOrder: (item: BackofficeOrderOperational) => void;
   onDelete: (item: BackofficeOrderOperational) => void;
   onPageChange: (next: number) => void;
@@ -69,6 +73,8 @@ export function OrdersTable({
       onToggleSelected,
       onOpen,
       onWaybill,
+      onOpenOrderHistory,
+      onOpenWaybillHistory,
       onSupplierOrder,
       onDelete,
     }),
@@ -78,6 +84,8 @@ export function OrdersTable({
       locale,
       onDelete,
       onOpen,
+      onOpenOrderHistory,
+      onOpenWaybillHistory,
       onSupplierOrder,
       onToggleSelectAllPage,
       onToggleSelected,

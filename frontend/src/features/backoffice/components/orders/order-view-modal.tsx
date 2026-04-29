@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 
 import { OrderReceiptField } from "@/features/backoffice/components/orders/order-receipt-field";
+import { OrderModalStaffActor } from "@/features/backoffice/components/orders/order-modal-staff-actor";
 import {
   extractLabel,
   resolveDeliveryAddressParts,
@@ -159,13 +160,16 @@ export function OrderViewModal({
         <header className="border-b px-4 py-3" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <h2 className="truncate text-base font-semibold">
-                {order ? t("orders.modals.view.titleWithNumber", { number: order.order_number }) : t("orders.modals.view.title")}
-              </h2>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="truncate text-base font-semibold">
+                  {order ? t("orders.modals.view.titleWithNumber", { number: order.order_number }) : t("orders.modals.view.title")}
+                </h2>
+                {order ? <StatusChip status={order.status} /> : null}
+              </div>
               <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>{statusDescription}</p>
             </div>
-            <div className="flex items-center gap-2">
-              {order ? <StatusChip status={order.status} /> : null}
+            <div className="flex items-start gap-2">
+              <OrderModalStaffActor actor={order?.last_actor ?? null} />
               <button
                 type="button"
                 className="inline-flex h-8 w-8 items-center justify-center rounded-md border"

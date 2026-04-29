@@ -1,5 +1,6 @@
 import { ScanBarcode, ScanLine, X } from "lucide-react";
 
+import { OrderModalStaffActor } from "@/features/backoffice/components/orders/order-modal-staff-actor";
 import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
 import type { Translator } from "@/features/backoffice/components/orders/order-waybill-modal.helpers";
 import type { BackofficeOrderNovaPoshtaWaybill } from "@/features/backoffice/types/nova-poshta.types";
@@ -26,7 +27,8 @@ export function OrderWaybillModalHeader({
             {waybill?.np_number || t("orders.table.waybillEmpty")}
           </BackofficeStatusChip>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-start gap-2">
+          <OrderModalStaffActor actor={waybill?.last_actor ?? null} />
           <button
             type="button"
             className="inline-flex h-8 w-8 items-center justify-center rounded-md border"

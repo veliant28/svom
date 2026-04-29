@@ -5,7 +5,7 @@ from typing import TypedDict
 
 from django.utils.translation import gettext_lazy as _
 
-from apps.commerce.models import Order, OrderItem
+from apps.commerce.models import Order, OrderEvent, OrderItem
 from apps.supplier_imports.models import SupplierRawOffer
 from apps.supplier_imports.selectors import get_supplier_integration_by_code
 from apps.supplier_imports.services.integrations.exceptions import SupplierIntegrationError
@@ -89,6 +89,7 @@ class OrderSupplierService:
         order: Order,
         products: list[dict[str, int]] | None = None,
         test_mode: bool = False,
+        actor=None,
     ) -> dict:
         token = self._get_gpl_access_token()
         preview = self.get_gpl_payload_preview(order=order)
@@ -112,7 +113,19 @@ class OrderSupplierService:
 
         supplier_order_id = self._extract_supplier_order_id(payload)
         if supplier_order_id is not None:
-            self._append_order_note(order, f"[GPL_ORDER_ID:{supplier_order_id}]")
+            self._append_order_note(order, f"[GPL_ORDER_ID:{supplier_order_id}]", actor=actor)
+        self._create_order_event(
+            order=order,
+            event_type=OrderEvent.EVENT_SUPPLIER_ORDER_CREATE,
+            action_label="Создан заказ поставщику GPL",
+            message=f"ID заказа поставщика: {supplier_order_id}" if supplier_order_id else "Заказ поставщику отправлен.",
+            payload={
+                "supplier_order_id": supplier_order_id,
+                "products": normalized_products,
+                "test_mode": bool(test_mode),
+            },
+            actor=actor,
+        )
 
         return {
             "order_id": str(order.id),
@@ -122,10 +135,18 @@ class OrderSupplierService:
             "response": payload,
         }
 
-    def cancel_gpl_order_for_local_order(self, *, order: Order, supplier_order_id: int) -> dict:
+    def cancel_gpl_order_for_local_order(self, *, order: Order, supplier_order_id: int, actor=None) -> dict:
         token = self._get_gpl_access_token()
         payload = self.gpl_client.cancel_order(access_token=token, order_id=supplier_order_id)
-        self._append_order_note(order, f"[GPL_ORDER_CANCELLED:{supplier_order_id}]")
+        self._append_order_note(order, f"[GPL_ORDER_CANCELLED:{supplier_order_id}]", actor=actor)
+        self._create_order_event(
+            order=order,
+            event_type=OrderEvent.EVENT_SUPPLIER_ORDER_CANCEL,
+            action_label="Отменен заказ поставщику GPL",
+            message=f"ID заказа поставщика: {supplier_order_id}",
+            payload={"supplier_order_id": int(supplier_order_id)},
+            actor=actor,
+        )
         return {
             "order_id": str(order.id),
             "order_number": order.order_number,
@@ -213,11 +234,15 @@ class OrderSupplierService:
             return None
         return self._parse_positive_int(data.get("id"))
 
-    def _append_order_note(self, order: Order, note: str) -> None:
+    def _append_order_note(self, order: Order, note: str, actor=None) -> None:
         next_note = self._merge_note(order.operator_notes, note)
-        if next_note == order.operator_notes:
+        if next_note == order.operator_notes and actor is None:
             return
         order.operator_notes = next_note
+        if actor is not None:
+            order.last_action_by = actor
+            order.save(update_fields=("operator_notes", "last_action_by", "updated_at"))
+            return
         order.save(update_fields=("operator_notes", "updated_at"))
 
     @staticmethod
@@ -228,3 +253,22 @@ class OrderSupplierService:
         if not existing:
             return normalized
         return f"{existing}\n{normalized}"
+
+    @staticmethod
+    def _create_order_event(
+        *,
+        order: Order,
+        event_type: str,
+        action_label: str,
+        message: str = "",
+        payload: dict | None = None,
+        actor=None,
+    ) -> None:
+        OrderEvent.objects.create(
+            order=order,
+            event_type=event_type,
+            action_label=action_label[:255],
+            message=message[:500],
+            payload=payload or {},
+            created_by=actor,
+        )

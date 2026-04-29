@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError as DRFValidationError
 
 from apps.backoffice.services.procurement_service import ProcurementService
-from apps.commerce.models import Order, OrderItem
+from apps.commerce.models import Order, OrderEvent, OrderItem
 from apps.pricing.models import SupplierOffer
 from apps.users.rbac import get_user_system_role
 
@@ -65,11 +65,18 @@ class OrderOperationsService:
         order: Order,
         item_ids: list[str] | None = None,
         operator_note: str = "",
+        actor=None,
     ) -> OrderActionResult:
         queryset = order.items.all()
         if item_ids:
             queryset = queryset.filter(id__in=item_ids)
 
+        stats = {
+            OrderItem.PROCUREMENT_RESERVED: 0,
+            OrderItem.PROCUREMENT_PARTIALLY_RESERVED: 0,
+            OrderItem.PROCUREMENT_UNAVAILABLE: 0,
+            OrderItem.PROCUREMENT_AWAITING: 0,
+        }
         for item in queryset:
             offer = item.selected_supplier_offer or item.recommended_supplier_offer
             if offer is None:
@@ -102,11 +109,31 @@ class OrderOperationsService:
                     "updated_at",
                 )
             )
+            stats[item.procurement_status] = int(stats.get(item.procurement_status, 0)) + 1
 
-        self._recalculate_order_status_from_items(order)
+        self._recalculate_order_status_from_items(order=order, actor=actor)
         if operator_note:
             order.operator_notes = self._merge_note(order.operator_notes, operator_note)
-            order.save(update_fields=("operator_notes", "updated_at"))
+            self._save_order_with_actor(order=order, update_fields=("operator_notes",), actor=actor)
+        elif actor is not None:
+            self._save_order_with_actor(order=order, update_fields=(), actor=actor)
+
+        processed_total = sum(stats.values())
+        self._create_order_event(
+            order=order,
+            event_type=OrderEvent.EVENT_RESERVE_ITEMS,
+            action_label="Резервирование позиций",
+            message=f"Обработано позиций: {processed_total}",
+            payload={
+                "processed_total": processed_total,
+                "reserved": int(stats[OrderItem.PROCUREMENT_RESERVED]),
+                "partially_reserved": int(stats[OrderItem.PROCUREMENT_PARTIALLY_RESERVED]),
+                "unavailable": int(stats[OrderItem.PROCUREMENT_UNAVAILABLE]),
+                "awaiting": int(stats[OrderItem.PROCUREMENT_AWAITING]),
+                "operator_note": operator_note.strip(),
+            },
+            actor=actor,
+        )
 
         return OrderActionResult(order_id=str(order.id), status=order.status)
 
@@ -117,6 +144,7 @@ class OrderOperationsService:
         item: OrderItem,
         supplier_offer: SupplierOffer,
         operator_note: str = "",
+        actor=None,
     ) -> dict:
         if supplier_offer.product_id != item.product_id:
             raise ValidationError({"supplier_offer_id": _("Supplier offer does not match order item product.")})
@@ -128,6 +156,22 @@ class OrderOperationsService:
             item.operator_note = self._merge_note(item.operator_note, operator_note)
 
         item.save(update_fields=("selected_supplier_offer", "recommended_supplier_offer", "operator_note", "updated_at"))
+        self._save_order_with_actor(order=item.order, update_fields=(), actor=actor)
+        self._create_order_event(
+            order=item.order,
+            event_type=OrderEvent.EVENT_SUPPLIER_OVERRIDE,
+            action_label="Изменен поставщик позиции",
+            message=f"{item.product_sku}: {supplier_offer.supplier.name} ({supplier_offer.supplier_sku})",
+            payload={
+                "order_item_id": str(item.id),
+                "product_sku": item.product_sku,
+                "supplier_offer_id": str(supplier_offer.id),
+                "supplier_name": supplier_offer.supplier.name,
+                "supplier_sku": supplier_offer.supplier_sku,
+                "operator_note": operator_note.strip(),
+            },
+            actor=actor,
+        )
         return self.procurement_service.build_item_recommendation(item)
 
     @transaction.atomic
@@ -197,6 +241,7 @@ class OrderOperationsService:
         reason_note: str = "",
     ) -> OrderActionResult:
         self._ensure_transition_allowed(order=order, target_status=target_status, actor=actor)
+        previous_status = order.status
 
         order.status = target_status
         if target_status == Order.STATUS_CANCELLED:
@@ -209,15 +254,17 @@ class OrderOperationsService:
         if operator_note:
             order.operator_notes = self._merge_note(order.operator_notes, operator_note)
 
-        order.save(
-            update_fields=(
-                "status",
-                "cancellation_reason_code",
-                "cancellation_reason_note",
-                "operator_notes",
-                "updated_at",
-            )
-        )
+        update_fields = [
+            "status",
+            "cancellation_reason_code",
+            "cancellation_reason_note",
+            "operator_notes",
+            "updated_at",
+        ]
+        if actor is not None:
+            order.last_action_by = actor
+            update_fields.append("last_action_by")
+        order.save(update_fields=tuple(update_fields))
 
         if target_status == Order.STATUS_CANCELLED:
             order.items.update(procurement_status=OrderItem.PROCUREMENT_CANCELLED)
@@ -226,16 +273,32 @@ class OrderOperationsService:
         if target_status == Order.STATUS_COMPLETED:
             receipt_notice_code = self._schedule_vchasno_receipt_after_completion(order=order)
 
+        self._create_order_event(
+            order=order,
+            event_type=OrderEvent.EVENT_STATUS_CHANGE,
+            action_label=f"Статус: {self._status_label(previous_status)} -> {self._status_label(target_status)}",
+            message=operator_note.strip(),
+            payload={
+                "from_status": previous_status,
+                "to_status": target_status,
+                "reason_code": order.cancellation_reason_code,
+                "reason_note": order.cancellation_reason_note,
+            },
+            actor=actor,
+        )
+
         return OrderActionResult(order_id=str(order.id), status=order.status, receipt_notice_code=receipt_notice_code)
 
     @transaction.atomic
-    def delete_order(self, *, order: Order, operator_note: str = "") -> dict:
+    def delete_order(self, *, order: Order, operator_note: str = "", actor=None) -> dict:
         if order.status in {Order.STATUS_SHIPPED, Order.STATUS_COMPLETED}:
             raise ValidationError({"order": _("Нельзя удалить заказ в статусе отправлен/завершен.")})
 
         if operator_note:
             order.operator_notes = self._merge_note(order.operator_notes, operator_note)
-            order.save(update_fields=("operator_notes", "updated_at"))
+            self._save_order_with_actor(order=order, update_fields=("operator_notes",), actor=actor)
+        elif actor is not None:
+            self._save_order_with_actor(order=order, update_fields=(), actor=actor)
 
         order_id = str(order.id)
         order_number = order.order_number
@@ -243,31 +306,31 @@ class OrderOperationsService:
         return {"order_id": order_id, "order_number": order_number}
 
     @transaction.atomic
-    def bulk_confirm(self, *, order_ids: list[str], operator_note: str = "") -> dict:
+    def bulk_confirm(self, *, order_ids: list[str], operator_note: str = "", actor=None) -> dict:
         orders = Order.objects.filter(id__in=order_ids)
         updated = 0
         for order in orders:
-            self.confirm_order(order=order, operator_note=operator_note)
+            self.confirm_order(order=order, operator_note=operator_note, actor=actor)
             updated += 1
         return {"updated": updated}
 
     @transaction.atomic
-    def bulk_mark_awaiting_procurement(self, *, order_ids: list[str], operator_note: str = "") -> dict:
+    def bulk_mark_awaiting_procurement(self, *, order_ids: list[str], operator_note: str = "", actor=None) -> dict:
         orders = Order.objects.filter(id__in=order_ids)
         updated = 0
         for order in orders:
-            self.mark_awaiting_procurement(order=order, operator_note=operator_note)
+            self.mark_awaiting_procurement(order=order, operator_note=operator_note, actor=actor)
             updated += 1
         return {"updated": updated}
 
-    def bulk_delete(self, *, order_ids: list[str], operator_note: str = "") -> dict:
+    def bulk_delete(self, *, order_ids: list[str], operator_note: str = "", actor=None) -> dict:
         orders = Order.objects.filter(id__in=order_ids)
         deleted = 0
         skipped: list[dict[str, str]] = []
 
         for order in orders:
             try:
-                self.delete_order(order=order, operator_note=operator_note)
+                self.delete_order(order=order, operator_note=operator_note, actor=actor)
                 deleted += 1
             except ValidationError as exc:
                 skipped.append(
@@ -283,7 +346,7 @@ class OrderOperationsService:
     def supplier_recommendation_for_item(self, *, item: OrderItem) -> dict:
         return self.procurement_service.build_item_recommendation(item)
 
-    def _recalculate_order_status_from_items(self, order: Order) -> None:
+    def _recalculate_order_status_from_items(self, *, order: Order, actor=None) -> None:
         if order.status in {
             Order.STATUS_READY_FOR_SHIPMENT,
             Order.STATUS_SHIPPED,
@@ -295,8 +358,31 @@ class OrderOperationsService:
         next_status = Order.STATUS_PROCESSING
 
         if order.status != next_status:
+            previous_status = order.status
             order.status = next_status
-            order.save(update_fields=("status", "updated_at"))
+            self._save_order_with_actor(order=order, update_fields=("status",), actor=actor)
+            self._create_order_event(
+                order=order,
+                event_type=OrderEvent.EVENT_STATUS_CHANGE,
+                action_label=f"Статус: {self._status_label(previous_status)} -> {self._status_label(next_status)}",
+                message="Автоматический переход после обновления позиций.",
+                payload={
+                    "from_status": previous_status,
+                    "to_status": next_status,
+                    "auto_transition": True,
+                },
+                actor=actor,
+            )
+
+    def _save_order_with_actor(self, *, order: Order, update_fields: tuple[str, ...], actor) -> None:
+        fields = list(update_fields)
+        if actor is not None:
+            order.last_action_by = actor
+            if "last_action_by" not in fields:
+                fields.append("last_action_by")
+        if "updated_at" not in fields:
+            fields.append("updated_at")
+        order.save(update_fields=tuple(fields))
 
     def _merge_note(self, existing: str, note: str) -> str:
         note = note.strip()
@@ -337,6 +423,29 @@ class OrderOperationsService:
         if hasattr(error, "messages") and error.messages:
             return str(error.messages[0])
         return str(error)
+
+    def _create_order_event(
+        self,
+        *,
+        order: Order,
+        event_type: str,
+        action_label: str,
+        message: str = "",
+        payload: dict | None = None,
+        actor=None,
+    ) -> None:
+        OrderEvent.objects.create(
+            order=order,
+            event_type=event_type,
+            action_label=action_label[:255],
+            message=message[:500],
+            payload=payload or {},
+            created_by=actor,
+        )
+
+    @staticmethod
+    def _status_label(status: str) -> str:
+        return dict(Order.STATUS_CHOICES).get(status, status)
 
     def _schedule_vchasno_receipt_after_completion(self, *, order: Order) -> str:
         from apps.commerce.services.vchasno_kasa import get_vchasno_kasa_settings

@@ -26,6 +26,8 @@
           "selectOne": "Select order {orderNumber}",
           "waybill": "Open waybill",
           "waybillCreate": "Create waybill",
+          "statusHistory": "Order change history",
+          "waybillHistory": "Waybill change history",
           "refresh": "Refresh"
         },
         "table": {
@@ -194,7 +196,32 @@
           "monobankActionNotAvailable": "This action is available only for Monobank payments.",
           "statusChangeNoPermission": "No permission to change status backward.",
           "completedReceiptStarted": "Order status updated. Receipt creation has started.",
-          "completedReceiptSettingsWarning": "Order status updated, but receipt was not created: check Vchasno.Kasa settings."
+          "completedReceiptSettingsWarning": "Order status updated, but receipt was not created: check Vchasno.Kasa settings.",
+          "historyLoadFailed": "Unable to load change history.",
+          "historyUpdatedOrder": "Order history updated.",
+          "historyUpdatedWaybill": "Waybill history updated."
+        },
+        "history": {
+          "orderTitle": "Order history",
+          "waybillTitle": "Waybill history",
+          "subtitle": "Order {number}",
+          "subtitleEmpty": "Order",
+          "orderEmpty": "No saved order changes yet.",
+          "waybillEmpty": "No saved waybill changes yet.",
+          "sourceOrder": "Order",
+          "sourceWaybill": "Waybill",
+          "statusChanged": "Status changed",
+          "statusFrom": "From",
+          "statusTo": "To",
+          "orderStatuses": {
+            "new": "New",
+            "processing": "Processing",
+            "ready_for_shipment": "Ready for shipment",
+            "shipped": "Shipped",
+            "completed": "Completed",
+            "cancelled": "Cancelled",
+            "unknown": "Unknown"
+          }
         },
         "receipt": {
           "label": "Receipt",

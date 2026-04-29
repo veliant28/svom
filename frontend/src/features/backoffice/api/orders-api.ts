@@ -7,6 +7,7 @@ import type {
   BackofficeGplOrdersResponse,
   BackofficeOrderBulkDeleteResult,
   BackofficeOrderDeleteResult,
+  BackofficeOrderHistoryEvent,
   BackofficeOrderOperational,
   BackofficeOrderSupplierCancelResult,
   BackofficeOrderSupplierCreateResult,
@@ -40,6 +41,14 @@ export async function getBackofficeOrders(token: string, params?: BackofficeList
 
 export async function getBackofficeOrderDetail(token: string, orderId: string): Promise<BackofficeOrderOperational> {
   return getJson<BackofficeOrderOperational>(`/backoffice/orders/${orderId}/`, undefined, { token });
+}
+
+export async function getBackofficeOrderHistory(token: string, orderId: string): Promise<{ results: BackofficeOrderHistoryEvent[] }> {
+  return getJson<{ results: BackofficeOrderHistoryEvent[] }>(`/backoffice/orders/${orderId}/history/`, undefined, { token });
+}
+
+export async function getBackofficeOrderWaybillHistory(token: string, orderId: string): Promise<{ results: BackofficeOrderHistoryEvent[] }> {
+  return getJson<{ results: BackofficeOrderHistoryEvent[] }>(`/backoffice/orders/${orderId}/waybill/history/`, undefined, { token });
 }
 
 export async function confirmBackofficeOrder(

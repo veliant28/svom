@@ -11,6 +11,7 @@ from apps.commerce.models import Order, OrderItem
 from apps.commerce.services.delivery_snapshot import resolve_delivery_display, resolve_waybill_seed
 from apps.commerce.services.nova_poshta.tracking_status_catalog import resolve_tracking_status_text
 from apps.commerce.services.vchasno_kasa import serialize_receipt_summary
+from apps.users.rbac import get_user_system_role
 
 
 class BackofficeOrderItemOperationalSerializer(serializers.ModelSerializer):
@@ -63,6 +64,7 @@ class BackofficeOrderOperationalListSerializer(serializers.ModelSerializer):
     delivery_waybill_seed = serializers.SerializerMethodField()
     payment = serializers.SerializerMethodField()
     receipt = serializers.SerializerMethodField()
+    last_actor = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -84,6 +86,7 @@ class BackofficeOrderOperationalListSerializer(serializers.ModelSerializer):
             "payment_method",
             "payment",
             "receipt",
+            "last_actor",
             "subtotal",
             "delivery_fee",
             "discount_total",
@@ -100,6 +103,9 @@ class BackofficeOrderOperationalListSerializer(serializers.ModelSerializer):
             "nova_poshta_waybill_has_error",
             "placed_at",
         )
+
+    def get_last_actor(self, obj: Order) -> dict | None:
+        return self._serialize_staff_actor(getattr(obj, "last_action_by", None))
 
     def get_items_count(self, obj: Order) -> int:
         return obj.items.count()
@@ -298,6 +304,22 @@ class BackofficeOrderOperationalListSerializer(serializers.ModelSerializer):
 
     def get_receipt(self, obj: Order) -> dict:
         return serialize_receipt_summary(order=obj)
+
+    @staticmethod
+    def _serialize_staff_actor(user) -> dict | None:
+        if user is None:
+            return None
+        role_code = get_user_system_role(user)
+        if role_code is None and getattr(user, "is_superuser", False):
+            role_code = "administrator"
+        full_name = (user.get_full_name() or "").strip() or (user.email or "").strip()
+        role_group_name = f"Backoffice Role: {role_code}" if role_code else ""
+        return {
+            "user_id": str(user.id),
+            "full_name": full_name,
+            "role_code": role_code,
+            "role_group_name": role_group_name,
+        }
 
 
 class BackofficeOrderOperationalDetailSerializer(BackofficeOrderOperationalListSerializer):

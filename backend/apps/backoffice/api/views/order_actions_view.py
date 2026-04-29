@@ -72,6 +72,7 @@ class ReserveOrderItemsActionAPIView(BackofficeAPIView):
             order=order,
             item_ids=[str(item_id) for item_id in serializer.validated_data.get("item_ids", [])],
             operator_note=serializer.validated_data.get("operator_note", ""),
+            actor=request.user,
         )
         return Response({"order_id": result.order_id, "status": result.status})
 
@@ -164,6 +165,7 @@ class BulkConfirmOrdersActionAPIView(BackofficeAPIView):
         result = OrderOperationsService().bulk_confirm(
             order_ids=[str(order_id) for order_id in serializer.validated_data["order_ids"]],
             operator_note=serializer.validated_data.get("operator_note", ""),
+            actor=request.user,
         )
         return Response(result)
 
@@ -176,6 +178,7 @@ class BulkAwaitingProcurementActionAPIView(BackofficeAPIView):
         result = OrderOperationsService().bulk_mark_awaiting_procurement(
             order_ids=[str(order_id) for order_id in serializer.validated_data["order_ids"]],
             operator_note=serializer.validated_data.get("operator_note", ""),
+            actor=request.user,
         )
         return Response(result)
 
@@ -190,6 +193,7 @@ class DeleteOrderActionAPIView(BackofficeAPIView):
             result = OrderOperationsService().delete_order(
                 order=order,
                 operator_note=serializer.validated_data.get("operator_note", ""),
+                actor=request.user,
             )
         except ValidationError as exc:
             return Response({"detail": _extract_validation_reason(exc)}, status=status.HTTP_400_BAD_REQUEST)
@@ -205,6 +209,7 @@ class BulkDeleteOrdersActionAPIView(BackofficeAPIView):
         result = OrderOperationsService().bulk_delete(
             order_ids=[str(order_id) for order_id in serializer.validated_data["order_ids"]],
             operator_note=serializer.validated_data.get("operator_note", ""),
+            actor=request.user,
         )
         return Response(result)
 
@@ -249,6 +254,7 @@ class OrderItemSupplierOverrideAPIView(BackofficeAPIView):
             item=item,
             supplier_offer=offer,
             operator_note=serializer.validated_data.get("operator_note", ""),
+            actor=request.user,
         )
         return Response(payload)
 
@@ -301,6 +307,7 @@ class GplCreateOrderAPIView(BackofficeAPIView):
                 order=order,
                 products=serializer.validated_data.get("products"),
                 test_mode=serializer.validated_data.get("test", False),
+                actor=request.user,
             )
         except Exception as exc:
             return supplier_action_error_response(exc)
@@ -318,6 +325,7 @@ class GplCancelOrderAPIView(BackofficeAPIView):
             payload = OrderSupplierService().cancel_gpl_order_for_local_order(
                 order=order,
                 supplier_order_id=serializer.validated_data["supplier_order_id"],
+                actor=request.user,
             )
         except Exception as exc:
             return supplier_action_error_response(exc)

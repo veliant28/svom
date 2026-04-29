@@ -57,6 +57,10 @@ from .order_operations_serializer import (
     OrderSupplierPayloadSerializer,
     OrderSupplierProductSerializer,
 )
+from .order_history_serializer import (
+    BackofficeOrderHistoryEventSerializer,
+    BackofficeWaybillHistoryEventSerializer,
+)
 from .payment_serializer import (
     BackofficeMonobankFiscalCheckSerializer,
     BackofficeMonobankPaymentActionResponseSerializer,
@@ -173,6 +177,8 @@ __all__ = [
     "OrderSupplierPayloadSerializer",
     "OrderSupplierCreateSerializer",
     "OrderSupplierCancelSerializer",
+    "BackofficeOrderHistoryEventSerializer",
+    "BackofficeWaybillHistoryEventSerializer",
     "MonobankSettingsSerializer",
     "MonobankConnectionCheckSerializer",
     "PaymentConnectionCheckSerializer",

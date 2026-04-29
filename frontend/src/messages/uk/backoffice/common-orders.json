@@ -26,6 +26,8 @@
           "selectOne": "Вибрати замовлення {orderNumber}",
           "waybill": "Відкрити ТТН",
           "waybillCreate": "Створити ТТН",
+          "statusHistory": "Історія змін замовлення",
+          "waybillHistory": "Історія змін ТТН",
           "refresh": "Оновити"
         },
         "table": {
@@ -194,7 +196,32 @@
           "monobankActionNotAvailable": "Дія доступна лише для оплати Monobank.",
           "statusChangeNoPermission": "Немає прав на зміну статусу у зворотному напрямку.",
           "completedReceiptStarted": "Статус замовлення оновлено. Створення чека запущено.",
-          "completedReceiptSettingsWarning": "Статус замовлення оновлено, але чек не створено: перевірте налаштування Вчасно.Каса."
+          "completedReceiptSettingsWarning": "Статус замовлення оновлено, але чек не створено: перевірте налаштування Вчасно.Каса.",
+          "historyLoadFailed": "Не вдалося завантажити історію змін.",
+          "historyUpdatedOrder": "Історія замовлення оновлена.",
+          "historyUpdatedWaybill": "Історія ТТН оновлена."
+        },
+        "history": {
+          "orderTitle": "Історія замовлення",
+          "waybillTitle": "Історія ТТН",
+          "subtitle": "Замовлення {number}",
+          "subtitleEmpty": "Замовлення",
+          "orderEmpty": "Збережених змін по замовленню поки немає.",
+          "waybillEmpty": "Збережених змін по ТТН поки немає.",
+          "sourceOrder": "Замовлення",
+          "sourceWaybill": "ТТН",
+          "statusChanged": "Зміна статусу",
+          "statusFrom": "З",
+          "statusTo": "У",
+          "orderStatuses": {
+            "new": "Нове",
+            "processing": "В обробці",
+            "ready_for_shipment": "Готове до відправлення",
+            "shipped": "Відправлено",
+            "completed": "Завершено",
+            "cancelled": "Скасовано",
+            "unknown": "Невідомо"
+          }
         },
         "receipt": {
           "label": "Чек",

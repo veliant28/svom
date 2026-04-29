@@ -6,6 +6,7 @@ from rest_framework import serializers
 
 from apps.commerce.models import NovaPoshtaSenderProfile, OrderNovaPoshtaWaybill, OrderNovaPoshtaWaybillEvent
 from apps.commerce.services.nova_poshta.tracking_status_catalog import resolve_tracking_status_text
+from apps.users.rbac import get_user_system_role
 
 
 class NovaPoshtaSenderProfileSerializer(serializers.ModelSerializer):
@@ -235,6 +236,7 @@ class OrderNovaPoshtaWaybillSerializer(serializers.ModelSerializer):
     number_of_floors_lifting = serializers.SerializerMethodField(read_only=True)
     number_of_floors_descent = serializers.SerializerMethodField(read_only=True)
     forwarding_count = serializers.SerializerMethodField(read_only=True)
+    last_actor = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = OrderNovaPoshtaWaybill
@@ -293,6 +295,7 @@ class OrderNovaPoshtaWaybillSerializer(serializers.ModelSerializer):
             "deleted_at",
             "created_by_id",
             "updated_by_id",
+            "last_actor",
             "created_at",
             "updated_at",
             "events_count",
@@ -391,6 +394,10 @@ class OrderNovaPoshtaWaybillSerializer(serializers.ModelSerializer):
     def get_forwarding_count(self, obj: OrderNovaPoshtaWaybill) -> str:
         return str(self._raw_request(obj).get("ForwardingCount") or "").strip()
 
+    def get_last_actor(self, obj: OrderNovaPoshtaWaybill) -> dict | None:
+        actor = obj.updated_by or obj.created_by
+        return self._serialize_staff_actor(actor)
+
     @staticmethod
     def _raw_request(obj: OrderNovaPoshtaWaybill) -> dict:
         return obj.raw_request_json if isinstance(obj.raw_request_json, dict) else {}
@@ -401,6 +408,22 @@ class OrderNovaPoshtaWaybillSerializer(serializers.ModelSerializer):
             return value
         normalized = str(value or "").strip().lower()
         return normalized in {"1", "true", "yes", "y"}
+
+    @staticmethod
+    def _serialize_staff_actor(user) -> dict | None:
+        if user is None:
+            return None
+        role_code = get_user_system_role(user)
+        if role_code is None and getattr(user, "is_superuser", False):
+            role_code = "administrator"
+        full_name = (user.get_full_name() or "").strip() or (user.email or "").strip()
+        role_group_name = f"Backoffice Role: {role_code}" if role_code else ""
+        return {
+            "user_id": str(user.id),
+            "full_name": full_name,
+            "role_code": role_code,
+            "role_group_name": role_group_name,
+        }
 
     @staticmethod
     def _extract_tracking_status_data(event: OrderNovaPoshtaWaybillEvent) -> dict:

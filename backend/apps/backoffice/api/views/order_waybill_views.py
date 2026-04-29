@@ -229,7 +229,15 @@ class NovaPoshtaCounterpartyDetailsLookupAPIView(BackofficeAPIView):
 
 class OrderNovaPoshtaWaybillDetailAPIView(BackofficeAPIView):
     def get(self, request, order_id):
-        order = get_object_or_404(Order.objects.prefetch_related("nova_poshta_waybills", "nova_poshta_waybills__sender_profile"), id=order_id)
+        order = get_object_or_404(
+            Order.objects.prefetch_related(
+                "nova_poshta_waybills",
+                "nova_poshta_waybills__sender_profile",
+                "nova_poshta_waybills__created_by",
+                "nova_poshta_waybills__updated_by",
+            ),
+            id=order_id,
+        )
         service = NovaPoshtaWaybillService()
         waybill = service.get_active_waybill(order=order)
 

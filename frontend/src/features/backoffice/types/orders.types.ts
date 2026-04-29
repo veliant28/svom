@@ -51,6 +51,27 @@ export type BackofficeOrderReceipt = {
   error_message: string;
 };
 
+export type BackofficeStaffActor = {
+  user_id: string;
+  full_name: string;
+  role_code: "administrator" | "manager" | "operator" | "user" | null;
+  role_group_name: string;
+};
+
+export type BackofficeOrderHistoryEvent = {
+  id: string;
+  source: "order" | "waybill";
+  event_type: string;
+  event_label: string;
+  action: string;
+  message: string;
+  payload: Record<string, unknown>;
+  status_code?: string;
+  status_text?: string;
+  occurred_at: string;
+  actor: BackofficeStaffActor | null;
+};
+
 export type BackofficeMonobankPaymentAction = "refresh" | "cancel" | "remove" | "finalize" | "fiscal_checks";
 
 export type BackofficeMonobankFiscalCheck = {
@@ -100,6 +121,7 @@ export type BackofficeOrderOperational = {
   payment_method: string;
   payment: BackofficeOrderPayment;
   receipt: BackofficeOrderReceipt;
+  last_actor: BackofficeStaffActor | null;
   subtotal: string;
   delivery_fee: string;
   discount_total: string;

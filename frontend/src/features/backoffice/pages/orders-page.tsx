@@ -1,6 +1,7 @@
 "use client";
 
 import { OrderDeleteModal } from "@/features/backoffice/components/orders/order-delete-modal";
+import { OrderHistoryModal } from "@/features/backoffice/components/orders/order-history-modal";
 import { OrdersFilters } from "@/features/backoffice/components/orders/orders-filters";
 import { OrdersTable } from "@/features/backoffice/components/orders/orders-table";
 import { OrdersToolbar } from "@/features/backoffice/components/orders/orders-toolbar";
@@ -49,6 +50,12 @@ export function OrdersPage() {
     waybillSyncing,
     waybillDeleting,
     waybillSenderProfiles,
+    orderHistoryOpen,
+    waybillHistoryOpen,
+    historyLoading,
+    historyTarget,
+    orderHistoryEvents,
+    waybillHistoryEvents,
     bulkActions,
     openOrderView,
     closeOrderView,
@@ -60,6 +67,10 @@ export function OrdersPage() {
     runMonobankPaymentAction,
     openSupplierModalFromRow,
     openWaybillModalFromRow,
+    openOrderHistoryFromRow,
+    openWaybillHistoryFromRow,
+    closeOrderHistory,
+    closeWaybillHistory,
     closeSupplierModal,
     closeWaybillModal,
     refreshSupplierPreview,
@@ -119,9 +130,35 @@ export function OrdersPage() {
         onToggleSelected={bulkActions.toggleSelected}
         onOpen={openOrderView}
         onWaybill={openWaybillModalFromRow}
+        onOpenOrderHistory={openOrderHistoryFromRow}
+        onOpenWaybillHistory={openWaybillHistoryFromRow}
         onSupplierOrder={openSupplierModalFromRow}
         onDelete={requestDelete}
         onPageChange={filters.setPage}
+      />
+
+      <OrderHistoryModal
+        isOpen={orderHistoryOpen}
+        title={t("orders.history.orderTitle")}
+        subtitle={historyTarget ? t("orders.history.subtitle", { number: historyTarget.order_number }) : t("orders.history.subtitleEmpty")}
+        locale={locale}
+        events={orderHistoryEvents}
+        isLoading={historyLoading}
+        emptyLabel={t("orders.history.orderEmpty")}
+        t={t}
+        onClose={closeOrderHistory}
+      />
+
+      <OrderHistoryModal
+        isOpen={waybillHistoryOpen}
+        title={t("orders.history.waybillTitle")}
+        subtitle={historyTarget ? t("orders.history.subtitle", { number: historyTarget.order_number }) : t("orders.history.subtitleEmpty")}
+        locale={locale}
+        events={waybillHistoryEvents}
+        isLoading={historyLoading}
+        emptyLabel={t("orders.history.waybillEmpty")}
+        t={t}
+        onClose={closeWaybillHistory}
       />
 
       <OrderViewModal
