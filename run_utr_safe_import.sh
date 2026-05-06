@@ -5,6 +5,12 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$PROJECT_ROOT/backend"
 PY_BIN="${UTR_PYTHON:-$PROJECT_ROOT/.venv/bin/python}"
 
+utr_catalog_enabled_raw="$(printf '%s' "${UTR_CATALOG_ENRICHMENT_ENABLED:-0}" | tr '[:upper:]' '[:lower:]')"
+if [[ "$utr_catalog_enabled_raw" != "1" && "$utr_catalog_enabled_raw" != "true" && "$utr_catalog_enabled_raw" != "yes" && "$utr_catalog_enabled_raw" != "on" ]]; then
+  echo "UTR catalog enrichment is disabled"
+  exit 0
+fi
+
 if [[ ! -x "$PY_BIN" ]]; then
   echo "Python interpreter not found or not executable: $PY_BIN" >&2
   exit 1

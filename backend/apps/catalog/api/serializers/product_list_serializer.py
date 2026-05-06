@@ -1,7 +1,9 @@
 from rest_framework import serializers
 
 from apps.catalog.models import Product
+from apps.catalog.services.autodb_content import get_autodb_primary_image_url
 from apps.catalog.services.fitment_filtering import is_fitment_disabled_category
+from apps.catalog.services.product_management import get_product_display_name
 from apps.pricing.services import ProductSellableSnapshotService
 
 from .product_shared_serializer import ProductBrandSerializer, ProductCategorySerializer
@@ -10,6 +12,7 @@ sellable_service = ProductSellableSnapshotService()
 
 
 class ProductListSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
     brand = ProductBrandSerializer(read_only=True)
     category = ProductCategorySerializer(read_only=True)
     primary_image = serializers.SerializerMethodField()
@@ -67,9 +70,32 @@ class ProductListSerializer(serializers.ModelSerializer):
                 image = all_images[0].image
 
         if not image:
-            return ""
+            if not obj.autodb_supplier_id or not str(obj.autodb_article_number or "").strip():
+                return ""
+            return get_autodb_primary_image_url(product=obj)
 
         return image.url
+
+    def _resolve_locale(self) -> str | None:
+        request = self.context.get("request")
+        if request is None:
+            return None
+
+        locale = (request.query_params.get("locale") or "").strip()
+        if locale:
+            return locale
+
+        language_code = getattr(request, "LANGUAGE_CODE", "")
+        if language_code:
+            return str(language_code)
+
+        accept_language = str(request.headers.get("Accept-Language", "")).strip()
+        if not accept_language:
+            return None
+        return accept_language.split(",", 1)[0]
+
+    def get_name(self, obj: Product) -> str:
+        return get_product_display_name(obj, self._resolve_locale())
 
     def _snapshot(self, obj: Product):
         cached = getattr(obj, "_sellable_snapshot", None)

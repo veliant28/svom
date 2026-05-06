@@ -141,7 +141,10 @@ class FitmentFilteringService:
         selected_utr_detail_ids: list[str],
         include_utr_raw_offer_map: bool,
     ) -> QuerySet:
-        fitments_subquery = ProductFitment.objects.filter(product_id=OuterRef("pk"))
+        fitments_subquery = ProductFitment.objects.filter(
+            product_id=OuterRef("pk"),
+            modification_id__isnull=False,
+        ).exclude(source=ProductFitment.SOURCE_AUTODB_PRO)
         queryset = queryset.annotate(_has_fitment_relations=Exists(fitments_subquery))
         if include_utr_raw_offer_map:
             utr_any_map_subquery = self._build_utr_raw_offer_any_map_subquery()

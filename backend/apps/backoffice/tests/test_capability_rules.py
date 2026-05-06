@@ -36,6 +36,10 @@ class BackofficeCapabilityRulesTest(SimpleTestCase):
             ("brands.view",),
         )
         self.assertEqual(
+            resolve_required_capabilities_for_request("/api/backoffice/autodb/supplier-brands/", "GET"),
+            ("brands.view",),
+        )
+        self.assertEqual(
             resolve_required_capabilities_for_request("/api/backoffice/categories/", "GET"),
             ("categories.view",),
         )

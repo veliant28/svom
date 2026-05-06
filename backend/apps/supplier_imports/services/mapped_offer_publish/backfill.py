@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
+import hashlib
+import json
 from typing import Callable
 
 from django.core.files.base import ContentFile
@@ -193,11 +195,23 @@ def backfill_gpl_product_images(
 
                 extension = images._resolve_extension(image_url=candidate.image_url, content_type=content_type)
                 filename = images._build_filename(product=product, image_url=candidate.image_url, extension=extension)
+                source_payload = {
+                    "source": ProductImage.SOURCE_GPL_PRICE,
+                    "provider": "mapped_offer_publish_backfill",
+                    "url": candidate.image_url,
+                }
+                source_hash = hashlib.sha1(json.dumps(source_payload, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()[:64]  # noqa: S324
                 image = ProductImage(
                     product=product,
                     alt_text=candidate.alt_text or product.name[:255],
                     is_primary=True,
                     sort_order=0,
+                    remote_url=candidate.image_url,
+                    source=ProductImage.SOURCE_GPL_PRICE,
+                    source_payload=source_payload,
+                    source_hash=source_hash,
+                    is_stale=False,
+                    stale_reason="",
                 )
                 image.image.save(filename, ContentFile(content), save=False)
                 image.save()

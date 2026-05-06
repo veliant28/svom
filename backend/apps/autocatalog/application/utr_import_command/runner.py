@@ -7,6 +7,7 @@ from typing import Any
 from django.conf import settings
 from django.utils.translation import gettext as _
 
+from apps.autocatalog.services.utr_catalog_guard import UTR_CATALOG_DISABLED_WARNING, is_utr_catalog_enrichment_enabled
 from apps.autocatalog.services.utr_run_lock_service import UtrRunLockService
 
 from . import modes, observability
@@ -14,6 +15,10 @@ from .types import CommandOutput
 
 
 def run_utr_import_command(*, raw_options: Mapping[str, Any], output: CommandOutput) -> None:
+    if not is_utr_catalog_enrichment_enabled():
+        output.write_warning(UTR_CATALOG_DISABLED_WARNING)
+        return
+
     if not observability.is_utr_enabled():
         output.write_warning(_("UTR отключен через UTR_ENABLED=0. Пропуск выполнения."))
         return

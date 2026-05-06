@@ -158,6 +158,7 @@
           "columns": {
             "name": "Бренд",
             "status": "Статус",
+            "articleCount": "Артикулов",
             "updated": "Обновлено",
             "actions": "Действия"
           }

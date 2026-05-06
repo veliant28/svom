@@ -28,7 +28,10 @@ function readPersistedActiveVehicle(): PersistedActiveVehicle {
     }
     const parsed = JSON.parse(raw) as Partial<PersistedActiveVehicle>;
     const source: ActiveVehicleSource =
-      parsed.source === "garage" || parsed.source === "temporary" || parsed.source === "none"
+      parsed.source === "garage" ||
+      parsed.source === "temporary" ||
+      parsed.source === "temporary_autodb" ||
+      parsed.source === "none"
         ? parsed.source
         : "none";
     const value = typeof parsed.value === "string" && parsed.value.trim().length > 0 ? parsed.value : null;
@@ -58,19 +61,23 @@ export function useActiveVehicleStorage({
   activeVehicleSource,
   activeGarageVehicleId,
   activeTemporaryCarModificationId,
+  activeTemporaryAutoDbPassangerCarId,
   isManualSelection,
   setActiveVehicleSource,
   setActiveGarageVehicleId,
   setActiveTemporaryCarModificationId,
+  setActiveTemporaryAutoDbPassangerCarId,
   setIsManualSelection,
 }: {
   activeVehicleSource: ActiveVehicleSource;
   activeGarageVehicleId: string | null;
   activeTemporaryCarModificationId: number | null;
+  activeTemporaryAutoDbPassangerCarId: number | null;
   isManualSelection: boolean;
   setActiveVehicleSource: SourceSetter;
   setActiveGarageVehicleId: StringSetter;
   setActiveTemporaryCarModificationId: NumberSetter;
+  setActiveTemporaryAutoDbPassangerCarId: NumberSetter;
   setIsManualSelection: BoolSetter;
 }): { hasHydratedFromStorage: MutableRefObject<boolean> } {
   const hasHydratedFromStorage = useRef(false);
@@ -84,6 +91,7 @@ export function useActiveVehicleStorage({
     if (persisted.source === "garage") {
       setActiveGarageVehicleId(persisted.value);
       setActiveTemporaryCarModificationId(null);
+      setActiveTemporaryAutoDbPassangerCarId(null);
     } else if (persisted.source === "temporary") {
       const parsed = persisted.value ? Number(persisted.value) : NaN;
       if (Number.isInteger(parsed) && parsed > 0) {
@@ -92,14 +100,31 @@ export function useActiveVehicleStorage({
         setActiveVehicleSource("none");
       }
       setActiveGarageVehicleId(null);
+      setActiveTemporaryAutoDbPassangerCarId(null);
+    } else if (persisted.source === "temporary_autodb") {
+      const parsed = persisted.value ? Number(persisted.value) : NaN;
+      if (Number.isInteger(parsed) && parsed > 0) {
+        setActiveTemporaryAutoDbPassangerCarId(parsed);
+      } else {
+        setActiveVehicleSource("none");
+      }
+      setActiveGarageVehicleId(null);
+      setActiveTemporaryCarModificationId(null);
     } else {
       setActiveGarageVehicleId(null);
       setActiveTemporaryCarModificationId(null);
+      setActiveTemporaryAutoDbPassangerCarId(null);
     }
 
     hasHydratedFromStorage.current = true;
     setHasCompletedStorageHydration(true);
-  }, [setActiveGarageVehicleId, setActiveTemporaryCarModificationId, setActiveVehicleSource, setIsManualSelection]);
+  }, [
+    setActiveGarageVehicleId,
+    setActiveTemporaryAutoDbPassangerCarId,
+    setActiveTemporaryCarModificationId,
+    setActiveVehicleSource,
+    setIsManualSelection,
+  ]);
 
   useEffect(() => {
     if (!hasCompletedStorageHydration) {
@@ -111,14 +136,23 @@ export function useActiveVehicleStorage({
         ? activeGarageVehicleId
         : activeVehicleSource === "temporary" && activeTemporaryCarModificationId
           ? String(activeTemporaryCarModificationId)
-          : null;
+          : activeVehicleSource === "temporary_autodb" && activeTemporaryAutoDbPassangerCarId
+            ? String(activeTemporaryAutoDbPassangerCarId)
+            : null;
 
     writePersistedActiveVehicle({
       source: activeVehicleSource,
       value,
       manual: isManualSelection,
     });
-  }, [activeGarageVehicleId, activeTemporaryCarModificationId, activeVehicleSource, hasCompletedStorageHydration, isManualSelection]);
+  }, [
+    activeGarageVehicleId,
+    activeTemporaryAutoDbPassangerCarId,
+    activeTemporaryCarModificationId,
+    activeVehicleSource,
+    hasCompletedStorageHydration,
+    isManualSelection,
+  ]);
 
   return { hasHydratedFromStorage };
 }

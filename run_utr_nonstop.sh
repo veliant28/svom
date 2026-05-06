@@ -19,6 +19,12 @@ APP_SLEEP_SECONDS="${UTR_APPLICABILITY_SLEEP_SECONDS:-$SLEEP_SECONDS}"
 APP_DETAIL_LIMIT="${UTR_APPLICABILITY_LIMIT:-$BATCH_SIZE}"
 KEEP_RUNNING="${UTR_KEEP_RUNNING:-0}"
 
+utr_catalog_enabled_raw="$(printf '%s' "${UTR_CATALOG_ENRICHMENT_ENABLED:-0}" | tr '[:upper:]' '[:lower:]')"
+if [[ "$utr_catalog_enabled_raw" != "1" && "$utr_catalog_enabled_raw" != "true" && "$utr_catalog_enabled_raw" != "yes" && "$utr_catalog_enabled_raw" != "on" ]]; then
+  echo "UTR catalog enrichment is disabled"
+  exit 0
+fi
+
 if [[ ! -x "$PY_BIN" ]]; then
   echo "Python interpreter not found or not executable: $PY_BIN" >&2
   exit 1

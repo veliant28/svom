@@ -9,6 +9,14 @@ export type BackofficeCatalogBrand = {
   updated_at: string;
 };
 
+export type BackofficeAutoDbSupplierBrand = {
+  id: number;
+  name: string;
+  matchcode: string;
+  article_count: number;
+  is_active: boolean;
+};
+
 export type BackofficeCatalogCategory = {
   id: string;
   name: string;
@@ -29,11 +37,23 @@ export type BackofficeCatalogProduct = {
   sku: string;
   article: string;
   name: string;
+  display_name?: string;
+  display_name_source?: string;
+  name_uk?: string;
+  name_ru?: string;
+  name_en?: string;
   slug: string;
   brand: string;
   brand_name: string;
   category: string;
   category_name: string;
+  catalog_source?: string;
+  name_source?: string;
+  name_translation_status?: string;
+  name_manually_locked?: boolean;
+  autodb_article_key?: string;
+  name_quality_flags?: string[];
+  raw_supplier_name?: string;
   final_price: string | null;
   currency: string | null;
   price_updated_at: string | null;

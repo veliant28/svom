@@ -4,6 +4,7 @@ from .utr_article_detail_resolver_service import (
     UtrArticleResolveSummary,
 )
 from .utr_autocatalog_import_service import AutocatalogImportSummary, UtrAutocatalogImportService
+from .utr_catalog_guard import UTR_CATALOG_DISABLED_WARNING, is_utr_catalog_enrichment_enabled
 
 __all__ = [
     "UtrArticleDetailResolverService",
@@ -11,4 +12,6 @@ __all__ = [
     "UtrArticleResolveSummary",
     "AutocatalogImportSummary",
     "UtrAutocatalogImportService",
+    "UTR_CATALOG_DISABLED_WARNING",
+    "is_utr_catalog_enrichment_enabled",
 ]

@@ -34,7 +34,9 @@ class BackofficeProductFitmentListCreateAPIView(ListCreateAPIView):
     ordering = ("product__name",)
 
     def get_queryset(self):
-        queryset = ProductFitment.objects.select_related(
+        queryset = ProductFitment.objects.filter(modification__isnull=False).exclude(
+            source=ProductFitment.SOURCE_AUTODB_PRO
+        ).select_related(
             "product",
             "modification",
             "modification__engine",
@@ -87,7 +89,9 @@ class BackofficeProductFitmentRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroy
     lookup_field = "id"
 
     def get_queryset(self):
-        return ProductFitment.objects.select_related(
+        return ProductFitment.objects.filter(modification__isnull=False).exclude(
+            source=ProductFitment.SOURCE_AUTODB_PRO
+        ).select_related(
             "product",
             "modification",
             "modification__engine",

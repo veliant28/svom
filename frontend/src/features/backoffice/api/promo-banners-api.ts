@@ -34,23 +34,28 @@ export async function updateBackofficePromoBannerSettings(
 }
 
 export async function listBackofficePromoBanners(token: string): Promise<{ count: number; results: BackofficePromoBanner[] }> {
-  return getJson<{ count: number; results: BackofficePromoBanner[] }>(
+  const payload = await getJson<{ count: number; results: BackofficePromoBanner[] }>(
     "/backoffice/settings/promo-banners/items/",
     undefined,
     { token },
   );
+  return {
+    ...payload,
+    results: (payload.results || []).map(normalizeBackofficePromoBanner),
+  };
 }
 
 export async function createBackofficePromoBanner(
   token: string,
   payload: BackofficePromoBannerWritePayload,
 ): Promise<BackofficePromoBanner> {
-  return requestBackofficePromoBannerFormData<BackofficePromoBanner>(
+  const created = await requestBackofficePromoBannerFormData<BackofficePromoBanner>(
     "POST",
     "/backoffice/settings/promo-banners/items/",
     token,
     payload,
   );
+  return normalizeBackofficePromoBanner(created);
 }
 
 export async function updateBackofficePromoBanner(
@@ -58,12 +63,13 @@ export async function updateBackofficePromoBanner(
   id: string,
   payload: BackofficePromoBannerWritePayload,
 ): Promise<BackofficePromoBanner> {
-  return requestBackofficePromoBannerFormData<BackofficePromoBanner>(
+  const updated = await requestBackofficePromoBannerFormData<BackofficePromoBanner>(
     "PATCH",
     `/backoffice/settings/promo-banners/items/${id}/`,
     token,
     payload,
   );
+  return normalizeBackofficePromoBanner(updated);
 }
 
 export async function deleteBackofficePromoBanner(token: string, id: string): Promise<void> {
@@ -145,4 +151,40 @@ function appendIfPresent(formData: FormData, key: string, value: unknown): void 
     return;
   }
   formData.append(key, String(value));
+}
+
+function normalizeBackofficePromoBanner(banner: BackofficePromoBanner): BackofficePromoBanner {
+  return {
+    ...banner,
+    image_url: resolveRuntimeMediaUrl(banner.image_url),
+  };
+}
+
+function resolveRuntimeMediaUrl(value: string): string {
+  const rawValue = String(value || "").trim();
+  if (!rawValue) {
+    return "";
+  }
+
+  const mediaPath = extractMediaPath(rawValue);
+  if (!mediaPath) {
+    return rawValue;
+  }
+  return mediaPath;
+}
+
+function extractMediaPath(value: string): string | null {
+  if (value.startsWith("/media/")) {
+    return value;
+  }
+
+  try {
+    const parsed = new URL(value);
+    if (parsed.pathname.startsWith("/media/")) {
+      return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    }
+  } catch {
+    return null;
+  }
+  return null;
 }

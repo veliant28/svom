@@ -33,6 +33,7 @@ export function VehicleSelectorModal({ isOpen, onClose }: VehicleSelectorModalPr
     activeGarageVehicleId,
     selectGarageVehicle,
     selectTemporaryVehicle,
+    selectTemporaryAutoDbVehicle,
     clearActiveVehicle,
   } = useActiveVehicle();
   const [activeTab, setActiveTab] = useState<VehicleModalTab>("saved");
@@ -197,6 +198,9 @@ export function VehicleSelectorModal({ isOpen, onClose }: VehicleSelectorModalPr
               isAuthenticated={isAuthenticated}
               onUseTemporary={(carModificationId) => {
                 selectTemporaryVehicle(carModificationId);
+              }}
+              onUseTemporaryAutoDb={({ manufacturerId, modelId, passangerCarId }) => {
+                selectTemporaryAutoDbVehicle({ manufacturerId, modelId, passangerCarId });
               }}
               onSaveVehicle={async (payload) => {
                 if (activeVehicleSource === "none") {

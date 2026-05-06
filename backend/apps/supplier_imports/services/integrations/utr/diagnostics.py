@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import threading
 
+from django.conf import settings
+
 from apps.supplier_imports.services.integrations.exceptions import SupplierClientError
 
 
@@ -15,6 +17,16 @@ def ensure_enabled(*, enabled: bool) -> None:
     if enabled:
         return
     raise SupplierClientError("UTR integration disabled by UTR_ENABLED=0.")
+
+
+def is_catalog_enrichment_enabled() -> bool:
+    return bool(getattr(settings, "UTR_CATALOG_ENRICHMENT_ENABLED", False))
+
+
+def ensure_catalog_enrichment_enabled() -> None:
+    if is_catalog_enrichment_enabled():
+        return
+    raise SupplierClientError("UTR catalog enrichment is disabled.")
 
 
 def ensure_shared_semaphore_capacity(cls, *, concurrency: int) -> None:

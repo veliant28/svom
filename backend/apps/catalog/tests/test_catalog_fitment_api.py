@@ -9,6 +9,13 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.autocatalog.models import CarMake, CarModel, CarModification, UtrArticleDetailMap, UtrDetailCarMap
+from apps.autodb.models import (
+    AutoDbArticleLinkage,
+    AutoDbManufacturer,
+    AutoDbPassengerCar,
+    AutoDbSupplier,
+    AutoDbVehicleModel,
+)
 from apps.catalog.models import Brand, Category, Product, ProductImage, UtrProductEnrichment
 from apps.catalog.services.utr_product_enrichment import (
     apply_utr_search_detail_to_matching_products,
@@ -24,6 +31,7 @@ from apps.users.models import GarageVehicle, User
 from apps.vehicles.models import VehicleEngine, VehicleGeneration, VehicleMake, VehicleModel, VehicleModification
 
 
+@override_settings(UTR_CATALOG_ENRICHMENT_ENABLED=True)
 class CatalogFitmentAPITests(APITestCase):
     def setUp(self):
         self.brand = Brand.objects.create(name="Brand F", slug="brand-f", is_active=True)
@@ -1169,3 +1177,163 @@ class CatalogFitmentAPITests(APITestCase):
             lead_time_days=1,
             matched_product=product,
         )
+
+
+@override_settings(UTR_CATALOG_ENRICHMENT_ENABLED=True)
+class CatalogAutoDbFitmentAPITests(APITestCase):
+    databases = {"default", "auto_db_pro"}
+
+    def setUp(self):
+        self.brand = Brand.objects.create(name="Bosch", slug="bosch", is_active=True)
+        self.category = Category.objects.create(name="Filters", slug="filters", is_active=True)
+        self.product = Product.objects.create(
+            sku="AUTODB-FIT-001",
+            article="AUTODB-FIT-001",
+            name="AutoDB Fit Product",
+            slug="autodb-fit-product",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        ProductPrice.objects.create(product=self.product, final_price="100.00", currency="UAH")
+        self.other_product = Product.objects.create(
+            sku="AUTODB-FIT-002",
+            article="AUTODB-FIT-002",
+            name="AutoDB Other Product",
+            slug="autodb-other-product",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        ProductPrice.objects.create(product=self.other_product, final_price="100.00", currency="UAH")
+
+        import_supplier = Supplier.objects.create(name="GPL", code="gpl", is_active=True)
+        import_source = ImportSource.objects.create(
+            code="gpl-fitment",
+            name="GPL Fitment Source",
+            supplier=import_supplier,
+            parser_type=ImportSource.PARSER_GPL,
+        )
+        import_run = ImportRun.objects.create(
+            source=import_source,
+            status=ImportRun.STATUS_SUCCESS,
+            trigger="test",
+        )
+        SupplierRawOffer.objects.create(
+            run=import_run,
+            source=import_source,
+            supplier=import_supplier,
+            external_sku="AUTODB-FIT-001",
+            article="AUTODB-FIT-001",
+            normalized_article=normalize_article("AUTODB-FIT-001"),
+            brand_name="Bosch",
+            normalized_brand=normalize_brand("Bosch"),
+            product_name=self.product.name,
+            currency="UAH",
+            price="100.00",
+            stock_qty=3,
+            lead_time_days=1,
+            matched_product=self.product,
+        )
+        SupplierRawOffer.objects.create(
+            run=import_run,
+            source=import_source,
+            supplier=import_supplier,
+            external_sku="AUTODB-FIT-002",
+            article="AUTODB-FIT-002",
+            normalized_article=normalize_article("AUTODB-FIT-002"),
+            brand_name="Bosch",
+            normalized_brand=normalize_brand("Bosch"),
+            product_name=self.other_product.name,
+            currency="UAH",
+            price="100.00",
+            stock_qty=1,
+            lead_time_days=1,
+            matched_product=self.other_product,
+        )
+
+        supplier = AutoDbSupplier.objects.create(
+            id=1001,
+            name="BOSCH",
+            matchcode="BOSCH",
+            normalized_name="BOSCH",
+            normalized_matchcode="BOSCH",
+        )
+        manufacturer = AutoDbManufacturer.objects.create(
+            id=2001,
+            description="TOYOTA",
+            matchcode="TOYOTA",
+        )
+        model = AutoDbVehicleModel.objects.create(
+            id=3001,
+            manufacturer=manufacturer,
+            description="CAMRY",
+            full_description="CAMRY",
+        )
+        AutoDbPassengerCar.objects.create(
+            id=4001,
+            model=model,
+            description="Camry XV70",
+            full_description="Toyota Camry XV70 2.5",
+            construction_interval="2017-",
+            start_year=2017,
+            end_year=None,
+        )
+        AutoDbArticleLinkage.objects.create(
+            supplier=supplier,
+            article_number="AUTODB-FIT-001",
+            normalized_article=normalize_article("AUTODB-FIT-001"),
+            linkage_type="P",
+            linkage_id=4001,
+        )
+        self.autocatalog_make = CarMake.objects.create(name="TOYOTA", slug="toyota-autodb")
+        self.autocatalog_model = CarModel.objects.create(
+            make=self.autocatalog_make,
+            name="CAMRY",
+            slug="camry-autodb",
+        )
+        self.autocatalog_modification = CarModification.objects.create(
+            make=self.autocatalog_make,
+            model=self.autocatalog_model,
+            year=2020,
+            modification="XV70",
+            engine="2.5",
+        )
+
+    @override_settings(FITMENT_PROVIDER="autodb")
+    def test_product_detail_reads_fitments_from_autodb_provider(self):
+        response = self.client.get(reverse("catalog_api:product-detail", kwargs={"slug": self.product.slug}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["fitments"]), 1)
+        fitment = response.data["fitments"][0]
+        self.assertEqual(fitment["make"], "TOYOTA")
+        self.assertEqual(fitment["model"], "CAMRY")
+        self.assertEqual(fitment["note"], "Auto-DB Pro applicability")
+
+    @override_settings(FITMENT_PROVIDER="autodb")
+    def test_fitment_rows_and_options_use_autodb_provider(self):
+        options_response = self.client.get(
+            reverse("catalog_api:product-fitment-options", kwargs={"slug": self.product.slug})
+        )
+        self.assertEqual(options_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(options_response.data["total_fitments"], 1)
+        self.assertIn({"value": "TOYOTA", "label": "TOYOTA"}, options_response.data["makes"])
+        self.assertIn({"value": "CAMRY", "label": "CAMRY"}, options_response.data["models"])
+
+        rows_response = self.client.get(reverse("catalog_api:product-fitment-rows", kwargs={"slug": self.product.slug}))
+        self.assertEqual(rows_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(rows_response.data["count"], 1)
+        self.assertEqual(rows_response.data["results"][0]["make"], "TOYOTA")
+        self.assertEqual(rows_response.data["results"][0]["model"], "CAMRY")
+
+    @override_settings(FITMENT_PROVIDER="autodb")
+    def test_product_list_fitment_only_still_ignores_autodb_provider_for_public_filtering(self):
+        response = self.client.get(
+            reverse("catalog_api:product-list"),
+            {
+                "car_modification": str(self.autocatalog_modification.id),
+                "fitment": "only",
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 2)

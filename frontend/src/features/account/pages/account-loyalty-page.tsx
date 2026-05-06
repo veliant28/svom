@@ -120,7 +120,6 @@ export function AccountLoyaltyPage() {
                 <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-sm">
                   <div className="grid gap-1">
                     <p>{t("labels.type")}: {promo.discount_type === "delivery_fee" ? t("types.delivery") : t("types.product")}</p>
-                    <p>{t("labels.discount")}: {promo.discount_percent}%</p>
                     <p>{t("labels.usage")}: {promo.usage_count}/{promo.usage_limit}</p>
                     <p>{t("labels.expiresAt")}: {promo.expires_at ? new Date(promo.expires_at).toLocaleString() : t("labels.noExpiry")}</p>
                     {promo.reason ? <p className="min-w-0">{t("labels.reason")}: {promo.reason}</p> : null}

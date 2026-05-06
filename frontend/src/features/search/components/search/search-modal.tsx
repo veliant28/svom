@@ -29,13 +29,22 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   }, []);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (!isOpen || !isMounted) {
       return;
     }
 
     const frame = window.requestAnimationFrame(() => {
       inputRef.current?.focus();
     });
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [isMounted, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -45,7 +54,6 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
     document.addEventListener("keydown", handleEscape);
     return () => {
-      window.cancelAnimationFrame(frame);
       document.removeEventListener("keydown", handleEscape);
     };
   }, [isOpen, onClose]);
@@ -118,6 +126,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
             <Search size={18} style={{ color: "var(--muted)" }} />
             <input
               ref={inputRef}
+              autoFocus
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t("placeholder")}

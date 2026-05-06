@@ -1,4 +1,11 @@
 from .article_rules_views import ArticleRuleListCreateAPIView, ArticleRuleRetrieveUpdateAPIView
+from .autodb_vehicle_catalog_views import (
+    BackofficeAutoDbVehicleCatalogAPIView,
+    BackofficeAutoDbVehicleFilterOptionsAPIView,
+    BackofficeAutoDbVehicleManufacturersAPIView,
+    BackofficeAutoDbVehicleModelsAPIView,
+)
+from .autodb_supplier_brands_views import BackofficeAutoDbSupplierBrandListAPIView
 from .autocatalog_list_view import BackofficeAutocatalogFilterOptionsAPIView, BackofficeAutocatalogListAPIView
 from .brand_aliases_views import BrandAliasListCreateAPIView, BrandAliasRetrieveUpdateAPIView
 from .catalog_brands_views import BackofficeCatalogBrandListCreateAPIView, BackofficeCatalogBrandRetrieveUpdateDestroyAPIView
@@ -187,6 +194,11 @@ from .email_settings_view import BackofficeEmailSettingsAPIView, BackofficeEmail
 __all__ = [
     "ArticleRuleListCreateAPIView",
     "ArticleRuleRetrieveUpdateAPIView",
+    "BackofficeAutoDbVehicleCatalogAPIView",
+    "BackofficeAutoDbVehicleFilterOptionsAPIView",
+    "BackofficeAutoDbVehicleManufacturersAPIView",
+    "BackofficeAutoDbVehicleModelsAPIView",
+    "BackofficeAutoDbSupplierBrandListAPIView",
     "BackofficeAutocatalogListAPIView",
     "BackofficeAutocatalogFilterOptionsAPIView",
     "BrandAliasListCreateAPIView",

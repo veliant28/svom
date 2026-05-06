@@ -81,6 +81,20 @@ class BackofficeCatalogBrandsAPISmokeTests(APITestCase):
         self.assertEqual(search_response.status_code, status.HTTP_200_OK)
         self.assertEqual(search_response.data["count"], 1)
 
+    def test_brands_list_supports_page_size_query_param(self):
+        Brand.objects.create(name="BOSCH", slug="bosch", is_active=True)
+        Brand.objects.create(name="ARAL", slug="aral", is_active=True)
+
+        response = self.client.get(
+            reverse("backoffice_api:catalog-brand-list-create"),
+            {"page": 1, "page_size": 500},
+            **self._auth(self.staff_token.key),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(response.data["count"], 3)
+        self.assertGreaterEqual(len(response.data["results"]), 3)
+
     def test_create_blocks_normalized_duplicate_name(self):
         response = self.client.post(
             reverse("backoffice_api:catalog-brand-list-create"),

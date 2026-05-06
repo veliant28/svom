@@ -5,6 +5,7 @@ from django.urls import include, path
 urlpatterns = [
     path("api/backoffice/", include("apps.backoffice.api.urls")),
     path("api/autocatalog/", include("apps.autocatalog.api.urls")),
+    path("api/autodb/", include("apps.autodb.api.urls")),
     path("api/core/", include("apps.core.api.urls")),
     path("api/catalog/", include("apps.catalog.api.urls")),
     path("api/marketing/", include("apps.marketing.api.urls")),

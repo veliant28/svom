@@ -2,6 +2,11 @@ from django.urls import path
 
 from apps.backoffice.api.views.footer_settings_view import BackofficeFooterSettingsAPIView
 from apps.backoffice.api.views import (
+    BackofficeAutoDbVehicleCatalogAPIView,
+    BackofficeAutoDbVehicleFilterOptionsAPIView,
+    BackofficeAutoDbSupplierBrandListAPIView,
+    BackofficeAutoDbVehicleManufacturersAPIView,
+    BackofficeAutoDbVehicleModelsAPIView,
     ArticleRuleListCreateAPIView,
     ArticleRuleRetrieveUpdateAPIView,
     BackofficeAutocatalogFilterOptionsAPIView,
@@ -194,6 +199,7 @@ urlpatterns = [
     path("brand-aliases/<uuid:id>/", BrandAliasRetrieveUpdateAPIView.as_view(), name="brand-alias-update"),
     path("brands/", BackofficeCatalogBrandListCreateAPIView.as_view(), name="catalog-brand-list-create"),
     path("brands/<uuid:id>/", BackofficeCatalogBrandRetrieveUpdateDestroyAPIView.as_view(), name="catalog-brand-update"),
+    path("autodb/supplier-brands/", BackofficeAutoDbSupplierBrandListAPIView.as_view(), name="autodb-supplier-brand-list"),
     path("categories/", BackofficeCatalogCategoryListCreateAPIView.as_view(), name="catalog-category-list-create"),
     path("categories/<uuid:id>/", BackofficeCatalogCategoryRetrieveUpdateDestroyAPIView.as_view(), name="catalog-category-update"),
     path("products/", BackofficeCatalogProductListCreateAPIView.as_view(), name="catalog-product-list-create"),
@@ -228,6 +234,14 @@ urlpatterns = [
     ),
     path("autocatalog/", BackofficeAutocatalogListAPIView.as_view(), name="autocatalog-list"),
     path("autocatalog/filter-options/", BackofficeAutocatalogFilterOptionsAPIView.as_view(), name="autocatalog-filter-options"),
+    path("autodb/vehicle-filter-options/", BackofficeAutoDbVehicleFilterOptionsAPIView.as_view(), name="autodb-vehicle-filter-options"),
+    path("autodb/vehicle-manufacturers/", BackofficeAutoDbVehicleManufacturersAPIView.as_view(), name="autodb-vehicle-manufacturers"),
+    path(
+        "autodb/vehicle-manufacturers/<int:manufacturer_id>/models/",
+        BackofficeAutoDbVehicleModelsAPIView.as_view(),
+        name="autodb-vehicle-manufacturer-models",
+    ),
+    path("autodb/vehicles/", BackofficeAutoDbVehicleCatalogAPIView.as_view(), name="autodb-vehicle-catalog"),
     path("article-rules/", ArticleRuleListCreateAPIView.as_view(), name="article-rule-list-create"),
     path("article-rules/<uuid:id>/", ArticleRuleRetrieveUpdateAPIView.as_view(), name="article-rule-update"),
     path("import-quality/summary/", ImportQualitySummaryAPIView.as_view(), name="import-quality-summary"),

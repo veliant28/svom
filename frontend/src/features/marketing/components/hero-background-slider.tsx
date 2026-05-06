@@ -65,7 +65,7 @@ export function HeroBackgroundSlider({ slides, settings }: HeroBackgroundSliderP
         <div className="hero-fallback-surface absolute inset-0" />
         <div className="hero-fallback-overlay absolute inset-0" />
         <div className="hero-fallback-glow absolute inset-0" />
-        <div className="relative mx-auto flex max-w-6xl flex-col justify-end px-4 py-14" style={{ color: "var(--hero-fallback-text)" }}>
+        <div className="relative mx-auto flex w-full max-w-6xl flex-col justify-end px-4 py-14" style={{ color: "var(--hero-fallback-text)" }}>
           <p className="hero-performance-tagline text-xs uppercase tracking-[0.28em]">
             {t("performanceTagline")}
           </p>
@@ -104,7 +104,7 @@ export function HeroBackgroundSlider({ slides, settings }: HeroBackgroundSliderP
         return (
           <div
             key={slide.id}
-            className={`absolute inset-0 ${isActive ? "opacity-100" : "opacity-0"} transition-opacity will-change-transform`}
+            className={`absolute inset-0 ${isActive ? "opacity-100" : "opacity-0"} transition-opacity`}
             style={{ transitionDuration: `${transitionSpeedMs}ms` }}
             aria-hidden={!isActive}
           >
@@ -124,7 +124,7 @@ export function HeroBackgroundSlider({ slides, settings }: HeroBackgroundSliderP
       })}
       <div className="hero-theme-overlay absolute inset-0" />
       <div className="hero-theme-glow absolute inset-0" />
-      <div className="relative mx-auto flex max-w-6xl flex-col justify-end px-4 py-14" style={{ color: "var(--hero-slide-text)" }}>
+      <div className="relative mx-auto flex w-full max-w-6xl flex-col justify-end px-4 py-14" style={{ color: "var(--hero-slide-text)" }}>
         <p className="hero-performance-tagline text-xs uppercase tracking-[0.28em]">
           {t("performanceTagline")}
         </p>
@@ -138,22 +138,24 @@ export function HeroBackgroundSlider({ slides, settings }: HeroBackgroundSliderP
         </div>
       </div>
       {slides.length > 1 ? (
-        <div className="absolute bottom-5 left-4 right-4 mx-auto flex max-w-6xl gap-2">
-          {slides.map((slide, index) => (
-            <button
-              type="button"
-              key={slide.id}
-              className="h-1.5 flex-1 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-white/70 focus:ring-offset-2 focus:ring-offset-transparent"
-              style={{
-                backgroundColor: index === activeIndex ? "rgba(255,255,255,0.88)" : "rgba(255,255,255,0.28)",
-              }}
-              aria-label={t("heroSlideIndicator", { index: index + 1 })}
-              aria-pressed={index === activeIndex}
-              onClick={() => {
-                setActiveIndex(index);
-              }}
-            />
-          ))}
+        <div className="absolute inset-x-0 bottom-5">
+          <div className="mx-auto flex w-full max-w-6xl gap-2 px-4">
+            {slides.map((slide, index) => (
+              <button
+                type="button"
+                key={slide.id}
+                className="h-1.5 flex-1 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-white/70 focus:ring-offset-2 focus:ring-offset-transparent"
+                style={{
+                  backgroundColor: index === activeIndex ? "rgba(255,255,255,0.88)" : "rgba(255,255,255,0.28)",
+                }}
+                aria-label={t("heroSlideIndicator", { index: index + 1 })}
+                aria-pressed={index === activeIndex}
+                onClick={() => {
+                  setActiveIndex(index);
+                }}
+              />
+            ))}
+          </div>
         </div>
       ) : null}
     </section>

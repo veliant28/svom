@@ -20,6 +20,10 @@ from apps.autocatalog.models import UtrArticleDetailMap, UtrDetailCarMap
 from apps.autocatalog.services.utr_article_detail_resolver.persistence import upsert_mapping as upsert_utr_article_detail_mapping
 from apps.autocatalog.services.utr_article_detail_resolver.selector import select_candidate_ids
 from apps.autocatalog.services.utr_autocatalog_import_service import UtrAutocatalogImportService
+from apps.autocatalog.services.utr_catalog_guard import (
+    UTR_CATALOG_DISABLED_WARNING,
+    is_utr_catalog_enrichment_enabled,
+)
 from apps.catalog.models import Product, ProductImage, UtrProductEnrichment
 from apps.supplier_imports.parsers.utils import normalize_article, normalize_brand
 from apps.supplier_imports.selectors import get_supplier_integration_by_code
@@ -88,6 +92,22 @@ def request_visible_utr_enrichment(
     normalized_ids = _normalize_product_ids(product_ids)[:_MAX_VISIBLE_ENRICHMENT_PRODUCTS]
     if not normalized_ids:
         return []
+    if not _utr_catalog_enrichment_is_enabled():
+        return [
+            {
+                "product_id": product_id,
+                "status": "disabled",
+                "utr_detail_id": "",
+                "primary_image": "",
+                "characteristics_count": 0,
+                "fitments_count": 0,
+                "applicability_ready": False,
+                "needs_enrichment": False,
+                "processed": False,
+                "queued": False,
+            }
+            for product_id in normalized_ids
+        ]
     enrichment_mode = _normalize_enrichment_mode(mode)
 
     products = list(
@@ -161,6 +181,9 @@ def request_visible_utr_enrichment(
 
 
 def enrich_utr_product(*, product_id: str, mode: str = _ENRICHMENT_MODE_DETAIL) -> dict[str, object]:
+    if not _utr_catalog_enrichment_is_enabled():
+        return {"product_id": product_id, "status": "disabled"}
+
     enrichment_mode = _normalize_enrichment_mode(mode)
     product = Product.objects.select_related("brand").filter(id=product_id).first()
     if product is None:
@@ -291,6 +314,17 @@ def enrich_utr_product(*, product_id: str, mode: str = _ENRICHMENT_MODE_DETAIL) 
 
 
 def enrich_utr_catalog_products(*, product_ids: list[str]) -> dict[str, object]:
+    if not _utr_catalog_enrichment_is_enabled():
+        normalized_ids = _normalize_product_ids(product_ids)[:_MAX_VISIBLE_ENRICHMENT_PRODUCTS]
+        return {
+            "requested": len(normalized_ids),
+            "processed": 0,
+            "created_images": 0,
+            "batches": 0,
+            "applicability_queued": 0,
+            "skipped_disabled": len(normalized_ids),
+        }
+
     normalized_ids = _normalize_product_ids(product_ids)[:_MAX_VISIBLE_ENRICHMENT_PRODUCTS]
     if not normalized_ids:
         return {"requested": 0, "processed": 0, "created_images": 0, "batches": 0, "applicability_queued": 0}
@@ -437,6 +471,8 @@ def enrich_visible_utr_applicability(*, detail_ids: list[str]) -> dict[str, obje
     normalized_detail_ids = _normalize_detail_ids(detail_ids)
     if not normalized_detail_ids:
         return {"requested": 0, "processed": 0, "skipped_cached": 0, "failed": 0}
+    if not _utr_catalog_enrichment_is_enabled():
+        return {"requested": len(normalized_detail_ids), "processed": 0, "skipped_disabled": len(normalized_detail_ids), "failed": 0}
     if not _lazy_catalog_applicability_enabled():
         return {"requested": len(normalized_detail_ids), "processed": 0, "skipped_disabled": len(normalized_detail_ids), "failed": 0}
 
@@ -478,6 +514,9 @@ def resolve_utr_detail_id(*, product: Product) -> str:
 
 
 def resolve_and_persist_utr_detail_id(*, product: Product, client: UtrClient, access_token: str) -> str:
+    if not _utr_catalog_enrichment_is_enabled():
+        return ""
+
     if not _has_utr_source(product=product):
         return ""
 
@@ -651,6 +690,9 @@ def apply_utr_search_detail_to_matching_products(
     normalized_brand: str,
     detail: dict,
 ) -> dict[str, int]:
+    if not _utr_catalog_enrichment_is_enabled():
+        return {"products_matched": 0, "products_enriched": 0, "created_images": 0}
+
     detail_id = str(detail.get("id") or "").strip()
     images_payload = _extract_images_payload(detail)
     if not detail_id and not images_payload:
@@ -823,6 +865,9 @@ def _should_enqueue(*, product: Product, enrichment: UtrProductEnrichment, mode:
 
 
 def _enqueue_utr_product_enrichment(*, product: Product, enrichment: UtrProductEnrichment, mode: str) -> bool:
+    if not _utr_catalog_enrichment_is_enabled():
+        return False
+
     enrichment_mode = _normalize_enrichment_mode(mode)
     product_id = str(product.id)
     lock_key = _enrichment_queue_lock_key(product_id=product_id)
@@ -852,6 +897,9 @@ def _enqueue_utr_product_enrichment(*, product: Product, enrichment: UtrProductE
 
 
 def _enqueue_visible_catalog_enrichment(*, products: list[Product]) -> list[str]:
+    if not _utr_catalog_enrichment_is_enabled():
+        return []
+
     queued_ids: list[str] = []
     queued_id_set: set[str] = set()
     lock_ttl = max(int(getattr(settings, "UTR_LAZY_ENRICH_QUEUE_LOCK_SECONDS", 10 * 60)), 60)
@@ -904,6 +952,9 @@ def _enqueue_visible_catalog_enrichment(*, products: list[Product]) -> list[str]
 
 
 def _enqueue_visible_catalog_applicability(*, detail_ids: list[str], max_to_queue: int | None = None) -> int:
+    if not _utr_catalog_enrichment_is_enabled():
+        return 0
+
     if not _lazy_catalog_applicability_enabled():
         return 0
 
@@ -1114,6 +1165,13 @@ def _lazy_applicability_enabled() -> bool:
 
 def _lazy_catalog_applicability_enabled() -> bool:
     return bool(getattr(settings, "UTR_LAZY_CATALOG_APPLICABILITY_ENABLED", True))
+
+
+def _utr_catalog_enrichment_is_enabled() -> bool:
+    enabled = is_utr_catalog_enrichment_enabled()
+    if not enabled:
+        logger.warning(UTR_CATALOG_DISABLED_WARNING)
+    return enabled
 
 
 def _normalize_enrichment_mode(mode: str) -> str:

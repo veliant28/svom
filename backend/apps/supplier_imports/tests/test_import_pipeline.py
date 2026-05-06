@@ -4,6 +4,8 @@ import tempfile
 from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.utils import timezone
@@ -401,3 +403,146 @@ class SupplierImportPipelineTests(TestCase):
         history = PriceHistory.objects.filter(product=self.product, source=PriceHistory.SOURCE_IMPORT).first()
         self.assertIsNotNone(history)
         self.assertEqual(history.new_price, Decimal("110.00"))
+
+    def test_raw_history_persists_supplier_product_name_without_product_name_override(self):
+        payload = """
+        {
+          "data": {
+            "items": [
+              {
+                "cid": "0007523",
+                "category": "ARAL",
+                "article": "AR-20488",
+                "name": "Supplier raw product name",
+                "rrc_currency_980": "140.24",
+                "count_warehouse_3": "95"
+              }
+            ]
+          }
+        }
+        """
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file_path = Path(tmp_dir) / "gpl.json"
+            file_path.write_text(payload, encoding="utf-8")
+
+            source = ImportSource.objects.create(
+                code="gpl",
+                name="GPL",
+                supplier=self.supplier,
+                parser_type=ImportSource.PARSER_GPL,
+                input_path=str(file_path),
+                parser_options={"persistence_mode": "raw_history"},
+                is_active=True,
+                auto_reprice=False,
+            )
+
+            result = SupplierImportRunner().run_source(source=source, trigger="test")
+
+        run = ImportRun.objects.get(id=result.run_id)
+        raw_offer = SupplierRawOffer.objects.filter(run=run).first()
+        self.assertIsNotNone(raw_offer)
+        self.assertEqual(raw_offer.product_name, "Supplier raw product name")
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.name_uk, "")
+        self.assertEqual(self.product.name_ru, "")
+        self.assertEqual(self.product.name_en, "")
+
+    @patch("apps.supplier_imports.services.import_runner.service.autodb_postprocess.SupplierImportAutoDbPostProcessor")
+    def test_runner_passes_autodb_overrides_to_postprocess(self, postprocessor_cls_mock):
+        payload = """
+        {
+          "data": {
+            "items": [
+              {
+                "cid": "0007523",
+                "category": "ARAL",
+                "article": "AR-20488",
+                "name": "Aral BlueTronic 10W-40 1Lx12",
+                "rrc_currency_980": "140.24",
+                "count_warehouse_3": "95"
+              }
+            ]
+          }
+        }
+        """
+        summary_stub = SimpleNamespace(to_dict=lambda: {"enabled": True, "name_update_enabled": True})
+        postprocessor_cls_mock.return_value.run_for_import.return_value = summary_stub
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file_path = Path(tmp_dir) / "gpl.json"
+            file_path.write_text(payload, encoding="utf-8")
+
+            source = ImportSource.objects.create(
+                code="gpl",
+                name="GPL",
+                supplier=self.supplier,
+                parser_type=ImportSource.PARSER_GPL,
+                input_path=str(file_path),
+                is_active=True,
+                auto_reprice=False,
+            )
+
+            result = SupplierImportRunner().run_source(
+                source=source,
+                trigger="test",
+                autodb_enrich=True,
+                update_product_names=True,
+                autodb_limit=15,
+            )
+
+        run = ImportRun.objects.get(id=result.run_id)
+        postprocessor_cls_mock.return_value.run_for_import.assert_called_once()
+        kwargs = postprocessor_cls_mock.return_value.run_for_import.call_args.kwargs
+        self.assertEqual(kwargs["run"].id, run.id)
+        self.assertFalse(kwargs["dry_run"])
+        self.assertTrue(kwargs["autodb_enrich"])
+        self.assertTrue(kwargs["update_product_names"])
+        self.assertEqual(kwargs["limit"], 15)
+        self.assertIsNone(kwargs["allow_remote_lookup"])
+        self.assertIn("autodb_supplier_import", run.summary)
+
+    @patch("apps.supplier_imports.services.import_runner.service.autodb_postprocess.SupplierImportAutoDbPostProcessor")
+    def test_runner_passes_autodb_remote_override_to_postprocess(self, postprocessor_cls_mock):
+        payload = """
+        {
+          "data": {
+            "items": [
+              {
+                "cid": "0007523",
+                "category": "ARAL",
+                "article": "AR-20488",
+                "name": "Aral BlueTronic 10W-40 1Lx12",
+                "rrc_currency_980": "140.24",
+                "count_warehouse_3": "95"
+              }
+            ]
+          }
+        }
+        """
+        summary_stub = SimpleNamespace(to_dict=lambda: {"enabled": True, "name_update_enabled": False})
+        postprocessor_cls_mock.return_value.run_for_import.return_value = summary_stub
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file_path = Path(tmp_dir) / "gpl.json"
+            file_path.write_text(payload, encoding="utf-8")
+
+            source = ImportSource.objects.create(
+                code="gpl",
+                name="GPL",
+                supplier=self.supplier,
+                parser_type=ImportSource.PARSER_GPL,
+                input_path=str(file_path),
+                is_active=True,
+                auto_reprice=False,
+            )
+
+            SupplierImportRunner().run_source(
+                source=source,
+                trigger="test",
+                autodb_enrich=True,
+                autodb_allow_remote=True,
+            )
+
+        kwargs = postprocessor_cls_mock.return_value.run_for_import.call_args.kwargs
+        self.assertTrue(kwargs["allow_remote_lookup"])

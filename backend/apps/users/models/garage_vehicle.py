@@ -7,6 +7,13 @@ from apps.core.db.mixins import TimestampedMixin, UUIDPrimaryKeyMixin
 
 
 class GarageVehicle(UUIDPrimaryKeyMixin, TimestampedMixin):
+    CATALOG_SOURCE_LEGACY = "legacy"
+    CATALOG_SOURCE_AUTODB_PRO = "autodb_pro"
+    CATALOG_SOURCE_CHOICES = (
+        (CATALOG_SOURCE_LEGACY, _("Legacy")),
+        (CATALOG_SOURCE_AUTODB_PRO, _("Auto_DB_Pro")),
+    )
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -61,6 +68,21 @@ class GarageVehicle(UUIDPrimaryKeyMixin, TimestampedMixin):
         null=True,
         verbose_name=_("Автокаталог"),
     )
+    autodb_manufacturer_id = models.IntegerField(_("Auto_DB_Pro manufacturer id"), blank=True, null=True, db_index=True)
+    autodb_model_id = models.IntegerField(_("Auto_DB_Pro model id"), blank=True, null=True, db_index=True)
+    autodb_passanger_car_id = models.IntegerField(_("Auto_DB_Pro passanger car id"), blank=True, null=True, db_index=True)
+    autodb_vehicle_label = models.CharField(_("Auto_DB_Pro vehicle label"), max_length=255, blank=True, default="")
+    autodb_modification = models.CharField(_("Auto_DB_Pro modification"), max_length=255, blank=True, default="")
+    autodb_engine = models.CharField(_("Auto_DB_Pro engine"), max_length=255, blank=True, default="")
+    autodb_power_hp = models.PositiveSmallIntegerField(_("Auto_DB_Pro power HP"), blank=True, null=True)
+    autodb_power_kw = models.PositiveSmallIntegerField(_("Auto_DB_Pro power kW"), blank=True, null=True)
+    catalog_source = models.CharField(
+        _("Каталог-источник"),
+        max_length=24,
+        choices=CATALOG_SOURCE_CHOICES,
+        default=CATALOG_SOURCE_LEGACY,
+        db_index=True,
+    )
     nickname = models.CharField(_("Название в гараже"), max_length=120, blank=True)
     year = models.PositiveSmallIntegerField(_("Год выпуска"), blank=True, null=True)
     vin = models.CharField(_("VIN"), max_length=32, blank=True)
@@ -81,6 +103,11 @@ class GarageVehicle(UUIDPrimaryKeyMixin, TimestampedMixin):
                 name="users_garage_unique_autocatalog_vehicle_per_user",
             ),
             models.UniqueConstraint(
+                fields=("user", "autodb_passanger_car_id"),
+                condition=Q(autodb_passanger_car_id__isnull=False),
+                name="users_garage_unique_autodb_vehicle_per_user",
+            ),
+            models.UniqueConstraint(
                 fields=("user",),
                 condition=Q(is_primary=True),
                 name="users_garage_single_primary_vehicle_per_user",
@@ -88,6 +115,9 @@ class GarageVehicle(UUIDPrimaryKeyMixin, TimestampedMixin):
         ]
 
     def __str__(self) -> str:
+        if self.autodb_passanger_car_id is not None:
+            return self.autodb_vehicle_label or f"autodb:{self.autodb_passanger_car_id}"
+
         if self.car_modification is not None:
             return str(self.car_modification)
 

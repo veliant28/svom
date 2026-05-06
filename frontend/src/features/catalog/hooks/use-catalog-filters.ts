@@ -17,11 +17,11 @@ export function useCatalogFilters() {
     const nextFilters: CatalogFilters = { ...filters, ...patch };
     const nextParams = buildCatalogFiltersQuery(nextFilters);
     const query = nextParams.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname);
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   };
 
   const clearFilters = () => {
-    router.replace(pathname);
+    router.replace(pathname, { scroll: false });
   };
 
   return { filters, setFilters, clearFilters };

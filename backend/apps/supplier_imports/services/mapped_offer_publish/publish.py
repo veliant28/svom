@@ -4,7 +4,8 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from apps.catalog.models import Brand, Product
-from apps.catalog.services import generate_unique_product_slug, sanitize_product_name
+from apps.catalog.services.autodb_category_mapping import resolve_autodb_category_for_raw_offer
+from apps.catalog.services import generate_unique_product_slug, resolve_autodb_article_name, sanitize_product_name
 from apps.pricing.models import Supplier, SupplierOffer
 from apps.supplier_imports.models import SupplierRawOffer
 from apps.supplier_imports.parsers.gpl_parser import extract_gpl_price_levels
@@ -43,6 +44,7 @@ def upsert_product(
     *,
     raw_offer: SupplierRawOffer,
     supplier_sku: str,
+    autodb_name_cache: dict[tuple[str, str], str],
     brand_cache: dict[str, Brand],
     product_cache: dict[str, Product],
     supplier_offer_cache: dict[str, SupplierOffer],
@@ -52,20 +54,27 @@ def upsert_product(
     existing_offer = supplier_offer_cache.get(supplier_sku)
     product = raw_offer.matched_product or (existing_offer.product if existing_offer is not None else None)
     is_manual_category = raw_offer.category_mapping_status == SupplierRawOffer.CATEGORY_MAPPING_STATUS_MANUAL_MAPPED
+    mapped_category = raw_offer.mapped_category
+    if mapped_category is None:
+        mapped_category = resolve_autodb_category_for_raw_offer(raw_offer=raw_offer)
 
     if product is None:
         product = product_cache.get(resolved_sku)
         if product is None:
             brand = resolve_brand(raw_offer=raw_offer, brand_cache=brand_cache)
-            name = resolve_product_name(raw_offer=raw_offer, supplier_sku=supplier_sku)
-            preferred_slug = slugify(f"{name}-{raw_offer.supplier.code}-{supplier_sku}")[:300]
+            name = resolve_product_name(raw_offer=raw_offer, autodb_name_cache=autodb_name_cache)
+            name_uk, name_ru, name_en = build_product_i18n_names(name=name)
+            preferred_slug = slugify(f"{name}-{resolved_sku}")[:300]
             product = Product.objects.create(
                 sku=resolved_sku,
                 article=(raw_offer.article or raw_offer.external_sku or supplier_sku)[:128],
                 name=name,
+                name_uk=name_uk,
+                name_ru=name_ru,
+                name_en=name_en,
                 slug=generate_unique_product_slug(name=name, preferred_slug=preferred_slug),
                 brand=brand,
-                category=raw_offer.mapped_category,
+                category=mapped_category or raw_offer.mapped_category,
                 category_manually_locked=is_manual_category,
                 is_active=True,
                 published_at=now,
@@ -84,11 +93,11 @@ def upsert_product(
         changed_fields.add("sku")
 
     if (
-        raw_offer.mapped_category_id
-        and product.category_id != raw_offer.mapped_category_id
+        mapped_category is not None
+        and product.category_id != mapped_category.id
         and not product.category_manually_locked
     ):
-        product.category = raw_offer.mapped_category
+        product.category = mapped_category
         changed_fields.add("category")
 
     if is_manual_category and not product.category_manually_locked:
@@ -103,18 +112,28 @@ def upsert_product(
         changed_fields.add("published_at")
 
     if not raw_offer.matched_product_id:
-        resolved_name = resolve_product_name(raw_offer=raw_offer, supplier_sku=supplier_sku)
+        resolved_name = resolve_product_name(raw_offer=raw_offer, autodb_name_cache=autodb_name_cache)
+        name_uk, name_ru, name_en = build_product_i18n_names(name=resolved_name)
         if resolved_name and product.name != resolved_name:
             product.name = resolved_name
             changed_fields.add("name")
+        if name_uk and product.name_uk != name_uk:
+            product.name_uk = name_uk
+            changed_fields.add("name_uk")
+        if name_ru and product.name_ru != name_ru:
+            product.name_ru = name_ru
+            changed_fields.add("name_ru")
+        if name_en and product.name_en != name_en:
+            product.name_en = name_en
+            changed_fields.add("name_en")
 
         resolved_article = (raw_offer.article or raw_offer.external_sku or supplier_sku)[:128]
-        if resolved_article and product.article != resolved_article:
+        if resolved_article and not product.article:
             product.article = resolved_article
             changed_fields.add("article")
 
         brand = resolve_brand(raw_offer=raw_offer, brand_cache=brand_cache)
-        if product.brand_id != brand.id:
+        if product.brand_id is None:
             product.brand = brand
             changed_fields.add("brand")
 
@@ -207,12 +226,29 @@ def resolve_brand(*, raw_offer: SupplierRawOffer, brand_cache: dict[str, Brand])
     return brand
 
 
-def resolve_product_name(*, raw_offer: SupplierRawOffer, supplier_sku: str) -> str:
-    cleaned = sanitize_product_name(raw_offer.product_name or "")
-    if cleaned:
-        return cleaned[:255]
-    fallback = sanitize_product_name(raw_offer.article or raw_offer.external_sku or supplier_sku or "Supplier product")
-    return fallback[:255] or "Supplier product"
+def resolve_product_name(*, raw_offer: SupplierRawOffer, autodb_name_cache: dict[tuple[str, str], str]) -> str:
+    article_value = str(raw_offer.article or raw_offer.external_sku or raw_offer.normalized_article or "").strip()
+    normalized_brand = str(raw_offer.normalized_brand or raw_offer.brand_name or "").strip()
+    cache_key = (article_value, normalized_brand)
+    if cache_key not in autodb_name_cache:
+        autodb_name_cache[cache_key] = resolve_autodb_article_name(
+            normalized_article=article_value,
+            normalized_brand=normalized_brand,
+            prefer_live=True,
+        )
+    resolved = sanitize_product_name(autodb_name_cache.get(cache_key) or "")[:255]
+    if resolved:
+        return resolved
+    fallback = sanitize_product_name(raw_offer.article or raw_offer.external_sku or "Product")[:255]
+    return fallback or "Product"
+
+
+def build_product_i18n_names(*, name: str) -> tuple[str, str, str]:
+    clean = sanitize_product_name(name)[:255]
+    if not clean:
+        return "", "", ""
+    # Auto parts names are mostly language-agnostic references.
+    return clean, clean, clean
 
 
 def generate_unique_brand_slug(base_name: str) -> str:

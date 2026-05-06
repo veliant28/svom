@@ -1,13 +1,12 @@
-import logging
-
+from django.db.models import Q
+from django.http import Http404
+from django.shortcuts import get_object_or_404
 from rest_framework.generics import RetrieveAPIView
 
+from apps.catalog.models import Product
 from apps.catalog.api.serializers import ProductDetailSerializer
 from apps.catalog.selectors import get_product_detail_queryset
 from apps.catalog.services import FITMENT_ALL, FitmentFilteringService
-from apps.catalog.services.utr_product_enrichment import request_visible_utr_enrichment
-
-logger = logging.getLogger(__name__)
 
 
 class ProductDetailAPIView(RetrieveAPIView):
@@ -23,26 +22,26 @@ class ProductDetailAPIView(RetrieveAPIView):
         )
         return queryset
 
-    def retrieve(self, request, *args, **kwargs):
-        response = super().retrieve(request, *args, **kwargs)
-        self._enqueue_product_utr_enrichment(response.data)
-        return response
+    def get_object(self):
+        queryset = self.get_queryset()
+        lookup_value = str(self.kwargs.get(self.lookup_field) or "").strip()
+        if not lookup_value:
+            raise Http404("Product slug is required.")
 
-    def _enqueue_product_utr_enrichment(self, payload):
-        if not isinstance(payload, dict):
-            return
+        # Primary lookup path keeps canonical URL behavior.
+        by_slug = queryset.filter(slug=lookup_value).first()
+        if by_slug is not None:
+            return by_slug
 
-        product_id = payload.get("id")
-        if not product_id:
-            return
+        # Safe fallback for stale links where article/SKU was used instead of slug.
+        candidates = Product.objects.filter(is_active=True).filter(
+            Q(slug__iexact=lookup_value)
+            | Q(article__iexact=lookup_value)
+            | Q(autodb_article_number__iexact=lookup_value)
+            | Q(sku__iexact=lookup_value)
+        )
+        candidate = candidates.order_by("-updated_at", "id").first()
+        if candidate is None:
+            raise Http404("Product not found.")
 
-        try:
-            request_visible_utr_enrichment(
-                product_ids=[str(product_id)],
-                request=self.request,
-                enqueue=True,
-                mode="detail",
-                allow_sync_fallback=False,
-            )
-        except Exception:
-            logger.exception("product_detail_utr_enqueue_failed product_id=%s", product_id)
+        return get_object_or_404(queryset, id=candidate.id)

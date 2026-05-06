@@ -6,6 +6,20 @@ import { useTranslations } from "next-intl";
 import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
 import type { GarageVehicle } from "@/features/garage/types/garage";
 
+function formatBrandModelTitle(vehicle: GarageVehicle): string {
+  const brand = String(vehicle.brand || "").trim();
+  const model = String(vehicle.model || "").trim();
+  if (!brand) {
+    return model;
+  }
+  const escapedBrand = brand.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const modelWithoutBrandPrefix = model.replace(new RegExp(`^${escapedBrand}[\\s\\-_/,:;]*`, "i"), "").trim();
+  if (!modelWithoutBrandPrefix) {
+    return brand;
+  }
+  return `${brand} ${modelWithoutBrandPrefix}`;
+}
+
 function formatPower(vehicle: GarageVehicle, fallbackLabel: string): string {
   const hp = vehicle.power_hp ? `${vehicle.power_hp} л.с.` : "";
   const kw = vehicle.power_kw ? `${vehicle.power_kw} кВт` : "";
@@ -42,7 +56,7 @@ export function GarageVehicleCard({
     >
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs font-semibold">
-          {vehicle.brand} {vehicle.model}
+          {formatBrandModelTitle(vehicle)}
         </p>
         {vehicle.is_primary ? (
           <BackofficeStatusChip tone="success" icon={CarFront}>

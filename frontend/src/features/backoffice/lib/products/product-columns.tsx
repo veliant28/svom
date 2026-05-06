@@ -128,7 +128,7 @@ export function createProductColumns({
           <input
             type="checkbox"
             checked={selectedSet.has(item.id)}
-            aria-label={`${t("products.table.columns.select")}: ${item.name}`}
+            aria-label={`${t("products.table.columns.select")}: ${item.display_name || item.name}`}
             onChange={() => onToggleSelected(item.id)}
           />
         </div>
@@ -145,18 +145,19 @@ export function createProductColumns({
       label: t("products.table.columns.product"),
       className: "w-[24%]",
       render: (item) => {
+        const displayName = (item.display_name || item.name || "").trim() || "-";
         const supplierSku = (item.supplier_sku || item.sku || "").trim() || "-";
         return (
           <div className="min-w-0">
             <BackofficeTooltip
-              content={item.name}
+              content={displayName}
               placement="top"
               align="start"
               wrapperClassName="inline-flex max-w-full"
               tooltipClassName="max-w-[320px]"
             >
               <span tabIndex={0} className="block truncate cursor-help font-semibold">
-                {item.name}
+                {displayName}
               </span>
             </BackofficeTooltip>
             <p className="text-xs" style={{ color: "var(--muted)" }}>

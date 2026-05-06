@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 
@@ -8,44 +8,18 @@ import { CatalogGridSkeleton } from "@/features/catalog/components/catalog-grid-
 import { ProductCard } from "@/features/catalog/components/product-card";
 import { useCatalogWarmup } from "@/features/catalog/hooks/use-catalog-warmup";
 import { useCatalogProducts } from "@/features/catalog/hooks/use-catalog-products";
+import {
+  clearCatalogReturnState,
+  readMatchingCatalogReturnState,
+  restoreCatalogProductScroll,
+  scrollCatalogListToTop,
+  scrollCatalogPageToTop,
+  type CatalogReturnState,
+} from "@/features/catalog/lib/catalog-navigation-state";
 import type { CatalogFilters } from "@/features/catalog/types";
 import { usePathname, useRouter } from "@/i18n/navigation";
 
 const CATALOG_PAGE_SIZE = 52;
-const CATALOG_SCROLL_KEY_PREFIX = "catalog:scroll:";
-const CATALOG_SCROLL_SKIP_RESTORE_ONCE_KEY = "catalog:scroll:skip_restore_once";
-const CATALOG_SCROLL_TTL_MS = 30 * 60 * 1000;
-const CATALOG_RESTORE_MAX_WAIT_MS = 120 * 1000;
-
-type CatalogScrollState = {
-  y: number;
-  savedAt: number;
-};
-
-function buildCatalogScrollKey(pathname: string, query: string): string {
-  return `${CATALOG_SCROLL_KEY_PREFIX}${query ? `${pathname}?${query}` : pathname}`;
-}
-
-function normalizeCatalogUrl(rawUrl: string): string {
-  if (!rawUrl) {
-    return "";
-  }
-  try {
-    const url = rawUrl.startsWith("http://") || rawUrl.startsWith("https://")
-      ? new URL(rawUrl)
-      : new URL(rawUrl, "http://localhost");
-    const params = new URLSearchParams(url.search);
-    const sortedEntries = Array.from(params.entries()).sort(([a], [b]) => a.localeCompare(b));
-    const normalizedParams = new URLSearchParams();
-    for (const [key, value] of sortedEntries) {
-      normalizedParams.append(key, value);
-    }
-    const query = normalizedParams.toString();
-    return query ? `${url.pathname}?${query}` : url.pathname;
-  } catch {
-    return rawUrl;
-  }
-}
 
 function parseCatalogPage(searchParams: URLSearchParams): number {
   const value = Number(searchParams.get("page") || "1");
@@ -58,9 +32,11 @@ function parseCatalogPage(searchParams: URLSearchParams): number {
 export function CatalogShowcaseSection({
   filters,
   showHeading = true,
+  scrollAnchorRef,
 }: {
   filters?: CatalogFilters;
   showHeading?: boolean;
+  scrollAnchorRef?: RefObject<HTMLElement | null>;
 }) {
   const tHome = useTranslations("common.home");
   const tCatalog = useTranslations("catalog");
@@ -71,26 +47,30 @@ export function CatalogShowcaseSection({
   const syncPageWithUrl = Boolean(filters);
   const [localPage, setLocalPage] = useState(1);
   const [visibleProductIds, setVisibleProductIds] = useState<string[]>([]);
+  const [catalogReturnState, setCatalogReturnState] = useState<CatalogReturnState | null>(() =>
+    readMatchingCatalogReturnState(),
+  );
+  const [deferCachedRevalidation, setDeferCachedRevalidation] = useState(() => Boolean(readMatchingCatalogReturnState()));
   const sectionRef = useRef<HTMLElement | null>(null);
   const productCardRefMap = useRef<Map<string, HTMLDivElement>>(new Map());
   const visibleCardSetRef = useRef<Set<string>>(new Set());
-  const shouldScrollToTopRef = useRef(false);
-  const restoredScrollKeyRef = useRef<string | null>(null);
-  const consumedForcedScrollKeyRef = useRef<string | null>(null);
-  const skipRestoreForScrollKeyRef = useRef<string | null>(null);
-  const normalizedFilters = useMemo(() => filters ?? {}, [filters]);
+  const restoredReturnStateRef = useRef<string>("");
+  const getListTopScrollNode = useCallback(
+    () => scrollAnchorRef?.current ?? sectionRef.current,
+    [scrollAnchorRef],
+  );
+  const normalizedFilters = useMemo(() => {
+    if (filters) {
+      return filters;
+    }
+    if (showHeading) {
+      return { popular: true } satisfies CatalogFilters;
+    }
+    return {};
+  }, [filters, showHeading]);
   const queryString = searchParams.toString();
   const urlPage = parseCatalogPage(new URLSearchParams(queryString));
   const page = syncPageWithUrl ? urlPage : localPage;
-  const browserCatalogUrl = useMemo(() => {
-    if (typeof window !== "undefined") {
-      return `${window.location.pathname}${window.location.search}`;
-    }
-    return queryString ? `${pathname}?${queryString}` : pathname;
-  }, [pathname, queryString]);
-  const normalizedCatalogUrl = useMemo(() => normalizeCatalogUrl(browserCatalogUrl), [browserCatalogUrl]);
-  const scrollStorageKey = useMemo(() => buildCatalogScrollKey(normalizedCatalogUrl, ""), [normalizedCatalogUrl]);
-  const legacyScrollStorageKey = useMemo(() => buildCatalogScrollKey(browserCatalogUrl, ""), [browserCatalogUrl]);
   const { products, totalCount, isLoading, cacheKey } = useCatalogProducts(
     { ...normalizedFilters, page, pageSize: CATALOG_PAGE_SIZE },
     {
@@ -100,6 +80,7 @@ export function CatalogShowcaseSection({
           || normalizedFilters.car_modification
           || normalizedFilters.modification,
       ),
+      deferCachedRevalidation,
     },
   );
   const productIds = useMemo(() => products.map((product) => product.id), [products]);
@@ -110,14 +91,59 @@ export function CatalogShowcaseSection({
   );
   const sectionSpacingClass = showHeading ? "py-8" : "pb-8 pt-0";
   const contentSpacingClass = showHeading ? "mt-4" : "";
-  const forcedScrollFromQuery = useMemo(() => {
-    const raw = searchParams.get("_cs");
-    const parsed = Number(raw);
-    if (!Number.isFinite(parsed) || parsed < 0) {
-      return null;
+
+  useEffect(() => {
+    if (!syncPageWithUrl || typeof window === "undefined" || !("scrollRestoration" in window.history)) {
+      return;
     }
-    return Math.floor(parsed);
-  }, [searchParams]);
+    const previousScrollRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+    return () => {
+      window.history.scrollRestoration = previousScrollRestoration;
+    };
+  }, [syncPageWithUrl]);
+
+  useEffect(() => {
+    if (!syncPageWithUrl) {
+      return;
+    }
+    const matchingState = readMatchingCatalogReturnState();
+    setCatalogReturnState(matchingState);
+    setDeferCachedRevalidation(Boolean(matchingState));
+    restoredReturnStateRef.current = "";
+    if (!matchingState) {
+      scrollCatalogPageToTop();
+    }
+  }, [getListTopScrollNode, pathname, queryString, syncPageWithUrl]);
+
+  useEffect(() => {
+    if (!syncPageWithUrl || !catalogReturnState || isLoading) {
+      return;
+    }
+    const restoreKey = `${catalogReturnState.catalogUrl}:${catalogReturnState.productId}:${catalogReturnState.savedAt}`;
+    if (restoredReturnStateRef.current === restoreKey) {
+      return;
+    }
+
+    let frameOne = 0;
+    let frameTwo = 0;
+    frameOne = window.requestAnimationFrame(() => {
+      frameTwo = window.requestAnimationFrame(() => {
+        const productNode = productCardRefMap.current.get(catalogReturnState.productId) ?? null;
+        if (!restoreCatalogProductScroll(catalogReturnState, productNode)) {
+          scrollCatalogListToTop(getListTopScrollNode());
+        }
+        restoredReturnStateRef.current = restoreKey;
+        clearCatalogReturnState();
+        setCatalogReturnState(null);
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameOne);
+      window.cancelAnimationFrame(frameTwo);
+    };
+  }, [catalogReturnState, getListTopScrollNode, isLoading, productIds, syncPageWithUrl]);
 
   useEffect(() => {
     if (!syncPageWithUrl || productIds.length === 0) {
@@ -218,184 +244,22 @@ export function CatalogShowcaseSection({
         nextParams.set("page", String(pagesCount));
       }
       const query = nextParams.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname);
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
     }
   }, [isLoading, page, pagesCount, pathname, router, searchParams, syncPageWithUrl]);
-
-  useEffect(() => {
-    if (!shouldScrollToTopRef.current) {
-      return;
-    }
-    shouldScrollToTopRef.current = false;
-    sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [page]);
-
-  useEffect(() => {
-    if (!syncPageWithUrl || forcedScrollFromQuery === null || typeof window === "undefined") {
-      return;
-    }
-    const forcedScrollKey = `${pathname}?${queryString}`;
-    if (consumedForcedScrollKeyRef.current === forcedScrollKey) {
-      return;
-    }
-
-    let timer: number | null = null;
-    const startedAt = Date.now();
-    const restore = () => {
-      const maxScrollableY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-      const hasEnoughHeight = maxScrollableY >= forcedScrollFromQuery;
-      const timedOut = Date.now() - startedAt >= CATALOG_RESTORE_MAX_WAIT_MS;
-      if (hasEnoughHeight || timedOut) {
-        const finalTarget = Math.min(forcedScrollFromQuery, maxScrollableY);
-        window.scrollTo({ top: finalTarget, behavior: "auto" });
-        const nextParams = new URLSearchParams(queryString);
-        nextParams.delete("_cs");
-        const nextQuery = nextParams.toString();
-        const nextUrl = nextQuery ? `${pathname}?${nextQuery}` : pathname;
-        window.history.replaceState(window.history.state, "", nextUrl);
-        consumedForcedScrollKeyRef.current = forcedScrollKey;
-        return;
-      }
-      timer = window.setTimeout(restore, 100);
-    };
-
-    restore();
-    return () => {
-      if (timer !== null) {
-        window.clearTimeout(timer);
-      }
-    };
-  }, [forcedScrollFromQuery, pathname, queryString, syncPageWithUrl]);
-
-  useEffect(() => {
-    if (!syncPageWithUrl) {
-      return;
-    }
-    let lastKnownY = typeof window !== "undefined" ? window.scrollY : 0;
-
-    const writeScrollState = () => {
-      if (typeof window === "undefined") {
-        return;
-      }
-      try {
-        window.sessionStorage.setItem(
-          scrollStorageKey,
-          JSON.stringify({
-            y: lastKnownY,
-            savedAt: Date.now(),
-          } satisfies CatalogScrollState),
-        );
-      } catch {
-        // Best-effort cache only.
-      }
-    };
-
-    let ticking = false;
-    const onScroll = () => {
-      if (ticking) {
-        return;
-      }
-      ticking = true;
-      window.requestAnimationFrame(() => {
-        ticking = false;
-        lastKnownY = window.scrollY;
-        writeScrollState();
-      });
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      writeScrollState();
-    };
-  }, [scrollStorageKey, syncPageWithUrl]);
-
-  useEffect(() => {
-    if (!syncPageWithUrl || typeof window === "undefined") {
-      return;
-    }
-    try {
-      const skipOnceKey = window.sessionStorage.getItem(CATALOG_SCROLL_SKIP_RESTORE_ONCE_KEY);
-      if (skipOnceKey && skipOnceKey === scrollStorageKey) {
-        window.sessionStorage.removeItem(CATALOG_SCROLL_SKIP_RESTORE_ONCE_KEY);
-        skipRestoreForScrollKeyRef.current = null;
-        restoredScrollKeyRef.current = scrollStorageKey;
-        window.scrollTo({ top: 0, behavior: "auto" });
-        return;
-      }
-    } catch {
-      // ignore storage failures
-    }
-    if (skipRestoreForScrollKeyRef.current === scrollStorageKey) {
-      skipRestoreForScrollKeyRef.current = null;
-      restoredScrollKeyRef.current = scrollStorageKey;
-      window.scrollTo({ top: 0, behavior: "auto" });
-      return;
-    }
-    if (restoredScrollKeyRef.current === scrollStorageKey) {
-      return;
-    }
-
-    let scrollState: CatalogScrollState | null = null;
-    try {
-      const raw =
-        window.sessionStorage.getItem(scrollStorageKey)
-        || window.sessionStorage.getItem(legacyScrollStorageKey);
-      if (!raw) {
-        return;
-      }
-      scrollState = JSON.parse(raw) as CatalogScrollState;
-    } catch {
-      return;
-    }
-
-    if (
-      !scrollState
-      || typeof scrollState.y !== "number"
-      || scrollState.y < 0
-      || typeof scrollState.savedAt !== "number"
-      || Date.now() - scrollState.savedAt > CATALOG_SCROLL_TTL_MS
-    ) {
-      return;
-    }
-
-    const targetY = scrollState.y;
-    const startedAt = Date.now();
-    let timer: number | null = null;
-
-    const tryRestore = () => {
-      const maxScrollableY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-      const hasEnoughHeight = maxScrollableY >= targetY;
-      const timedOut = Date.now() - startedAt >= CATALOG_RESTORE_MAX_WAIT_MS;
-      if (hasEnoughHeight || timedOut) {
-        const finalTarget = Math.min(targetY, maxScrollableY);
-        window.scrollTo({ top: finalTarget, behavior: "auto" });
-        restoredScrollKeyRef.current = scrollStorageKey;
-        return;
-      }
-      timer = window.setTimeout(tryRestore, 120);
-    };
-
-    tryRestore();
-    return () => {
-      if (timer !== null) {
-        window.clearTimeout(timer);
-      }
-    };
-  }, [browserCatalogUrl, legacyScrollStorageKey, scrollStorageKey, syncPageWithUrl]);
 
   const changePage = (nextPage: number) => {
     if (nextPage === page) {
       return;
     }
-    shouldScrollToTopRef.current = true;
-    sectionRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
     if (!syncPageWithUrl) {
+      if (typeof window !== "undefined") {
+        scrollCatalogPageToTop();
+      }
       setLocalPage(nextPage);
       return;
     }
     const nextParams = new URLSearchParams(searchParams.toString());
-    nextParams.delete("_cs");
     if (nextPage <= 1) {
       nextParams.delete("page");
     } else {
@@ -403,20 +267,13 @@ export function CatalogShowcaseSection({
     }
     const query = nextParams.toString();
     const nextUrl = query ? `${pathname}?${query}` : pathname;
-    const normalizedNextUrl = normalizeCatalogUrl(nextUrl);
-    const nextScrollStorageKey = buildCatalogScrollKey(normalizedNextUrl, "");
-    skipRestoreForScrollKeyRef.current = nextScrollStorageKey;
-    try {
-      window.sessionStorage.setItem(CATALOG_SCROLL_SKIP_RESTORE_ONCE_KEY, nextScrollStorageKey);
-      window.sessionStorage.removeItem(nextScrollStorageKey);
-    } catch {
-      // ignore storage failures
-    }
-    router.replace(nextUrl);
+    setDeferCachedRevalidation(false);
+    scrollCatalogPageToTop();
+    router.push(nextUrl, { scroll: false });
   };
 
   return (
-    <section ref={sectionRef} className={`mx-auto max-w-6xl px-4 ${sectionSpacingClass}`}>
+    <section ref={sectionRef} data-catalog-showcase className={`mx-auto max-w-6xl px-4 ${sectionSpacingClass}`}>
       {showHeading ? (
         <>
           <h2 className="text-2xl font-semibold">{tHome("featured")}</h2>

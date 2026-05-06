@@ -158,6 +158,7 @@
           "columns": {
             "name": "Brand",
             "status": "Status",
+            "articleCount": "Articles",
             "updated": "Updated",
             "actions": "Actions"
           }

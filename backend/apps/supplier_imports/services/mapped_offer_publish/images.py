@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import mimetypes
 from pathlib import PurePosixPath
@@ -63,11 +64,23 @@ def ensure_gpl_product_image(*, raw_offer: SupplierRawOffer, product: Product) -
 
     extension = _resolve_extension(image_url=image_url, content_type=content_type)
     filename = _build_filename(product=product, image_url=image_url, extension=extension)
+    source_payload = {
+        "source": ProductImage.SOURCE_GPL_PRICE,
+        "provider": "mapped_offer_publish",
+        "url": image_url,
+    }
+    source_hash = hashlib.sha1(json.dumps(source_payload, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()  # noqa: S324
     image = ProductImage(
         product=product,
         alt_text=product.name[:255],
         is_primary=True,
         sort_order=0,
+        remote_url=image_url,
+        source=ProductImage.SOURCE_GPL_PRICE,
+        source_payload=source_payload,
+        source_hash=source_hash,
+        is_stale=False,
+        stale_reason="",
     )
     image.image.save(filename, ContentFile(content), save=False)
     image.save()

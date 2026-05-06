@@ -10,6 +10,7 @@ type RequestOptions = {
   credentials?: RequestCredentials;
   requestId?: string;
   timingLabel?: string;
+  timeoutMs?: number;
 };
 
 type ApiErrorPayload = {
@@ -60,6 +61,8 @@ function toSearchParams(params?: QueryParams): string {
   return queryString ? `?${queryString}` : "";
 }
 
+const DEFAULT_REQUEST_TIMEOUT_MS = 15000;
+
 async function requestJson<T>(
   method: "GET" | "POST" | "PATCH" | "DELETE",
   path: string,
@@ -94,6 +97,14 @@ async function requestJson<T>(
   }
 
   let response: Response;
+  const timeoutMs = Number.isFinite(options.timeoutMs) ? Math.max(0, Number(options.timeoutMs)) : DEFAULT_REQUEST_TIMEOUT_MS;
+  const controller = new AbortController();
+  const timeoutId =
+    timeoutMs > 0
+      ? setTimeout(() => {
+          controller.abort();
+        }, timeoutMs)
+      : null;
   try {
     response = await fetch(requestUrl, {
       method,
@@ -101,20 +112,29 @@ async function requestJson<T>(
       body: body === undefined ? undefined : JSON.stringify(body),
       cache: "no-store",
       credentials: options.credentials ?? "omit",
+      signal: controller.signal,
     });
     status = response.status;
-  } catch {
+  } catch (error: unknown) {
+    const isTimeoutError = error instanceof Error && error.name === "AbortError";
     logServerTiming(options.timingLabel ?? `api.${method}`, startedAt, {
       method,
       path,
       request_id: requestId,
       network_error: true,
+      timeout: isTimeoutError,
     });
     throw new ApiRequestError({
-      message: "Network error while sending request.",
+      message: isTimeoutError
+        ? `Request timed out after ${timeoutMs}ms.`
+        : "Network error while sending request.",
       url: requestUrl,
       isNetworkError: true,
     });
+  } finally {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+    }
   }
 
   if (!response.ok) {

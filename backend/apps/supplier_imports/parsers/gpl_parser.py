@@ -15,6 +15,7 @@ from apps.supplier_imports.parsers.utils import (
     parse_table_rows,
     resolve_field_names,
 )
+from apps.supplier_imports.gpl_article_resolver import GplArticleResolver
 
 
 _CURRENCY_BY_NUMERIC = {
@@ -47,6 +48,9 @@ _GPL_PRICE_LEVELS: tuple[tuple[str, tuple[str, ...], bool, int], ...] = (
 
 class GPLParser:
     parser_code = "gpl"
+
+    def __init__(self) -> None:
+        self._article_resolver = GplArticleResolver()
 
     def parse_rows(
         self,
@@ -161,12 +165,18 @@ class GPLParser:
                 )
                 continue
 
+            article_resolution = self._article_resolver.resolve(
+                raw_payload=item,
+                article=article or external_sku,
+                external_sku=external_sku or article,
+            )
+
             offers.append(
                 ParsedOffer(
                     supplier=context.source_code,
-                    external_sku=external_sku or article,
-                    article=article or external_sku,
-                    normalized_article=normalize_article(article or external_sku),
+                    external_sku=article_resolution.supplier_sku or external_sku or article,
+                    article=article_resolution.manufacturer_article or article or external_sku,
+                    normalized_article=normalize_article(article_resolution.manufacturer_article or article or external_sku),
                     brand_name=brand_name,
                     product_name=product_name,
                     price=price,
@@ -307,12 +317,18 @@ class GPLParser:
                 )
                 continue
 
+            article_resolution = self._article_resolver.resolve(
+                raw_payload=row,
+                article=article or external_sku,
+                external_sku=external_sku or article,
+            )
+
             offers.append(
                 ParsedOffer(
                     supplier=context.source_code,
-                    external_sku=external_sku or article,
-                    article=article or external_sku,
-                    normalized_article=normalize_article(article or external_sku),
+                    external_sku=article_resolution.supplier_sku or external_sku or article,
+                    article=article_resolution.manufacturer_article or article or external_sku,
+                    normalized_article=normalize_article(article_resolution.manufacturer_article or article or external_sku),
                     brand_name=brand_name,
                     product_name=product_name,
                     price=price,

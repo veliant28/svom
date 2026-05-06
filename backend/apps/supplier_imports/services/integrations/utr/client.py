@@ -99,6 +99,7 @@ class UtrClient:
         force_refresh: bool | None = None,
         request_reason: str = "detail_applicability",
     ) -> list[dict]:
+        diagnostics.ensure_catalog_enrichment_enabled()
         return catalog.fetch_applicability(
             self,
             access_token=access_token,
@@ -116,6 +117,7 @@ class UtrClient:
         force_refresh: bool | None = None,
         request_reason: str = "detail_search",
     ) -> list[dict]:
+        diagnostics.ensure_catalog_enrichment_enabled()
         return search.search_details(
             self,
             access_token=access_token,
@@ -133,6 +135,7 @@ class UtrClient:
         force_refresh: bool | None = None,
         request_reason: str = "detail_search_batch",
     ) -> UtrBatchSearchResult:
+        diagnostics.ensure_catalog_enrichment_enabled()
         return search.search_details_batch(
             self,
             access_token=access_token,
@@ -149,6 +152,7 @@ class UtrClient:
         force_refresh: bool | None = None,
         request_reason: str = "detail_info",
     ) -> dict:
+        diagnostics.ensure_catalog_enrichment_enabled()
         return catalog.fetch_detail(
             self,
             access_token=access_token,
@@ -165,6 +169,7 @@ class UtrClient:
         force_refresh: bool | None = None,
         request_reason: str = "detail_characteristics",
     ) -> list[dict]:
+        diagnostics.ensure_catalog_enrichment_enabled()
         return catalog.fetch_characteristics(
             self,
             access_token=access_token,

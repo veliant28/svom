@@ -3,6 +3,7 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
+from django.conf import settings
 from django.utils import timezone
 
 from apps.catalog.models import Product
@@ -17,7 +18,7 @@ from apps.supplier_imports.services.product_matcher import ProductMatcher
 from apps.supplier_imports.services.quality import ImportQualityService
 from apps.supplier_imports.services.supplier_offer_sync import SupplierOfferSyncService
 
-from . import artifacts, diagnostics, followup, parsing, persistence, preparation
+from . import artifacts, autodb_postprocess, diagnostics, followup, parsing, persistence, preparation
 from .types import ImportExecutionResult
 
 
@@ -31,6 +32,11 @@ class SupplierImportRunner:
         file_paths: list[str] | None = None,
         reprice: bool | None = None,
         reindex: bool | None = None,
+        autodb_enrich: bool | None = None,
+        update_product_names: bool | None = None,
+        update_product_images: bool | None = None,
+        autodb_limit: int = 0,
+        autodb_allow_remote: bool | None = None,
     ) -> ImportExecutionResult:
         integration = get_supplier_integration_for_source(source=source)
         if not integration.is_enabled:
@@ -45,6 +51,10 @@ class SupplierImportRunner:
         integration_state = SupplierIntegrationStateService()
         perform_reprice = source.auto_reprice_after_import if reprice is None else reprice
         perform_reindex = source.auto_reindex_after_import if reindex is None else reindex
+        perform_autodb_enrich = self._resolve_autodb_enrich_enabled(override=autodb_enrich)
+        perform_autodb_name_update = self._resolve_autodb_name_update_enabled(override=update_product_names)
+        perform_autodb_image_update = self._resolve_autodb_image_update_enabled(override=update_product_images)
+        autodb_limit = max(int(autodb_limit or 0), 0)
         started_at = timezone.now()
         run_timer_started = time.perf_counter()
         timings: dict[str, float | list[dict[str, object]]] = {}
@@ -154,6 +164,32 @@ class SupplierImportRunner:
                     )
                 )
             timings["files"] = file_timings
+
+            autodb_started = time.perf_counter()
+            try:
+                autodb_summary = autodb_postprocess.SupplierImportAutoDbPostProcessor().run_for_import(
+                    run=run,
+                    dry_run=dry_run,
+                    autodb_enrich=perform_autodb_enrich,
+                    update_product_names=perform_autodb_name_update,
+                    update_product_images=perform_autodb_image_update,
+                    limit=autodb_limit,
+                    allow_remote_lookup=autodb_allow_remote,
+                )
+            except Exception as exc:  # noqa: BLE001
+                autodb_summary = autodb_postprocess.SupplierImportAutoDbSummary(
+                    enabled=perform_autodb_enrich,
+                    name_update_enabled=perform_autodb_name_update,
+                    limit=autodb_limit,
+                    dry_run=dry_run,
+                    failed=1,
+                    remote_config_error=f"postprocess_failed:{exc}",
+                )
+            timings["autodb_postprocess_sec"] = self._elapsed_seconds(autodb_started)
+            run.summary = {
+                **(run.summary or {}),
+                "autodb_supplier_import": autodb_summary.to_dict(),
+            }
 
             if not dry_run and affected_products and perform_reprice:
                 reprice_started = time.perf_counter()
@@ -294,3 +330,21 @@ class SupplierImportRunner:
 
     def _finalize_source_timestamps(self, *, source: ImportSource, run: ImportRun) -> None:
         return diagnostics.finalize_source_timestamps(source=source, run=run)
+
+    @staticmethod
+    def _resolve_autodb_enrich_enabled(*, override: bool | None) -> bool:
+        if override is not None:
+            return bool(override)
+        return bool(getattr(settings, "AUTODB_PRO_SUPPLIER_IMPORT_ENRICHMENT_ENABLED", False))
+
+    @staticmethod
+    def _resolve_autodb_name_update_enabled(*, override: bool | None) -> bool:
+        if override is not None:
+            return bool(override)
+        return bool(getattr(settings, "AUTODB_PRO_SUPPLIER_IMPORT_NAME_UPDATE_ENABLED", False))
+
+    @staticmethod
+    def _resolve_autodb_image_update_enabled(*, override: bool | None) -> bool:
+        if override is not None:
+            return bool(override)
+        return bool(getattr(settings, "AUTODB_PRO_SUPPLIER_IMPORT_IMAGE_UPDATE_ENABLED", False))

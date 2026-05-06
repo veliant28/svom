@@ -36,7 +36,11 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
         self.product = Product.objects.create(
             sku="BOS-001",
             article="BOS-001",
-            name="Bosch Oil Filter",
+            name="CS0100",
+            name_uk="",
+            name_ru="",
+            name_en="",
+            name_source_text="",
             slug="bosch-oil-filter",
             brand=self.brand,
             category=self.category,
@@ -100,6 +104,10 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
                 "count_warehouse_2": "0",
             },
         )
+        self.product.name_uk = "Масляний фільтр"
+        self.product.name_ru = "Масляный фильтр"
+        self.product.name_en = "Oil Filter"
+        self.product.save(update_fields=["name_uk", "name_ru", "name_en", "updated_at"])
 
     def _auth(self, token: str) -> dict[str, str]:
         return {"HTTP_AUTHORIZATION": f"Token {token}"}
@@ -192,6 +200,84 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
             **self._auth(self.regular_token.key),
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_backoffice_product_list_uses_localized_display_name(self):
+        response = self.client.get(
+            reverse("backoffice_api:catalog-product-list-create"),
+            {"locale": "ru"},
+            **self._auth(self.staff_token.key),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        item = response.data["results"][0]
+        self.assertEqual(item["name"], "Масляный фильтр")
+        self.assertEqual(item["display_name"], "Масляный фильтр")
+        self.assertEqual(item["display_name_source"], "name_ru")
+        self.assertEqual(item["name_uk"], "Масляний фільтр")
+        self.assertEqual(item["name_ru"], "Масляный фильтр")
+        self.assertEqual(item["name_en"], "Oil Filter")
+        self.assertIn("name_source", item)
+        self.assertEqual(item["raw_supplier_name"], "Bosch Oil Filter")
+        self.assertNotEqual(item["name"], item["raw_supplier_name"])
+
+    def test_backoffice_product_list_uses_selected_language(self):
+        response = self.client.get(
+            reverse("backoffice_api:catalog-product-list-create"),
+            {"locale": "en"},
+            **self._auth(self.staff_token.key),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        item = response.data["results"][0]
+        self.assertEqual(item["display_name"], "Oil Filter")
+        self.assertEqual(item["display_name_source"], "name_en")
+
+    def test_backoffice_product_list_avoids_code_like_title(self):
+        self.product.name = "CS0100"
+        self.product.name_uk = "CS0100"
+        self.product.name_ru = "CS0100"
+        self.product.name_en = "CS0100"
+        self.product.name_source_text = ""
+        self.product.save(
+            update_fields=[
+                "name",
+                "name_uk",
+                "name_ru",
+                "name_en",
+                "name_source_text",
+                "updated_at",
+            ]
+        )
+
+        response = self.client.get(
+            reverse("backoffice_api:catalog-product-list-create"),
+            {"locale": "uk"},
+            **self._auth(self.staff_token.key),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        item = response.data["results"][0]
+        self.assertEqual(item["display_name"], "Товар без названия BOSCH BOS-001")
+        self.assertEqual(item["display_name_source"], "fallback")
+
+    def test_backoffice_product_list_respects_manual_locked_name(self):
+        self.product.name_manually_locked = True
+        self.product.name_uk = "Ручна назва товару"
+        self.product.name_ru = "Ручное название товара"
+        self.product.name_en = "Manual product title"
+        self.product.save(update_fields=["name_manually_locked", "name_uk", "name_ru", "name_en", "updated_at"])
+
+        response = self.client.get(
+            reverse("backoffice_api:catalog-product-list-create"),
+            {"locale": "uk"},
+            **self._auth(self.staff_token.key),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        item = response.data["results"][0]
+        self.assertTrue(item["name_manually_locked"])
+        self.assertEqual(item["display_name"], "Ручна назва товару")
+        self.assertEqual(item["name"], "Ручна назва товару")
 
     def test_product_price_is_preferred_over_supplier_offer_in_list(self):
         ProductPrice.objects.create(

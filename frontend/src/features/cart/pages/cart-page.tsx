@@ -1,6 +1,7 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 
 import { useAuth } from "@/features/auth/hooks/use-auth";
@@ -8,11 +9,34 @@ import { CartProductQuantityStepper } from "@/features/cart/components/cart-prod
 import { CartSummaryBlock } from "@/features/cart/components/cart-summary-block";
 import { useCart } from "@/features/cart/hooks/use-cart";
 import { Link } from "@/i18n/navigation";
+import { useStorefrontFeedback } from "@/shared/hooks/use-storefront-feedback";
 
 export function CartPage() {
   const t = useTranslations("commerce.cart");
   const { isAuthenticated } = useAuth();
   const { cart, isLoading, removeItem } = useCart();
+  const { showInfo } = useStorefrontFeedback();
+  const lastWarningToastKeyRef = useRef("");
+  const items = Array.isArray(cart?.items) ? cart?.items : [];
+
+  useEffect(() => {
+    if (!isAuthenticated || isLoading) {
+      return;
+    }
+
+    const hasWarnings = (cart?.summary?.warnings_count ?? 0) > 0;
+    if (!hasWarnings) {
+      lastWarningToastKeyRef.current = "";
+      return;
+    }
+
+    const warningText = t("warnings.availabilityOrPriceChanged");
+    if (lastWarningToastKeyRef.current === warningText) {
+      return;
+    }
+    lastWarningToastKeyRef.current = warningText;
+    showInfo(warningText);
+  }, [cart?.summary?.warnings_count, isAuthenticated, isLoading, showInfo, t]);
 
   if (!isAuthenticated) {
     return (
@@ -27,8 +51,6 @@ export function CartPage() {
       </section>
     );
   }
-
-  const items = Array.isArray(cart?.items) ? cart?.items : [];
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-8">
@@ -48,11 +70,6 @@ export function CartPage() {
       ) : (
         <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_300px]">
           <div className="space-y-3">
-            {(cart?.summary?.warnings_count ?? 0) > 0 ? (
-              <div className="rounded-xl border px-3 py-2 text-sm" style={{ borderColor: "var(--danger, #b42318)", backgroundColor: "color-mix(in srgb, var(--danger, #b42318) 8%, transparent)" }}>
-                {t("warnings.availabilityOrPriceChanged")}
-              </div>
-            ) : null}
             {items.map((item) => {
               return (
                 <article key={item.id} className="rounded-xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
@@ -88,12 +105,6 @@ export function CartPage() {
                   <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
                     {item.product.brand_name}
                   </p>
-                  {item.warning ? (
-                    <p className="mt-1 text-xs" style={{ color: "var(--danger, #b42318)" }}>
-                      {item.warning}
-                    </p>
-                  ) : null}
-
                 </article>
               );
             })}

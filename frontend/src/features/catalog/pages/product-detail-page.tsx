@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Boxes, CheckCircle2, ChevronLeft, XCircle } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
@@ -13,9 +13,10 @@ import { getProductFitments } from "@/features/catalog/api/get-product-fitments"
 import { useProductDetail } from "@/features/catalog/hooks/use-product-detail";
 import type { ProductFitment, ProductFitmentOptions } from "@/features/catalog/types";
 import { WishlistToggleButton } from "@/features/wishlist/components/wishlist-toggle-button";
-import { Link } from "@/i18n/navigation";
 import { ContainedImagePanel } from "@/shared/components/ui/contained-image-panel";
 import { isFitmentDisabledCategory } from "@/features/catalog/lib/fitment-disabled-categories";
+import { clearCatalogReturnState, readCatalogReturnState } from "@/features/catalog/lib/catalog-navigation-state";
+import { useRouter } from "@/i18n/navigation";
 
 import { ProductDetailSkeleton } from "../components/product-detail-skeleton";
 
@@ -23,6 +24,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   const locale = useLocale();
   const t = useTranslations("product.detail");
   const tCard = useTranslations("product.card");
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { product, isLoading, vehicleParams } = useProductDetail(slug);
   const images = Array.isArray(product?.images) ? product.images : [];
@@ -35,22 +37,17 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   const [remoteFitmentCount, setRemoteFitmentCount] = useState<number | null>(null);
   const [selectedVehicleApplied, setSelectedVehicleApplied] = useState(false);
   const fitments = remoteFitments ?? productFitments;
-  const catalogQuery = searchParams.toString();
+  const catalogParams = useMemo(() => {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete("_cs");
+    nextParams.delete("_csr");
+    nextParams.delete("_cy");
+    return nextParams;
+  }, [searchParams]);
+  const catalogQuery = catalogParams.toString();
   const backToCatalogHref = catalogQuery ? `/catalog?${catalogQuery}` : "/catalog";
-  const handleBackToCatalogClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    const previousState = window.history.state as { as?: string; url?: string } | null;
-    const previousUrl = typeof previousState?.as === "string"
-      ? previousState.as
-      : typeof previousState?.url === "string"
-        ? previousState.url
-        : "";
-    if (previousUrl.includes("/catalog") && window.history.length > 1) {
-      event.preventDefault();
-      window.history.back();
-    }
+  const handleBackToCatalogClick = () => {
+    router.push(backToCatalogHref, { scroll: false });
   };
   const primaryImage = images.find((image) => image.is_primary) ?? images[0];
   const totalStockQty = product?.total_stock_qty ?? 0;
@@ -80,6 +77,9 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   })();
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
     setSelectedMake("");
     setSelectedModel("");
     setFitmentOptions(null);
@@ -87,6 +87,16 @@ export function ProductDetailPage({ slug }: { slug: string }) {
     setRemoteFitmentCount(null);
     setSelectedVehicleApplied(false);
   }, [product?.id]);
+
+  useEffect(() => {
+    if (!product) {
+      return;
+    }
+    const state = readCatalogReturnState();
+    if (state && state.productId !== product.id) {
+      clearCatalogReturnState();
+    }
+  }, [product]);
 
   useEffect(() => {
     if (!product) {
@@ -243,16 +253,15 @@ export function ProductDetailPage({ slug }: { slug: string }) {
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-8">
-      <Link
-        href={backToCatalogHref}
-        scroll={false}
+      <button
+        type="button"
         onClick={handleBackToCatalogClick}
         className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium transition hover:opacity-80"
         style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", color: "var(--fg)" }}
       >
         <ChevronLeft size={14} />
         {t("backToCatalog")}
-      </Link>
+      </button>
 
       <div className="mt-4 grid gap-5 rounded-xl border p-6 md:grid-cols-[1.15fr_1fr]" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
         <ContainedImagePanel className="aspect-[4/3] w-full rounded-lg" imageUrl={primaryImage?.image_url} alt={product.name} />

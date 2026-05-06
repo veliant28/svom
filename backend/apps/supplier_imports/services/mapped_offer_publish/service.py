@@ -62,6 +62,7 @@ class SupplierMappedOffersPublishService:
         brand_cache = self._build_brand_cache()
         product_cache = self._build_product_cache()
         supplier_offer_cache = self._build_supplier_offer_cache(supplier=supplier)
+        autodb_name_cache: dict[tuple[str, str], str] = {}
 
         queryset = selection.get_publish_queryset(supplier_code=supplier_code, run_id=run_id)
         for raw_offer in queryset.iterator(chunk_size=1000):
@@ -90,6 +91,7 @@ class SupplierMappedOffersPublishService:
                     product, product_created, product_updated = self._upsert_product(
                         raw_offer=raw_offer,
                         supplier_sku=supplier_sku,
+                        autodb_name_cache=autodb_name_cache,
                         brand_cache=brand_cache,
                         product_cache=product_cache,
                         supplier_offer_cache=supplier_offer_cache,
@@ -175,6 +177,7 @@ class SupplierMappedOffersPublishService:
         *,
         raw_offer: SupplierRawOffer,
         supplier_sku: str,
+        autodb_name_cache: dict[tuple[str, str], str],
         brand_cache: dict[str, Brand],
         product_cache: dict[str, Product],
         supplier_offer_cache: dict[str, SupplierOffer],
@@ -182,6 +185,7 @@ class SupplierMappedOffersPublishService:
         return publish.upsert_product(
             raw_offer=raw_offer,
             supplier_sku=supplier_sku,
+            autodb_name_cache=autodb_name_cache,
             brand_cache=brand_cache,
             product_cache=product_cache,
             supplier_offer_cache=supplier_offer_cache,
@@ -205,8 +209,8 @@ class SupplierMappedOffersPublishService:
     def _resolve_brand(self, *, raw_offer: SupplierRawOffer, brand_cache: dict[str, Brand]) -> Brand:
         return publish.resolve_brand(raw_offer=raw_offer, brand_cache=brand_cache)
 
-    def _resolve_product_name(self, *, raw_offer: SupplierRawOffer, supplier_sku: str) -> str:
-        return publish.resolve_product_name(raw_offer=raw_offer, supplier_sku=supplier_sku)
+    def _resolve_product_name(self, *, raw_offer: SupplierRawOffer, autodb_name_cache: dict[tuple[str, str], str]) -> str:
+        return publish.resolve_product_name(raw_offer=raw_offer, autodb_name_cache=autodb_name_cache)
 
     def _resolve_supplier_sku(self, *, raw_offer: SupplierRawOffer) -> str:
         return selection.resolve_supplier_sku(raw_offer=raw_offer)

@@ -37,23 +37,28 @@ export async function updateBackofficeHeroBlockSettings(
 }
 
 export async function listBackofficeHeroSlides(token: string): Promise<{ count: number; results: BackofficeHeroSlide[] }> {
-  return getJson<{ count: number; results: BackofficeHeroSlide[] }>(
+  const payload = await getJson<{ count: number; results: BackofficeHeroSlide[] }>(
     "/backoffice/settings/hero-block/items/",
     undefined,
     { token },
   );
+  return {
+    ...payload,
+    results: (payload.results || []).map(normalizeBackofficeHeroSlide),
+  };
 }
 
 export async function createBackofficeHeroSlide(
   token: string,
   payload: BackofficeHeroSlideWritePayload,
 ): Promise<BackofficeHeroSlide> {
-  return requestBackofficeHeroBlockFormData<BackofficeHeroSlide>(
+  const created = await requestBackofficeHeroBlockFormData<BackofficeHeroSlide>(
     "POST",
     "/backoffice/settings/hero-block/items/",
     token,
     payload,
   );
+  return normalizeBackofficeHeroSlide(created);
 }
 
 export async function updateBackofficeHeroSlide(
@@ -61,12 +66,13 @@ export async function updateBackofficeHeroSlide(
   id: string,
   payload: BackofficeHeroSlideWritePayload,
 ): Promise<BackofficeHeroSlide> {
-  return requestBackofficeHeroBlockFormData<BackofficeHeroSlide>(
+  const updated = await requestBackofficeHeroBlockFormData<BackofficeHeroSlide>(
     "PATCH",
     `/backoffice/settings/hero-block/items/${id}/`,
     token,
     payload,
   );
+  return normalizeBackofficeHeroSlide(updated);
 }
 
 export async function deleteBackofficeHeroSlide(token: string, id: string): Promise<void> {
@@ -152,4 +158,41 @@ function appendIfPresent(formData: FormData, key: string, value: unknown): void 
     return;
   }
   formData.append(key, String(value));
+}
+
+function normalizeBackofficeHeroSlide(slide: BackofficeHeroSlide): BackofficeHeroSlide {
+  return {
+    ...slide,
+    desktop_image_url: resolveRuntimeMediaUrl(slide.desktop_image_url),
+    mobile_image_url: resolveRuntimeMediaUrl(slide.mobile_image_url),
+  };
+}
+
+function resolveRuntimeMediaUrl(value: string): string {
+  const rawValue = String(value || "").trim();
+  if (!rawValue) {
+    return "";
+  }
+
+  const mediaPath = extractMediaPath(rawValue);
+  if (!mediaPath) {
+    return rawValue;
+  }
+  return mediaPath;
+}
+
+function extractMediaPath(value: string): string | null {
+  if (value.startsWith("/media/")) {
+    return value;
+  }
+
+  try {
+    const parsed = new URL(value);
+    if (parsed.pathname.startsWith("/media/")) {
+      return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    }
+  } catch {
+    return null;
+  }
+  return null;
 }

@@ -3,6 +3,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 
+from apps.backoffice.api.pagination import BackofficeOrderPagination
 from apps.backoffice.api.serializers import BackofficeOrderOperationalListSerializer
 from apps.backoffice.permissions import IsStaffOrSuperuser
 from apps.backoffice.selectors import apply_operational_order_filters, get_operational_orders_queryset
@@ -12,6 +13,7 @@ class OrderOperationalListAPIView(ListAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, IsStaffOrSuperuser]
     serializer_class = BackofficeOrderOperationalListSerializer
+    pagination_class = BackofficeOrderPagination
 
     def get_queryset(self):
         queryset = get_operational_orders_queryset()

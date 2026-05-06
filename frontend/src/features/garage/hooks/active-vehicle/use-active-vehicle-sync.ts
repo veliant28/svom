@@ -18,10 +18,12 @@ export function useActiveVehicleSync({
   activeVehicleSource,
   activeGarageVehicleId,
   activeTemporaryCarModificationId,
+  activeTemporaryAutoDbPassangerCarId,
   isManualSelection,
   setActiveVehicleSource,
   setActiveGarageVehicleId,
   setActiveTemporaryCarModificationId,
+  setActiveTemporaryAutoDbPassangerCarId,
   setIsManualSelection,
 }: {
   token: string | null;
@@ -31,10 +33,12 @@ export function useActiveVehicleSync({
   activeVehicleSource: ActiveVehicleSource;
   activeGarageVehicleId: string | null;
   activeTemporaryCarModificationId: number | null;
+  activeTemporaryAutoDbPassangerCarId: number | null;
   isManualSelection: boolean;
   setActiveVehicleSource: SourceSetter;
   setActiveGarageVehicleId: StringSetter;
   setActiveTemporaryCarModificationId: NumberSetter;
+  setActiveTemporaryAutoDbPassangerCarId: NumberSetter;
   setIsManualSelection: BoolSetter;
 }) {
   const [garageVehicles, setGarageVehicles] = useState<GarageVehicle[]>([]);
@@ -94,11 +98,20 @@ export function useActiveVehicleSync({
       setActiveVehicleSource("none");
       setActiveGarageVehicleId(null);
       setActiveTemporaryCarModificationId(null);
+      setActiveTemporaryAutoDbPassangerCarId(null);
       setIsManualSelection(false);
     }
 
     wasAuthenticatedRef.current = isAuthenticated;
-  }, [isAuthenticated, isAuthLoading, setActiveGarageVehicleId, setActiveTemporaryCarModificationId, setActiveVehicleSource, setIsManualSelection]);
+  }, [
+    isAuthenticated,
+    isAuthLoading,
+    setActiveGarageVehicleId,
+    setActiveTemporaryAutoDbPassangerCarId,
+    setActiveTemporaryCarModificationId,
+    setActiveVehicleSource,
+    setIsManualSelection,
+  ]);
 
   useEffect(() => {
     if (!hasHydratedFromStorage.current || isAuthLoading) {
@@ -106,10 +119,13 @@ export function useActiveVehicleSync({
     }
 
     if (!isAuthenticated) {
-      if (activeVehicleSource !== "temporary") {
+      const hasTemporarySelection =
+        activeVehicleSource === "temporary" || activeVehicleSource === "temporary_autodb";
+      if (!hasTemporarySelection) {
         setActiveVehicleSource("none");
         setActiveGarageVehicleId(null);
         setActiveTemporaryCarModificationId(null);
+        setActiveTemporaryAutoDbPassangerCarId(null);
         setIsManualSelection(false);
       }
       return;
@@ -127,9 +143,11 @@ export function useActiveVehicleSync({
           setActiveVehicleSource("garage");
           setActiveGarageVehicleId(primaryVehicle.id);
           setActiveTemporaryCarModificationId(null);
+          setActiveTemporaryAutoDbPassangerCarId(null);
         } else {
           setActiveVehicleSource("none");
           setActiveGarageVehicleId(null);
+          setActiveTemporaryAutoDbPassangerCarId(null);
         }
         setIsManualSelection(false);
       }
@@ -141,17 +159,25 @@ export function useActiveVehicleSync({
         setActiveVehicleSource("garage");
         setActiveGarageVehicleId(primaryVehicle.id);
         setActiveTemporaryCarModificationId(null);
+        setActiveTemporaryAutoDbPassangerCarId(null);
       }
       return;
     }
 
-    if (activeVehicleSource !== "none" || activeGarageVehicleId !== null || activeTemporaryCarModificationId !== null) {
+    if (
+      activeVehicleSource !== "none" ||
+      activeGarageVehicleId !== null ||
+      activeTemporaryCarModificationId !== null ||
+      activeTemporaryAutoDbPassangerCarId !== null
+    ) {
       setActiveVehicleSource("none");
       setActiveGarageVehicleId(null);
       setActiveTemporaryCarModificationId(null);
+      setActiveTemporaryAutoDbPassangerCarId(null);
     }
   }, [
     activeGarageVehicleId,
+    activeTemporaryAutoDbPassangerCarId,
     activeTemporaryCarModificationId,
     activeVehicleSource,
     garageVehicles,
@@ -160,6 +186,7 @@ export function useActiveVehicleSync({
     isAuthLoading,
     isManualSelection,
     setActiveGarageVehicleId,
+    setActiveTemporaryAutoDbPassangerCarId,
     setActiveTemporaryCarModificationId,
     setActiveVehicleSource,
     setIsManualSelection,

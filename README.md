@@ -70,6 +70,7 @@ Important variables from `.env.example`:
 - `REDIS_*`
 - `ELASTICSEARCH_HOSTS`
 - `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api`
+- `NEXT_PUBLIC_AUTODB_PRO_VEHICLE_CATALOG_ENABLED=1`
 - `UTR_*` safety and rate-limit settings
 
 ### 2. Start the Docker stack
@@ -81,6 +82,7 @@ docker compose up --build
 This starts:
 
 - `svom_postgres`
+- `svom_auto_db_pro_postgres`
 - `svom_redis`
 - `svom_elasticsearch`
 - `svom_backend`
@@ -94,6 +96,8 @@ Backend is exposed at:
 - API root under `http://localhost:8000/api/...`
 
 The backend container runs migrations on startup.
+
+Auto_DB_Pro local clone DB is provided by `svom_auto_db_pro_postgres` and is wired to Django alias `auto_db_pro`.
 
 Frontend is exposed at:
 
@@ -148,8 +152,77 @@ UTR integration includes conservative anti-ban defaults in `.env.example`, for e
 
 - `UTR_RATE_LIMIT_PER_MINUTE=6`
 - `UTR_CONCURRENCY=1`
+
+Auto_DB_Pro post-processing in supplier imports is feature-flagged:
+
+- `AUTODB_PRO_SUPPLIER_IMPORT_ENRICHMENT_ENABLED=0|1`
+- `AUTODB_PRO_SUPPLIER_IMPORT_NAME_UPDATE_ENABLED=0|1`
+
+Manual overrides for `import_supplier_data`:
+
+```bash
+cd backend
+../.venv/bin/python manage.py import_supplier_data --source gpl --autodb-enrich --update-product-names --limit 500
+```
+
+## Auto_DB_Pro clone sync
+
+Vehicle catalog raw clone (remote Auto-DB Pro -> local Auto_DB_Pro with same table/column names):
+
+```bash
+cd backend
+../.venv/bin/python manage.py autodb_clone_sync --vehicle-catalog --schema-only
+../.venv/bin/python manage.py autodb_clone_sync --only manufacturers --limit 100
+../.venv/bin/python manage.py autodb_clone_sync --vehicle-catalog --batch-size 1000 --resume
+../.venv/bin/python manage.py autodb_check
+```
+
+Remote Auto-DB Pro checks (explicit env load):
+
+```bash
+cd backend
+set -a
+source ../.env
+set +a
+../.venv/bin/python manage.py autodb_check
+```
+
+Recommended exact flow:
+
+```bash
+cd /Users/vs/Django/svom/backend
+set -a
+source ../.env
+set +a
+../.venv/bin/python manage.py autodb_check
+```
+
+Important:
+- use `AUTODB_PRO_REMOTE_USER` (or legacy `AUTODB_SOURCE_MYSQL_USER`)
+- do not use `AUTODB_SOURCE_MYSQL_USERNAME` as the only source unless you also map it to `AUTODB_PRO_REMOTE_USER`
 - `UTR_CIRCUIT_BREAKER_THRESHOLD=5`
 - `UTR_CIRCUIT_BREAKER_COOLDOWN_SECONDS=300`
+
+## After power outage or Docker restart
+
+If host power was cut, PostgreSQL may stay in recovery for several minutes. During this window Auto_DB_Pro commands must not be treated as business-logic failures.
+
+Run checks in this order:
+
+```bash
+docker compose ps
+docker logs --tail=200 svom_auto_db_pro_postgres
+docker exec svom_auto_db_pro_postgres pg_isready -U svom -d Auto_DB_Pro
+cd backend
+../.venv/bin/python manage.py autodb_check
+../.venv/bin/python manage.py autodb_update_product_images --only-linked --limit 100 --wait-for-autodb 300 --dry-run
+```
+
+Notes:
+
+- local Auto_DB_Pro readiness is now checked before Auto_DB_Pro management commands start.
+- `--wait-for-autodb N` waits up to `N` seconds for local DB readiness and then exits with a clear message if still recovering.
+- do not treat `database system is starting up` / `consistent recovery state has not been yet reached` as enrichment logic errors.
 
 ## Marketing and storefront content
 

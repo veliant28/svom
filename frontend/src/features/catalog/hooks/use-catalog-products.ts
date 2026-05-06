@@ -11,6 +11,7 @@ import {
   readCachedCatalogPayload,
   writeCachedCatalogPayload,
 } from "@/features/catalog/lib/catalog-page-cache";
+import { resolveActiveVehicleFitmentParams } from "@/features/catalog/lib/vehicle-fitment";
 import { useActiveVehicle } from "@/features/garage/hooks/use-active-vehicle";
 import type { CatalogFilters, CatalogProduct } from "@/features/catalog/types";
 
@@ -19,12 +20,14 @@ type UseCatalogProductsParams = CatalogFilters & { page?: number; pageSize?: num
 type UseCatalogProductsOptions = {
   enabled?: boolean;
   useActiveVehicle?: boolean;
+  deferCachedRevalidation?: boolean;
 };
 
 export function useCatalogProducts(params: UseCatalogProductsParams = {}, options: UseCatalogProductsOptions = {}) {
   const locale = useLocale();
   const {
     activeGarageVehicleId,
+    activeGarageVehicle,
     activeTemporaryCarModificationId,
     activeVehicleSource,
   } = useActiveVehicle();
@@ -51,11 +54,15 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
     if (options.useActiveVehicle) {
       const hasExplicitVehicle = Boolean(result.garage_vehicle || result.car_modification);
       if (!hasExplicitVehicle) {
-        if (activeVehicleSource === "garage" && activeGarageVehicleId) {
-          result.garage_vehicle = activeGarageVehicleId;
-        } else if (activeVehicleSource === "temporary" && activeTemporaryCarModificationId) {
-          result.car_modification = String(activeTemporaryCarModificationId);
-        }
+        Object.assign(
+          result,
+          resolveActiveVehicleFitmentParams({
+            activeVehicleSource,
+            activeGarageVehicleId,
+            activeGarageVehicleCatalogSource: activeGarageVehicle?.catalog_source ?? null,
+            activeTemporaryCarModificationId,
+          }),
+        );
       }
 
       const hasActiveVehicle = Boolean(result.garage_vehicle || result.car_modification);
@@ -67,6 +74,7 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
     return result;
   }, [
     activeGarageVehicleId,
+    activeGarageVehicle,
     activeTemporaryCarModificationId,
     activeVehicleSource,
     options.useActiveVehicle,
@@ -75,6 +83,7 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
   const paramsKey = JSON.stringify({ ...effectiveParams, locale });
   const cacheKey = useMemo(() => buildCatalogCacheKey(paramsKey), [paramsKey]);
   const isEnabled = options.enabled ?? true;
+  const deferCachedRevalidation = options.deferCachedRevalidation ?? false;
 
   useEffect(() => {
     if (!isEnabled) {
@@ -92,6 +101,9 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
         setProducts(cached.products);
         setTotalCount(cached.totalCount);
         setIsLoading(false);
+        if (deferCachedRevalidation) {
+          return;
+        }
       } else {
         setIsLoading(true);
         setProducts([]);
@@ -121,7 +133,7 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
     return () => {
       isMounted = false;
     };
-  }, [cacheKey, effectiveParams, isEnabled, locale, paramsKey]);
+  }, [cacheKey, deferCachedRevalidation, effectiveParams, isEnabled, locale, paramsKey]);
 
   useEffect(() => {
     if (!isEnabled || typeof window === "undefined") {

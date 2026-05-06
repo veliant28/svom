@@ -12,6 +12,12 @@ LOG_FILE="${UTR_APPLICABILITY_LOG_FILE:-$PROJECT_ROOT/utr_applicability_nonstop.
 LOCK_FILE="${UTR_APPLICABILITY_LOCK_FILE:-$PROJECT_ROOT/.utr_applicability_nonstop.lock}"
 RUN_LOCK_KEY="${UTR_APPLICABILITY_RUN_LOCK_KEY:-804721453}"
 
+utr_catalog_enabled_raw="$(printf '%s' "${UTR_CATALOG_ENRICHMENT_ENABLED:-0}" | tr '[:upper:]' '[:lower:]')"
+if [[ "$utr_catalog_enabled_raw" != "1" && "$utr_catalog_enabled_raw" != "true" && "$utr_catalog_enabled_raw" != "yes" && "$utr_catalog_enabled_raw" != "on" ]]; then
+  echo "UTR catalog enrichment is disabled"
+  exit 0
+fi
+
 if [[ ! -x "$PY_BIN" ]]; then
   echo "Python interpreter not found or not executable: $PY_BIN" >&2
   exit 1

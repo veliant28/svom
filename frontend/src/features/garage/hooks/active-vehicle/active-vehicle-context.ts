@@ -2,7 +2,7 @@ import { createContext } from "react";
 
 import type { GarageVehicle, GarageVehicleCreatePayload } from "@/features/garage/types/garage";
 
-export type ActiveVehicleSource = "none" | "garage" | "temporary";
+export type ActiveVehicleSource = "none" | "garage" | "temporary" | "temporary_autodb";
 
 export type ActiveVehicleContextValue = {
   garageVehicles: GarageVehicle[];
@@ -13,11 +13,16 @@ export type ActiveVehicleContextValue = {
   activeVehicleSource: ActiveVehicleSource;
   activeGarageVehicleId: string | null;
   activeTemporaryCarModificationId: number | null;
+  activeTemporaryAutoDbPassangerCarId: number | null;
   activeGarageVehicle: GarageVehicle | null;
   isVehicleFilterActive: boolean;
   isManualSelection: boolean;
   selectGarageVehicle: (vehicleId: string, options?: { manual?: boolean }) => void;
   selectTemporaryVehicle: (carModificationId: number, options?: { manual?: boolean }) => void;
+  selectTemporaryAutoDbVehicle: (
+    payload: { manufacturerId: number; modelId: number; passangerCarId: number },
+    options?: { manual?: boolean },
+  ) => void;
   clearActiveVehicle: (options?: { manual?: boolean }) => void;
 };
 

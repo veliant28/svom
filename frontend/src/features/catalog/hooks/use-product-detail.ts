@@ -6,30 +6,29 @@ import { useSearchParams } from "next/navigation";
 
 import { getProductDetail } from "@/features/catalog/api/get-product-detail";
 import { requestUtrProductEnrichment } from "@/features/catalog/api/request-utr-enrichment";
+import { resolveActiveVehicleFitmentParams } from "@/features/catalog/lib/vehicle-fitment";
 import type { CatalogFilters, ProductDetail } from "@/features/catalog/types";
 import { useActiveVehicle } from "@/features/garage/hooks/use-active-vehicle";
 
-function resolveVehicleParams(params: {
+export function resolveVehicleParams(params: {
   activeGarageVehicleId?: string | null;
+  activeGarageVehicleCatalogSource?: "legacy" | "autodb_pro" | null;
   activeTemporaryCarModificationId?: string | number | null;
-  activeVehicleSource?: string | null;
+  activeVehicleSource?: "none" | "garage" | "temporary" | "temporary_autodb" | null;
   explicitParams?: Pick<CatalogFilters, "car_modification" | "garage_vehicle" | "modification">;
 }): Pick<CatalogFilters, "car_modification" | "garage_vehicle" | "modification"> {
   if (params.explicitParams && Object.values(params.explicitParams).some(Boolean)) {
     return params.explicitParams;
   }
-
-  const { activeGarageVehicleId, activeTemporaryCarModificationId, activeVehicleSource } = params;
-
-  if (activeVehicleSource === "garage" && activeGarageVehicleId) {
-    return { garage_vehicle: activeGarageVehicleId };
-  }
-
-  if (activeVehicleSource === "temporary" && activeTemporaryCarModificationId) {
-    return { car_modification: String(activeTemporaryCarModificationId) };
-  }
-
-  return {};
+  return resolveActiveVehicleFitmentParams({
+    activeVehicleSource: params.activeVehicleSource ?? "none",
+    activeGarageVehicleId: params.activeGarageVehicleId ?? null,
+    activeGarageVehicleCatalogSource: params.activeGarageVehicleCatalogSource ?? null,
+    activeTemporaryCarModificationId:
+      typeof params.activeTemporaryCarModificationId === "number"
+        ? params.activeTemporaryCarModificationId
+        : Number(params.activeTemporaryCarModificationId || 0) || null,
+  });
 }
 
 export function useProductDetail(slug: string) {
@@ -40,6 +39,7 @@ export function useProductDetail(slug: string) {
   const modificationParam = searchParams.get("modification") || undefined;
   const {
     activeGarageVehicleId,
+    activeGarageVehicle,
     activeTemporaryCarModificationId,
     activeVehicleSource,
   } = useActiveVehicle();
@@ -50,6 +50,7 @@ export function useProductDetail(slug: string) {
     () =>
       resolveVehicleParams({
         activeGarageVehicleId,
+        activeGarageVehicleCatalogSource: activeGarageVehicle?.catalog_source ?? null,
         activeTemporaryCarModificationId,
         activeVehicleSource,
         explicitParams: {
@@ -60,6 +61,7 @@ export function useProductDetail(slug: string) {
       }),
     [
       activeGarageVehicleId,
+      activeGarageVehicle,
       activeTemporaryCarModificationId,
       activeVehicleSource,
       carModificationParam,

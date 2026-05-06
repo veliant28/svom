@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 
 from django.core.cache import cache
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from apps.catalog.models import Brand, Category, Product, UtrProductEnrichment
 from apps.autocatalog.services.utr_autocatalog_import_service import UtrAutocatalogImportService
@@ -41,6 +41,7 @@ class FakeUtrClient:
         return False
 
 
+@override_settings(UTR_CATALOG_ENRICHMENT_ENABLED=True)
 class UtrAutocatalogImportServiceTests(TestCase):
     def tearDown(self):
         cache.clear()
@@ -96,3 +97,17 @@ class UtrAutocatalogImportServiceTests(TestCase):
         self.assertEqual(summary.detail_ids_empty_applicability, 1)
         self.assertEqual(summary.detail_ids_suspicious_empty_applicability, 1)
         self.assertFalse(service._is_detail_marked_done("456"))
+
+
+@override_settings(UTR_CATALOG_ENRICHMENT_ENABLED=False)
+class UtrAutocatalogImportServiceKillSwitchTests(TestCase):
+    def test_import_is_skipped_without_fetching_applicability(self):
+        client = FakeUtrClient(has_applicability=True)
+        service = UtrAutocatalogImportService(client=client)
+
+        summary = service.import_from_detail_ids(detail_ids=["101", "102"], access_token="token")
+
+        self.assertEqual(summary.detail_ids_processed, 0)
+        self.assertEqual(summary.detail_ids_skipped_disabled, 2)
+        self.assertEqual(client.search_details_batch_calls, 0)
+        self.assertEqual(client.fetch_applicability_calls, 0)

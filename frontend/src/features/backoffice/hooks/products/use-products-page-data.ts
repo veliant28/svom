@@ -25,10 +25,11 @@ export function useProductsPageData(filters: ProductsFiltersState, locale: strin
         is_active: filters.isActiveFilter,
         brand: filters.brandFilter,
         category: filters.categoryFilter,
+        locale,
         page: filters.page,
         page_size: filters.pageSize,
       }),
-    [filters.brandFilter, filters.categoryFilter, filters.isActiveFilter, filters.page, filters.pageSize, filters.q],
+    [filters.brandFilter, filters.categoryFilter, filters.isActiveFilter, filters.page, filters.pageSize, filters.q, locale],
   );
 
   const products = useBackofficeQuery<{ count: number; results: BackofficeCatalogProduct[] }>(productsQuery, [
@@ -38,6 +39,7 @@ export function useProductsPageData(filters: ProductsFiltersState, locale: strin
     filters.categoryFilter,
     filters.page,
     filters.pageSize,
+    locale,
   ]);
 
   const brandsQuery = useCallback(async (authToken: string) => {

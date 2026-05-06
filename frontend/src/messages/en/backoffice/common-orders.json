@@ -142,6 +142,7 @@
         },
         "pagination": {
           "total": "Total orders: {count}",
+          "perPage": "Per page",
           "prev": "Prev",
           "next": "Next",
           "page": "Page {current} of {total}"
@@ -365,7 +366,7 @@
             "lastOrder": "Last created supplier order: #{id}",
             "actions": {
               "cancelSupplierOrder": "Cancel supplier order",
-              "submit": "Create supplier order"
+              "submit": "Create"
             }
           },
           "delete": {

@@ -34,3 +34,4 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+AUTODB_PRO_VEHICLE_CATALOG_API_ENABLED = env_bool("AUTODB_PRO_VEHICLE_CATALOG_API_ENABLED", True)  # noqa: F405

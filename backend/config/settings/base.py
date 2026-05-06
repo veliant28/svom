@@ -1,6 +1,7 @@
 import os
 from importlib.util import find_spec
 from pathlib import Path
+from urllib.parse import parse_qs, unquote, urlparse
 
 from celery.schedules import crontab
 
@@ -33,6 +34,26 @@ def env_float(name: str, default: float) -> float:
     except (TypeError, ValueError):
         return float(default)
 
+
+def parse_database_url(url: str) -> dict[str, object]:
+    parsed = urlparse(url)
+    if parsed.scheme not in {"postgres", "postgresql", "pgsql"}:
+        raise ValueError(f"Unsupported database URL scheme: {parsed.scheme}")
+
+    query = parse_qs(parsed.query, keep_blank_values=True)
+    options = {key: values[-1] for key, values in query.items() if values}
+    config: dict[str, object] = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": unquote((parsed.path or "").lstrip("/")),
+        "USER": unquote(parsed.username or ""),
+        "PASSWORD": unquote(parsed.password or ""),
+        "HOST": parsed.hostname or "",
+        "PORT": str(parsed.port or ""),
+    }
+    if options:
+        config["OPTIONS"] = options
+    return config
+
 SECRET_KEY = "unsafe-default-secret-key"
 DEBUG = False
 
@@ -58,6 +79,7 @@ INSTALLED_APPS = [
     "apps.catalog.apps.CatalogConfig",
     "apps.vehicles.apps.VehiclesConfig",
     "apps.autocatalog.apps.AutocatalogConfig",
+    "apps.autodb.apps.AutoDbConfig",
     "apps.compatibility.apps.CompatibilityConfig",
     "apps.marketing.apps.MarketingConfig",
     "apps.seo.apps.SeoConfig",
@@ -119,6 +141,30 @@ DATABASES = {
         "PORT": os.getenv("POSTGRES_PORT", "5432"),
     }
 }
+
+AUTODB_PRO_LOCAL_DATABASE_URL = os.getenv("AUTODB_PRO_LOCAL_DATABASE_URL", "").strip()
+AUTODB_PRO_LOCAL_DATABASE_NAME = os.getenv("AUTODB_PRO_LOCAL_DATABASE_NAME", "Auto_DB_Pro").strip() or "Auto_DB_Pro"
+_legacy_autodb_db_name = os.getenv("AUTODB_POSTGRES_DB", "").strip()
+_fallback_autodb_db_name = (
+    "Auto_DB_Pro"
+    if _legacy_autodb_db_name in {"", "svom_autodb"}
+    else _legacy_autodb_db_name
+)
+
+if AUTODB_PRO_LOCAL_DATABASE_URL:
+    _auto_db_pro_config = parse_database_url(AUTODB_PRO_LOCAL_DATABASE_URL)
+else:
+    _auto_db_pro_config = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("AUTODB_PRO_LOCAL_DATABASE_NAME", _fallback_autodb_db_name),
+        "USER": os.getenv("AUTODB_PRO_LOCAL_DATABASE_USER", os.getenv("AUTODB_POSTGRES_USER", "svom")),
+        "PASSWORD": os.getenv("AUTODB_PRO_LOCAL_DATABASE_PASSWORD", os.getenv("AUTODB_POSTGRES_PASSWORD", "svom")),
+        "HOST": os.getenv("AUTODB_PRO_LOCAL_DATABASE_HOST", os.getenv("AUTODB_POSTGRES_HOST", "127.0.0.1")),
+        "PORT": os.getenv("AUTODB_PRO_LOCAL_DATABASE_PORT", os.getenv("AUTODB_POSTGRES_PORT", "5434")),
+    }
+
+DATABASES["auto_db_pro"] = _auto_db_pro_config
+DATABASE_ROUTERS = ["apps.autodb.db_router.AutoDbRouter"]
 
 REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "redis://127.0.0.1:6379/1")
 REDIS_CHANNEL_LAYER_URL = os.getenv("REDIS_CHANNEL_LAYER_URL", REDIS_CACHE_URL)
@@ -212,9 +258,13 @@ SUPPLIER_IMPORT_SCHEDULED_PIPELINE_TIME_LIMIT = max(
     SUPPLIER_IMPORT_SCHEDULED_PIPELINE_SOFT_TIME_LIMIT + 60,
 )
 SUPPLIER_PRICE_LIST_FILE_RETENTION_HOURS = max(env_int("SUPPLIER_PRICE_LIST_FILE_RETENTION_HOURS", 48), 1)
-SUPPLIER_IMPORT_CURRENT_OFFER_SOURCES = tuple(env_list("SUPPLIER_IMPORT_CURRENT_OFFER_SOURCES", "utr,gpl"))
+SUPPLIER_IMPORT_CURRENT_OFFER_SOURCES = tuple(env_list("SUPPLIER_IMPORT_CURRENT_OFFER_SOURCES", "gpl"))
 SUPPLIER_IMPORT_ROW_ERROR_RETENTION_RUNS = max(env_int("SUPPLIER_IMPORT_ROW_ERROR_RETENTION_RUNS", 5), 0)
 SUPPLIER_IMPORT_SCHEDULE_DISPATCH_LOCK_SECONDS = max(env_int("SUPPLIER_IMPORT_SCHEDULE_DISPATCH_LOCK_SECONDS", 60 * 60), 60)
+AUTODB_PRO_SUPPLIER_IMPORT_ENRICHMENT_ENABLED = env_bool("AUTODB_PRO_SUPPLIER_IMPORT_ENRICHMENT_ENABLED", False)
+AUTODB_PRO_SUPPLIER_IMPORT_NAME_UPDATE_ENABLED = env_bool("AUTODB_PRO_SUPPLIER_IMPORT_NAME_UPDATE_ENABLED", False)
+AUTODB_PRO_SUPPLIER_IMPORT_REMOTE_LOOKUP_ENABLED = env_bool("AUTODB_PRO_SUPPLIER_IMPORT_REMOTE_LOOKUP_ENABLED", False)
+AUTODB_PRO_SUPPLIER_IMPORT_IMAGE_UPDATE_ENABLED = env_bool("AUTODB_PRO_SUPPLIER_IMPORT_IMAGE_UPDATE_ENABLED", False)
 DATABASE_BACKUP_ENABLED = env_bool("DATABASE_BACKUP_ENABLED", True)
 DATABASE_BACKUP_CRON = os.getenv("DATABASE_BACKUP_CRON", "0 23 * * *")
 DATABASE_BACKUP_TIMEZONE = os.getenv("DATABASE_BACKUP_TIMEZONE", "Europe/Kyiv")
@@ -225,6 +275,38 @@ DATABASE_BACKUP_TIMEOUT_SECONDS = max(env_int("DATABASE_BACKUP_TIMEOUT_SECONDS",
 DATABASE_BACKUP_TASK_SOFT_TIME_LIMIT = max(env_int("DATABASE_BACKUP_TASK_SOFT_TIME_LIMIT", 60 * 60), 60)
 DATABASE_BACKUP_TASK_TIME_LIMIT = max(env_int("DATABASE_BACKUP_TASK_TIME_LIMIT", 60 * 70), DATABASE_BACKUP_TASK_SOFT_TIME_LIMIT + 60)
 DATABASE_BACKUP_PG_DUMP_BIN = os.getenv("DATABASE_BACKUP_PG_DUMP_BIN", "pg_dump")
+FITMENT_PROVIDER = os.getenv("FITMENT_PROVIDER", "autodb").strip().lower()
+
+_legacy_remote_host = os.getenv("AUTODB_SOURCE_MYSQL_HOST", "").strip()
+_legacy_remote_port = os.getenv("AUTODB_SOURCE_MYSQL_PORT", "").strip()
+_legacy_remote_database = os.getenv("AUTODB_SOURCE_MYSQL_DATABASE", "").strip()
+_legacy_remote_user = os.getenv("AUTODB_SOURCE_MYSQL_USER", "").strip()
+_legacy_remote_username = os.getenv("AUTODB_SOURCE_MYSQL_USERNAME", "").strip()
+_legacy_remote_password = os.getenv("AUTODB_SOURCE_MYSQL_PASSWORD", "")
+
+AUTODB_PRO_REMOTE_ENABLED = env_bool("AUTODB_PRO_REMOTE_ENABLED", False)
+AUTODB_PRO_REMOTE_HOST = os.getenv("AUTODB_PRO_REMOTE_HOST", _legacy_remote_host).strip()
+AUTODB_PRO_REMOTE_PORT = max(env_int("AUTODB_PRO_REMOTE_PORT", int(_legacy_remote_port or 3306)), 1)
+AUTODB_PRO_REMOTE_DATABASE = os.getenv("AUTODB_PRO_REMOTE_DATABASE", _legacy_remote_database).strip()
+AUTODB_PRO_REMOTE_USER = os.getenv(
+    "AUTODB_PRO_REMOTE_USER",
+    _legacy_remote_user or _legacy_remote_username,
+).strip()
+AUTODB_PRO_REMOTE_PASSWORD = os.getenv("AUTODB_PRO_REMOTE_PASSWORD", _legacy_remote_password)
+AUTODB_PRO_REMOTE_CONNECT_TIMEOUT = max(env_int("AUTODB_PRO_REMOTE_CONNECT_TIMEOUT", 10), 1)
+AUTODB_PRO_REMOTE_READ_TIMEOUT = max(env_int("AUTODB_PRO_REMOTE_READ_TIMEOUT", 30), 1)
+AUTODB_PRO_REMOTE_BATCH_SIZE = max(env_int("AUTODB_PRO_REMOTE_BATCH_SIZE", 100), 1)
+AUTODB_PRO_VEHICLE_CATALOG_API_ENABLED = env_bool("AUTODB_PRO_VEHICLE_CATALOG_API_ENABLED", False)
+
+# Backward-compatible aliases (legacy variable names).
+AUTODB_SOURCE_MYSQL_HOST = AUTODB_PRO_REMOTE_HOST or _legacy_remote_host
+AUTODB_SOURCE_MYSQL_DATABASE = AUTODB_PRO_REMOTE_DATABASE or _legacy_remote_database
+AUTODB_SOURCE_MYSQL_USER = AUTODB_PRO_REMOTE_USER or _legacy_remote_user or _legacy_remote_username
+AUTODB_SOURCE_MYSQL_PASSWORD = AUTODB_PRO_REMOTE_PASSWORD or _legacy_remote_password
+AUTODB_SOURCE_MYSQL_TIMEOUT_SECONDS = max(
+    env_int("AUTODB_SOURCE_MYSQL_TIMEOUT_SECONDS", AUTODB_PRO_REMOTE_CONNECT_TIMEOUT),
+    1,
+)
 CELERY_BEAT_SCHEDULE = {
     "supplier-imports-scheduled-dispatch": {
         "task": "supplier_imports.run_scheduled_imports",
@@ -263,7 +345,8 @@ ELASTICSEARCH = {
 SEARCH_BACKEND = "db"
 
 # UTR safety defaults: conservative to reduce supplier-ban risk.
-UTR_ENABLED = env_bool("UTR_ENABLED", True)
+UTR_ENABLED = env_bool("UTR_ENABLED", False)
+UTR_CATALOG_ENRICHMENT_ENABLED = env_bool("UTR_CATALOG_ENRICHMENT_ENABLED", False)
 UTR_RATE_LIMIT_PER_MINUTE = max(env_int("UTR_RATE_LIMIT_PER_MINUTE", 10), 1)
 UTR_CONCURRENCY = max(1, min(env_int("UTR_CONCURRENCY", 1), 2))
 UTR_MAX_RETRIES = max(env_int("UTR_MAX_RETRIES", 3), 1)
@@ -292,3 +375,8 @@ UTR_LAZY_ENRICH_CHARACTERISTICS_ENABLED = env_bool("UTR_LAZY_ENRICH_CHARACTERIST
 UTR_LAZY_ENRICH_APPLICABILITY_ENABLED = env_bool("UTR_LAZY_ENRICH_APPLICABILITY_ENABLED", True)
 UTR_SINGLE_RUN_LOCK_KEY = env_int("UTR_SINGLE_RUN_LOCK_KEY", 804721451)
 UTR_SINGLE_RUN_LOCK_TTL_SECONDS = max(env_int("UTR_SINGLE_RUN_LOCK_TTL_SECONDS", 60 * 60), 60)
+
+AUTODB_LIVE_CONTENT_ENABLED = env_bool("AUTODB_LIVE_CONTENT_ENABLED", True)
+AUTODB_CONTENT_CACHE_TTL_SECONDS = max(env_int("AUTODB_CONTENT_CACHE_TTL_SECONDS", 60 * 30), 30)
+AUTODB_PRO_IMAGE_BASE_URL = os.getenv("AUTODB_PRO_IMAGE_BASE_URL", "").strip()
+AUTODB_IMAGE_BASE_URL = (AUTODB_PRO_IMAGE_BASE_URL or os.getenv("AUTODB_IMAGE_BASE_URL", "").strip())

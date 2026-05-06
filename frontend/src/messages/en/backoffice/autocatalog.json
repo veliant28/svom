@@ -2,11 +2,13 @@
   "backoffice": {
     "autocatalog": {
       "title": "Autocatalog",
-      "subtitle": "UTR vehicle catalog in the backoffice workspace.",
-      "search": "Search by make, model, modification, or engine",
+      "subtitle": "Local Auto_DB_Pro vehicle catalog in read-only mode.",
+      "search": "Search by make, model, modification, period, or engine",
       "filters": {
         "make": "Make",
         "model": "Model",
+        "selectMake": "Select make",
+        "selectModel": "Select model",
         "year": "Year",
         "allYears": "All years",
         "allMakes": "All makes",
@@ -18,6 +20,10 @@
         "capacity": "Capacity"
       },
       "empty": "No vehicles found.",
+      "states": {
+        "selectMake": "Select a make to start.",
+        "selectModel": "Select a model to view modifications."
+      },
       "pagination": {
         "total": "Total rows: {count}",
         "prev": "Prev",
@@ -27,15 +33,14 @@
       },
       "table": {
         "columns": {
-          "year": "Year",
           "make": "Make",
           "model": "Model",
           "modification": "Modification",
+          "period": "Period",
           "capacity": "Capacity",
           "engine": "Engine",
           "hp": "HP",
-          "kw": "KW",
-          "to": "To"
+          "kw": "KW"
         }
       }
     }

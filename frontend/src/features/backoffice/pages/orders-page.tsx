@@ -95,8 +95,11 @@ export function OrdersPage() {
         t={t}
         q={filters.q}
         status={filters.status}
+        pageSize={filters.pageSize}
+        pageSizeOptions={filters.pageSizeOptions}
         onSearchChange={filters.onSearchChange}
         onStatusChange={filters.onStatusChange}
+        onPageSizeChange={filters.onPageSizeChange}
         bulkActionsRef={bulkActions.bulkActionsRef}
         bulkActionsOpen={bulkActions.bulkActionsOpen}
         selectedCount={bulkActions.selectedSet.size}

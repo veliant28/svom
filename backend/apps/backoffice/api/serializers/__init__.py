@@ -1,4 +1,9 @@
 from .article_normalization_rule_serializer import ArticleNormalizationRuleSerializer
+from .autodb_vehicle_catalog_serializer import BackofficeAutoDbVehicleCatalogRowSerializer
+from .autodb_vehicle_selector_serializer import (
+    BackofficeAutoDbVehicleManufacturerSerializer,
+    BackofficeAutoDbVehicleModelSerializer,
+)
 from .autocatalog_car_serializer import BackofficeAutocatalogCarSerializer
 from .backoffice_summary_serializer import BackofficeSummarySerializer
 from .hero_block_serializer import BackofficeHeroBlockSettingsSerializer, BackofficeHeroSlideSerializer
@@ -130,6 +135,9 @@ from .email_settings_serializer import (
 
 __all__ = [
     "ArticleNormalizationRuleSerializer",
+    "BackofficeAutoDbVehicleCatalogRowSerializer",
+    "BackofficeAutoDbVehicleManufacturerSerializer",
+    "BackofficeAutoDbVehicleModelSerializer",
     "BackofficeAutocatalogCarSerializer",
     "BackofficeSummarySerializer",
     "BackofficeHeroBlockSettingsSerializer",

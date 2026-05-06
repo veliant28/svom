@@ -102,3 +102,39 @@ export type BackofficeAutocatalogFilterOptions = {
   capacities: string[];
   engines: string[];
 };
+
+export type BackofficeAutoDbVehicleRow = {
+  passanger_car_id: number;
+  manufacturer_id: number | null;
+  model_id: number | null;
+  make: string;
+  model: string;
+  modification: string;
+  period: string;
+  period_raw: string;
+  volume: string;
+  engine: string;
+  hp: string;
+  kw: string;
+};
+
+export type BackofficeAutoDbVehicleManufacturer = {
+  id: number;
+  name: string;
+};
+
+export type BackofficeAutoDbVehicleModel = {
+  id: number;
+  manufacturer_id: number;
+  name: string;
+  construction_interval: string;
+};
+
+export type BackofficeAutoDbVehicleFilterOptions = {
+  years: number[];
+  manufacturers: BackofficeAutoDbVehicleManufacturer[];
+  models: BackofficeAutoDbVehicleModel[];
+  modifications: string[];
+  volumes: string[];
+  engines: string[];
+};

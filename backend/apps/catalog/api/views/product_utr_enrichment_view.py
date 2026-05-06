@@ -4,7 +4,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.catalog.services.utr_product_enrichment import request_visible_utr_enrichment
+from apps.catalog.models import Product
+from apps.catalog.services.autodb_content import get_autodb_product_content
 
 
 class ProductUtrEnrichmentAPIView(APIView):
@@ -13,10 +14,21 @@ class ProductUtrEnrichmentAPIView(APIView):
         if not isinstance(product_ids, list):
             return Response({"detail": "product_ids must be a list."}, status=status.HTTP_400_BAD_REQUEST)
 
-        enqueue = True
-        if isinstance(request.data, dict) and "enqueue" in request.data:
-            enqueue = bool(request.data.get("enqueue"))
+        prefer_live = True
+        if isinstance(request.data, dict) and "prefer_live" in request.data:
+            prefer_live = bool(request.data.get("prefer_live"))
 
-        mode = request.data.get("mode", "detail") if isinstance(request.data, dict) else "detail"
-        rows = request_visible_utr_enrichment(product_ids=product_ids, request=request, enqueue=enqueue, mode=mode)
+        rows: list[dict[str, object]] = []
+        queryset = Product.objects.filter(id__in=[str(value) for value in product_ids]).order_by("name")
+        for product in queryset:
+            content = get_autodb_product_content(product=product, prefer_live=prefer_live)
+            rows.append(
+                {
+                    "product_id": str(product.id),
+                    "status": "fetched",
+                    "images_count": len(content.image_urls),
+                    "attributes_count": len(content.attributes),
+                    "category_candidates_count": len(content.product_groups),
+                }
+            )
         return Response({"results": rows})

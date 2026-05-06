@@ -1,6 +1,7 @@
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
 from rest_framework.authentication import TokenAuthentication
+from rest_framework.pagination import PageNumberPagination
 from rest_framework import status
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -11,10 +12,17 @@ from apps.backoffice.permissions import IsStaffOrSuperuser
 from apps.catalog.models import Brand
 
 
+class BackofficeCatalogBrandPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 500
+
+
 class BackofficeCatalogBrandListCreateAPIView(ListCreateAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, IsStaffOrSuperuser]
     serializer_class = BackofficeCatalogBrandSerializer
+    pagination_class = BackofficeCatalogBrandPagination
     ordering = ("name",)
 
     def get_queryset(self):

@@ -168,3 +168,28 @@ class GPLParserTests(SimpleTestCase):
         self.assertEqual(str(result.offers[0].price), "140.24")
         self.assertEqual(result.offers[0].stock_qty, 15)
         self.assertEqual([level["label"] for level in result.offers[0].price_levels], ["ОПТ2", "ОПТ4", "ОПТ10", "РРЦ"])
+
+    def test_parse_rows_prefers_manufacturer_article_over_internal_article(self):
+        rows = [
+            (
+                2,
+                {
+                    "Код": "000000001",
+                    "Артикул": "324966",
+                    "Артикул ТД": "WP6873",
+                    "Категорія": "WIX FILTERS",
+                    "Найменування": "Oil filter",
+                    "РРЦ грн.": "100.00",
+                    "Склад ПЛТВ": "5",
+                },
+            )
+        ]
+        result = GPLParser().parse_rows(
+            rows,
+            file_name="gpl.xlsx",
+            context=ParserContext(source_code="gpl"),
+        )
+
+        self.assertEqual(len(result.offers), 1)
+        self.assertEqual(result.offers[0].external_sku, "000000001")
+        self.assertEqual(result.offers[0].article, "WP6873")

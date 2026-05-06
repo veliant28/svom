@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { ArrowRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -8,11 +8,18 @@ import { CatalogTaxonomyPanel } from "@/features/catalog/components/catalog-taxo
 import { useCatalogFilters } from "@/features/catalog/hooks/use-catalog-filters";
 import { useCatalogTaxonomy } from "@/features/catalog/hooks/use-catalog-taxonomy";
 import { CatalogShowcaseSection } from "@/features/catalog/sections/catalog-showcase-section";
+import type { BrandSummary, CategorySummary } from "@/features/catalog/types";
 
-export function CatalogInteractiveSection() {
+type CatalogInteractiveSectionProps = {
+  initialBrands?: BrandSummary[];
+  initialCategories?: CategorySummary[];
+};
+
+export function CatalogInteractiveSection({ initialBrands = [], initialCategories = [] }: CatalogInteractiveSectionProps) {
   const t = useTranslations("catalog");
   const { filters, setFilters } = useCatalogFilters();
-  const { brands, categories } = useCatalogTaxonomy();
+  const { brands, categories } = useCatalogTaxonomy({ brands: initialBrands, categories: initialCategories });
+  const catalogHeaderRef = useRef<HTMLElement | null>(null);
   const currentCategoryLabel = useMemo(() => {
     const categoryId = filters.category_id?.trim();
     const categorySlug = filters.category?.trim();
@@ -30,7 +37,11 @@ export function CatalogInteractiveSection() {
       return currentCategory.name;
     }
 
-    return (categorySlug || categoryId || "")
+    if (!categorySlug) {
+      return t("title");
+    }
+
+    return categorySlug
       .replace(/[-_]/g, " ")
       .replace(/\s+/g, " ")
       .trim();
@@ -52,7 +63,7 @@ export function CatalogInteractiveSection() {
 
   return (
     <>
-      <section className="mx-auto max-w-6xl px-4 pb-4 pt-8">
+      <section ref={catalogHeaderRef} className="mx-auto max-w-6xl px-4 pb-4 pt-8">
         <div className="flex flex-wrap items-center gap-2.5">
           <h1 className="text-3xl font-bold">{t("title")}</h1>
           <span
@@ -68,7 +79,7 @@ export function CatalogInteractiveSection() {
         </div>
       </section>
 
-      <CatalogShowcaseSection filters={filters} showHeading={false} />
+      <CatalogShowcaseSection filters={filters} showHeading={false} scrollAnchorRef={catalogHeaderRef} />
       <CatalogTaxonomyPanel brands={brands} categories={categories} />
     </>
   );

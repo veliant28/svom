@@ -51,12 +51,23 @@ const DEFAULT_CHECKOUT_METHODS: CheckoutMethods = {
   payment_methods: ["cash_on_delivery", "monobank", "novapay", "liqpay"],
 };
 
+function localizeSellableWarning(rawWarning: string, t: (key: string) => string): string {
+  const normalized = rawWarning.trim().toLowerCase();
+  if (normalized === "availability changed since item was added to cart." || normalized === "availability changed since the item was added to cart.") {
+    return t("warnings.availabilityChangedSinceAdded");
+  }
+  if (normalized === "price changed since item was added to cart." || normalized === "price changed since the item was added to cart.") {
+    return t("warnings.priceChangedSinceAdded");
+  }
+  return rawWarning;
+}
+
 export function CheckoutPage() {
   const t = useTranslations("commerce.checkout");
   const locale = useLocale();
   const { token, isAuthenticated, user } = useAuth();
   const { cart, refresh } = useCart();
-  const { showApiError, showError, showSuccess } = useStorefrontFeedback();
+  const { showApiError, showError, showInfo, showSuccess } = useStorefrontFeedback();
   const npDestinationParts = t("fields.npDestination")
     .split("/")
     .map((part) => part.trim())
@@ -105,6 +116,7 @@ export function CheckoutPage() {
   const [appliedPromoCode, setAppliedPromoCode] = useState("");
   const [isPromoApplying, setIsPromoApplying] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const lastWarningsToastKeyRef = useRef("");
   const cityLookupRootRef = useRef<HTMLLabelElement | null>(null);
   const warehouseLookupRootRef = useRef<HTMLLabelElement | null>(null);
   const streetLookupRootRef = useRef<HTMLLabelElement | null>(null);
@@ -318,6 +330,31 @@ export function CheckoutPage() {
       isMounted = false;
     };
   }, [token, isAuthenticated, checkoutMethods, effectiveDeliveryMethod, cart?.updated_at, appliedPromoCode, showApiError, t]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+    const warnings = preview?.warnings ?? [];
+    if (warnings.length === 0) {
+      lastWarningsToastKeyRef.current = "";
+      return;
+    }
+
+    const warningItemsText = warnings
+      .map((warning) =>
+        t("warnings.itemTemplate", {
+          product: warning.product_name,
+          warning: localizeSellableWarning(warning.warning, t),
+        }))
+      .join(t("warnings.listSeparator"));
+    const warningText = warningItemsText || t("warnings.availabilityOrPriceChanged");
+    if (lastWarningsToastKeyRef.current === warningText) {
+      return;
+    }
+    lastWarningsToastKeyRef.current = warningText;
+    showInfo(warningText);
+  }, [isAuthenticated, preview?.warnings, showInfo, t]);
 
   useEffect(() => {
     if (!token || !isAuthenticated || deliveryOption === "pickup") {
@@ -576,15 +613,6 @@ export function CheckoutPage() {
   return (
     <section className="mx-auto max-w-6xl px-4 py-8">
       <h1 className="text-3xl font-bold">{t("title")}</h1>
-      {(preview?.warnings?.length ?? 0) > 0 ? (
-        <div className="mt-3 rounded-xl border px-3 py-2 text-sm" style={{ borderColor: "var(--danger, #b42318)", backgroundColor: "color-mix(in srgb, var(--danger, #b42318) 8%, transparent)" }}>
-          {preview?.warnings.map((warning) => (
-            <p key={warning.product_id}>
-              {warning.product_name}: {warning.warning}
-            </p>
-          ))}
-        </div>
-      ) : null}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_320px]">
         <form

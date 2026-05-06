@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import logging
+
 from celery import shared_task
 
+from apps.autocatalog.services.utr_catalog_guard import UTR_CATALOG_DISABLED_WARNING, is_utr_catalog_enrichment_enabled
 from apps.catalog.services.utr_product_enrichment import (
     clear_utr_catalog_applicability_queue_locks,
     clear_utr_product_enrichment_queue_lock,
@@ -11,9 +14,14 @@ from apps.catalog.services.utr_product_enrichment import (
     enrich_visible_utr_applicability,
 )
 
+logger = logging.getLogger(__name__)
+
 
 @shared_task(name="catalog.enrich_utr_product", queue="utr_fast")
 def enrich_utr_product_task(product_id: str, mode: str = "detail") -> dict[str, object]:
+    if not is_utr_catalog_enrichment_enabled():
+        logger.warning(UTR_CATALOG_DISABLED_WARNING)
+        return {"product_id": product_id, "status": "disabled"}
     try:
         return enrich_utr_product(product_id=product_id, mode=mode)
     finally:
@@ -22,6 +30,9 @@ def enrich_utr_product_task(product_id: str, mode: str = "detail") -> dict[str, 
 
 @shared_task(name="catalog.enrich_visible_utr_catalog_products", queue="utr_fast")
 def enrich_visible_utr_catalog_products_task(product_ids: list[str]) -> dict[str, object]:
+    if not is_utr_catalog_enrichment_enabled():
+        logger.warning(UTR_CATALOG_DISABLED_WARNING)
+        return {"requested": len(product_ids), "processed": 0, "skipped_disabled": len(product_ids)}
     try:
         return enrich_utr_catalog_products(product_ids=product_ids)
     finally:
@@ -30,6 +41,9 @@ def enrich_visible_utr_catalog_products_task(product_ids: list[str]) -> dict[str
 
 @shared_task(name="catalog.enrich_visible_utr_applicability", queue="utr_applicability")
 def enrich_visible_utr_applicability_task(detail_ids: list[str]) -> dict[str, object]:
+    if not is_utr_catalog_enrichment_enabled():
+        logger.warning(UTR_CATALOG_DISABLED_WARNING)
+        return {"requested": len(detail_ids), "processed": 0, "skipped_disabled": len(detail_ids), "failed": 0}
     try:
         return enrich_visible_utr_applicability(detail_ids=detail_ids)
     finally:

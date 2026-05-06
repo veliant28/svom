@@ -34,6 +34,14 @@ const nextConfig: NextConfig = {
         destination: `${backendBaseUrl}/media/:path*`,
       },
       {
+        source: "/:locale(uk|ru|en)/backend-api/media/:path*",
+        destination: `${backendBaseUrl}/media/:path*`,
+      },
+      {
+        source: "/backend-api/media/:path*",
+        destination: `${backendBaseUrl}/media/:path*`,
+      },
+      {
         source: "/:locale(uk|ru|en)/backend-api/:path*",
         destination: `${apiBaseUrl}/:path*/`,
       },

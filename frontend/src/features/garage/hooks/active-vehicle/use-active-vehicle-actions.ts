@@ -17,6 +17,7 @@ export function useActiveVehicleActions({
   setActiveVehicleSource,
   setActiveGarageVehicleId,
   setActiveTemporaryCarModificationId,
+  setActiveTemporaryAutoDbPassangerCarId,
   setIsManualSelection,
 }: {
   token: string | null;
@@ -25,14 +26,16 @@ export function useActiveVehicleActions({
   setActiveVehicleSource: SourceSetter;
   setActiveGarageVehicleId: StringSetter;
   setActiveTemporaryCarModificationId: NumberSetter;
+  setActiveTemporaryAutoDbPassangerCarId: NumberSetter;
   setIsManualSelection: BoolSetter;
 }) {
   const selectGarageVehicle = useCallback((vehicleId: string, options?: { manual?: boolean }) => {
     setActiveVehicleSource("garage");
     setActiveGarageVehicleId(vehicleId);
     setActiveTemporaryCarModificationId(null);
+    setActiveTemporaryAutoDbPassangerCarId(null);
     setIsManualSelection(options?.manual ?? true);
-  }, [setActiveGarageVehicleId, setActiveTemporaryCarModificationId, setActiveVehicleSource, setIsManualSelection]);
+  }, [setActiveGarageVehicleId, setActiveTemporaryAutoDbPassangerCarId, setActiveTemporaryCarModificationId, setActiveVehicleSource, setIsManualSelection]);
 
   const selectTemporaryVehicle = useCallback((carModificationId: number, options?: { manual?: boolean }) => {
     if (!Number.isInteger(carModificationId) || carModificationId <= 0) {
@@ -42,15 +45,48 @@ export function useActiveVehicleActions({
     setActiveVehicleSource("temporary");
     setActiveTemporaryCarModificationId(carModificationId);
     setActiveGarageVehicleId(null);
+    setActiveTemporaryAutoDbPassangerCarId(null);
     setIsManualSelection(options?.manual ?? true);
-  }, [setActiveGarageVehicleId, setActiveTemporaryCarModificationId, setActiveVehicleSource, setIsManualSelection]);
+  }, [setActiveGarageVehicleId, setActiveTemporaryAutoDbPassangerCarId, setActiveTemporaryCarModificationId, setActiveVehicleSource, setIsManualSelection]);
+
+  const selectTemporaryAutoDbVehicle = useCallback(
+    (
+      payload: { manufacturerId: number; modelId: number; passangerCarId: number },
+      options?: { manual?: boolean },
+    ) => {
+      if (
+        !Number.isInteger(payload.manufacturerId) ||
+        !Number.isInteger(payload.modelId) ||
+        !Number.isInteger(payload.passangerCarId) ||
+        payload.manufacturerId <= 0 ||
+        payload.modelId <= 0 ||
+        payload.passangerCarId <= 0
+      ) {
+        return;
+      }
+
+      setActiveVehicleSource("temporary_autodb");
+      setActiveTemporaryAutoDbPassangerCarId(payload.passangerCarId);
+      setActiveTemporaryCarModificationId(null);
+      setActiveGarageVehicleId(null);
+      setIsManualSelection(options?.manual ?? true);
+    },
+    [
+      setActiveGarageVehicleId,
+      setActiveTemporaryAutoDbPassangerCarId,
+      setActiveTemporaryCarModificationId,
+      setActiveVehicleSource,
+      setIsManualSelection,
+    ],
+  );
 
   const clearActiveVehicle = useCallback((options?: { manual?: boolean }) => {
     setActiveVehicleSource("none");
     setActiveGarageVehicleId(null);
     setActiveTemporaryCarModificationId(null);
+    setActiveTemporaryAutoDbPassangerCarId(null);
     setIsManualSelection(options?.manual ?? true);
-  }, [setActiveGarageVehicleId, setActiveTemporaryCarModificationId, setActiveVehicleSource, setIsManualSelection]);
+  }, [setActiveGarageVehicleId, setActiveTemporaryAutoDbPassangerCarId, setActiveTemporaryCarModificationId, setActiveVehicleSource, setIsManualSelection]);
 
   const addVehicleToGarage = useCallback(
     async (payload: GarageVehicleCreatePayload): Promise<GarageVehicle> => {
@@ -68,6 +104,7 @@ export function useActiveVehicleActions({
   return {
     selectGarageVehicle,
     selectTemporaryVehicle,
+    selectTemporaryAutoDbVehicle,
     clearActiveVehicle,
     addVehicleToGarage,
   };

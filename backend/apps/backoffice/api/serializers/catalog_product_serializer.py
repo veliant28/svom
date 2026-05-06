@@ -6,7 +6,13 @@ from rest_framework import serializers
 
 from apps.backoffice.services import ProductOperationsService
 from apps.catalog.models import Brand, Category, Product
-from apps.catalog.services import generate_unique_product_slug, sanitize_product_name
+from apps.catalog.services import (
+    generate_unique_product_slug,
+    get_product_display_name_with_meta,
+    is_code_like_product_name,
+    resolve_locale,
+    sanitize_product_name,
+)
 from apps.pricing.models import SupplierOffer
 from apps.supplier_imports.parsers.gpl_parser import extract_gpl_price_levels
 
@@ -28,6 +34,10 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
     warehouse_segments = serializers.SerializerMethodField()
     supplier_sku = serializers.SerializerMethodField()
     supplier_offer_seen_at = serializers.SerializerMethodField()
+    display_name = serializers.SerializerMethodField()
+    display_name_source = serializers.SerializerMethodField()
+    name_quality_flags = serializers.SerializerMethodField()
+    raw_supplier_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -36,11 +46,23 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
             "sku",
             "article",
             "name",
+            "display_name",
+            "display_name_source",
+            "name_uk",
+            "name_ru",
+            "name_en",
             "slug",
             "brand",
             "brand_name",
             "category",
             "category_name",
+            "catalog_source",
+            "name_source",
+            "name_translation_status",
+            "name_manually_locked",
+            "autodb_article_key",
+            "name_quality_flags",
+            "raw_supplier_name",
             "final_price",
             "currency",
             "price_updated_at",
@@ -62,7 +84,21 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "created_at", "updated_at", "brand_name", "category_name")
+        read_only_fields = (
+            "id",
+            "created_at",
+            "updated_at",
+            "brand_name",
+            "category_name",
+            "display_name",
+            "display_name_source",
+            "name_uk",
+            "name_ru",
+            "name_en",
+            "autodb_article_key",
+            "name_quality_flags",
+            "raw_supplier_name",
+        )
         extra_kwargs = {
             "slug": {"required": False, "allow_blank": True},
             "article": {"required": False, "allow_blank": True},
@@ -128,6 +164,66 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
                 update_import_rules=True,
             )
         return updated_product
+
+    def _resolve_locale(self) -> str:
+        request = self.context.get("request")
+        if request is None:
+            return "uk"
+
+        params = getattr(request, "query_params", None)
+        if params is None:
+            params = getattr(request, "GET", {})
+        explicit = str(params.get("locale") or "").strip()
+        if explicit:
+            return resolve_locale(explicit)
+        return resolve_locale(getattr(request, "LANGUAGE_CODE", "") or "")
+
+    def _resolve_display_name_payload(self, obj: Product) -> tuple[str, str]:
+        return get_product_display_name_with_meta(
+            obj,
+            self._resolve_locale(),
+            unknown_label="Товар без названия",
+        )
+
+    def get_display_name(self, obj: Product) -> str:
+        display_name, _ = self._resolve_display_name_payload(obj)
+        return display_name
+
+    def get_display_name_source(self, obj: Product) -> str:
+        _, source = self._resolve_display_name_payload(obj)
+        return source
+
+    def get_name_quality_flags(self, obj: Product) -> list[str]:
+        flags: list[str] = []
+        display_name = self.get_display_name(obj)
+        if not sanitize_product_name(display_name):
+            flags.append("needs_name_enrichment")
+        if is_code_like_product_name(str(obj.name or "")):
+            flags.append("code_like_name")
+        if str(obj.name_source or "") == Product.NAME_SOURCE_SUPPLIER_FALLBACK:
+            flags.append("supplier_fallback")
+        if not obj.autodb_supplier_id or not str(obj.autodb_article_number or "").strip():
+            flags.append("missing_autodb_link")
+        if str(obj.name_translation_status or "") in {Product.NAME_TRANSLATION_PENDING, Product.NAME_TRANSLATION_FAILED, ""}:
+            flags.append("translation_pending")
+        return flags
+
+    def get_raw_supplier_name(self, obj: Product) -> str:
+        prefetched = getattr(obj, "backoffice_raw_offers", None)
+        if prefetched is not None:
+            if not prefetched:
+                return ""
+            return sanitize_product_name(str(getattr(prefetched[0], "product_name", "") or ""))
+
+        rows = obj.raw_supplier_offers.order_by("-updated_at", "-id").values_list("product_name", flat=True)[:1]
+        if not rows:
+            return ""
+        return sanitize_product_name(str(rows[0] or ""))
+
+    def to_representation(self, instance):
+        payload = super().to_representation(instance)
+        payload["name"] = payload.get("display_name") or payload.get("name") or ""
+        return payload
 
     @staticmethod
     def _resolve_product_price(obj: Product):

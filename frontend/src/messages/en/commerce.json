@@ -44,7 +44,9 @@
         "eta": " · ETA {days}d"
       },
       "warnings": {
-        "availabilityOrPriceChanged": "Availability or price changed for one or more items. Review before checkout."
+        "availabilityOrPriceChanged": "Availability or price changed for one or more items. Review before checkout.",
+        "availabilityChangedSinceAdded": "Availability changed since the item was added to cart.",
+        "priceChangedSinceAdded": "Price changed since the item was added to cart."
       },
       "messages": {
         "authRequiredAction": "Sign in to manage cart.",
@@ -164,6 +166,13 @@
           "deliveryZero": "Delivery discount cannot be applied when delivery is free.",
           "noMarkup": "Product promo cannot be applied because no safe markup discount is available."
         }
+      },
+      "warnings": {
+        "availabilityOrPriceChanged": "Availability or price changed for one or more items. Review the order before placing it.",
+        "availabilityChangedSinceAdded": "Availability changed since the item was added to cart.",
+        "priceChangedSinceAdded": "Price changed since the item was added to cart.",
+        "itemTemplate": "{product}: {warning}",
+        "listSeparator": "; "
       },
       "success": "Order created: {orderNumber}",
       "phoneFormatError": "Enter phone in format 38(0XX)XXX-XX-XX.",

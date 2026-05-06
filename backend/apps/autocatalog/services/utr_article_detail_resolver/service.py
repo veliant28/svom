@@ -11,6 +11,7 @@ from apps.supplier_imports.services.integrations.exceptions import SupplierClien
 from apps.supplier_imports.services.integrations.utr_client import UtrClient
 
 from . import diagnostics, persistence, planner, selector, stages
+from ..utr_catalog_guard import UTR_CATALOG_DISABLED_WARNING, is_utr_catalog_enrichment_enabled
 from .types import ResolveContext, UtrArticleResolveProgress, UtrArticleResolveSummary
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,10 @@ class UtrArticleDetailResolverService:
         on_error: callable | None = None,
         on_batch: callable | None = None,
     ) -> UtrArticleResolveSummary:
+        if not is_utr_catalog_enrichment_enabled():
+            logger.warning(UTR_CATALOG_DISABLED_WARNING)
+            return UtrArticleResolveSummary()
+
         if retry_unresolved:
             pairs = self._collect_unresolved_pairs(limit=limit, offset=offset)
         else:

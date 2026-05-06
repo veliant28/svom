@@ -1,5 +1,6 @@
 from django.db.models import Q
 from django.db.models import Prefetch
+from django.db.models.functions import Length
 from django.db.models.deletion import ProtectedError
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
@@ -67,6 +68,13 @@ class BackofficeCatalogProductListCreateAPIView(ListCreateAPIView):
         is_featured = _parse_bool_param(self.request.query_params.get("is_featured", ""))
         is_new = _parse_bool_param(self.request.query_params.get("is_new", ""))
         is_bestseller = _parse_bool_param(self.request.query_params.get("is_bestseller", ""))
+        missing_autodb_link = _parse_bool_param(self.request.query_params.get("missing_autodb_link", ""))
+        code_like_name = _parse_bool_param(self.request.query_params.get("code_like_name", ""))
+
+        name_source = self.request.query_params.get("name_source", "").strip()
+        name_translation_status = self.request.query_params.get("name_translation_status", "").strip()
+        catalog_source = self.request.query_params.get("catalog_source", "").strip()
+        needs_manual_mapping = _parse_bool_param(self.request.query_params.get("needs_manual_mapping", ""))
 
         if query:
             queryset = queryset.filter(
@@ -89,6 +97,28 @@ class BackofficeCatalogProductListCreateAPIView(ListCreateAPIView):
             queryset = queryset.filter(is_new=is_new)
         if is_bestseller is not None:
             queryset = queryset.filter(is_bestseller=is_bestseller)
+        if name_source:
+            queryset = queryset.filter(name_source=name_source)
+        if name_translation_status:
+            queryset = queryset.filter(name_translation_status=name_translation_status)
+        if catalog_source:
+            queryset = queryset.filter(catalog_source=catalog_source)
+        if missing_autodb_link is not None:
+            if missing_autodb_link:
+                queryset = queryset.filter(Q(autodb_supplier_id__isnull=True) | Q(autodb_article_number=""))
+            else:
+                queryset = queryset.filter(autodb_supplier_id__isnull=False).exclude(autodb_article_number="")
+        if code_like_name is not None:
+            queryset = queryset.annotate(_name_len=Length("name"))
+            code_like_q = Q(_name_len__lte=32) & ~Q(name__contains=" ")
+            queryset = queryset.filter(code_like_q) if code_like_name else queryset.exclude(code_like_q)
+        if needs_manual_mapping is not None:
+            if needs_manual_mapping:
+                queryset = queryset.filter(Q(catalog_source=Product.CATALOG_SOURCE_AUTODB_PRO) & (Q(autodb_supplier_id__isnull=True) | Q(autodb_article_number="")))
+            else:
+                queryset = queryset.exclude(
+                    Q(catalog_source=Product.CATALOG_SOURCE_AUTODB_PRO) & (Q(autodb_supplier_id__isnull=True) | Q(autodb_article_number=""))
+                )
 
         return queryset
 

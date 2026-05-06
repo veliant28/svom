@@ -206,6 +206,37 @@ class BackofficeOrderOperationsAPISmokeTests(APITestCase):
         self.order.refresh_from_db()
         self.assertEqual(self.order.status, Order.STATUS_COMPLETED)
 
+    def test_orders_list_supports_page_size_with_default_15(self):
+        for index in range(2, 23):
+            Order.objects.create(
+                user=self.customer,
+                order_number=f"ORD-{1000 + index}",
+                status=Order.STATUS_NEW,
+                contact_full_name=f"Order Customer {index}",
+                contact_phone=f"+380000000{index:03d}",
+                contact_email=f"orders-customer-{index}@test.local",
+                delivery_method=Order.DELIVERY_PICKUP,
+                payment_method=Order.PAYMENT_CASH_ON_DELIVERY,
+                subtotal="210.00",
+                delivery_fee="0.00",
+                total="210.00",
+                currency="UAH",
+            )
+
+        default_response = self.client.get(reverse("backoffice_api:order-operational-list"), **self.auth)
+        self.assertEqual(default_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(default_response.data["count"], 22)
+        self.assertEqual(len(default_response.data["results"]), 15)
+
+        page_size_25_response = self.client.get(
+            reverse("backoffice_api:order-operational-list"),
+            {"page_size": 25},
+            **self.auth,
+        )
+        self.assertEqual(page_size_25_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(page_size_25_response.data["count"], 22)
+        self.assertEqual(len(page_size_25_response.data["results"]), 22)
+
     def test_only_administrator_and_manager_can_reset_order_to_new(self):
         manager = User.objects.create_user(
             email="ops-manager@test.local",

@@ -9,6 +9,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.catalog.models import Product
+from apps.catalog.services.product_management import sanitize_product_name
 from apps.pricing.models import SupplierOffer
 from apps.supplier_imports.models import (
     ImportArtifact,
@@ -97,6 +98,9 @@ def persist_raw_history_rows(
     for row_index, offer in enumerate(parse_result.offers, start=1):
         article_result = article_normalizer.normalize(article=offer.article or offer.external_sku, source=source)
         brand_result = brand_resolver.resolve(brand_name=offer.brand_name, source=source, supplier=source.supplier)
+        source_product_name = sanitize_product_name(str(offer.product_name or ""))[:255]
+        if not source_product_name:
+            source_product_name = sanitize_product_name(offer.article or offer.external_sku or "Product")[:255] or "Product"
 
         decision = matcher.evaluate_offer(
             article=offer.article,
@@ -141,7 +145,7 @@ def persist_raw_history_rows(
             normalized_article=article_result.normalized_article[:128],
             brand_name=offer.brand_name[:180],
             normalized_brand=brand_result.normalized_brand[:180],
-            product_name=offer.product_name[:255],
+            product_name=source_product_name,
             currency=offer.currency[:3],
             price=offer.price,
             stock_qty=offer.stock_qty,
@@ -260,7 +264,6 @@ def persist_current_offer_rows(
     valid_rows: dict[tuple[str, str], dict] = {}
     seen_supplier_skus: set[str] = set()
     utr_detail_updates: dict[str, str] = {}
-
     match_loop_started = time.perf_counter()
     for row_index, offer in enumerate(parse_result.offers, start=1):
         decision = matcher.evaluate_offer(
@@ -531,6 +534,9 @@ def persist_current_offer_rows(
         else:
             timings["utr_detail_attach_sec"] = 0.0
             timings["utr_detail_candidates"] = 0
+
+        timings["product_i18n_bulk_update_sec"] = 0.0
+        timings["product_i18n_updated_candidates"] = 0
 
     summary = run.summary if isinstance(run.summary, dict) else {}
     summary["persistence_mode"] = "current_offers"

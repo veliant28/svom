@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from apps.catalog.services import sanitize_product_name
 from apps.supplier_imports.models import SupplierRawOffer
 from apps.supplier_imports.selectors import get_supplier_raw_offers_publish_queryset
 
@@ -52,9 +51,6 @@ def resolve_skip_reason(
         return "missing_price"
     if raw_offer.price <= Decimal("0"):
         return "non_positive_price"
-
-    if not sanitize_product_name(raw_offer.product_name):
-        return "missing_product_name"
     if not supplier_sku:
         return "missing_supplier_sku"
     return ""

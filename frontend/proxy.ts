@@ -1,8 +1,0 @@
-import { proxy } from "./src/proxy";
-
-export default proxy;
-export { proxy };
-
-export const config = {
-  matcher: ["/", "/((?!api|backend-api|_next|_vercel|.*\\..*).*)"],
-};

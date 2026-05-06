@@ -11,9 +11,12 @@ type SubcategoryTileProps = {
 };
 
 export function SubcategoryTile({ categoryId, name, isActive, onNavigate }: SubcategoryTileProps) {
+  const href = buildCatalogCategoryHref(categoryId);
+
   return (
     <Link
-      href={buildCatalogCategoryHref(categoryId)}
+      href={href}
+      scroll={false}
       onClick={onNavigate}
       className="block rounded-lg border px-2.5 py-1.5 text-[13px] transition-all duration-150"
       style={{

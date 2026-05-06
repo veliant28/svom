@@ -14,6 +14,10 @@ from apps.autocatalog.models.normalization import collapse_spaces, normalize_nam
 from apps.catalog.models import UtrProductEnrichment
 from apps.supplier_imports.services.integrations.exceptions import SupplierClientError
 from apps.supplier_imports.services.integrations.utr_client import UtrClient
+from apps.autocatalog.services.utr_catalog_guard import (
+    UTR_CATALOG_DISABLED_WARNING,
+    is_utr_catalog_enrichment_enabled,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +57,10 @@ class UtrAutocatalogImportService:
         continue_on_error: bool = True,
         force_refresh: bool | None = None,
     ) -> AutocatalogImportSummary:
+        if not is_utr_catalog_enrichment_enabled():
+            logger.warning(UTR_CATALOG_DISABLED_WARNING)
+            return AutocatalogImportSummary(detail_ids_total=len(detail_ids), detail_ids_skipped_disabled=len(detail_ids))
+
         effective_force_refresh = bool(getattr(settings, "UTR_FORCE_REFRESH", False)) if force_refresh is None else bool(force_refresh)
         applicability_enabled = bool(getattr(settings, "UTR_APPLICABILITY_ENABLED", True))
 

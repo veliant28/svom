@@ -8,6 +8,7 @@ type OrdersFiltersState = {
   q: string;
   status: string;
   page: number;
+  pageSize: number;
 };
 
 export function useOrdersPageData(filters: OrdersFiltersState) {
@@ -17,14 +18,21 @@ export function useOrdersPageData(filters: OrdersFiltersState) {
         q: filters.q,
         status: filters.status,
         page: filters.page,
+        page_size: filters.pageSize,
       }),
-    [filters.page, filters.q, filters.status],
+    [filters.page, filters.pageSize, filters.q, filters.status],
   );
 
-  const query = useBackofficeQuery<{ count: number; results: BackofficeOrderOperational[] }>(ordersQuery, [filters.q, filters.status, filters.page]);
+  const query = useBackofficeQuery<{ count: number; results: BackofficeOrderOperational[] }>(
+    ordersQuery,
+    [filters.q, filters.status, filters.page, filters.pageSize],
+  );
 
   const rows = query.data?.results ?? [];
-  const pagesCount = useMemo(() => Math.max(1, Math.ceil((query.data?.count ?? 0) / 20)), [query.data?.count]);
+  const pagesCount = useMemo(
+    () => Math.max(1, Math.ceil((query.data?.count ?? 0) / Math.max(filters.pageSize, 1))),
+    [filters.pageSize, query.data?.count],
+  );
   const totalCount = query.data?.count ?? 0;
 
   return {

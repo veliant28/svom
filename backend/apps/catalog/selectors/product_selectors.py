@@ -39,7 +39,9 @@ def get_public_products_queryset() -> QuerySet[Product]:
 
 
 def get_product_detail_queryset() -> QuerySet[Product]:
-    fitments_queryset = ProductFitment.objects.select_related(
+    fitments_queryset = ProductFitment.objects.filter(modification__isnull=False).exclude(
+        source=ProductFitment.SOURCE_AUTODB_PRO
+    ).select_related(
         "modification",
         "modification__engine",
         "modification__engine__generation",
@@ -51,7 +53,7 @@ def get_product_detail_queryset() -> QuerySet[Product]:
 
     return (
         Product.objects.filter(is_active=True)
-        .select_related("brand", "category", "category__parent", "category__parent__parent", "product_price", "utr_enrichment")
+        .select_related("brand", "category", "category__parent", "category__parent__parent", "product_price")
         .prefetch_related(
             "images",
             "product_attributes__attribute",

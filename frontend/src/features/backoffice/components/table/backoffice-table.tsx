@@ -12,11 +12,13 @@ export function BackofficeTable<T>({
   rows,
   emptyLabel,
   noHorizontalScroll = false,
+  getRowKey,
 }: {
   columns: Array<BackofficeColumn<T>>;
   rows: T[];
   emptyLabel: string;
   noHorizontalScroll?: boolean;
+  getRowKey?: (item: T, index: number) => string | number;
 }) {
   if (!rows.length) {
     return (
@@ -46,7 +48,7 @@ export function BackofficeTable<T>({
         </thead>
         <tbody>
           {rows.map((row, rowIndex) => (
-            <tr key={rowIndex} className="border-t" style={{ borderColor: "var(--border)" }}>
+            <tr key={getRowKey ? getRowKey(row, rowIndex) : rowIndex} className="border-t" style={{ borderColor: "var(--border)" }}>
               {columns.map((column) => (
                 <td
                   key={column.key}

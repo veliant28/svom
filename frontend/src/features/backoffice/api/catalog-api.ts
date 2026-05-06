@@ -1,13 +1,27 @@
 import { deleteJson, getJson, patchJson, postJson } from "@/shared/api/http-client";
 import { normalizePaginatedListResponse } from "@/shared/api/normalize-list-response";
 
-import type { BackofficeCatalogBrand, BackofficeCatalogCategory, BackofficeCatalogProduct } from "@/features/backoffice/types/backoffice";
+import type {
+  BackofficeAutoDbSupplierBrand,
+  BackofficeCatalogBrand,
+  BackofficeCatalogCategory,
+  BackofficeCatalogProduct,
+} from "@/features/backoffice/types/backoffice";
 
 import type { BackofficeListQuery } from "./backoffice-api.types";
 
 export async function getBackofficeCatalogBrands(token: string, params?: BackofficeListQuery) {
   const data = await getJson<BackofficeCatalogBrand[] | { results: BackofficeCatalogBrand[]; count: number }>(
     "/backoffice/brands/",
+    params,
+    { token },
+  );
+  return normalizePaginatedListResponse(data);
+}
+
+export async function getBackofficeAutoDbSupplierBrands(token: string, params?: BackofficeListQuery) {
+  const data = await getJson<BackofficeAutoDbSupplierBrand[] | { results: BackofficeAutoDbSupplierBrand[]; count: number }>(
+    "/backoffice/autodb/supplier-brands/",
     params,
     { token },
   );

@@ -55,6 +55,7 @@ export type CatalogFilters = {
   car_modification?: string;
   garage_vehicle?: string;
   fitment?: "all" | "only" | "unknown" | "with_data";
+  popular?: boolean;
 };
 
 export type ProductImage = {

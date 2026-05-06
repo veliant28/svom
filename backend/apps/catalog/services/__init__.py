@@ -4,6 +4,14 @@ from .brand_management import (
     normalized_brand_name,
     sanitize_brand_name,
 )
+from .autodb_category_mapping import resolve_autodb_category_for_raw_offer
+from .autodb_content import (
+    build_autodb_characteristic_attributes,
+    get_autodb_primary_image_url,
+    get_autodb_product_content,
+    resolve_autodb_article_name,
+    resolve_autodb_category_candidates,
+)
 from .category_management import (
     find_category_by_normalized_name,
     generate_unique_category_slug,
@@ -23,7 +31,14 @@ from .fitment_filtering import (
     FitmentFilteringService,
 )
 from .product_management import (
+    build_product_public_name_fallback,
+    cleanup_product_display_candidate,
+    get_product_display_name,
+    get_product_display_name_with_meta,
+    get_admin_display_name,
     generate_unique_product_slug,
+    is_code_like_product_name,
+    resolve_locale,
     sanitize_product_name,
 )
 
@@ -45,5 +60,18 @@ __all__ = [
     "FITMENT_UNKNOWN",
     "FITMENT_WITH_DATA",
     "sanitize_product_name",
+    "is_code_like_product_name",
+    "cleanup_product_display_candidate",
+    "get_product_display_name",
+    "get_product_display_name_with_meta",
+    "build_product_public_name_fallback",
+    "resolve_locale",
+    "get_admin_display_name",
     "generate_unique_product_slug",
+    "get_autodb_product_content",
+    "get_autodb_primary_image_url",
+    "build_autodb_characteristic_attributes",
+    "resolve_autodb_category_candidates",
+    "resolve_autodb_article_name",
+    "resolve_autodb_category_for_raw_offer",
 ]
