@@ -1,3 +1,5 @@
+import { resolveGplWarehouseLabel } from "@/features/backoffice/lib/gpl-field-labels";
+
 export type WarehouseSegment = {
   key: string;
   value: string;
@@ -87,7 +89,14 @@ export function extractWarehouses(payload: Record<string, unknown>): WarehouseSe
     .map(({ key, value, qty }) => ({ key, value, qty }));
 }
 
-export function compactWarehouseName(key: string): string {
+export function compactWarehouseName(key: string, sourceCode?: string): string {
+  if ((sourceCode || "").toLowerCase() === "gpl") {
+    const mapped = resolveGplWarehouseLabel(key);
+    if (mapped) {
+      return mapped;
+    }
+  }
+
   const normalized = key
     .replace(/^count_warehouse_/i, "")
     .replace(/^warehouse[_\s-]*/i, "")

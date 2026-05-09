@@ -37,6 +37,7 @@ class SupplierImportRunner:
         update_product_images: bool | None = None,
         autodb_limit: int = 0,
         autodb_allow_remote: bool | None = None,
+        row_limit: int = 0,
     ) -> ImportExecutionResult:
         integration = get_supplier_integration_for_source(source=source)
         if not integration.is_enabled:
@@ -55,6 +56,8 @@ class SupplierImportRunner:
         perform_autodb_name_update = self._resolve_autodb_name_update_enabled(override=update_product_names)
         perform_autodb_image_update = self._resolve_autodb_image_update_enabled(override=update_product_images)
         autodb_limit = max(int(autodb_limit or 0), 0)
+        row_limit = max(int(row_limit or 0), 0)
+        remaining_row_limit = row_limit
         started_at = timezone.now()
         run_timer_started = time.perf_counter()
         timings: dict[str, float | list[dict[str, object]]] = {}
@@ -113,6 +116,8 @@ class SupplierImportRunner:
 
             file_timings: list[dict[str, object]] = []
             for file_path in files:
+                if row_limit > 0 and remaining_row_limit <= 0:
+                    break
                 file_timing: dict[str, object] = {"path": str(file_path)}
                 artifact_started = time.perf_counter()
                 artifact = self._create_artifact(run=run, source=source, file_path=file_path)
@@ -120,6 +125,15 @@ class SupplierImportRunner:
 
                 parse_started = time.perf_counter()
                 parse_result = self._parse_artifact(source=source, artifact=artifact, parser=parser)
+                file_timing["parsed_offers_total"] = len(parse_result.offers)
+                file_timing["parse_issues_total"] = len(parse_result.issues)
+                if row_limit > 0:
+                    parse_result = self._apply_row_limit_to_parse_result(
+                        parse_result=parse_result,
+                        remaining_row_limit=remaining_row_limit,
+                    )
+                    consumed = len(parse_result.offers) + len(parse_result.issues)
+                    remaining_row_limit = max(remaining_row_limit - consumed, 0)
                 file_timing["parse_sec"] = self._elapsed_seconds(parse_started)
                 file_timing["parsed_offers"] = len(parse_result.offers)
                 file_timing["parse_issues"] = len(parse_result.issues)
@@ -212,6 +226,7 @@ class SupplierImportRunner:
                 "files_processed": len(files),
                 "affected_products": len(affected_products),
                 "dry_run": dry_run,
+                "row_limit": row_limit,
                 "timings": timings,
                 "cache_stats": matcher.cache_stats(),
             }
@@ -253,6 +268,18 @@ class SupplierImportRunner:
     @staticmethod
     def _elapsed_seconds(started_at: float) -> float:
         return round(time.perf_counter() - started_at, 3)
+
+    @staticmethod
+    def _apply_row_limit_to_parse_result(*, parse_result: ParseResult, remaining_row_limit: int) -> ParseResult:
+        if remaining_row_limit <= 0:
+            return ParseResult(offers=[], issues=[])
+        if len(parse_result.offers) + len(parse_result.issues) <= remaining_row_limit:
+            return parse_result
+
+        limited_offers = list(parse_result.offers[:remaining_row_limit])
+        remaining_for_issues = max(remaining_row_limit - len(limited_offers), 0)
+        limited_issues = list(parse_result.issues[:remaining_for_issues])
+        return ParseResult(offers=limited_offers, issues=limited_issues)
 
     # Back-compat wrappers
     def _collect_files(self, *, source: ImportSource, file_paths: list[str] | None) -> list[Path]:

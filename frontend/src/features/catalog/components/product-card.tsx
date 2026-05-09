@@ -11,8 +11,8 @@ import { WishlistToggleButton } from "@/features/wishlist/components/wishlist-to
 import { Link } from "@/i18n/navigation";
 import type { CatalogProduct } from "@/features/catalog/types";
 import { ContainedImagePanel } from "@/shared/components/ui/contained-image-panel";
-import { isFitmentDisabledCategory } from "@/features/catalog/lib/fitment-disabled-categories";
 import { getCurrentCatalogUrl, saveCatalogReturnState } from "@/features/catalog/lib/catalog-navigation-state";
+import { resolveCompatibilityBadgeState } from "@/features/catalog/lib/compatibility-badge";
 
 export function ProductCard({
   product,
@@ -65,11 +65,16 @@ export function ProductCard({
   };
 
   const fitmentBadge = (() => {
-    if (product.fitment_badge_hidden || isFitmentDisabledCategory(product.category)) {
-      return null;
-    }
+    const selectedVehicleCompatible = product.selected_vehicle_compatibility?.is_compatible;
+    const state = resolveCompatibilityBadgeState({
+      fitsSelectedVehicle:
+        typeof selectedVehicleCompatible === "boolean" ? selectedVehicleCompatible : product.fits_selected_vehicle,
+      hasFitmentData: product.has_fitment_data,
+      isAutoDbCompatibleDataAvailable: product.is_autodb_compatible_data_available,
+      suppressIncompatibleBadge: product.vehicle_filter_policy === "show_all_with_badges",
+    });
 
-    if (product.fits_selected_vehicle === true) {
+    if (state === "fits") {
       return {
         label: t("fitment.fits"),
         tone: "success" as const,
@@ -77,11 +82,19 @@ export function ProductCard({
       };
     }
 
-    if (product.fits_selected_vehicle === false) {
+    if (state === "not_fits") {
       return {
         label: t("fitment.notFits"),
         tone: "red" as const,
         icon: XCircle,
+      };
+    }
+
+    if (state === "has_data") {
+      return {
+        label: t("fitment.hasData"),
+        tone: "blue" as const,
+        icon: CheckCircle2,
       };
     }
 

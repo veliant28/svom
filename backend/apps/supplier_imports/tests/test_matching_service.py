@@ -143,3 +143,14 @@ class OfferMatcherServiceTests(TestCase):
         self.assertEqual(decision.matched_product.id, self.product.id)
         self.assertEqual(decision.matched_product.brand_id, self.product.brand_id)
         self.assertEqual(decision.matched_product.category_id, self.product.category_id)
+
+    def test_lightweight_product_instance_save_update_fields_does_not_insert(self):
+        matcher = OfferMatcher(index=ProductMatchIndex(lightweight_products=True))
+        decision = matcher.evaluate(article="AR-20488", external_sku="", brand_name="ARAL")
+
+        self.assertIsNotNone(decision.matched_product)
+        matched = decision.matched_product
+        matched.category = self.product.category
+        matched.save(update_fields=("category", "updated_at"))
+
+        self.assertEqual(Product.objects.filter(id=self.product.id).count(), 1)

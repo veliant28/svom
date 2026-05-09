@@ -5,6 +5,7 @@ from django.utils.text import slugify
 
 from apps.catalog.models import Brand, Product
 from apps.catalog.services.autodb_category_mapping import resolve_autodb_category_for_raw_offer
+from apps.catalog.services.category_assignment import assignable_category_or_none
 from apps.catalog.services import generate_unique_product_slug, resolve_autodb_article_name, sanitize_product_name
 from apps.pricing.models import Supplier, SupplierOffer
 from apps.supplier_imports.models import SupplierRawOffer
@@ -57,6 +58,9 @@ def upsert_product(
     mapped_category = raw_offer.mapped_category
     if mapped_category is None:
         mapped_category = resolve_autodb_category_for_raw_offer(raw_offer=raw_offer)
+    mapped_category = assignable_category_or_none(mapped_category)
+    if mapped_category is None:
+        is_manual_category = False
 
     if product is None:
         product = product_cache.get(resolved_sku)
@@ -74,7 +78,7 @@ def upsert_product(
                 name_en=name_en,
                 slug=generate_unique_product_slug(name=name, preferred_slug=preferred_slug),
                 brand=brand,
-                category=mapped_category or raw_offer.mapped_category,
+                category=mapped_category,
                 category_manually_locked=is_manual_category,
                 is_active=True,
                 published_at=now,

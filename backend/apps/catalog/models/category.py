@@ -33,10 +33,13 @@ class Category(UUIDPrimaryKeyMixin, TimestampedMixin, PublishableMixin):
     source = models.CharField(_("Источник"), max_length=24, choices=SOURCE_CHOICES, blank=True, default=SOURCE_LEGACY, db_index=True)
     source_payload = models.JSONField(_("Source payload"), default=dict, blank=True)
     source_hash = models.CharField(_("Source hash"), max_length=64, blank=True, default="", db_index=True)
+    show_in_header = models.BooleanField(_("Показывать в шапке"), default=False, db_index=True)
+    sort_order = models.PositiveIntegerField(_("Порядок сортировки"), default=1000, db_index=True)
+    is_assignable = models.BooleanField(_("Можно назначать товарам"), default=True, db_index=True)
     description = models.TextField(_("Описание"), blank=True)
 
     class Meta:
-        ordering = ("name",)
+        ordering = ("sort_order", "name", "id")
         verbose_name = _("Категория")
         verbose_name_plural = _("Категории")
 

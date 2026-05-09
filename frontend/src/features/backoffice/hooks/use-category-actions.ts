@@ -23,10 +23,12 @@ export function useCategoryActions({
     createName: string;
     createParentId: string;
     createIsActive: boolean;
+    createShowInHeader: boolean;
     closeCreate: () => void;
     editName: string;
     editParentId: string;
     editIsActive: boolean;
+    editShowInHeader: boolean;
     editingCategoryId: string | null;
     closeEdit: () => void;
   };
@@ -53,6 +55,7 @@ export function useCategoryActions({
         name: form.createName,
         parent: form.createParentId || null,
         is_active: form.createIsActive,
+        show_in_header: form.createShowInHeader,
       });
       showSuccess(t("categories.messages.created"));
       form.closeCreate();
@@ -79,6 +82,7 @@ export function useCategoryActions({
         name: form.editName,
         parent: form.editParentId || null,
         is_active: form.editIsActive,
+        show_in_header: form.editShowInHeader,
       });
       showSuccess(t("categories.messages.updated"));
       form.closeEdit();

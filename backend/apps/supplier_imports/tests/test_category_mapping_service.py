@@ -10,7 +10,7 @@ from apps.supplier_imports.services import SupplierRawOfferCategoryMappingServic
 
 class SupplierRawOfferCategoryMappingServiceTests(TestCase):
     def setUp(self):
-        self.root_category = Category.objects.create(name="Гальмівна система", slug="halmivna-systema", is_active=True)
+        self.root_category = Category.objects.create(name="Гальмівна система", slug="halmivna-systema", is_active=True, is_assignable=False)
         self.leaf_category = Category.objects.create(name="Гальмівні колодки", slug="halmivni-kolodky", parent=self.root_category, is_active=True)
         self.hub_bearing_category = Category.objects.create(name="Підшипник маточини", slug="pidshypnyk-matochyny", parent=self.root_category, is_active=True)
         self.air_filter_category = Category.objects.create(name="Повітряний фільтр", slug="povitrianyi-filtr", parent=self.root_category, is_active=True)
@@ -92,6 +92,32 @@ class SupplierRawOfferCategoryMappingServiceTests(TestCase):
         raw_offer.refresh_from_db()
 
         self.assertEqual(result.status, SupplierRawOffer.CATEGORY_MAPPING_STATUS_UNMAPPED)
+        self.assertIsNone(raw_offer.mapped_category_id)
+
+    def test_auto_mapping_does_not_assign_non_assignable_category(self):
+        non_assignable = Category.objects.create(
+            name="Группа фильтров",
+            slug="hrupa-filtriv",
+            parent=self.root_category,
+            is_active=True,
+            is_assignable=False,
+        )
+        product = Product.objects.create(
+            sku="TEST-ROOT",
+            article="TEST-ROOT",
+            name="Test group",
+            slug="test-group",
+            brand=self.brand,
+            category=non_assignable,
+            is_active=True,
+        )
+        raw_offer = self._raw_offer(matched_product=product)
+
+        result = self.service.apply_auto_mapping(raw_offer=raw_offer)
+        raw_offer.refresh_from_db()
+
+        self.assertEqual(result.status, SupplierRawOffer.CATEGORY_MAPPING_STATUS_NEEDS_REVIEW)
+        self.assertEqual(raw_offer.category_mapping_reason, SupplierRawOffer.CATEGORY_MAPPING_REASON_NOT_ASSIGNABLE)
         self.assertIsNone(raw_offer.mapped_category_id)
 
     def test_force_mode_assigns_category_to_unmapped(self):

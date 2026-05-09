@@ -151,7 +151,13 @@ class AutoDbArticleLookupService:
 
         local_row = self._find_supplier_local(brand_name=brand_name, normalized_brand=normalized_brand)
         if local_row is None:
-            local_row = remote_rows[0]
+            local_row = self._pick_supplier_row(
+                rows=remote_rows,
+                brand_name=brand_name,
+                normalized_brand=normalized_brand,
+            )
+        if local_row is None:
+            return None, "not_found", populated, True
         return local_row, "remote", populated, True
 
     def _resolve_article(
@@ -447,6 +453,7 @@ class AutoDbArticleLookupService:
         if not rows:
             return None
         brand_options = {normalize_brand(brand_name), normalize_brand(normalized_brand)}
+        brand_options.discard("")
         best_row: dict[str, Any] | None = None
         best_score = -1
         for row in rows:
@@ -459,12 +466,22 @@ class AutoDbArticleLookupService:
                 normalized_value = normalize_brand(str(value or ""))
                 if normalized_value and normalized_value in brand_options:
                     score = max(score, 100)
-                elif normalized_value and normalized_value in normalize_brand(brand_name):
-                    score = max(score, 60)
+                elif normalized_value and any(
+                    self._is_safe_brand_extension(query=option, candidate=normalized_value)
+                    for option in brand_options
+                ):
+                    score = max(score, 85)
             if best_row is None or score > best_score:
                 best_row = row
                 best_score = score
-        return best_row
+        return best_row if best_score > 0 else None
+
+    def _is_safe_brand_extension(self, *, query: str, candidate: str) -> bool:
+        normalized_query = normalize_brand(query)
+        normalized_candidate = normalize_brand(candidate)
+        if len(normalized_query) < 3 or len(normalized_candidate) < 3:
+            return False
+        return normalized_candidate.startswith(normalized_query) or normalized_query.startswith(normalized_candidate)
 
     def _pick_article_row(
         self,
@@ -587,9 +604,14 @@ class AutoDbArticleLookupService:
         result: list[str] = []
 
         def add(value: str) -> None:
-            item = str(value or "").strip().upper()
-            if item and item not in result:
-                result.append(item)
+            raw_item = str(value or "").strip()
+            if not raw_item:
+                return
+            if raw_item not in result:
+                result.append(raw_item)
+            upper_item = raw_item.upper()
+            if upper_item not in result:
+                result.append(upper_item)
 
         add(article_raw)
         for value in article_variants:

@@ -34,6 +34,7 @@ class Command(BaseCommand):
         parser.add_argument("--dry-run", action="store_true", help="Show changes without saving")
         parser.add_argument("--product-id", type=str, default="", help="Update one Product UUID")
         parser.add_argument("--only-linked", action="store_true", help="Process only products linked to Auto_DB_Pro")
+        parser.add_argument("--only-trusted", action="store_true", help="Process only products with trusted Auto_DB link quality")
         parser.add_argument("--only-missing", action="store_true", help="Process only products with missing ProductAttribute rows")
         parser.add_argument(
             "--wait-for-autodb",
@@ -46,6 +47,7 @@ class Command(BaseCommand):
         dry_run = bool(options.get("dry_run"))
         product_id = str(options.get("product_id") or "").strip()
         only_linked = bool(options.get("only_linked"))
+        only_trusted = bool(options.get("only_trusted"))
         only_missing = bool(options.get("only_missing"))
         wait_for_autodb = max(int(options.get("wait_for_autodb") or 0), 0)
         limit = max(int(options.get("limit") or 0), 0)
@@ -62,6 +64,7 @@ class Command(BaseCommand):
         service = AutoDbProductAttributeEnrichmentService()
         qs = service.build_queryset(
             only_linked=only_linked,
+            only_trusted=only_trusted,
             only_missing=only_missing,
             product_id=product_id,
         )
@@ -72,7 +75,8 @@ class Command(BaseCommand):
 
         self.stdout.write(
             "Auto_DB_Pro product attribute update started "
-            f"dry_run={dry_run} only_linked={only_linked} only_missing={only_missing} wait_for_autodb={wait_for_autodb}"
+            f"dry_run={dry_run} only_linked={only_linked} only_trusted={only_trusted} "
+            f"only_missing={only_missing} wait_for_autodb={wait_for_autodb}"
         )
 
         for product in qs.iterator(chunk_size=200):

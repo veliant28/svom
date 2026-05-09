@@ -1,16 +1,20 @@
 from rest_framework import serializers
 
-from apps.catalog.models import Product, ProductAttribute, ProductImage
+from apps.catalog.models import AutoDbProductLinkQuality, Product, ProductAttribute, ProductImage
 from apps.catalog.services.product_management import get_product_display_name
-from apps.catalog.services.fitment_filtering import is_fitment_disabled_category
+from apps.catalog.services.product_branding import get_product_display_brand_payload
+from apps.catalog.services.product_sku import get_product_display_sku, get_product_manufacturer_article
+from apps.catalog.services.category_vehicle_filter_policy import get_vehicle_filter_policy
+from apps.catalog.services.product_stock import resolve_display_stock_qty
 from apps.catalog.services.product_fitment_lookup import (
     get_autodb_fitment_queryset,
-    get_utr_fitment_queryset,
-    is_autodb_fitment_provider,
-    resolve_product_utr_detail_ids,
+    get_public_autodb_fitment_ids,
+    resolve_public_autodb_vehicle_map,
+    resolve_selected_autodb_vehicle_display,
     resolve_selected_autocatalog_vehicle,
     serialize_autodb_fitment_mapping,
-    serialize_utr_fitment_mapping,
+    serialize_autodb_fitment_mapping_from_selector,
+    serialize_autodb_fitment_fallback_row,
 )
 from apps.compatibility.models import ProductFitment
 from apps.catalog.services.autodb_content import build_autodb_characteristic_attributes, get_autodb_product_content
@@ -63,7 +67,12 @@ class ProductFitmentSerializer(serializers.Serializer):
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
-    brand = ProductBrandSerializer(read_only=True)
+    sku = serializers.SerializerMethodField()
+    article = serializers.SerializerMethodField()
+    manufacturer_article = serializers.SerializerMethodField()
+    brand = serializers.SerializerMethodField()
+    display_brand = serializers.SerializerMethodField()
+    brand_source = serializers.SerializerMethodField()
     category = ProductCategorySerializer(read_only=True)
     name = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
@@ -85,6 +94,11 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     has_fitment_data = serializers.BooleanField(read_only=True, default=False)
     fits_selected_vehicle = serializers.BooleanField(read_only=True, allow_null=True, default=None)
     fitment_badge_hidden = serializers.SerializerMethodField()
+    fitment_count = serializers.SerializerMethodField()
+    is_autodb_compatible_data_available = serializers.SerializerMethodField()
+    link_quality_status = serializers.SerializerMethodField()
+    vehicle_filter_policy = serializers.SerializerMethodField()
+    compatibility_summary = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -92,11 +106,14 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "id",
             "sku",
             "article",
+            "manufacturer_article",
             "name",
             "slug",
             "short_description",
             "description",
             "brand",
+            "display_brand",
+            "brand_source",
             "category",
             "images",
             "attributes",
@@ -115,7 +132,21 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "has_fitment_data",
             "fits_selected_vehicle",
             "fitment_badge_hidden",
+            "fitment_count",
+            "is_autodb_compatible_data_available",
+            "link_quality_status",
+            "vehicle_filter_policy",
+            "compatibility_summary",
         )
+
+    def get_sku(self, obj: Product) -> str:
+        return get_product_display_sku(obj)
+
+    def get_article(self, obj: Product) -> str:
+        return get_product_manufacturer_article(obj)
+
+    def get_manufacturer_article(self, obj: Product) -> str:
+        return get_product_manufacturer_article(obj)
 
     def _snapshot(self, obj: Product):
         cached = getattr(obj, "_sellable_snapshot", None)
@@ -141,13 +172,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return self._snapshot(obj).is_sellable
 
     def get_total_stock_qty(self, obj: Product) -> int:
-        offers = obj.supplier_offers.all()
-        total = 0
-        for offer in offers:
-            if not offer.is_available:
-                continue
-            total += max(int(offer.stock_qty or 0), 0)
-        return total
+        return resolve_display_stock_qty(obj)
 
     def _resolve_locale(self) -> str | None:
         request = self.context.get("request")
@@ -169,6 +194,25 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_name(self, obj: Product) -> str:
         return get_product_display_name(obj, self._resolve_locale())
+
+    def _brand_payload(self, obj: Product):
+        return get_product_display_brand_payload(obj)
+
+    def get_brand(self, obj: Product) -> dict:
+        brand = getattr(obj, "brand", None)
+        if brand is None:
+            return {"id": "", "name": self._brand_payload(obj).display_brand, "slug": ""}
+        serializer = ProductBrandSerializer(
+            instance=brand,
+            context={**self.context, "product": obj},
+        )
+        return serializer.data
+
+    def get_display_brand(self, obj: Product) -> str:
+        return self._brand_payload(obj).display_brand
+
+    def get_brand_source(self, obj: Product) -> str:
+        return self._brand_payload(obj).brand_source
 
     @staticmethod
     def _is_autodb_linked(product: Product) -> bool:
@@ -228,57 +272,25 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return [*local_rows, *autodb_rows]
 
     def get_fitments(self, obj: Product) -> list[dict]:
+        cached = getattr(obj, "_resolved_public_fitments", None)
+        if cached is not None:
+            return cached
+        if not self._is_autodb_linked(obj):
+            return []
+        if self._get_link_quality_status(obj) != AutoDbProductLinkQuality.STATUS_TRUSTED:
+            return []
+
         rows: list[dict] = []
         dedupe: set[tuple[str, str, str, str, str]] = set()
-
-        for fitment in obj.fitments.all():
-            if fitment.modification_id is None or str(fitment.source or "") == ProductFitment.SOURCE_AUTODB_PRO:
-                continue
-            row = {
-                "id": str(fitment.id),
-                "make": str(fitment.modification.engine.generation.model.make.name),
-                "model": str(fitment.modification.engine.generation.model.name),
-                "generation": str(fitment.modification.engine.generation.name),
-                "engine": str(fitment.modification.engine.name),
-                "modification": str(fitment.modification.name),
-                "note": str(fitment.note or ""),
-                "is_exact": bool(fitment.is_exact),
-            }
-            key = (row["make"], row["model"], row["generation"], row["engine"], row["modification"])
-            if key in dedupe:
-                continue
-            dedupe.add(key)
-            rows.append(row)
+        selected_vehicle_display = resolve_selected_autodb_vehicle_display(self.context.get("request"))
 
         selected_vehicle = resolve_selected_autocatalog_vehicle(self.context.get("request"))
         selected_model_key = None
         if selected_vehicle is not None:
             selected_model_key = (selected_vehicle.make_name, selected_vehicle.model_name)
-
-        if is_autodb_fitment_provider():
-            if not self._is_autodb_linked(obj):
-                return rows
-            autodb_maps = get_autodb_fitment_queryset(product=obj, selected_vehicle=selected_vehicle)
-            for mapping in autodb_maps.iterator(chunk_size=200):
-                row = serialize_autodb_fitment_mapping(mapping)
-                key = (row["make"], row["model"], row["generation"], row["engine"], row["modification"])
-                if key in dedupe:
-                    continue
-                dedupe.add(key)
-                rows.append(row)
-                if selected_model_key is not None and (row["make"], row["model"]) == selected_model_key:
-                    continue
-                if len(rows) >= 80:
-                    break
-            return rows
-
-        utr_detail_ids = resolve_product_utr_detail_ids(product=obj)
-        if not utr_detail_ids:
-            return rows
-
-        utr_maps = get_utr_fitment_queryset(detail_ids=utr_detail_ids, selected_vehicle=selected_vehicle)
-        for mapping in utr_maps.iterator(chunk_size=200):
-            row = serialize_utr_fitment_mapping(mapping)
+        autodb_maps = get_autodb_fitment_queryset(product=obj, selected_vehicle=selected_vehicle)
+        for mapping in autodb_maps:
+            row = serialize_autodb_fitment_mapping(mapping)
             key = (row["make"], row["model"], row["generation"], row["engine"], row["modification"])
             if key in dedupe:
                 continue
@@ -289,12 +301,124 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             if len(rows) >= 80:
                 break
 
+        if not rows:
+            fitment_ids = get_public_autodb_fitment_ids(product=obj)
+            vehicle_map = resolve_public_autodb_vehicle_map(passanger_car_ids=fitment_ids)
+            for car_id in sorted(set(fitment_ids)):
+                vehicle = vehicle_map.get(car_id)
+                if vehicle is not None:
+                    rows.append(serialize_autodb_fitment_mapping_from_selector(vehicle))
+                else:
+                    rows.append(serialize_autodb_fitment_fallback_row(passanger_car_id=car_id, selected_vehicle=selected_vehicle_display))
+                if len(rows) >= 80:
+                    break
+
+        setattr(obj, "_resolved_public_fitments", rows)
         return rows
 
     def get_fitment_badge_hidden(self, obj: Product) -> bool:
-        cached = getattr(obj, "_fitment_badge_hidden", None)
-        if cached is not None:
-            return bool(cached)
-        hidden = is_fitment_disabled_category(getattr(obj, "category", None))
-        setattr(obj, "_fitment_badge_hidden", hidden)
-        return hidden
+        return False
+
+    def _get_link_quality_status(self, obj: Product) -> str:
+        article_key = str(getattr(obj, "autodb_article_key", "") or "").strip()
+        if not article_key:
+            return ""
+        quality = (
+            AutoDbProductLinkQuality.objects.filter(product=obj, autodb_article_key=article_key)
+            .order_by("-checked_at", "-updated_at")
+            .values_list("status", flat=True)
+            .first()
+        )
+        return str(quality or "")
+
+    def get_link_quality_status(self, obj: Product) -> str:
+        return self._get_link_quality_status(obj)
+
+    def get_vehicle_filter_policy(self, obj: Product) -> str:
+        return get_vehicle_filter_policy(getattr(obj, "category", None))
+
+    def get_fitment_count(self, obj: Product) -> int:
+        if self._get_link_quality_status(obj) != AutoDbProductLinkQuality.STATUS_TRUSTED:
+            return 0
+        return (
+            ProductFitment.objects.filter(
+                product=obj,
+                source=ProductFitment.SOURCE_AUTODB_PRO,
+                is_stale=False,
+                excluded_from_public_filtering=False,
+                quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
+            )
+            .exclude(autodb_passanger_car_id__isnull=True)
+            .values("autodb_passanger_car_id")
+            .distinct()
+            .count()
+        )
+
+    def get_is_autodb_compatible_data_available(self, obj: Product) -> bool:
+        if not self._is_autodb_linked(obj):
+            return False
+        if self._get_link_quality_status(obj) != AutoDbProductLinkQuality.STATUS_TRUSTED:
+            return False
+        if self.get_fitment_count(obj) > 0:
+            return True
+        return ProductAttribute.objects.filter(
+            product=obj,
+            source=ProductAttribute.SOURCE_AUTODB_PRO,
+        ).exists()
+
+    def get_compatibility_summary(self, obj: Product) -> dict:
+        if not self._is_autodb_linked(obj):
+            return {
+                "available": False,
+                "fitment_count": 0,
+                "selected_vehicle": None,
+                "sample_vehicles": [],
+            }
+        if self._get_link_quality_status(obj) != AutoDbProductLinkQuality.STATUS_TRUSTED:
+            return {
+                "available": False,
+                "fitment_count": 0,
+                "selected_vehicle": None,
+                "sample_vehicles": [],
+            }
+
+        fitment_ids = set(get_public_autodb_fitment_ids(product=obj))
+        selected_vehicle = resolve_selected_autodb_vehicle_display(self.context.get("request"))
+        selected_vehicle_payload = None
+        if selected_vehicle is not None:
+            selected_vehicle_id = int(selected_vehicle.get("vehicle_id") or 0)
+            selected_vehicle_payload = {
+                "vehicle_id": selected_vehicle_id,
+                "is_compatible": selected_vehicle_id in fitment_ids,
+                "label": str(selected_vehicle.get("label") or ""),
+                "subtitle": str(selected_vehicle.get("subtitle") or ""),
+                "make": str(selected_vehicle.get("make") or ""),
+                "model": str(selected_vehicle.get("model") or ""),
+                "modification": str(selected_vehicle.get("modification") or ""),
+                "years": str(selected_vehicle.get("years") or ""),
+                "engine": str(selected_vehicle.get("engine") or ""),
+            }
+
+        sample_vehicles: list[dict] = []
+        for row in self.get_fitments(obj)[:10]:
+            vehicle_id = int(row.get("vehicle_id") or int(str(row.get("id", "")).replace("autodb-", "") or 0))
+            sample_vehicles.append(
+                {
+                    "vehicle_id": vehicle_id,
+                    "make": str(row.get("make") or ""),
+                    "model": str(row.get("model") or ""),
+                    "modification": str(row.get("modification") or ""),
+                    "years": str(row.get("generation") or ""),
+                    "engine": str(row.get("engine") or ""),
+                    "body": str(row.get("body") or ""),
+                    "label": str(row.get("label") or ""),
+                    "subtitle": str(row.get("subtitle") or ""),
+                }
+            )
+
+        return {
+            "available": bool(fitment_ids),
+            "fitment_count": len(fitment_ids),
+            "selected_vehicle": selected_vehicle_payload,
+            "sample_vehicles": sample_vehicles,
+        }

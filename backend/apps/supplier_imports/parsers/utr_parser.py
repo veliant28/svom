@@ -17,6 +17,16 @@ from apps.supplier_imports.parsers.utils import (
 
 class UTRParser:
     parser_code = "utr"
+    DEFAULT_STOCK_SANE_MAX = 1_000_000
+    _TECHNICAL_STOCK_EXCLUDE = {
+        "row_number",
+        "normalized_brand",
+        "normalized_article",
+        "supplier_sku",
+        "stock_total",
+        "review_decision",
+        "review_reason",
+    }
 
     def parse_rows(
         self,
@@ -187,7 +197,9 @@ class UTRParser:
             *price_fields,
             *currency_fields,
             *lead_time_fields,
+            *self._TECHNICAL_STOCK_EXCLUDE,
         }
+        stock_sane_max = self._resolve_stock_sane_max(mapping=mapping)
 
         offers: list[ParsedOffer] = []
         issues: list[ParseIssue] = []
@@ -199,15 +211,33 @@ class UTRParser:
             product_name = str(extract_value(row, name_fields) or "").strip()
             price = parse_decimal(extract_value(row, price_fields))
             currency = str(extract_value(row, currency_fields) or context.default_currency).upper()
-            stock_qty = parse_int(extract_value(row, stock_fields))
-            if stock_qty == 0:
+
+            stock_value, stock_status = self._parse_stock_candidate(extract_value(row, stock_fields), sane_max=stock_sane_max)
+            stock_qty = max(stock_value, 0)
+            stock_values_suspicious = 0
+            stock_values_ignored = 0
+            max_stock_component = stock_qty if stock_qty > 0 else 0
+            if stock_status not in {"ok", "empty"}:
+                stock_values_suspicious += 1
+                stock_values_ignored += 1
+
+            warehouse_fields = self._resolve_warehouse_stock_fields(
+                row=row,
+                mapping=mapping,
+                excluded_stock_keys=excluded_stock_keys,
+            )
+            if stock_qty <= 0:
                 stock_qty = 0
-                for key, value in row.items():
-                    if key in excluded_stock_keys:
-                        continue
-                    parsed_stock = parse_int(value)
-                    if parsed_stock > 0:
+                for key in warehouse_fields:
+                    parsed_stock, status = self._parse_stock_candidate(row.get(key), sane_max=stock_sane_max)
+                    if status == "ok":
                         stock_qty += parsed_stock
+                        if parsed_stock > max_stock_component:
+                            max_stock_component = parsed_stock
+                    elif status != "empty":
+                        stock_values_suspicious += 1
+                        stock_values_ignored += 1
+
             lead_time_days = parse_int(extract_value(row, lead_time_fields))
 
             if not external_sku and not article:
@@ -221,6 +251,16 @@ class UTRParser:
                 )
                 continue
 
+            payload = dict(row)
+            payload["_utr_stock_normalization"] = {
+                "warehouse_fields_count": len(warehouse_fields),
+                "stock_values_suspicious_count": int(stock_values_suspicious),
+                "stock_values_ignored": int(stock_values_ignored),
+                "max_stock_component": int(max_stock_component),
+                "max_stock_total_after_normalization": int(max(stock_qty, 0)),
+                "sane_max_threshold": int(stock_sane_max),
+            }
+
             offers.append(
                 ParsedOffer(
                     supplier=context.source_code,
@@ -233,8 +273,55 @@ class UTRParser:
                     currency=currency,
                     stock_qty=max(stock_qty, 0),
                     lead_time_days=max(lead_time_days, 0),
-                    raw_payload=row,
+                    raw_payload=payload,
                 )
             )
 
         return offers, issues
+
+    def _resolve_stock_sane_max(self, *, mapping: dict[str, Any]) -> int:
+        raw = mapping.get("stock_sane_max")
+        try:
+            value = int(raw) if raw is not None else self.DEFAULT_STOCK_SANE_MAX
+        except (TypeError, ValueError):
+            value = self.DEFAULT_STOCK_SANE_MAX
+        return max(value, 1)
+
+    def _resolve_warehouse_stock_fields(
+        self,
+        *,
+        row: dict[str, str],
+        mapping: dict[str, Any],
+        excluded_stock_keys: set[str],
+    ) -> list[str]:
+        configured = mapping.get("stock_warehouse_fields")
+        if isinstance(configured, list):
+            fields = [str(item).strip() for item in configured if str(item).strip()]
+            return [item for item in fields if item in row]
+
+        fields: list[str] = []
+        for key in row.keys():
+            if key in excluded_stock_keys:
+                continue
+            normalized = str(key).strip().lower()
+            if (
+                "обл" in normalized
+                or "склад" in normalized
+                or "київ" in normalized
+                or "киев" in normalized
+                or "kyiv" in normalized
+            ):
+                fields.append(key)
+        return fields
+
+    def _parse_stock_candidate(self, value: Any, *, sane_max: int) -> tuple[int, str]:
+        parsed_decimal = parse_decimal(value)
+        if parsed_decimal is None:
+            raw = str(value or "").strip()
+            return (0, "empty" if not raw else "non_numeric")
+        if parsed_decimal < 0:
+            return 0, "negative"
+        parsed_int = int(parsed_decimal)
+        if parsed_int > sane_max:
+            return 0, "above_sane"
+        return parsed_int, "ok"

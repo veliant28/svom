@@ -71,6 +71,12 @@ class AutoDbUpdateProductAttributesCommandTests(SimpleTestCase):
 
         out = StringIO()
         call_command("autodb_update_product_attributes", "--dry-run", stdout=out)
+        service.build_queryset.assert_called_once_with(
+            only_linked=False,
+            only_trusted=False,
+            only_missing=False,
+            product_id="",
+        )
 
         output = out.getvalue()
         self.assertIn("Auto_DB_Pro product attribute update summary", output)
@@ -101,7 +107,41 @@ class AutoDbUpdateProductAttributesCommandTests(SimpleTestCase):
 
         out = StringIO()
         call_command("autodb_update_product_attributes", "--dry-run", stdout=out)
+        service.build_queryset.assert_called_once_with(
+            only_linked=False,
+            only_trusted=False,
+            only_missing=False,
+            product_id="",
+        )
 
         output = out.getvalue()
         self.assertIn("status=failed", output)
         self.assertIn("- failed: 1", output)
+
+    @patch(
+        "apps.autodb.management.commands.autodb_update_product_attributes.wait_for_local_autodb_ready",
+        return_value=LocalAutoDbReadinessResult(
+            ready=True,
+            reason="ready",
+            error_message="",
+            host="127.0.0.1",
+            port="5434",
+            database="Auto_DB_Pro",
+            attempts=1,
+            waited_seconds=0.0,
+        ),
+    )
+    @patch("apps.autodb.management.commands.autodb_update_product_attributes.AutoDbProductAttributeEnrichmentService")
+    def test_only_trusted_flag_is_forwarded(self, service_cls_mock, _ready_mock):
+        service = service_cls_mock.return_value
+        service.build_queryset.return_value = _FakeQuerySet([])
+
+        out = StringIO()
+        call_command("autodb_update_product_attributes", "--dry-run", "--only-trusted", "--only-linked", stdout=out)
+
+        service.build_queryset.assert_called_once_with(
+            only_linked=True,
+            only_trusted=True,
+            only_missing=False,
+            product_id="",
+        )

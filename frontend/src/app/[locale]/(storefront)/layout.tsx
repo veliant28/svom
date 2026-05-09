@@ -1,13 +1,13 @@
 import type { ReactNode } from "react";
 
-import { getCategories } from "@/features/catalog/api/get-categories";
+import { getHeaderNavigation as fetchHeaderNavigation } from "@/features/catalog/api/get-categories";
 import { Footer } from "@/shared/components/layout/footer";
 import { Header } from "@/shared/components/layout/header";
-import type { CategorySummary } from "@/features/catalog/types";
+import type { HeaderCategoryParent } from "@/shared/components/layout/header/categories/header-category.types";
 
-async function getHeaderCategories(locale: string): Promise<CategorySummary[]> {
+async function loadHeaderNavigation(locale: string): Promise<HeaderCategoryParent[]> {
   try {
-    return await getCategories(locale);
+    return await fetchHeaderNavigation(locale);
   } catch {
     return [];
   }
@@ -21,11 +21,11 @@ export default async function StorefrontLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  const headerCategories = await getHeaderCategories(locale);
+  const headerNavigation = await loadHeaderNavigation(locale);
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header initialCategories={headerCategories} />
+      <Header initialNavigation={headerNavigation} />
       <main className="flex-1">{children}</main>
       <Footer />
     </div>

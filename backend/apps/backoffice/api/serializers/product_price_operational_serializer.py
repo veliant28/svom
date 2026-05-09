@@ -9,7 +9,7 @@ class ProductPriceOperationalSerializer(serializers.ModelSerializer):
     product_sku = serializers.CharField(source="product.sku", read_only=True)
     product_article = serializers.CharField(source="product.article", read_only=True)
     brand_name = serializers.CharField(source="product.brand.name", read_only=True)
-    category_name = serializers.CharField(source="product.category.name", read_only=True)
+    category_name = serializers.SerializerMethodField(read_only=True)
     policy_name = serializers.CharField(source="policy.name", read_only=True)
 
     class Meta:
@@ -35,3 +35,9 @@ class ProductPriceOperationalSerializer(serializers.ModelSerializer):
             "recalculated_at",
             "updated_at",
         )
+
+    def get_category_name(self, obj: ProductPrice) -> str:
+        category = getattr(getattr(obj, "product", None), "category", None)
+        if category is None:
+            return ""
+        return str(category.name or "")

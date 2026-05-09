@@ -7,13 +7,20 @@ import re
 from typing import Any
 
 from django.db.models import Q, QuerySet
-from django.utils.text import slugify
 
 from apps.autodb.services.column_helpers import find_column_name, find_value
+from apps.autodb.services.prd_root_category_mapper import AutoDbPrdRootCategoryMapper
 from apps.autodb.services.product_name_translation import ProductNameTranslationService
 from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
 from apps.catalog.models import AutoDbPrdCategoryMap, Category, Product
-from apps.catalog.services import build_category_i18n_names, generate_unique_category_slug, sanitize_category_name
+from apps.catalog.services import (
+    build_category_i18n_names,
+    find_semantic_category_under_parent,
+    generate_unique_category_slug,
+    resolve_canonical_spec_for_name,
+    sanitize_category_name,
+)
+from apps.catalog.services.taxonomy_v2 import find_seeded_leaf_by_name
 
 
 @dataclass(frozen=True)
@@ -61,6 +68,10 @@ class ProductCategoryEnrichmentResult:
     new_category_name: str
     chosen_prd_id: int | None
     chosen_source: str
+    mapped_root_slug: str = ""
+    mapped_root_name: str = ""
+    mapped_root_confidence: float = 0.0
+    mapped_root_reason: str = ""
     autodb_article_title: str = ""
     autodb_prd_title: str = ""
     created_category: bool = False
@@ -72,6 +83,19 @@ class ProductCategoryEnrichmentResult:
     error: str = ""
 
 
+def _category_has_root(*, category: Category, root: Category) -> bool:
+    current: Category | None = category
+    seen: set[str] = set()
+    while current is not None and str(current.id) not in seen:
+        if current.id == root.id:
+            return True
+        seen.add(str(current.id))
+        if current.parent_id is None:
+            return False
+        current = Category.objects.filter(id=current.parent_id).select_related("parent").first()
+    return False
+
+
 class AutoDbProductCategoryEnrichmentService:
     _token_re = re.compile(r"[A-Za-zА-Яа-яІіЇїЄєҐґ0-9]{2,}")
 
@@ -80,9 +104,11 @@ class AutoDbProductCategoryEnrichmentService:
         *,
         storage: AutoDbRawCloneStorage | None = None,
         translator: ProductNameTranslationService | None = None,
+        root_mapper: AutoDbPrdRootCategoryMapper | None = None,
     ):
         self.storage = storage or AutoDbRawCloneStorage()
         self.translator = translator or ProductNameTranslationService()
+        self.root_mapper = root_mapper or AutoDbPrdRootCategoryMapper()
         self._prd_row_cache: dict[int, dict[str, Any] | None] = {}
         self._dry_run_category_cache: dict[int, Category] = {}
 
@@ -174,6 +200,50 @@ class AutoDbProductCategoryEnrichmentService:
                 autodb_prd_title=autodb_prd_title,
             )
 
+        root_mapping = self.root_mapper.resolve(
+            prd_description=self._extract_prd_name(candidate.row),
+            prd_normalized_description=self._extract_prd_normalized_name(candidate.row),
+            prd_assembly_group_description=self._extract_prd_assembly_group_name(candidate.row),
+            prd_usage_description=self._extract_prd_usage_description(candidate.row),
+            product_display_name=str(getattr(product, "name", "") or ""),
+            autodb_article_title=autodb_article_title,
+        )
+        if root_mapping.status != AutoDbPrdRootCategoryMapper.STATUS_MAPPED:
+            return ProductCategoryEnrichmentResult(
+                product_id=str(product.id),
+                status="skipped_no_root_mapping",
+                old_category_id=old_category_id,
+                old_category_name=old_category_name,
+                new_category_id=old_category_id,
+                new_category_name=old_category_name,
+                chosen_prd_id=candidate.prd_id,
+                chosen_source=candidate.source,
+                mapped_root_slug="",
+                mapped_root_name="",
+                mapped_root_confidence=0.0,
+                mapped_root_reason=root_mapping.reason,
+                autodb_article_title=autodb_article_title,
+                autodb_prd_title=autodb_prd_title,
+            )
+        root_category = self.root_mapper.resolve_root_category(root_slug=root_mapping.root_slug)
+        if root_category is None:
+            return ProductCategoryEnrichmentResult(
+                product_id=str(product.id),
+                status="skipped_no_root_mapping",
+                old_category_id=old_category_id,
+                old_category_name=old_category_name,
+                new_category_id=old_category_id,
+                new_category_name=old_category_name,
+                chosen_prd_id=candidate.prd_id,
+                chosen_source=candidate.source,
+                mapped_root_slug=root_mapping.root_slug,
+                mapped_root_name=root_mapping.root_name,
+                mapped_root_confidence=root_mapping.confidence,
+                mapped_root_reason=f"missing_root_category:{root_mapping.reason}",
+                autodb_article_title=autodb_article_title,
+                autodb_prd_title=autodb_prd_title,
+            )
+
         suspicious, suspicious_reason = self._detect_suspicious_link(
             product=product,
             autodb_article_title=autodb_article_title,
@@ -197,6 +267,7 @@ class AutoDbProductCategoryEnrichmentService:
 
         category, created, reused, parent_missing, translation_pending = self._ensure_category_for_candidate(
             candidate=candidate,
+            root_category=root_category,
             dry_run=dry_run,
             visited=None,
         )
@@ -210,6 +281,10 @@ class AutoDbProductCategoryEnrichmentService:
                 new_category_name=old_category_name,
                 chosen_prd_id=candidate.prd_id,
                 chosen_source=candidate.source,
+                mapped_root_slug=root_mapping.root_slug,
+                mapped_root_name=root_mapping.root_name,
+                mapped_root_confidence=root_mapping.confidence,
+                mapped_root_reason=root_mapping.reason,
                 autodb_article_title=autodb_article_title,
                 autodb_prd_title=autodb_prd_title,
                 parent_missing=parent_missing,
@@ -226,6 +301,10 @@ class AutoDbProductCategoryEnrichmentService:
                 new_category_name=str(category.name or ""),
                 chosen_prd_id=candidate.prd_id,
                 chosen_source=candidate.source,
+                mapped_root_slug=root_mapping.root_slug,
+                mapped_root_name=root_mapping.root_name,
+                mapped_root_confidence=root_mapping.confidence,
+                mapped_root_reason=root_mapping.reason,
                 autodb_article_title=autodb_article_title,
                 autodb_prd_title=autodb_prd_title,
                 created_category=created,
@@ -247,6 +326,10 @@ class AutoDbProductCategoryEnrichmentService:
             new_category_name=str(category.name or ""),
             chosen_prd_id=candidate.prd_id,
             chosen_source=candidate.source,
+            mapped_root_slug=root_mapping.root_slug,
+            mapped_root_name=root_mapping.root_name,
+            mapped_root_confidence=root_mapping.confidence,
+            mapped_root_reason=root_mapping.reason,
             autodb_article_title=autodb_article_title,
             autodb_prd_title=autodb_prd_title,
             created_category=created,
@@ -379,9 +462,13 @@ class AutoDbProductCategoryEnrichmentService:
         self,
         *,
         candidate: ProductCategoryCandidate,
+        root_category: Category,
         dry_run: bool,
         visited: set[int] | None,
     ) -> tuple[Category | None, bool, bool, bool, bool]:
+        if root_category.parent_id is not None or root_category.source != Category.SOURCE_MANUAL:
+            return None, False, False, False, False
+
         prd_id = int(candidate.prd_id)
         row = candidate.row
         name_uk = self._extract_prd_name(row)
@@ -397,25 +484,18 @@ class AutoDbProductCategoryEnrichmentService:
         parent_missing = False
         translation_pending = False
 
-        parent_category = None
-        parent_id = self._safe_int(find_value(row, ["parentid", "parentId", "ParentId"]))
-        if parent_id is not None and parent_id > 0:
-            parent_candidate = self._build_prd_candidate(prd_id=parent_id, source="parent")
-            if parent_candidate is None:
-                parent_missing = True
-            else:
-                parent_category, _, _, parent_was_missing, parent_translation_pending = self._ensure_category_for_candidate(
-                    candidate=parent_candidate,
-                    dry_run=dry_run,
-                    visited=visited,
-                )
-                parent_missing = parent_missing or parent_was_missing or parent_category is None
-                translation_pending = translation_pending or parent_translation_pending
+        canonical_spec = resolve_canonical_spec_for_name(name_uk)
+        if canonical_spec is not None and str(root_category.slug or "") == canonical_spec.root_slug:
+            uk, ru, en = canonical_spec.name_uk, canonical_spec.name_ru, canonical_spec.name_en
+            translated_ok = True
+            translation_pending = False
+        else:
+            uk, ru, en, translated_ok = self._build_category_i18n(name_uk=name_uk)
+            translation_pending = translation_pending or self._is_translation_pending(uk=uk, ru=ru, en=en)
+            if not translated_ok:
+                translation_pending = True
+        display_name = ru or uk or name_uk
 
-        uk, ru, en, translated_ok = self._build_category_i18n(name_uk=name_uk)
-        translation_pending = translation_pending or self._is_translation_pending(uk=uk, ru=ru, en=en)
-        if not translated_ok:
-            translation_pending = True
         source_payload = self._build_source_payload(row=row, source=candidate.source, translation_pending=translation_pending)
         source_hash = sha1(json.dumps(source_payload, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()  # noqa: S324
 
@@ -436,23 +516,47 @@ class AutoDbProductCategoryEnrichmentService:
                 reused = True
 
         if category is None:
-            slug_base = slugify(en or uk or name_uk)
-            preferred_slug = f"autodb-prd-{prd_id}-{slug_base}" if slug_base else f"autodb-prd-{prd_id}"
+            seeded_leaf = find_seeded_leaf_by_name(uk or name_uk)
+            if seeded_leaf is not None and _category_has_root(category=seeded_leaf, root=root_category):
+                category = seeded_leaf
+                reused = True
+
+        if category is None:
+            category = find_semantic_category_under_parent(
+                parent=root_category,
+                name=uk or name_uk,
+                include_inactive=True,
+            )
+            if category is not None:
+                reused = True
+
+        if category is None:
+            category = self._find_existing_autodb_category_by_name(
+                name=uk or name_uk,
+                parent_id=str(root_category.id),
+            )
+            if category is not None:
+                reused = True
+
+        if category is None:
+            preferred_slug = f"autodb-prd-{prd_id}"
             slug = generate_unique_category_slug(
                 name=uk or name_uk,
                 preferred_slug=preferred_slug,
             )
             category = Category(
-                name=uk or name_uk,
+                name=display_name,
                 name_uk=uk,
                 name_ru=ru,
                 name_en=en,
                 slug=slug,
-                parent=parent_category,
+                parent=root_category,
                 autodb_prd_id=prd_id,
                 source=Category.SOURCE_AUTODB_PRO,
                 source_payload=source_payload,
                 source_hash=source_hash,
+                show_in_header=False,
+                is_assignable=True,
                 is_active=True,
             )
             created = True
@@ -470,23 +574,34 @@ class AutoDbProductCategoryEnrichmentService:
             if not category.autodb_prd_id:
                 category.autodb_prd_id = prd_id
                 updates.append("autodb_prd_id")
+            if not category.is_active:
+                category.is_active = True
+                updates.append("is_active")
+            if category.parent_id != root_category.id:
+                category.parent = root_category
+                updates.append("parent")
+            if category.show_in_header:
+                category.show_in_header = False
+                updates.append("show_in_header")
+            if not category.is_assignable:
+                category.is_assignable = True
+                updates.append("is_assignable")
+            if sanitize_category_name(category.name_uk or category.name) != uk and uk:
+                category.name_uk = uk
+                updates.append("name_uk")
+            if sanitize_category_name(category.name) != sanitize_category_name(display_name):
+                category.name = display_name
+                updates.append("name")
+            if category.name_ru != ru and ru:
+                category.name_ru = ru
+                updates.append("name_ru")
+            if category.name_en != en and en:
+                category.name_en = en
+                updates.append("name_en")
             if category.source != Category.SOURCE_MANUAL and category.source != Category.SOURCE_AUTODB_PRO:
                 category.source = Category.SOURCE_AUTODB_PRO
                 updates.append("source")
             if category.source != Category.SOURCE_MANUAL:
-                if sanitize_category_name(category.name_uk or category.name) != uk and uk:
-                    category.name = uk
-                    category.name_uk = uk
-                    updates.extend(["name", "name_uk"])
-                if category.name_ru != ru and ru:
-                    category.name_ru = ru
-                    updates.append("name_ru")
-                if category.name_en != en and en:
-                    category.name_en = en
-                    updates.append("name_en")
-                if parent_category is not None and category.parent_id != parent_category.id:
-                    category.parent = parent_category
-                    updates.append("parent")
                 if category.source_payload != source_payload:
                     category.source_payload = source_payload
                     updates.append("source_payload")
@@ -510,6 +625,24 @@ class AutoDbProductCategoryEnrichmentService:
 
         return category, created, reused, parent_missing, translation_pending
 
+    def _find_existing_autodb_category_by_name(self, *, name: str, parent_id: str) -> Category | None:
+        normalized_target = sanitize_category_name(name)
+        if not normalized_target:
+            return None
+        normalized_target = " ".join(normalized_target.split()).casefold()
+        qs = Category.objects.filter(source=Category.SOURCE_AUTODB_PRO)
+        if parent_id:
+            qs = qs.filter(parent_id=parent_id)
+        else:
+            qs = qs.filter(parent__isnull=True)
+
+        for category in qs.order_by("created_at", "id"):
+            candidate_name = sanitize_category_name(category.name_uk or category.name)
+            candidate_normalized = " ".join(candidate_name.split()).casefold()
+            if candidate_normalized == normalized_target:
+                return category
+        return None
+
     def _build_prd_candidate(self, *, prd_id: int, source: str) -> ProductCategoryCandidate | None:
         row = self._find_prd_row_by_id(prd_id)
         if not row:
@@ -517,6 +650,55 @@ class AutoDbProductCategoryEnrichmentService:
         if not self._extract_prd_name(row):
             return None
         return ProductCategoryCandidate(prd_id=prd_id, source=source, row=row)
+
+    @staticmethod
+    def _extract_prd_normalized_name(row: dict[str, Any]) -> str:
+        return sanitize_category_name(
+            str(
+                find_value(
+                    row,
+                    (
+                        "normalizeddescription",
+                        "NormalizedDescription",
+                        "descriptionnormalized",
+                    ),
+                )
+                or ""
+            )
+        )
+
+    @staticmethod
+    def _extract_prd_assembly_group_name(row: dict[str, Any]) -> str:
+        return sanitize_category_name(
+            str(
+                find_value(
+                    row,
+                    (
+                        "assemblygroupdescription",
+                        "AssemblyGroupDescription",
+                        "assemblygroup",
+                        "AssemblyGroup",
+                    ),
+                )
+                or ""
+            )
+        )
+
+    @staticmethod
+    def _extract_prd_usage_description(row: dict[str, Any]) -> str:
+        return sanitize_category_name(
+            str(
+                find_value(
+                    row,
+                    (
+                        "usagedescription",
+                        "UsageDescription",
+                        "usage_description",
+                    ),
+                )
+                or ""
+            )
+        )
 
     def _extract_product_ids(self, rows: list[dict[str, Any]]) -> list[int]:
         out: list[int] = []
@@ -636,7 +818,15 @@ class AutoDbProductCategoryEnrichmentService:
         supplier_column = find_column_name(columns, ["supplierId", "supplierid", "SupplierId", "supplier_id"])
         article_column = find_column_name(
             columns,
-            ["DataSupplierArticleNumber", "datasupplierarticlenumber", "article", "articlenumber", "number"],
+            [
+                "DataSupplierArticleNumber",
+                "datasupplierarticlenumber",
+                "PartsDataSupplierArticleNumber",
+                "partsdatasupplierarticlenumber",
+                "article",
+                "articlenumber",
+                "number",
+            ],
         )
         if not supplier_column or not article_column:
             return None
@@ -658,7 +848,15 @@ class AutoDbProductCategoryEnrichmentService:
         supplier_column = find_column_name(columns, ["supplierId", "supplierid", "SupplierId", "supplier_id"])
         article_column = find_column_name(
             columns,
-            ["DataSupplierArticleNumber", "datasupplierarticlenumber", "article", "articlenumber", "number"],
+            [
+                "DataSupplierArticleNumber",
+                "datasupplierarticlenumber",
+                "PartsDataSupplierArticleNumber",
+                "partsdatasupplierarticlenumber",
+                "article",
+                "articlenumber",
+                "number",
+            ],
         )
         if not supplier_column or not article_column:
             return []
@@ -677,7 +875,15 @@ class AutoDbProductCategoryEnrichmentService:
         supplier_column = find_column_name(columns, ["supplierId", "supplierid", "SupplierId", "supplier_id"])
         article_column = find_column_name(
             columns,
-            ["DataSupplierArticleNumber", "datasupplierarticlenumber", "article", "articlenumber", "number"],
+            [
+                "DataSupplierArticleNumber",
+                "datasupplierarticlenumber",
+                "PartsDataSupplierArticleNumber",
+                "partsdatasupplierarticlenumber",
+                "article",
+                "articlenumber",
+                "number",
+            ],
         )
         if not supplier_column or not article_column:
             return []

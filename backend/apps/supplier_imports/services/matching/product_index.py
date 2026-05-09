@@ -43,6 +43,10 @@ class ProductMatchIndex:
                 brand_id=row["brand_id"],
                 category_id=row["category_id"],
             )
+            # Lightweight rows are existing DB entities; mark instance as persisted
+            # so downstream save(update_fields=...) issues UPDATE instead of INSERT.
+            product._state.adding = False
+            product._state.db = "default"
             brand_norm = normalize_brand(row["brand__name"])
             keys = {normalize_article(row["article"]), normalize_article(row["sku"])}
             for key in {item for item in keys if item}:

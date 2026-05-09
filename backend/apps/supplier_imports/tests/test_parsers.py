@@ -1,3 +1,5 @@
+import json
+
 from django.test import SimpleTestCase
 
 from apps.supplier_imports.parsers import ParserContext
@@ -79,6 +81,67 @@ SBL 407533;407533;Стійка [1,2,3];STABILUS;UAH;13343.22;1
         self.assertEqual(len(result.offers), 1)
         self.assertEqual(result.offers[0].external_sku, "SBL 407533")
         self.assertEqual(result.offers[0].stock_qty, 1)
+
+    def test_parse_rows_ignores_technical_numeric_columns_for_stock(self):
+        rows = [
+            (
+                2,
+                {
+                    "row_number": "14796",
+                    "normalized_brand": "BOSCH",
+                    "normalized_article": "1987302823",
+                    "supplier_sku": "1987302823",
+                    "stock_total": "140",
+                    "review_decision": "safe_create_separate_utr_product",
+                    "review_reason": "not_in_duplicate_risk_review",
+                    "Артикул UTR": "1987302823",
+                    "Артикул": "1987302823",
+                    "Найменування": "Автолампа (W21/5W 12V ECO)",
+                    "Бренд": "BOSCH",
+                    "Валюта": "UAH",
+                    "Ціна": "45.76",
+                    "Київська обл.": "140",
+                },
+            )
+        ]
+
+        result = UTRParser().parse_rows(
+            rows,
+            file_name="utr_filtered.csv",
+            context=ParserContext(source_code="utr"),
+        )
+
+        self.assertEqual(len(result.offers), 1)
+        self.assertEqual(result.offers[0].stock_qty, 140)
+
+    def test_parse_rows_huge_stock_value_is_ignored_and_row_stays_importable(self):
+        rows = [
+            (
+                2,
+                {
+                    "Артикул UTR": "TX2455301",
+                    "Артикул": "TX2455301",
+                    "Найменування": "Brake pad set",
+                    "Бренд": "TEXTAR",
+                    "Валюта": "UAH",
+                    "Ціна": "817.88",
+                    "Київська обл.": "36147150065",
+                },
+            )
+        ]
+
+        result = UTRParser().parse_rows(
+            rows,
+            file_name="utr_filtered.csv",
+            context=ParserContext(source_code="utr"),
+        )
+
+        self.assertEqual(len(result.offers), 1)
+        self.assertEqual(result.offers[0].stock_qty, 0)
+        self.assertEqual(result.offers[0].raw_payload["Київська обл."], "36147150065")
+        stock_meta = result.offers[0].raw_payload.get("_utr_stock_normalization", {})
+        self.assertGreaterEqual(int(stock_meta.get("stock_values_suspicious_count", 0)), 1)
+        self.assertGreaterEqual(int(stock_meta.get("stock_values_ignored", 0)), 1)
 
 
 class GPLParserTests(SimpleTestCase):
@@ -193,3 +256,100 @@ class GPLParserTests(SimpleTestCase):
         self.assertEqual(len(result.offers), 1)
         self.assertEqual(result.offers[0].external_sku, "000000001")
         self.assertEqual(result.offers[0].article, "WP6873")
+
+    def test_parse_gpl_json_prefers_rrc_price_type_10_as_primary_price(self):
+        content = json.dumps(
+            {
+                "data": {
+                    "items": [
+                        {
+                            "cid": "0001",
+                            "category": "ARAL",
+                            "brand": "ARAL",
+                            "article": "AR-20488",
+                            "name": "Aral BlueTronic 10W-40 1Lx12",
+                            "description": "test",
+                            "price_type_1": "140.24",
+                            "price_type_10": "199.99",
+                            "count_warehouse_1": "3",
+                            "count_warehouse_2": "2",
+                        }
+                    ]
+                }
+            }
+        )
+
+        result = GPLParser().parse_content(
+            content,
+            file_name="gpl.json",
+            context=ParserContext(source_code="gpl"),
+        )
+
+        self.assertEqual(len(result.offers), 1)
+        offer = result.offers[0]
+        self.assertEqual(str(offer.price), "199.99")
+        self.assertEqual(offer.stock_qty, 5)
+
+    def test_parse_gpl_json_does_not_use_opt_price_as_primary_when_rrc_missing(self):
+        content = json.dumps(
+            {
+                "data": {
+                    "items": [
+                        {
+                            "cid": "0001",
+                            "category": "ARAL",
+                            "brand": "ARAL",
+                            "article": "AR-20488",
+                            "name": "Aral BlueTronic 10W-40 1Lx12",
+                            "description": "test",
+                            "price_type_1": "140.24",
+                            "count_warehouse_1": "3",
+                            "count_warehouse_2": "2",
+                        }
+                    ]
+                }
+            }
+        )
+
+        result = GPLParser().parse_content(
+            content,
+            file_name="gpl.json",
+            context=ParserContext(source_code="gpl"),
+        )
+
+        self.assertEqual(len(result.offers), 1)
+        offer = result.offers[0]
+        self.assertIsNone(offer.price)
+        self.assertEqual(offer.stock_qty, 5)
+
+    def test_parse_gpl_json_extracts_wholesale_levels_from_price_type_fields(self):
+        content = json.dumps(
+            {
+                "data": {
+                    "items": [
+                        {
+                            "cid": "0001",
+                            "category": "ARAL",
+                            "brand": "ARAL",
+                            "article": "AR-20488",
+                            "name": "Aral BlueTronic 10W-40 1Lx12",
+                            "price_type_1": "140.24",
+                            "price_type_2": "130.24",
+                            "price_type_9": "120.24",
+                            "price_type_10": "199.99",
+                            "count_warehouse_1": "3",
+                        }
+                    ]
+                }
+            }
+        )
+
+        result = GPLParser().parse_content(
+            content,
+            file_name="gpl.json",
+            context=ParserContext(source_code="gpl"),
+        )
+
+        self.assertEqual(len(result.offers), 1)
+        labels = [row["label"] for row in result.offers[0].price_levels]
+        self.assertEqual(labels, ["ОПТ2", "ОПТ4", "ОПТ10", "РРЦ"])

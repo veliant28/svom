@@ -9,4 +9,5 @@ class CategoryListAPIView(ListAPIView):
     pagination_class = None
 
     def get_queryset(self):
-        return get_active_categories_queryset()
+        scope = str(self.request.query_params.get("scope") or "").strip()
+        return get_active_categories_queryset(scope=scope)

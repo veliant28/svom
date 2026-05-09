@@ -297,7 +297,8 @@
           "name": "Название категории",
           "parentNone": "Без родительской категории",
           "description": "Описание (необязательно)",
-          "isActive": "Активна"
+          "isActive": "Активна",
+          "showInHeader": "Показывать в шапке"
         },
         "filters": {
           "search": "Поиск по названию категории",
@@ -305,7 +306,12 @@
           "active": "Только активные",
           "inactive": "Только неактивные",
           "anyParent": "Любой уровень",
-          "rootOnly": "Только корневые"
+          "rootOnly": "Только корневые",
+          "allSources": "Все источники",
+          "anyHeaderVisibility": "Любая видимость в шапке",
+          "headerVisible": "В шапке",
+          "headerHidden": "Скрыта из шапки",
+          "duplicatesOnly": "Только дубликаты"
         },
         "actions": {
           "create": "Создать категорию",
@@ -331,10 +337,14 @@
           "columns": {
             "name": "Категория",
             "status": "Статус",
+            "source": "Источник",
+            "navigation": "Навигация",
             "updated": "Обновлено",
             "actions": "Действия"
           },
-          "rootLabel": "Корень"
+          "rootLabel": "Корень",
+          "visibleInHeader": "В шапке",
+          "hiddenFromHeader": "Скрыта"
         },
         "pagination": {
           "total": "Всего категорий: {count}",

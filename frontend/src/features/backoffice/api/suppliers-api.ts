@@ -11,7 +11,6 @@ import type {
   BackofficeSupplierPriceListParams,
   BackofficeSupplierPublishMappedResult,
   BackofficeSupplierWorkspace,
-  BackofficeUtrBrandImportSummary,
 } from "@/features/backoffice/types/backoffice";
 
 import type { BackofficeListQuery } from "./backoffice-api.types";
@@ -90,13 +89,14 @@ export async function publishBackofficeSupplierMappedProducts(
     include_needs_review?: boolean;
     dry_run?: boolean;
     reprice_after_publish?: boolean;
+    raw_offer_ids?: string[];
   } = {},
 ): Promise<{ mode: "sync"; result: BackofficeSupplierPublishMappedResult }> {
   return postJson<{ mode: "sync"; result: BackofficeSupplierPublishMappedResult }, typeof payload>(
     `/backoffice/suppliers/${code}/products/publish-mapped/`,
     payload,
     undefined,
-    { token },
+    { token, timeoutMs: 60000 },
   );
 }
 
@@ -110,17 +110,6 @@ export async function syncBackofficeSupplierPrices(
   return postJson<BackofficeActionResponse, { dispatch_async?: boolean }>(
     `/backoffice/suppliers/${code}/prices/sync/`,
     payload ?? {},
-    undefined,
-    { token },
-  );
-}
-
-export async function importBackofficeUtrBrands(
-  token: string,
-): Promise<{ imported_count: number; summary: BackofficeUtrBrandImportSummary; workspace: BackofficeSupplierWorkspace }> {
-  return postJson<{ imported_count: number; summary: BackofficeUtrBrandImportSummary; workspace: BackofficeSupplierWorkspace }, Record<string, never>>(
-    "/backoffice/suppliers/utr/brands/import/",
-    {},
     undefined,
     { token },
   );

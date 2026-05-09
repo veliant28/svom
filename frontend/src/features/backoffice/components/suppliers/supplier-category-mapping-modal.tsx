@@ -10,12 +10,13 @@ import {
   setBackofficeRawOfferCategoryMapping,
 } from "@/features/backoffice/api/backoffice-api";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
-import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
+import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
 import type {
   BackofficeCategoryMappingCategoryOption,
   BackofficeRawOfferCategoryMappingDetail,
 } from "@/features/backoffice/types/backoffice";
+import { AlertTriangle, CheckCircle2, MinusCircle, UserCheck, type LucideIcon } from "lucide-react";
 
 type SupplierCategoryMappingModalProps = {
   isOpen: boolean;
@@ -128,6 +129,35 @@ export function SupplierCategoryMappingModal({
     () => categories.find((item) => item.id === selectedCategoryId) ?? detail?.mapped_category ?? null,
     [categories, detail?.mapped_category, selectedCategoryId],
   );
+  const normalizedStatus = String(detail?.category_mapping_status || "unmapped").trim().toLowerCase();
+  const toneByStatus: Record<string, BackofficeStatusChipTone> = {
+    auto_mapped: "success",
+    manual_mapped: "blue",
+    needs_review: "warning",
+    unmapped: "gray",
+  };
+  const iconByStatus: Record<string, LucideIcon> = {
+    auto_mapped: CheckCircle2,
+    manual_mapped: UserCheck,
+    needs_review: AlertTriangle,
+    unmapped: MinusCircle,
+  };
+  const shortLabelByStatus: Record<string, string> = {
+    auto_mapped: t("productsPage.review.statusesShort.auto_mapped"),
+    manual_mapped: t("productsPage.review.statusesShort.manual_mapped"),
+    needs_review: t("productsPage.review.statusesShort.needs_review"),
+    unmapped: t("productsPage.review.statusesShort.unmapped"),
+  };
+  const fullLabelByStatus: Record<string, string> = {
+    auto_mapped: t("productsPage.review.statuses.auto_mapped"),
+    manual_mapped: t("productsPage.review.statuses.manual_mapped"),
+    needs_review: t("productsPage.review.statuses.needs_review"),
+    unmapped: t("productsPage.review.statuses.unmapped"),
+  };
+  const statusTone = toneByStatus[normalizedStatus] || "gray";
+  const StatusIcon = iconByStatus[normalizedStatus] || MinusCircle;
+  const statusShortLabel = shortLabelByStatus[normalizedStatus] || t("productsPage.review.statusesShort.unmapped");
+  const statusFullLabel = fullLabelByStatus[normalizedStatus] || t("productsPage.review.statuses.unmapped");
 
   async function handleSave() {
     if (!token || !rawOfferId || !selectedCategoryId || isSaving) {
@@ -212,7 +242,11 @@ export function SupplierCategoryMappingModal({
                   <p><strong>{t("productsPage.categoryMapping.fields.supplier")}:</strong> {detail.supplier_name || detail.supplier_code}</p>
                   <p className="flex items-center gap-2">
                     <strong>{t("productsPage.categoryMapping.fields.status")}:</strong>
-                    <StatusChip status={detail.category_mapping_status} />
+                    <span title={statusFullLabel}>
+                      <BackofficeStatusChip tone={statusTone} icon={StatusIcon}>
+                        {statusShortLabel}
+                      </BackofficeStatusChip>
+                    </span>
                   </p>
                   <p>
                     <strong>{t("productsPage.categoryMapping.fields.currentCategory")}:</strong>{" "}

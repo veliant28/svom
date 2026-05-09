@@ -1,12 +1,22 @@
 from rest_framework import serializers
 
 from apps.catalog.models import Brand, Category
+from apps.catalog.services.product_branding import get_product_display_brand_payload
 
 
 class ProductBrandSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+
     class Meta:
         model = Brand
         fields = ("id", "name", "slug")
+
+    def get_name(self, obj: Brand) -> str:
+        product = self.context.get("product")
+        if product is None:
+            return str(getattr(obj, "name", "") or "")
+        payload = get_product_display_brand_payload(product)
+        return payload.display_brand or str(getattr(obj, "name", "") or "")
 
 
 class ProductCategorySerializer(serializers.ModelSerializer):

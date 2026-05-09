@@ -2,33 +2,53 @@ from django.db import DatabaseError, OperationalError, ProgrammingError, connect
 from django.db.models import Prefetch, QuerySet
 
 from apps.catalog.models import ProductImage
+from apps.catalog.services import FitmentFilteringService
 from apps.commerce.models import Cart, CartItem, Order, OrderItem, OrderReceipt, WishlistItem
 from apps.pricing.models import SupplierOffer
 
 
-def _product_image_prefetches() -> tuple[Prefetch, Prefetch]:
+def _product_image_prefetches(*, relation_prefix: str = "product__") -> tuple[Prefetch, Prefetch]:
     primary_images = ProductImage.objects.filter(is_primary=True).order_by("sort_order")
     all_images = ProductImage.objects.order_by("sort_order")
     return (
-        Prefetch("product__images", queryset=primary_images, to_attr="primary_images"),
-        Prefetch("product__images", queryset=all_images, to_attr="all_images"),
+        Prefetch(f"{relation_prefix}images", queryset=primary_images, to_attr="primary_images"),
+        Prefetch(f"{relation_prefix}images", queryset=all_images, to_attr="all_images"),
     )
 
 
-def _supplier_offer_prefetch() -> Prefetch:
+def _supplier_offer_prefetch(*, relation_prefix: str = "product__") -> Prefetch:
     return Prefetch(
-        "product__supplier_offers",
+        f"{relation_prefix}supplier_offers",
         queryset=SupplierOffer.objects.select_related("supplier").order_by("supplier__priority", "supplier__name", "id"),
     )
 
 
-def get_wishlist_items_queryset(*, user_id) -> QuerySet[WishlistItem]:
-    image_prefetches = _product_image_prefetches()
-    supplier_offer_prefetch = _supplier_offer_prefetch()
+def _wishlist_product_prefetch(*, fitment_params=None) -> Prefetch:
+    product_queryset = (
+        WishlistItem.product.field.related_model.objects.select_related(
+            "brand",
+            "category",
+            "category__parent",
+            "category__parent__parent",
+            "product_price",
+        )
+        .prefetch_related(
+            *_product_image_prefetches(relation_prefix=""),
+            _supplier_offer_prefetch(relation_prefix=""),
+        )
+    )
+    if fitment_params is not None:
+        product_queryset, _ = FitmentFilteringService().apply(
+            queryset=product_queryset,
+            params=fitment_params,
+        )
+    return Prefetch("product", queryset=product_queryset)
+
+
+def get_wishlist_items_queryset(*, user_id, fitment_params=None) -> QuerySet[WishlistItem]:
     return (
         WishlistItem.objects.filter(user_id=user_id)
-        .select_related("product", "product__brand", "product__product_price")
-        .prefetch_related(*image_prefetches, supplier_offer_prefetch)
+        .prefetch_related(_wishlist_product_prefetch(fitment_params=fitment_params))
         .order_by("-created_at")
     )
 

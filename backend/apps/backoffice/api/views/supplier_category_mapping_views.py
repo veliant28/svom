@@ -33,9 +33,9 @@ class SupplierRawOfferCategoryMappingAPIView(BackofficeAPIView):
         serializer.is_valid(raise_exception=True)
 
         category_id = serializer.validated_data["category_id"]
-        category = Category.objects.filter(id=category_id, is_active=True).first()
+        category = Category.objects.filter(id=category_id, is_active=True, is_assignable=True).first()
         if category is None:
-            return Response({"detail": "Category not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "Assignable category not found."}, status=status.HTTP_404_NOT_FOUND)
 
         SupplierRawOfferCategoryMappingService().apply_manual_mapping(
             raw_offer=raw_offer,
@@ -77,7 +77,7 @@ class CategoryMappingCategorySearchAPIView(BackofficeAPIView):
         locale = (request.query_params.get("locale") or "").strip().lower()
         page_size = self._parse_page_size(request.query_params.get("page_size"))
 
-        queryset = Category.objects.filter(is_active=True).order_by("name")
+        queryset = Category.objects.filter(is_active=True, is_assignable=True).order_by("name")
         if query:
             queryset = queryset.filter(
                 Q(name__icontains=query)

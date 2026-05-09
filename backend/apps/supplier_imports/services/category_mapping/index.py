@@ -25,8 +25,8 @@ class CategoryIndex:
     @classmethod
     def build(cls) -> "CategoryIndex":
         categories = list(
-            Category.objects.filter(is_active=True)
-            .only("id", "name", "name_uk", "name_ru", "name_en", "parent_id")
+            Category.objects.filter(is_active=True, is_assignable=True)
+            .only("id", "name", "name_uk", "name_ru", "name_en", "parent_id", "is_assignable")
             .order_by("name")
         )
         categories_by_id = {str(item.id): item for item in categories}

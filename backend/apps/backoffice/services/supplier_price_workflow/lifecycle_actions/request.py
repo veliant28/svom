@@ -115,11 +115,12 @@ def request_price_list(
 
     now = timezone.now()
     source_file = resolve_source_file_path(source.input_path, preferred_extension="xlsx")
-    if supplier_code == "gpl":
+    use_gpl_api_mode = supplier_code == "gpl" and bool(integration.access_token)
+    if supplier_code == "gpl" and not use_gpl_api_mode:
         source_file = _resolve_gpl_source_file(source=source)
-    if supplier_code == "gpl" and source_file is None:
+    if supplier_code == "gpl" and source_file is None and not use_gpl_api_mode:
         raise SupplierIntegrationError("Для GPL источник прайса должен быть XLSX-файлом.")
-    if supplier_code == "gpl" and source_file is not None:
+    if supplier_code == "gpl" and source_file is not None and not use_gpl_api_mode:
         resolved_path = str(source_file)
         if (source.input_path or "").strip() != resolved_path:
             source.input_path = resolved_path
@@ -144,7 +145,7 @@ def request_price_list(
             )
 
     status = SupplierPriceList.STATUS_READY if supplier_code == "gpl" else SupplierPriceList.STATUS_GENERATING
-    request_mode = "local"
+    request_mode = "gpl_api" if use_gpl_api_mode else "local"
     remote_id = ""
     remote_status = ""
     remote_token = ""

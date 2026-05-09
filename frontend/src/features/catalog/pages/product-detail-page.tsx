@@ -11,10 +11,11 @@ import { CartProductQuantityStepper } from "@/features/cart/components/cart-prod
 import { getProductFitmentOptions } from "@/features/catalog/api/get-product-fitment-options";
 import { getProductFitments } from "@/features/catalog/api/get-product-fitments";
 import { useProductDetail } from "@/features/catalog/hooks/use-product-detail";
+import { resolveCompatibilityBadgeState } from "@/features/catalog/lib/compatibility-badge";
+import { buildProductIdentityParts } from "@/features/catalog/lib/product-identity";
 import type { ProductFitment, ProductFitmentOptions } from "@/features/catalog/types";
 import { WishlistToggleButton } from "@/features/wishlist/components/wishlist-toggle-button";
 import { ContainedImagePanel } from "@/shared/components/ui/contained-image-panel";
-import { isFitmentDisabledCategory } from "@/features/catalog/lib/fitment-disabled-categories";
 import { clearCatalogReturnState, readCatalogReturnState } from "@/features/catalog/lib/catalog-navigation-state";
 import { useRouter } from "@/i18n/navigation";
 
@@ -36,6 +37,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   const [remoteFitments, setRemoteFitments] = useState<ProductFitment[] | null>(null);
   const [remoteFitmentCount, setRemoteFitmentCount] = useState<number | null>(null);
   const [selectedVehicleApplied, setSelectedVehicleApplied] = useState(false);
+  const [fitmentListExpanded, setFitmentListExpanded] = useState(false);
   const fitments = remoteFitments ?? productFitments;
   const catalogParams = useMemo(() => {
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -53,11 +55,16 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   const totalStockQty = product?.total_stock_qty ?? 0;
   const stockTone: BackofficeStatusChipTone = totalStockQty <= 0 ? "red" : totalStockQty <= 5 ? "orange" : "blue";
   const fitmentBadge = (() => {
-    if (product?.fitment_badge_hidden || isFitmentDisabledCategory(product?.category)) {
-      return null;
-    }
+    const selectedVehicleCompatible = product?.compatibility_summary?.selected_vehicle?.is_compatible;
+    const state = resolveCompatibilityBadgeState({
+      fitsSelectedVehicle:
+        typeof selectedVehicleCompatible === "boolean" ? selectedVehicleCompatible : product?.fits_selected_vehicle,
+      hasFitmentData: (product?.compatibility_summary?.fitment_count || product?.fitment_count || 0) > 0,
+      isAutoDbCompatibleDataAvailable: product?.is_autodb_compatible_data_available,
+      suppressIncompatibleBadge: product?.vehicle_filter_policy === "show_all_with_badges",
+    });
 
-    if (product?.fits_selected_vehicle === true) {
+    if (state === "fits") {
       return {
         label: tCard("fitment.fits"),
         tone: "success" as const,
@@ -65,11 +72,19 @@ export function ProductDetailPage({ slug }: { slug: string }) {
       };
     }
 
-    if (product?.fits_selected_vehicle === false) {
+    if (state === "not_fits") {
       return {
         label: tCard("fitment.notFits"),
         tone: "red" as const,
         icon: XCircle,
+      };
+    }
+
+    if (state === "has_data") {
+      return {
+        label: tCard("fitment.hasData"),
+        tone: "blue" as const,
+        icon: CheckCircle2,
       };
     }
 
@@ -86,6 +101,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
     setRemoteFitments(null);
     setRemoteFitmentCount(null);
     setSelectedVehicleApplied(false);
+    setFitmentListExpanded(false);
   }, [product?.id]);
 
   useEffect(() => {
@@ -110,6 +126,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
         const options = await getProductFitmentOptions(slug, locale, {
           ...vehicleParams,
           make: selectedMake,
+          model: selectedModel,
         });
         if (isMounted) {
           setFitmentOptions(options);
@@ -126,7 +143,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
     return () => {
       isMounted = false;
     };
-  }, [locale, product, selectedMake, slug, vehicleParams]);
+  }, [locale, product, selectedMake, selectedModel, slug, vehicleParams]);
 
   useEffect(() => {
     if (selectedVehicleApplied || !fitmentOptions?.selected_make || !fitmentOptions.selected_model) {
@@ -251,6 +268,15 @@ export function ProductDetailPage({ slug }: { slug: string }) {
     );
   }
 
+  const identityParts = buildProductIdentityParts({
+    sku: product.sku,
+    brandName: product.brand?.name,
+    manufacturerArticle: product.manufacturer_article || product.article,
+  });
+  const compatibilitySummary = product.compatibility_summary;
+  const selectedVehicle = compatibilitySummary?.selected_vehicle || null;
+  const shownFitments = fitmentListExpanded ? visibleFitments : visibleFitments.slice(0, 10);
+
   return (
     <section className="mx-auto max-w-6xl px-4 py-8">
       <button
@@ -269,7 +295,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
         <div>
           <h1 className="text-2xl font-semibold">{product.name}</h1>
           <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
-            {t("skuLabel")}: {product.sku} · {product.brand.name}
+            {t("skuLabel")}: {identityParts.join(" · ")}
           </p>
           <div className="mt-4 grid grid-cols-[max-content_1fr_max-content] items-center gap-3">
             <p className="text-xl font-semibold whitespace-nowrap">
@@ -312,6 +338,18 @@ export function ProductDetailPage({ slug }: { slug: string }) {
                 </BackofficeStatusChip>
               ) : null}
             </div>
+            {selectedVehicle ? (
+              <div
+                className="mt-2 rounded-lg border px-3 py-2 text-sm"
+                style={{ borderColor: "var(--border)", backgroundColor: "var(--surfaceSubtle, var(--surface))" }}
+              >
+                <p className="font-medium" style={{ color: "var(--fg)" }}>
+                  {selectedVehicle.is_compatible ? t("fitmentVehicleCompatible") : t("fitmentVehicleUnknown")}
+                </p>
+                <p style={{ color: "var(--muted)" }}>{selectedVehicle.label}</p>
+                {selectedVehicle.subtitle ? <p style={{ color: "var(--muted)" }}>{selectedVehicle.subtitle}</p> : null}
+              </div>
+            ) : null}
             {fitments.length > 0 ? (
               <div className="mt-2 rounded-lg border p-3" style={{ borderColor: "var(--border)" }}>
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -339,7 +377,9 @@ export function ProductDetailPage({ slug }: { slug: string }) {
                     {t("fitmentModelLabel")}
                     <select
                       value={selectedModel}
-                      onChange={(event) => setSelectedModel(event.target.value || "")}
+                      onChange={(event) => {
+                        setSelectedModel(event.target.value || "");
+                      }}
                       className="h-9 rounded-md border px-2 text-sm"
                       style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
                     >
@@ -351,6 +391,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
                       ))}
                     </select>
                   </label>
+
                 </div>
 
                 <p className="mt-2 text-xs" style={{ color: "var(--muted)" }}>
@@ -358,21 +399,29 @@ export function ProductDetailPage({ slug }: { slug: string }) {
                 </p>
 
                 <div className="mt-2 max-h-60 space-y-1 overflow-auto pr-1">
-                  {visibleFitments.map((fitment) => (
+                  {shownFitments.map((fitment) => (
                     <div
                       key={fitment.id}
                       className="rounded-md border px-2 py-1.5 text-xs"
                       style={{ borderColor: "var(--border)", color: "var(--muted)" }}
                     >
                       <p className="font-medium" style={{ color: "var(--fg)" }}>
-                        {fitment.make} · {fitment.model}
+                        {fitment.label || [fitment.make, fitment.model].filter(Boolean).join(" · ")}
                       </p>
-                      <p>
-                        {[fitment.modification, fitment.engine, fitment.generation].filter(Boolean).join(" · ")}
-                      </p>
+                      <p>{[fitment.modification, fitment.engine, fitment.generation].filter(Boolean).join(" · ")}</p>
                     </div>
                   ))}
                 </div>
+                {visibleFitments.length > 10 ? (
+                  <button
+                    type="button"
+                    className="mt-2 text-xs underline underline-offset-2"
+                    style={{ color: "var(--muted)" }}
+                    onClick={() => setFitmentListExpanded((value) => !value)}
+                  >
+                    {fitmentListExpanded ? t("fitmentShowLess") : t("fitmentShowMore")}
+                  </button>
+                ) : null}
               </div>
             ) : (
               <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>

@@ -66,6 +66,7 @@ def publish_mapped_products(
     *,
     supplier_code: str,
     run_id: str | None = None,
+    raw_offer_ids: list[str] | None = None,
     include_needs_review: bool = False,
     dry_run: bool = False,
     reprice_after_publish: bool = True,
@@ -75,6 +76,7 @@ def publish_mapped_products(
     result = SupplierMappedOffersPublishService().publish_for_supplier(
         supplier_code=supplier_code,
         run_id=run_id,
+        raw_offer_ids=raw_offer_ids,
         include_needs_review=include_needs_review,
         dry_run=dry_run,
         reprice_after_publish=reprice_after_publish,

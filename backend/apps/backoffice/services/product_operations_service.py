@@ -30,6 +30,8 @@ class ProductOperationsService:
         actor=None,
         update_import_rules: bool = True,
     ) -> ProductBulkCategoryMoveResult:
+        if not category.is_assignable:
+            raise ValueError("category_not_assignable")
         normalized_ids = self._normalize_ids(product_ids)
         queryset = Product.objects.filter(id__in=normalized_ids)
 

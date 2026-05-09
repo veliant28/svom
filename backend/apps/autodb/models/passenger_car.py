@@ -3,6 +3,10 @@ from django.utils.translation import gettext_lazy as _
 
 
 class AutoDbPassengerCar(models.Model):
+    # Deprecated runtime source:
+    # Public catalog compatibility must resolve vehicle metadata through
+    # apps.autodb.selectors.vehicle_catalog (auto_db_pro raw tables).
+    # This managed mirror model is kept only for legacy sync/migration paths.
     id = models.PositiveIntegerField(primary_key=True)
     autodb_vehicle_id = models.BigIntegerField(_("Auto-DB vehicle ID"), null=True, blank=True, unique=True, db_index=True)
     ktype = models.BigIntegerField(_("KType"), null=True, blank=True, db_index=True)

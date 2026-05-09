@@ -133,13 +133,25 @@
         "title": "Товари імпорту",
         "subtitle": "Проміжна таблиця імпортованих товарів до основного мапінгу та подальшої обробки.",
         "search": "Пошук за SKU, артикулом, брендом і назвою",
+        "filters": {
+          "allStatuses": "Усі статуси"
+        },
         "empty": "Імпортовані товари не знайдено.",
         "actions": {
-          "publishMapped": "Опублікувати зіставлені"
+          "publishMapped": "Опублікувати зіставлені",
+          "bulkActions": "Масові дії",
+          "publishSelected": "Опублікувати вибрані",
+          "selectPage": "Вибрати товари на сторінці",
+          "unselectPage": "Зняти вибір на сторінці"
         },
         "messages": {
           "publishSuccess": "Публікацію завершено. Зіставлених: {matched}, створено: {created}, оновлено: {updated}, пропущено: {skipped}, помилок: {errors}.",
-          "publishFailed": "Не вдалося опублікувати зіставлені товари."
+          "publishFailed": "Не вдалося опублікувати зіставлені товари.",
+          "publishSelectedSuccess": "Вибрані позиції опубліковано. Вибрано: {selected}, зіставлених: {matched}, створено: {created}, оновлено: {updated}, пропущено: {skipped}, помилок: {errors}.",
+          "publishSelectedFailed": "Не вдалося опублікувати вибрані позиції."
+        },
+        "tooltips": {
+          "bulkActions": "Масові дії"
         },
         "pagination": {
           "total": "Усього рядків: {count}",
@@ -154,6 +166,7 @@
         },
         "table": {
           "columns": {
+            "select": "Вибір",
             "sku": "SKU / Артикул",
             "brand": "Бренд",
             "product": "Товар",
@@ -175,6 +188,12 @@
             "auto_mapped": "Авто-мапінг",
             "manual_mapped": "Підтверджено вручну",
             "unmapped": "Не зіставлено"
+          },
+          "statusesShort": {
+            "needs_review": "Перевірка",
+            "auto_mapped": "Авто",
+            "manual_mapped": "Вручну",
+            "unmapped": "Нема"
           },
           "sorting": {
             "confidenceDesc": "Упевненість: спочатку високі",

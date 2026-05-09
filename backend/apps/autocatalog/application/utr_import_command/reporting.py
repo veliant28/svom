@@ -70,7 +70,7 @@ def write_import_runtime(output: CommandOutput, *, batch_size: int, force_refres
         f"[utr-runtime] rate_limit_per_minute={getattr(settings, 'UTR_RATE_LIMIT_PER_MINUTE', 6)} "
         f"concurrency={getattr(settings, 'UTR_CONCURRENCY', 1)} "
         f"batch_size={batch_size} "
-        f"applicability_enabled={int(bool(getattr(settings, 'UTR_APPLICABILITY_ENABLED', True)))} "
+        f"applicability_enabled={int(bool(getattr(settings, 'UTR_APPLICABILITY_ENABLED', False)))} "
         f"force_refresh={int(force_refresh)} "
         f"unsafe_force_refresh={int(bool(getattr(settings, 'UTR_UNSAFE_ALLOW_FORCE_REFRESH', False)))}"
     )

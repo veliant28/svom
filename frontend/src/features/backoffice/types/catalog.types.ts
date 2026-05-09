@@ -24,10 +24,13 @@ export type BackofficeCatalogCategory = {
   name_ru: string;
   name_en: string;
   slug: string;
+  source: string;
+  autodb_prd_id: number | null;
   parent: string | null;
   parent_name: string;
   description: string;
   is_active: boolean;
+  show_in_header: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -35,6 +38,7 @@ export type BackofficeCatalogCategory = {
 export type BackofficeCatalogProduct = {
   id: string;
   sku: string;
+  internal_import_key?: string;
   article: string;
   name: string;
   display_name?: string;
@@ -45,6 +49,12 @@ export type BackofficeCatalogProduct = {
   slug: string;
   brand: string;
   brand_name: string;
+  current_brand_name?: string;
+  display_brand?: string;
+  brand_source?: string;
+  autodb_supplier_id?: number | null;
+  autodb_supplier_name?: string;
+  raw_supplier_brand?: string;
   category: string;
   category_name: string;
   catalog_source?: string;

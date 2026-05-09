@@ -118,3 +118,24 @@ def list_admin_supplier_brands(
         "results": results,
     }
 
+
+def get_admin_supplier_brand_name_by_id(supplier_id: int) -> str:
+    resolved_id = _coerce_int(supplier_id)
+    if resolved_id is None:
+        return ""
+
+    rows = _fetch_rows(
+        """
+        SELECT
+            s."description" AS supplier_description,
+            s."matchcode" AS supplier_matchcode
+        FROM "suppliers" s
+        WHERE s."id" = %s
+        LIMIT 1
+        """,
+        [resolved_id],
+    )
+    if not rows:
+        return ""
+    row = rows[0]
+    return _safe_str(row.get("supplier_description")) or _safe_str(row.get("supplier_matchcode"))

@@ -5,13 +5,13 @@ from hashlib import sha1
 import json
 from typing import Any
 
-from django.db.models import QuerySet
+from django.db.models import F, QuerySet
 from django.utils.text import slugify
 
 from apps.autodb.services.column_helpers import find_column_name, find_value
 from apps.autodb.services.product_name_translation import ProductNameTranslationService
 from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
-from apps.catalog.models import Attribute, AttributeValue, Product, ProductAttribute
+from apps.catalog.models import Attribute, AttributeValue, AutoDbProductLinkQuality, Product, ProductAttribute
 from apps.catalog.services import sanitize_product_name
 
 
@@ -67,6 +67,7 @@ class AutoDbProductAttributeEnrichmentService:
         self,
         *,
         only_linked: bool,
+        only_trusted: bool,
         only_missing: bool,
         product_id: str,
     ) -> QuerySet[Product]:
@@ -77,6 +78,11 @@ class AutoDbProductAttributeEnrichmentService:
         ).order_by("id")
         if only_linked:
             qs = qs.filter(autodb_supplier_id__isnull=False).exclude(autodb_article_number="")
+        if only_trusted:
+            qs = qs.filter(
+                autodb_link_qualities__status=AutoDbProductLinkQuality.STATUS_TRUSTED,
+                autodb_link_qualities__autodb_article_key=F("autodb_article_key"),
+            )
         if only_missing:
             qs = qs.filter(product_attributes__isnull=True)
         if product_id:

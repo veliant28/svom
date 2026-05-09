@@ -11,9 +11,9 @@ import { StorefrontNav } from "@/shared/components/layout/header/storefront-nav"
 import { HeaderUserMenu } from "@/shared/components/layout/header/user-menu";
 import { LocaleSwitcher } from "@/shared/components/layout/locale-switcher";
 import { ThemeToggle } from "@/shared/components/layout/theme-toggle";
-import type { CategorySummary } from "@/features/catalog/types";
+import type { HeaderCategoryParent } from "@/shared/components/layout/header/categories/header-category.types";
 
-export function Header({ initialCategories = [] }: { initialCategories?: CategorySummary[] }) {
+export function Header({ initialNavigation = [] }: { initialNavigation?: HeaderCategoryParent[] }) {
   const t = useTranslations("common.header");
   const brand = t("brand");
   const brandTooltipTitle = t("brandTooltip.title");
@@ -109,7 +109,7 @@ export function Header({ initialCategories = [] }: { initialCategories?: Categor
               <span className="header-brand-tooltip-slogan">{brandTooltipSlogan}</span>
             </span>
           </span>
-          <HeaderParentCategoryButtons initialCategories={initialCategories} />
+          <HeaderParentCategoryButtons initialNavigation={initialNavigation} />
         </div>
 
         <HeaderContactSticker />

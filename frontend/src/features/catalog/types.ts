@@ -8,10 +8,13 @@ export type CategorySummary = {
   id: string;
   name: string;
   slug: string;
+  sort_order?: number;
+  is_assignable?: boolean;
   parent?: {
     id: string;
     name: string;
     slug: string;
+    sort_order?: number;
   } | null;
 };
 
@@ -19,6 +22,7 @@ export type CatalogProduct = {
   id: string;
   sku: string;
   article: string;
+  manufacturer_article?: string;
   name: string;
   slug: string;
   short_description: string;
@@ -38,7 +42,14 @@ export type CatalogProduct = {
   is_bestseller: boolean;
   has_fitment_data: boolean;
   fits_selected_vehicle: boolean | null;
-  fitment_badge_hidden?: boolean;
+  fitment_count?: number;
+  is_autodb_compatible_data_available?: boolean;
+  link_quality_status?: string;
+  vehicle_filter_policy?: "strict_fitment" | "show_all_with_badges";
+  selected_vehicle_compatibility?: {
+    vehicle_id: number;
+    is_compatible: boolean;
+  } | null;
 };
 
 export type CatalogFilters = {
@@ -52,6 +63,8 @@ export type CatalogFilters = {
   is_new?: boolean;
   is_bestseller?: boolean;
   modification?: string;
+  vehicle_id?: string;
+  passanger_car_id?: string;
   car_modification?: string;
   garage_vehicle?: string;
   fitment?: "all" | "only" | "unknown" | "with_data";
@@ -74,11 +87,15 @@ export type ProductAttribute = {
 
 export type ProductFitment = {
   id: string;
+  vehicle_id?: number;
   make: string;
   model: string;
   generation: string;
   engine: string;
   modification: string;
+  body?: string;
+  label?: string;
+  subtitle?: string;
   note: string;
   is_exact: boolean;
 };
@@ -91,9 +108,31 @@ export type ProductFitmentOption = {
 export type ProductFitmentOptions = {
   makes: ProductFitmentOption[];
   models: ProductFitmentOption[];
+  modifications?: ProductFitmentOption[];
   selected_make: string;
   selected_model: string;
+  selected_modification?: string;
   total_fitments: number;
+};
+
+export type ProductCompatibilitySummaryVehicle = {
+  vehicle_id: number;
+  is_compatible?: boolean;
+  make: string;
+  model: string;
+  modification: string;
+  years: string;
+  engine: string;
+  body?: string;
+  label: string;
+  subtitle: string;
+};
+
+export type ProductCompatibilitySummary = {
+  available: boolean;
+  fitment_count: number;
+  selected_vehicle: ProductCompatibilitySummaryVehicle | null;
+  sample_vehicles: ProductCompatibilitySummaryVehicle[];
 };
 
 export type ProductFitmentRowsResponse = {
@@ -106,6 +145,7 @@ export type ProductDetail = {
   id: string;
   sku: string;
   article: string;
+  manufacturer_article?: string;
   name: string;
   slug: string;
   short_description: string;
@@ -129,6 +169,11 @@ export type ProductDetail = {
   has_fitment_data: boolean;
   fits_selected_vehicle: boolean | null;
   fitment_badge_hidden?: boolean;
+  fitment_count?: number;
+  is_autodb_compatible_data_available?: boolean;
+  link_quality_status?: string;
+  vehicle_filter_policy?: "strict_fitment" | "show_all_with_badges";
+  compatibility_summary?: ProductCompatibilitySummary;
 };
 
 export type PaginatedResponse<T> = {

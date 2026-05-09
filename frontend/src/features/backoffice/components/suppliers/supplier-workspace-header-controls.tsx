@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, BookOpenCheck, Download, Package, ReceiptText, RefreshCw, Settings, Tags } from "lucide-react";
+import { Activity, BookOpenCheck, Download, Package, ReceiptText, RefreshCw, Settings } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";
 
@@ -10,7 +10,7 @@ const ACTION_CLASS = "inline-flex h-10 items-center rounded-md border px-4 text-
 const ACTION_STYLE = { borderColor: "var(--border)", backgroundColor: "var(--surface)" };
 const ACTION_ACTIVE_STYLE = { borderColor: "var(--text)", backgroundColor: "var(--surface-2)" };
 
-type SupplierHeaderView = "workspace" | "import" | "importRuns" | "importErrors" | "importQuality" | "products" | "brands";
+type SupplierHeaderView = "workspace" | "import" | "importRuns" | "importErrors" | "importQuality" | "products";
 
 export function SupplierCodeSwitcher({
   activeCode,
@@ -65,7 +65,6 @@ export function SupplierCodeSwitcher({
 }
 
 export function SupplierWorkflowTopActions({
-  activeCode,
   currentView,
   settingsHref,
   importHref,
@@ -73,7 +72,6 @@ export function SupplierWorkflowTopActions({
   importErrorsHref,
   importQualityHref,
   productsHref,
-  brandsHref,
   onRefresh,
   settingsLabel,
   importLabel,
@@ -81,10 +79,8 @@ export function SupplierWorkflowTopActions({
   importErrorsLabel,
   importQualityLabel,
   productsLabel,
-  brandsLabel,
   refreshLabel,
 }: {
-  activeCode: SupplierCode;
   currentView: SupplierHeaderView;
   settingsHref: string;
   importHref: string;
@@ -92,7 +88,6 @@ export function SupplierWorkflowTopActions({
   importErrorsHref: string;
   importQualityHref: string;
   productsHref: string;
-  brandsHref: string;
   onRefresh: () => void;
   settingsLabel: string;
   importLabel: string;
@@ -100,7 +95,6 @@ export function SupplierWorkflowTopActions({
   importErrorsLabel: string;
   importQualityLabel: string;
   productsLabel: string;
-  brandsLabel: string;
   refreshLabel: string;
 }) {
   return (
@@ -164,18 +158,6 @@ export function SupplierWorkflowTopActions({
         <Package size={16} />
         {productsLabel}
       </Link>
-
-      {activeCode === "utr" ? (
-        <Link
-          href={brandsHref}
-          className={`${ACTION_CLASS} gap-2`}
-          style={currentView === "brands" ? ACTION_ACTIVE_STYLE : ACTION_STYLE}
-          aria-current={currentView === "brands" ? "page" : undefined}
-        >
-          <Tags size={16} />
-          {brandsLabel}
-        </Link>
-      ) : null}
 
       <button
         type="button"

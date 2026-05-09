@@ -83,10 +83,15 @@ class BackofficeCatalogProductListCreateAPIView(ListCreateAPIView):
                 | Q(name__icontains=query)
                 | Q(slug__icontains=query)
                 | Q(brand__name__icontains=query)
+                | Q(display_brand_name__icontains=query)
+                | Q(autodb_supplier_name__icontains=query)
                 | Q(category__name__icontains=query),
             )
         if brand:
-            queryset = queryset.filter(brand_id=brand)
+            if str(brand).isdigit():
+                queryset = queryset.filter(autodb_supplier_id=int(brand))
+            else:
+                queryset = queryset.filter(brand_id=brand)
         if category:
             queryset = queryset.filter(category_id=category)
         if is_active is not None:
@@ -121,6 +126,51 @@ class BackofficeCatalogProductListCreateAPIView(ListCreateAPIView):
                 )
 
         return queryset
+
+    def _fallback_paginated_rows(self, queryset):
+        paginator = getattr(self, "paginator", None)
+        page = getattr(paginator, "page", None)
+        if paginator is None or page is None:
+            return []
+
+        page_size = paginator.get_page_size(self.request) or paginator.page_size or 20
+        page_number = int(getattr(page, "number", 1) or 1)
+        if page_number < 1:
+            page_number = 1
+
+        start = (page_number - 1) * page_size
+        stop = start + page_size
+        page_ids = list(queryset.values_list("id", flat=True)[start:stop])
+        if not page_ids:
+            return []
+
+        rows = (
+            Product.objects.filter(id__in=page_ids)
+            .select_related("brand", "category", "product_price", "product_price__policy")
+            .prefetch_related(self._supplier_offers_prefetch(), self._raw_offers_prefetch())
+        )
+        by_id = {item.id: item for item in rows}
+        return [by_id[item_id] for item_id in page_ids if item_id in by_id]
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is None:
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
+
+        serializer = self.get_serializer(page, many=True)
+        data = list(serializer.data)
+
+        page_obj = getattr(getattr(self, "paginator", None), "page", None)
+        total_count = int(getattr(getattr(page_obj, "paginator", None), "count", 0) or 0)
+        if not data and total_count > 0:
+            fallback_rows = self._fallback_paginated_rows(queryset)
+            if fallback_rows:
+                data = list(self.get_serializer(fallback_rows, many=True).data)
+
+        return self.get_paginated_response(data)
 
 
 class BackofficeCatalogProductRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):

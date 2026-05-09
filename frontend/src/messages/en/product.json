@@ -4,6 +4,7 @@
       "viewDetails": "View details",
       "fitment": {
         "fits": "Compatible",
+        "hasData": "Compatibility available",
         "noData": "Fitment not specified",
         "notFits": "Not compatible with selected vehicle"
       },
@@ -25,9 +26,15 @@
       "fitmentEmpty": "Fitment for this product is not specified yet.",
       "fitmentMakeLabel": "Make",
       "fitmentModelLabel": "Model",
+      "fitmentModificationLabel": "Modification",
       "fitmentAllMakes": "All makes",
       "fitmentAllModels": "All models",
-      "fitmentRows": "Shown fitments: {count}"
+      "fitmentAllModifications": "All modifications",
+      "fitmentRows": "Shown fitments: {count}",
+      "fitmentShowMore": "Show more",
+      "fitmentShowLess": "Show less",
+      "fitmentVehicleCompatible": "Fits your vehicle",
+      "fitmentVehicleUnknown": "Compatibility for selected vehicle is not confirmed"
     }
   }
 }

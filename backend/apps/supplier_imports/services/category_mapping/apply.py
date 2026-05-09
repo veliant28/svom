@@ -7,6 +7,7 @@ from django.db.models import QuerySet
 from django.utils import timezone
 
 from apps.catalog.models import Category
+from apps.catalog.services.category_assignment import assignable_category_or_none, can_assign_products_to_category
 from apps.supplier_imports.models import SupplierRawOffer
 
 from .diagnostics import has_changes
@@ -35,6 +36,9 @@ def apply_manual_mapping(
     category: Category,
     actor=None,
 ) -> CategoryMappingApplyResult:
+    if not can_assign_products_to_category(category):
+        raise ValueError("category_not_assignable")
+
     next_confidence = Decimal("1.000")
     next_reason = SupplierRawOffer.CATEGORY_MAPPING_REASON_MANUAL
     next_status = SupplierRawOffer.CATEGORY_MAPPING_STATUS_MANUAL_MAPPED
@@ -120,9 +124,11 @@ def apply_auto_mapping(
         )
 
     decision = service.evaluate_offer(raw_offer=raw_offer)
+    decision = _ensure_assignable_decision(decision)
     if force_map_all and (decision.category is None or decision.status == SupplierRawOffer.CATEGORY_MAPPING_STATUS_UNMAPPED):
         decision = service._evaluate_force_mapping(raw_offer=raw_offer, base_decision=decision)
     decision = service._normalize_forced_decision(raw_offer=raw_offer, decision=decision)
+    decision = _ensure_assignable_decision(decision)
     next_category_id = str(decision.category.id) if decision.category else None
 
     changed = has_changes(
@@ -195,6 +201,7 @@ def recheck_risky_mapping(
         confidence=to_confidence(raw_offer.category_mapping_confidence) or Decimal("0.680"),
     )
     reviewed_decision = service._normalize_forced_decision(raw_offer=raw_offer, decision=decision, in_recheck=True)
+    reviewed_decision = _ensure_assignable_decision(reviewed_decision)
     if reviewed_decision.category is None:
         reviewed_decision = CategoryMappingDecision(
             status=SupplierRawOffer.CATEGORY_MAPPING_STATUS_NEEDS_REVIEW,
@@ -272,6 +279,7 @@ def recheck_guardrail_mapping(
         decision=current_decision,
         allowed_guardrail_codes=allowed_guardrail_codes,
     )
+    adjusted = _ensure_assignable_decision(adjusted)
 
     if (
         adjusted.category == current_decision.category
@@ -353,6 +361,17 @@ def bulk_auto_map(
     return stats
 
 
+def _ensure_assignable_decision(decision: CategoryMappingDecision) -> CategoryMappingDecision:
+    if decision.category is None or can_assign_products_to_category(decision.category):
+        return decision
+    return CategoryMappingDecision(
+        status=SupplierRawOffer.CATEGORY_MAPPING_STATUS_NEEDS_REVIEW,
+        reason=SupplierRawOffer.CATEGORY_MAPPING_REASON_NOT_ASSIGNABLE,
+        category=None,
+        confidence=decision.confidence,
+    )
+
+
 def _save_mapping(
     *,
     raw_offer: SupplierRawOffer,
@@ -362,6 +381,7 @@ def _save_mapping(
     confidence: Decimal | None,
     actor,
 ) -> None:
+    category = assignable_category_or_none(category)
     raw_offer.mapped_category = category
     raw_offer.category_mapping_status = status
     raw_offer.category_mapping_reason = reason

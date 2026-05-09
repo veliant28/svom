@@ -53,7 +53,7 @@ export function useProductsActions({
       sku: item.sku,
       article: item.article,
       name: item.name,
-      brand: item.brand,
+      brand: item.autodb_supplier_id ? String(item.autodb_supplier_id) : "",
       category: item.category,
       is_active: item.is_active,
       is_featured: item.is_featured,
@@ -102,7 +102,17 @@ export function useProductsActions({
 
     setIsSubmitting(true);
     try {
-      await createBackofficeCatalogProduct(token, form);
+      await createBackofficeCatalogProduct(token, {
+        sku: form.sku,
+        article: form.article,
+        name: form.name,
+        category: form.category,
+        is_active: form.is_active,
+        is_featured: form.is_featured,
+        is_new: form.is_new,
+        is_bestseller: form.is_bestseller,
+        autodb_supplier_id: Number(form.brand),
+      });
       feedback.showSuccess(t("products.messages.created"));
       closeCreate();
       await refetch();
@@ -124,7 +134,17 @@ export function useProductsActions({
 
     setIsSubmitting(true);
     try {
-      await updateBackofficeCatalogProduct(token, editingId, form);
+      await updateBackofficeCatalogProduct(token, editingId, {
+        sku: form.sku,
+        article: form.article,
+        name: form.name,
+        category: form.category,
+        is_active: form.is_active,
+        is_featured: form.is_featured,
+        is_new: form.is_new,
+        is_bestseller: form.is_bestseller,
+        autodb_supplier_id: Number(form.brand),
+      });
       feedback.showSuccess(t("products.messages.updated"));
       closeEdit();
       await refetch();

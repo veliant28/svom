@@ -285,7 +285,7 @@
         "error": "Не удалось загрузить обращения.",
         "emptyThreads": "Обращений пока нет.",
         "emptyMessages": "Выберите обращение или создайте новое.",
-        "realtimeConnected": "Соединение realtime активно.",
+        "realtimeConnected": "Realtime активно.",
         "realtimeReconnecting": "Переподключаем realtime..."
       },
       "messages": {

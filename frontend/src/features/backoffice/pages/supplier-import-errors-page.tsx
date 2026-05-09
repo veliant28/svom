@@ -49,7 +49,6 @@ export function SupplierImportErrorsPage() {
   const topActions = useMemo(
     () => (
       <SupplierWorkflowTopActions
-        activeCode={activeCode}
         currentView="importErrors"
         settingsHref={hrefFor("/backoffice/suppliers")}
         importHref={hrefFor("/backoffice/suppliers/import")}
@@ -57,7 +56,6 @@ export function SupplierImportErrorsPage() {
         importErrorsHref={hrefFor("/backoffice/suppliers/import-errors")}
         importQualityHref={hrefFor("/backoffice/suppliers/import-quality")}
         productsHref={hrefFor("/backoffice/suppliers/products")}
-        brandsHref={hrefFor("/backoffice/suppliers/brands", "utr")}
         onRefresh={() => {
           void Promise.all([refreshWorkspaceScope(), refetch()]);
         }}
@@ -67,11 +65,10 @@ export function SupplierImportErrorsPage() {
         importErrorsLabel={tSuppliers("actions.importErrors")}
         importQualityLabel={tSuppliers("actions.importQuality")}
         productsLabel={tSuppliers("actions.products")}
-        brandsLabel={tSuppliers("actions.brands")}
         refreshLabel={tSuppliers("actions.refreshAll")}
       />
     ),
-    [activeCode, hrefFor, refetch, refreshWorkspaceScope, tSuppliers],
+    [hrefFor, refetch, refreshWorkspaceScope, tSuppliers],
   );
 
   const switcher = useMemo(

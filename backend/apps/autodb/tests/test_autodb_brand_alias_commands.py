@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import csv
 from decimal import Decimal
 from io import StringIO
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -156,6 +159,161 @@ class AutoDbBrandAliasCommandsTests(TestCase):
             stdout=out,
         )
         self.assertFalse(AutoDbSupplierBrandAlias.objects.filter(normalized_raw_brand="AT").exists())
+
+    def test_create_aliases_from_csv_only_auto_confirm_and_skip_unsafe(self):
+        with TemporaryDirectory() as tmp_dir:
+            csv_path = Path(tmp_dir) / "alias_opps.csv"
+            with csv_path.open("w", encoding="utf-8", newline="") as fh:
+                writer = csv.DictWriter(
+                    fh,
+                    fieldnames=[
+                        "raw_brand",
+                        "product_count",
+                        "exact_local_supplier_name_candidates",
+                        "fuzzy_supplier_candidates",
+                        "supplier_detail_candidates",
+                        "confidence",
+                        "can_auto_confirm",
+                        "reason",
+                        "recommended_action",
+                        "proposed_supplier_id",
+                        "proposed_supplier_name",
+                        "examples",
+                        "possible_supplier_matches",
+                    ],
+                )
+                writer.writeheader()
+                writer.writerow(
+                    {
+                        "raw_brand": "WIX FILTERS",
+                        "product_count": "10",
+                        "exact_local_supplier_name_candidates": "1",
+                        "fuzzy_supplier_candidates": "0",
+                        "supplier_detail_candidates": "1",
+                        "confidence": "0.95",
+                        "can_auto_confirm": "1",
+                        "reason": "matchcode_exact",
+                        "recommended_action": "create_alias",
+                        "proposed_supplier_id": "324",
+                        "proposed_supplier_name": "WIX FILTERS",
+                        "examples": "WL7283",
+                        "possible_supplier_matches": "324:1.00:matchcode_exact",
+                    }
+                )
+                writer.writerow(
+                    {
+                        "raw_brand": "AT",
+                        "product_count": "12",
+                        "exact_local_supplier_name_candidates": "1",
+                        "fuzzy_supplier_candidates": "1",
+                        "supplier_detail_candidates": "2",
+                        "confidence": "0.95",
+                        "can_auto_confirm": "1",
+                        "reason": "matchcode_exact",
+                        "recommended_action": "create_alias",
+                        "proposed_supplier_id": "15",
+                        "proposed_supplier_name": "AT-A",
+                        "examples": "AT100",
+                        "possible_supplier_matches": "15:0.95:matchcode_exact;16:0.95:matchcode_exact",
+                    }
+                )
+                writer.writerow(
+                    {
+                        "raw_brand": "MITKA",
+                        "product_count": "5",
+                        "exact_local_supplier_name_candidates": "0",
+                        "fuzzy_supplier_candidates": "0",
+                        "supplier_detail_candidates": "0",
+                        "confidence": "0.00",
+                        "can_auto_confirm": "0",
+                        "reason": "brand_not_found",
+                        "recommended_action": "manual_review",
+                        "proposed_supplier_id": "",
+                        "proposed_supplier_name": "",
+                        "examples": "",
+                        "possible_supplier_matches": "",
+                    }
+                )
+
+            out = StringIO()
+            call_command(
+                "autodb_create_brand_aliases",
+                "--supplier",
+                "GPL",
+                "--from-csv",
+                str(csv_path),
+                "--only-auto-confirm",
+                "--dry-run",
+                stdout=out,
+            )
+
+            text = out.getvalue()
+            self.assertIn("- candidates: 1", text)
+            self.assertIn("- skipped_manual_review: 1", text)
+            self.assertIn("- skipped_unsafe_ambiguous: 1", text)
+            self.assertFalse(AutoDbSupplierBrandAlias.objects.filter(normalized_raw_brand="AT").exists())
+            self.assertFalse(AutoDbSupplierBrandAlias.objects.filter(normalized_raw_brand="MITKA").exists())
+
+    def test_create_aliases_from_csv_apply_is_idempotent(self):
+        with TemporaryDirectory() as tmp_dir:
+            csv_path = Path(tmp_dir) / "alias_apply.csv"
+            with csv_path.open("w", encoding="utf-8", newline="") as fh:
+                writer = csv.DictWriter(
+                    fh,
+                    fieldnames=[
+                        "raw_brand",
+                        "product_count",
+                        "confidence",
+                        "can_auto_confirm",
+                        "reason",
+                        "recommended_action",
+                        "proposed_supplier_id",
+                        "proposed_supplier_name",
+                        "examples",
+                        "possible_supplier_matches",
+                    ],
+                )
+                writer.writeheader()
+                writer.writerow(
+                    {
+                        "raw_brand": "WIX FILTERS",
+                        "product_count": "10",
+                        "confidence": "0.95",
+                        "can_auto_confirm": "1",
+                        "reason": "matchcode_exact",
+                        "recommended_action": "create_alias",
+                        "proposed_supplier_id": "324",
+                        "proposed_supplier_name": "WIX FILTERS",
+                        "examples": "WL7283",
+                        "possible_supplier_matches": "324:1.00:matchcode_exact",
+                    }
+                )
+
+            call_command(
+                "autodb_create_brand_aliases",
+                "--supplier",
+                "GPL",
+                "--from-csv",
+                str(csv_path),
+                "--only-auto-confirm",
+                "--apply",
+                stdout=StringIO(),
+            )
+            alias_count = AutoDbSupplierBrandAlias.objects.filter(normalized_raw_brand="WIXFILTERS", is_active=True).count()
+            self.assertEqual(alias_count, 1)
+
+            repeat_out = StringIO()
+            call_command(
+                "autodb_create_brand_aliases",
+                "--supplier",
+                "GPL",
+                "--from-csv",
+                str(csv_path),
+                "--only-auto-confirm",
+                "--dry-run",
+                stdout=repeat_out,
+            )
+            self.assertIn("- would_create: 0", repeat_out.getvalue())
 
     @patch("apps.supplier_imports.services.integrations.utr.client.UtrClient")
     def test_price_stock_unchanged_and_utr_not_called(self, utr_client):

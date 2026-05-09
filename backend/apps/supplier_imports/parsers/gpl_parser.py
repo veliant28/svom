@@ -36,12 +36,14 @@ _RRC_PRICE_FIELDS: tuple[str, ...] = (
     "RRP",
     "rrc",
     "rrp",
+    "price_type_10",
+    "price_type_10_currency_980",
 )
 
 _GPL_PRICE_LEVELS: tuple[tuple[str, tuple[str, ...], bool, int], ...] = (
-    ("ОПТ2", ("Ціна ОПТ2 грн.", "ОПТ2", "opt2", "opt2_currency_980"), False, 2),
-    ("ОПТ4", ("Ціна ОПТ4 грн.", "ОПТ4", "opt4", "opt4_currency_980"), False, 4),
-    ("ОПТ10", ("Ціна ОПТ10 грн.", "ОПТ10", "opt10", "opt10_currency_980"), False, 10),
+    ("ОПТ2", ("Ціна ОПТ2 грн.", "ОПТ2", "opt2", "opt2_currency_980", "price_type_1", "price_type_1_currency_980"), False, 2),
+    ("ОПТ4", ("Ціна ОПТ4 грн.", "ОПТ4", "opt4", "opt4_currency_980", "price_type_2", "price_type_2_currency_980"), False, 4),
+    ("ОПТ10", ("Ціна ОПТ10 грн.", "ОПТ10", "opt10", "opt10_currency_980", "price_type_9", "price_type_9_currency_980"), False, 10),
     ("РРЦ", _RRC_PRICE_FIELDS, True, 100),
 )
 
@@ -206,6 +208,8 @@ class GPLParser:
         if not normalized:
             return False
         if "ррц" in normalized:
+            return True
+        if normalized == "price_type_10":
             return True
         return bool(re.search(r"\brrc\b|\brrp\b|recommended_price", normalized))
 

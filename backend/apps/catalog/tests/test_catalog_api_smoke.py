@@ -2,14 +2,20 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.catalog.models import Brand, Category, Product
+from apps.catalog.models import Brand, Category, Product, ProductImage
 from apps.pricing.models import ProductPrice, Supplier, SupplierOffer
 
 
 class CatalogAPISmokeTests(APITestCase):
     def setUp(self):
         self.brand = Brand.objects.create(name="Brand A", slug="brand-a", is_active=True)
-        self.category = Category.objects.create(name="Category A", slug="category-a", is_active=True)
+        self.category = Category.objects.create(
+            name="Category A",
+            slug="category-a",
+            source=Category.SOURCE_MANUAL,
+            show_in_header=True,
+            is_active=True,
+        )
         self.product = Product.objects.create(
             sku="SKU-001",
             article="ART-001",
@@ -140,3 +146,81 @@ class CatalogAPISmokeTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertGreater(response.data["count"], 0)
+
+    def test_public_stock_uses_supplier_offer_sum_when_cached_stock_is_zero(self):
+        supplier = Supplier.objects.create(name="Supplier Stock", code="supplier-stock", is_active=True)
+        self.product.available_stock_qty_cached = 0
+        self.product.save(update_fields=["available_stock_qty_cached", "updated_at"])
+        SupplierOffer.objects.create(
+            supplier=supplier,
+            product=self.product,
+            supplier_sku="STOCK-BASE",
+            purchase_price="100.00",
+            stock_qty=7,
+            is_available=True,
+        )
+
+        list_response = self.client.get(reverse("catalog_api:product-list"))
+        detail_response = self.client.get(reverse("catalog_api:product-detail", kwargs={"slug": "test-product"}))
+
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(detail_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(list_response.data["results"][0]["total_stock_qty"], 7)
+        self.assertEqual(detail_response.data["total_stock_qty"], 7)
+
+    def test_categories_scope_header_uses_navigation_visibility(self):
+        Category.objects.create(
+            name="Амортизатор",
+            slug="autodb-shock",
+            source=Category.SOURCE_AUTODB_PRO,
+            show_in_header=False,
+            is_active=True,
+        )
+        response = self.client.get(reverse("catalog_api:category-list"), {"scope": "header"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        names = [item["name"] for item in response.data]
+        self.assertIn("Category A", names)
+        self.assertNotIn("Амортизатор", names)
+
+    def test_products_endpoint_uses_remote_url_when_local_image_file_missing(self):
+        ProductImage.objects.create(
+            product=self.product,
+            image=None,
+            remote_url="https://cdn.example.test/test-product.webp",
+            is_primary=True,
+            source=ProductImage.SOURCE_GPL_PRICE,
+        )
+
+        response = self.client.get(reverse("catalog_api:product-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["results"][0]["primary_image"], "https://cdn.example.test/test-product.webp")
+
+    def test_gpl_product_exposes_display_sku_without_internal_prefix(self):
+        supplier = Supplier.objects.create(name="GPL", code="gpl", is_active=True)
+        gpl_product = Product.objects.create(
+            sku="GPL-000000004363234",
+            article="V208",
+            name="K2 COSMO",
+            slug="k2-cosmo",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        ProductPrice.objects.create(product=gpl_product, final_price="100.00", currency="UAH")
+        SupplierOffer.objects.create(
+            supplier=supplier,
+            product=gpl_product,
+            supplier_sku="000000004363234",
+            purchase_price="75.00",
+            stock_qty=3,
+            is_available=True,
+        )
+
+        list_response = self.client.get(reverse("catalog_api:product-list"), {"q": "k2"})
+        detail_response = self.client.get(reverse("catalog_api:product-detail", kwargs={"slug": "k2-cosmo"}))
+
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(detail_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(list_response.data["results"][0]["sku"], "000000004363234")
+        self.assertEqual(detail_response.data["sku"], "000000004363234")

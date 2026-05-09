@@ -2,8 +2,13 @@ import { getJson } from "@/shared/api/http-client";
 
 import type { CatalogFilters, ProductFitmentOptions } from "../types";
 
-type ProductFitmentOptionsParams = Pick<CatalogFilters, "car_modification" | "garage_vehicle"> & {
+type ProductFitmentOptionsParams = Pick<
+  CatalogFilters,
+  "vehicle_id" | "passanger_car_id" | "car_modification" | "garage_vehicle"
+> & {
   make?: string;
+  model?: string;
+  modification?: string;
 };
 
 export async function getProductFitmentOptions(
@@ -11,5 +16,5 @@ export async function getProductFitmentOptions(
   locale?: string,
   params: ProductFitmentOptionsParams = {},
 ): Promise<ProductFitmentOptions> {
-  return getJson<ProductFitmentOptions>(`/catalog/products/${slug}/fitment-options/`, { ...params, locale });
+  return getJson<ProductFitmentOptions>(`/catalog/products/${slug}/compatibility/options/`, { ...params, locale });
 }

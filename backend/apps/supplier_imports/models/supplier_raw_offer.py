@@ -64,6 +64,7 @@ class SupplierRawOffer(UUIDPrimaryKeyMixin, TimestampedMixin):
     CATEGORY_MAPPING_REASON_FORCE_GLOBAL_DEFAULT = "force_global_default"
     CATEGORY_MAPPING_REASON_FORCE_GUARDRAIL_REMAP = "force_guardrail_remap"
     CATEGORY_MAPPING_REASON_FORCE_GUARDRAIL_REVIEW = "force_guardrail_review"
+    CATEGORY_MAPPING_REASON_NOT_ASSIGNABLE = "category_not_assignable"
 
     CATEGORY_MAPPING_REASON_CHOICES = (
         (CATEGORY_MAPPING_REASON_MANUAL, _("Ручной выбор")),
@@ -85,6 +86,7 @@ class SupplierRawOffer(UUIDPrimaryKeyMixin, TimestampedMixin):
         (CATEGORY_MAPPING_REASON_FORCE_GLOBAL_DEFAULT, _("Принудительно по глобальной категории по умолчанию")),
         (CATEGORY_MAPPING_REASON_FORCE_GUARDRAIL_REMAP, _("Переназначено guardrail-правилом")),
         (CATEGORY_MAPPING_REASON_FORCE_GUARDRAIL_REVIEW, _("Оставлено на проверку guardrail-правилом")),
+        (CATEGORY_MAPPING_REASON_NOT_ASSIGNABLE, _("Категория не назначается товарам")),
     )
 
     run = models.ForeignKey(

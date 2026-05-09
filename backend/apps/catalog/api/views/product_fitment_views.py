@@ -4,17 +4,18 @@ from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.compatibility.models import ProductFitment
 from apps.catalog.selectors import get_product_detail_queryset
 from apps.catalog.services.product_fitment_lookup import (
     get_autodb_fitment_queryset,
-    get_utr_fitment_queryset,
-    is_autodb_fitment_provider,
+    get_public_autodb_fitment_ids,
     parse_positive_int,
-    resolve_product_utr_detail_ids,
+    resolve_public_autodb_vehicle_map,
+    resolve_selected_passanger_car_id,
+    resolve_selected_autodb_vehicle_display,
     resolve_selected_autocatalog_vehicle,
     serialize_autodb_fitment_mapping,
-    serialize_utr_fitment_mapping,
+    serialize_autodb_fitment_mapping_from_selector,
+    serialize_autodb_fitment_fallback_row,
 )
 
 
@@ -22,103 +23,173 @@ def _get_product(slug: str):
     return get_object_or_404(get_product_detail_queryset(), slug=slug)
 
 
-def _manual_fitment_row(fitment) -> dict:
-    if fitment.modification_id is None or str(fitment.source or "") == ProductFitment.SOURCE_AUTODB_PRO:
-        return {}
-    modification = fitment.modification
-    engine = modification.engine
-    generation = engine.generation
-    model = generation.model
-    make = model.make
-    return {
-        "id": str(fitment.id),
-        "make": str(make.name),
-        "model": str(model.name),
-        "generation": str(generation.name),
-        "engine": str(engine.name),
-        "modification": str(modification.name),
-        "note": str(fitment.note or ""),
-        "is_exact": bool(fitment.is_exact),
-    }
-
-
 def _option(name: str) -> dict:
     return {"value": name, "label": name}
+
+
+def _vehicle_option(vehicle_id: int, label: str) -> dict:
+    return {"value": str(vehicle_id), "label": label}
 
 
 class ProductFitmentOptionsAPIView(APIView):
     def get(self, request, slug: str):
         product = _get_product(slug)
         selected_make = str(request.query_params.get("make") or "").strip()
+        selected_model = str(request.query_params.get("model") or "").strip()
+        selected_make_id = parse_positive_int(
+            request.query_params.get("make_id") or request.query_params.get("manufacturer_id")
+        )
+        selected_model_id = parse_positive_int(request.query_params.get("model_id"))
+        selected_modification = str(request.query_params.get("modification") or "").strip()
         makes: set[str] = set()
         models: set[str] = set()
-        using_autodb = is_autodb_fitment_provider()
-
-        manual_count = 0
-        for fitment in product.fitments.all():
-            row = _manual_fitment_row(fitment)
-            if not row:
-                continue
-            manual_count += 1
-            if row["make"]:
-                makes.add(row["make"])
-            if not selected_make or row["make"] == selected_make:
-                if row["model"]:
-                    models.add(row["model"])
+        modifications: list[dict] = []
 
         selected_vehicle = resolve_selected_autocatalog_vehicle(request)
+        selected_vehicle_display = resolve_selected_autodb_vehicle_display(request)
         selected_fits = False
-        external_count = 0
+        autodb_maps = get_autodb_fitment_queryset(product=product, selected_vehicle=selected_vehicle)
+        external_count = len(autodb_maps)
+        if external_count == 0:
+            fitment_ids = set(get_public_autodb_fitment_ids(product=product))
+            fitment_vehicle_map = resolve_public_autodb_vehicle_map(passanger_car_ids=sorted(fitment_ids))
+            selected_vehicle_id = int(selected_vehicle_display.get("vehicle_id", 0)) if selected_vehicle_display else 0
+            if selected_vehicle_id <= 0:
+                selected_vehicle_id = int(resolve_selected_passanger_car_id(request) or 0)
+            selected_vehicle_fits = selected_vehicle_id > 0 and selected_vehicle_id in fitment_ids
 
-        if using_autodb:
-            autodb_maps = get_autodb_fitment_queryset(product=product, selected_vehicle=selected_vehicle)
-            external_count = autodb_maps.count()
-            makes.update(
-                str(name)
-                for name in autodb_maps.values_list("model__manufacturer__description", flat=True)
-                .distinct()
-                .order_by("model__manufacturer__description")
-                if name
-            )
-            model_queryset = autodb_maps
+            vehicle_rows: list[dict] = []
+            for vehicle_id in sorted(fitment_ids):
+                vehicle = fitment_vehicle_map.get(vehicle_id)
+                if vehicle is None:
+                    vehicle = serialize_autodb_fitment_fallback_row(
+                        passanger_car_id=vehicle_id,
+                        selected_vehicle=selected_vehicle_display,
+                    )
+                    vehicle = {
+                        "vehicle_id": int(vehicle_id),
+                        "make": str(vehicle.get("make") or ""),
+                            "model": str(vehicle.get("model") or ""),
+                            "modification": str(vehicle.get("modification") or ""),
+                            "label": str(vehicle.get("label") or f"Автомобиль #{vehicle_id}"),
+                            "model_id": 0,
+                            "manufacturer_id": 0,
+                        }
+                vehicle_rows.append(
+                    {
+                        "vehicle_id": int(vehicle.get("vehicle_id") or 0),
+                        "make": str(vehicle.get("make") or ""),
+                        "model": str(vehicle.get("model") or ""),
+                        "modification": str(vehicle.get("modification") or ""),
+                        "label": str(vehicle.get("label") or ""),
+                        "model_id": int(vehicle.get("model_id") or 0),
+                        "manufacturer_id": int(vehicle.get("manufacturer_id") or 0),
+                    }
+                )
+
+            for vehicle in vehicle_rows:
+                make_name = str(vehicle.get("make") or "").strip()
+                if make_name:
+                    makes.add(make_name)
+
+            filtered_model_rows = vehicle_rows
+            if selected_make_id:
+                filtered_model_rows = [
+                    row for row in filtered_model_rows if int(row.get("manufacturer_id") or 0) == selected_make_id
+                ]
             if selected_make:
-                model_queryset = model_queryset.filter(model__manufacturer__description=selected_make)
-            models.update(
-                str(name)
-                for name in model_queryset.values_list("model__description", flat=True)
-                .distinct()
-                .order_by("model__description")
-                if name
+                filtered_model_rows = [
+                    row for row in filtered_model_rows if str(row.get("make") or "").strip() == selected_make
+                ]
+            if selected_model_id:
+                filtered_model_rows = [
+                    row for row in filtered_model_rows if int(row.get("model_id") or 0) == selected_model_id
+                ]
+            for vehicle in filtered_model_rows:
+                model_name = str(vehicle.get("model") or "").strip()
+                if model_name:
+                    models.add(model_name)
+
+            filtered_rows = vehicle_rows
+            if selected_make_id:
+                filtered_rows = [row for row in filtered_rows if int(row.get("manufacturer_id") or 0) == selected_make_id]
+            if selected_make:
+                filtered_rows = [row for row in filtered_rows if str(row.get("make") or "").strip() == selected_make]
+            if selected_model_id:
+                filtered_rows = [row for row in filtered_rows if int(row.get("model_id") or 0) == selected_model_id]
+            if selected_model:
+                filtered_rows = [row for row in filtered_rows if str(row.get("model") or "").strip() == selected_model]
+            for row in filtered_rows[:250]:
+                vehicle_id = int(row.get("vehicle_id") or 0)
+                label = str(row.get("label") or "").strip()
+                if vehicle_id > 0 and label:
+                    modifications.append(_vehicle_option(vehicle_id, label))
+
+            if selected_vehicle_fits:
+                selected_vehicle_row = next(
+                    (row for row in vehicle_rows if int(row.get("vehicle_id") or 0) == selected_vehicle_id),
+                    None,
+                )
+                response_make = str(selected_vehicle_row.get("make") or "") if selected_vehicle_row else ""
+                response_model = str(selected_vehicle_row.get("model") or "") if selected_vehicle_row else ""
+                response_modification = str(selected_vehicle_id)
+            else:
+                response_make = ""
+                response_model = ""
+                response_modification = ""
+
+            return Response(
+                {
+                    "makes": [_option(name) for name in sorted(makes)],
+                    "models": [_option(name) for name in sorted(models)],
+                    "modifications": modifications,
+                    "selected_make": response_make,
+                    "selected_model": response_model,
+                    "selected_modification": response_modification,
+                    "total_fitments": len(fitment_ids),
+                }
             )
-            if selected_vehicle is not None:
-                selected_fits = autodb_maps.filter(
-                    model__manufacturer__description=selected_vehicle.make_name,
-                    model__description=selected_vehicle.model_name,
-                ).exists()
-        else:
-            detail_ids = resolve_product_utr_detail_ids(product=product)
-            if detail_ids:
-                utr_maps = get_utr_fitment_queryset(detail_ids=detail_ids, selected_vehicle=selected_vehicle)
-                external_count = utr_maps.count()
-                makes.update(
-                    str(name)
-                    for name in utr_maps.values_list("car_modification__make__name", flat=True)
-                    .distinct()
-                    .order_by("car_modification__make__name")
-                    if name
-                )
-                model_queryset = utr_maps
-                if selected_make:
-                    model_queryset = model_queryset.filter(car_modification__make__name=selected_make)
-                models.update(
-                    str(name)
-                    for name in model_queryset.values_list("car_modification__model__name", flat=True)
-                    .distinct()
-                    .order_by("car_modification__model__name")
-                    if name
-                )
-                if selected_vehicle is not None:
-                    selected_fits = utr_maps.filter(car_modification_id=selected_vehicle.id).exists()
+
+        vehicle_rows: list[dict] = [serialize_autodb_fitment_mapping(mapping) for mapping in autodb_maps]
+        for row in vehicle_rows:
+            make_name = str(row.get("make") or "").strip()
+            if make_name:
+                makes.add(make_name)
+        model_rows = vehicle_rows
+        if selected_make:
+            model_rows = [row for row in model_rows if str(row.get("make") or "").strip() == selected_make]
+        if selected_make_id:
+            model_rows = [row for row in model_rows if int(row.get("manufacturer_id") or 0) == selected_make_id]
+        if selected_model_id:
+            model_rows = [row for row in model_rows if int(row.get("model_id") or 0) == selected_model_id]
+        for row in model_rows:
+            model_name = str(row.get("model") or "").strip()
+            if model_name:
+                models.add(model_name)
+
+        if selected_vehicle is not None:
+            selected_fits = any(
+                str(row.get("make") or "").strip() == selected_vehicle.make_name
+                and str(row.get("model") or "").strip() == selected_vehicle.model_name
+                for row in vehicle_rows
+            )
+
+        filtered_rows = vehicle_rows
+        if selected_make:
+            filtered_rows = [row for row in filtered_rows if str(row.get("make") or "").strip() == selected_make]
+        if selected_make_id:
+            filtered_rows = [row for row in filtered_rows if int(row.get("manufacturer_id") or 0) == selected_make_id]
+        if selected_model_id:
+            filtered_rows = [row for row in filtered_rows if int(row.get("model_id") or 0) == selected_model_id]
+        if selected_model:
+            filtered_rows = [row for row in filtered_rows if str(row.get("model") or "").strip() == selected_model]
+        seen_vehicle_ids: set[int] = set()
+        for row in filtered_rows[:250]:
+            vehicle_id = int(row.get("vehicle_id") or 0)
+            if vehicle_id <= 0 or vehicle_id in seen_vehicle_ids:
+                continue
+            seen_vehicle_ids.add(vehicle_id)
+            modifications.append(_vehicle_option(vehicle_id, str(row.get("label") or f"Автомобиль #{vehicle_id}")))
 
         return Response(
             {
@@ -126,7 +197,12 @@ class ProductFitmentOptionsAPIView(APIView):
                 "models": [_option(name) for name in sorted(models)],
                 "selected_make": selected_vehicle.make_name if selected_vehicle and selected_fits else "",
                 "selected_model": selected_vehicle.model_name if selected_vehicle and selected_fits else "",
-                "total_fitments": manual_count + external_count,
+                "selected_modification": (
+                    selected_modification
+                    or (str(selected_vehicle.id) if selected_vehicle and selected_fits else "")
+                ),
+                "modifications": modifications,
+                "total_fitments": external_count,
             }
         )
 
@@ -139,59 +215,71 @@ class ProductFitmentRowsAPIView(APIView):
         product = _get_product(slug)
         selected_make = str(request.query_params.get("make") or "").strip()
         selected_model = str(request.query_params.get("model") or "").strip()
+        selected_modification = str(request.query_params.get("modification") or "").strip()
         limit = min(parse_positive_int(request.query_params.get("limit")) or self.default_limit, self.max_limit)
         offset = parse_positive_int(request.query_params.get("offset")) or 0
-        using_autodb = is_autodb_fitment_provider()
-
-        manual_rows = []
-        for fitment in product.fitments.all():
-            row = _manual_fitment_row(fitment)
-            if not row:
-                continue
-            if selected_make and row["make"] != selected_make:
-                continue
-            if selected_model and row["model"] != selected_model:
-                continue
-            manual_rows.append(row)
 
         selected_vehicle = resolve_selected_autocatalog_vehicle(request)
-        external_maps = None
-        if using_autodb:
-            external_maps = get_autodb_fitment_queryset(product=product, selected_vehicle=selected_vehicle)
-            if selected_vehicle is not None and not selected_make and not selected_model:
-                selected_make = selected_vehicle.make_name
-                selected_model = selected_vehicle.model_name
-            if selected_make:
-                external_maps = external_maps.filter(model__manufacturer__description=selected_make)
-            if selected_model:
-                external_maps = external_maps.filter(model__description=selected_model)
-        else:
-            detail_ids = resolve_product_utr_detail_ids(product=product)
-            if detail_ids:
-                external_maps = get_utr_fitment_queryset(detail_ids=detail_ids, selected_vehicle=selected_vehicle)
-                if selected_vehicle is not None and not selected_make and not selected_model:
-                    selected_make = selected_vehicle.make_name
-                    selected_model = selected_vehicle.model_name
-                if selected_make:
-                    external_maps = external_maps.filter(car_modification__make__name=selected_make)
-                if selected_model:
-                    external_maps = external_maps.filter(car_modification__model__name=selected_model)
+        selected_vehicle_display = resolve_selected_autodb_vehicle_display(request)
+        external_maps = get_autodb_fitment_queryset(product=product, selected_vehicle=selected_vehicle)
+        if selected_vehicle is not None and not selected_make and not selected_model:
+            selected_make = selected_vehicle.make_name
+            selected_model = selected_vehicle.model_name
+        mapped_rows = [serialize_autodb_fitment_mapping(mapping) for mapping in external_maps]
+        if selected_make:
+            mapped_rows = [row for row in mapped_rows if str(row.get("make") or "").strip() == selected_make]
+        if selected_model:
+            mapped_rows = [row for row in mapped_rows if str(row.get("model") or "").strip() == selected_model]
+        if selected_modification:
+            selected_modification_id = parse_positive_int(selected_modification)
+            if selected_modification_id:
+                mapped_rows = [row for row in mapped_rows if int(row.get("vehicle_id") or 0) == selected_modification_id]
 
-        external_count = external_maps.count() if external_maps is not None else 0
-        total_count = len(manual_rows) + external_count
+        external_count = len(mapped_rows)
         results: list[dict] = []
+        if external_count:
+            results.extend(mapped_rows[offset : offset + limit])
+            total_count = external_count
+        else:
+            fitment_ids = sorted(set(get_public_autodb_fitment_ids(product=product)))
+            fitment_vehicle_map = resolve_public_autodb_vehicle_map(passanger_car_ids=fitment_ids)
+            selected_vehicle_id = int(selected_vehicle_display.get("vehicle_id", 0)) if selected_vehicle_display else 0
+            if selected_modification:
+                selected_modification_id = parse_positive_int(selected_modification)
+                if selected_modification_id:
+                    fitment_ids = [value for value in fitment_ids if value == selected_modification_id]
+            if selected_make:
+                fitment_ids = [
+                    value
+                    for value in fitment_ids
+                    if str((fitment_vehicle_map.get(value) or {}).get("make") or "").strip() == selected_make
+                ]
+            if selected_model:
+                fitment_ids = [
+                    value
+                    for value in fitment_ids
+                    if str((fitment_vehicle_map.get(value) or {}).get("model") or "").strip() == selected_model
+                ]
+            if (
+                selected_vehicle_id > 0
+                and not selected_make
+                and not selected_model
+                and not selected_modification
+            ):
+                fitment_ids = [value for value in fitment_ids if value == selected_vehicle_id]
 
-        manual_slice = manual_rows[offset : offset + limit]
-        results.extend(manual_slice)
-
-        remaining_limit = limit - len(results)
-        utr_offset = max(offset - len(manual_rows), 0)
-        if remaining_limit > 0 and external_maps is not None:
-            for mapping in external_maps[utr_offset : utr_offset + remaining_limit]:
-                if using_autodb:
-                    results.append(serialize_autodb_fitment_mapping(mapping))
-                else:
-                    results.append(serialize_utr_fitment_mapping(mapping))
+            total_count = len(fitment_ids)
+            for passanger_car_id in fitment_ids[offset : offset + limit]:
+                vehicle = fitment_vehicle_map.get(passanger_car_id)
+                if vehicle is not None:
+                    results.append(serialize_autodb_fitment_mapping_from_selector(vehicle))
+                    continue
+                results.append(
+                    serialize_autodb_fitment_fallback_row(
+                        passanger_car_id=passanger_car_id,
+                        selected_vehicle=selected_vehicle_display,
+                    )
+                )
 
         return Response(
             {

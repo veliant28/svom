@@ -156,40 +156,6 @@ services:
         condition: service_healthy
     command: bash -lc "celery -A config worker -l info -Q ${CELERY_FAST_QUEUES:-celery} -O fair --prefetch-multiplier=1 --concurrency=${CELERY_FAST_WORKER_CONCURRENCY:-6}"
 
-  celery_utr_applicability_worker:
-    build:
-      context: .
-      dockerfile: infra/docker/backend/Dockerfile
-    container_name: svom_celery_utr_applicability_worker
-    profiles:
-      - utr-enrichment
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.dev}
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: "5432"
-      AUTODB_PRO_LOCAL_DATABASE_URL: postgres://${AUTODB_PRO_LOCAL_DATABASE_USER:-svom}:${AUTODB_PRO_LOCAL_DATABASE_PASSWORD:-svom}@auto_db_pro_postgres:5432/${AUTODB_PRO_LOCAL_DATABASE_NAME:-Auto_DB_Pro}
-      AUTODB_PRO_LOCAL_DATABASE_NAME: ${AUTODB_PRO_LOCAL_DATABASE_NAME:-Auto_DB_Pro}
-      REDIS_CACHE_URL: redis://redis:6379/1
-      REDIS_CELERY_URL: redis://redis:6379/2
-      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-      SEARCH_BACKEND: ${SEARCH_BACKEND:-elasticsearch}
-    volumes:
-      - ./backend:/app
-      - ./Backup:/Backup
-    depends_on:
-      postgres:
-        condition: service_healthy
-      auto_db_pro_postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      elasticsearch:
-        condition: service_healthy
-    command: bash -lc "celery -A config worker -l info -Q ${CELERY_UTR_APPLICABILITY_QUEUE:-utr_applicability} -O fair --prefetch-multiplier=1 --concurrency=${CELERY_UTR_APPLICABILITY_WORKER_CONCURRENCY:-2}"
-
   celery_beat:
     build:
       context: .

@@ -28,7 +28,6 @@ const ROUTE_PREFETCH_LIST = [
   "/backoffice/suppliers/import-errors",
   "/backoffice/suppliers/import-quality",
   "/backoffice/suppliers/products",
-  "/backoffice/suppliers/brands",
 ] as const;
 
 const prefetchedRoutes = new Set<string>();

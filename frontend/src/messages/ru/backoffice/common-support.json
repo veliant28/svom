@@ -17,7 +17,7 @@
           "loading": "Загружаем обращения...",
           "emptyThreads": "Обращения не найдены.",
           "emptyMessages": "Сообщений пока нет.",
-          "realtimeConnected": "Соединение realtime активно.",
+          "realtimeConnected": "Realtime активно.",
           "realtimeReconnecting": "Переподключаем realtime..."
         },
         "messages": {

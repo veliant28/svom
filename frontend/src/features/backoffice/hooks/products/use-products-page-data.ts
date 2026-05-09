@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 
 import {
-  getBackofficeCatalogBrands,
+  getBackofficeAutoDbSupplierBrands,
   getBackofficeCatalogCategories,
   getBackofficeCatalogProducts,
 } from "@/features/backoffice/api/catalog-api";
@@ -47,8 +47,19 @@ export function useProductsPageData(filters: ProductsFiltersState, locale: strin
     let page = 1;
 
     while (true) {
-      const chunk = await getBackofficeCatalogBrands(authToken, { page, page_size: 500 });
-      results.push(...chunk.results);
+      const chunk = await getBackofficeAutoDbSupplierBrands(authToken, { page, page_size: 500 });
+      results.push(
+        ...chunk.results.map((item) => ({
+          id: String(item.id),
+          name: item.name,
+          slug: String(item.id),
+          country: "",
+          description: "",
+          is_active: item.is_active,
+          created_at: "",
+          updated_at: "",
+        })),
+      );
       if (results.length >= chunk.count || chunk.results.length === 0) {
         break;
       }

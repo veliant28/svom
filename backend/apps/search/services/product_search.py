@@ -19,7 +19,9 @@ class ProductSearchService:
         if is_elasticsearch_enabled():
             es_ids = self._search_ids_elasticsearch(cleaned_query)
             if es_ids:
-                return queryset.filter(id__in=es_ids)
+                es_queryset = queryset.filter(id__in=es_ids)
+                if es_queryset.exists():
+                    return es_queryset
 
         return queryset.filter(
             Q(name__icontains=cleaned_query)

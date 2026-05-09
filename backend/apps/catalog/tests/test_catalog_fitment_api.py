@@ -16,7 +16,7 @@ from apps.autodb.models import (
     AutoDbSupplier,
     AutoDbVehicleModel,
 )
-from apps.catalog.models import Brand, Category, Product, ProductImage, UtrProductEnrichment
+from apps.catalog.models import AutoDbProductLinkQuality, Brand, Category, Product, ProductImage, UtrProductEnrichment
 from apps.catalog.services.utr_product_enrichment import (
     apply_utr_search_detail_to_matching_products,
     enrich_utr_catalog_products,
@@ -1105,7 +1105,8 @@ class CatalogFitmentAPITests(APITestCase):
         self.assertEqual(response.data["count"], 2)
         slugs = {item["slug"] for item in response.data["results"]}
         self.assertSetEqual(slugs, {"auto-chemistry-compatible", "auto-chemistry-other-vehicle"})
-        self.assertTrue(all(item["fitment_badge_hidden"] is True for item in response.data["results"]))
+        self.assertTrue(all(item["vehicle_filter_policy"] == "show_all_with_badges" for item in response.data["results"]))
+        self.assertTrue(all(item["selected_vehicle_compatibility"] is None for item in response.data["results"]))
 
     def test_vehicle_fitment_is_bypassed_for_tires_subcategory_via_slug(self):
         tires_root = Category.objects.create(
@@ -1158,7 +1159,8 @@ class CatalogFitmentAPITests(APITestCase):
         self.assertEqual(response.data["count"], 2)
         slugs = {item["slug"] for item in response.data["results"]}
         self.assertSetEqual(slugs, {"tires-compatible", "tires-other-vehicle"})
-        self.assertTrue(all(item["fitment_badge_hidden"] is True for item in response.data["results"]))
+        self.assertTrue(all(item["vehicle_filter_policy"] == "show_all_with_badges" for item in response.data["results"]))
+        self.assertTrue(all(item["selected_vehicle_compatibility"] is None for item in response.data["results"]))
 
     def _create_utr_raw_offer(self, *, product: Product, article: str, brand_name: str) -> SupplierRawOffer:
         return SupplierRawOffer.objects.create(
@@ -1194,6 +1196,9 @@ class CatalogAutoDbFitmentAPITests(APITestCase):
             brand=self.brand,
             category=self.category,
             is_active=True,
+            autodb_supplier_id=1001,
+            autodb_article_number="AUTODB-FIT-001",
+            autodb_article_key="1001:AUTODB-FIT-001",
         )
         ProductPrice.objects.create(product=self.product, final_price="100.00", currency="UAH")
         self.other_product = Product.objects.create(
@@ -1286,6 +1291,30 @@ class CatalogAutoDbFitmentAPITests(APITestCase):
             linkage_type="P",
             linkage_id=4001,
         )
+        ProductFitment.objects.create(
+            product=self.product,
+            modification=None,
+            source=ProductFitment.SOURCE_AUTODB_PRO,
+            autodb_passanger_car_id=4001,
+            linkage_type="PassengerCar",
+            autodb_article_key="1001:AUTODB-FIT-001",
+            supplier_id=1001,
+            article_number="AUTODB-FIT-001",
+            quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
+            excluded_from_public_filtering=False,
+            is_stale=False,
+            note="Auto-DB Pro applicability",
+            is_exact=False,
+        )
+        AutoDbProductLinkQuality.objects.create(
+            product=self.product,
+            autodb_article_key="1001:AUTODB-FIT-001",
+            autodb_supplier_id=1001,
+            autodb_article_number="AUTODB-FIT-001",
+            status=AutoDbProductLinkQuality.STATUS_TRUSTED,
+            reason="",
+            evidence={"source": "test"},
+        )
         self.autocatalog_make = CarMake.objects.create(name="TOYOTA", slug="toyota-autodb")
         self.autocatalog_model = CarModel.objects.create(
             make=self.autocatalog_make,
@@ -1327,13 +1356,262 @@ class CatalogAutoDbFitmentAPITests(APITestCase):
         self.assertEqual(rows_response.data["results"][0]["model"], "CAMRY")
 
     @override_settings(FITMENT_PROVIDER="autodb")
-    def test_product_list_fitment_only_still_ignores_autodb_provider_for_public_filtering(self):
+    def test_product_list_fitment_only_filters_by_passanger_car_for_trusted_autodb_fitments(self):
         response = self.client.get(
             reverse("catalog_api:product-list"),
             {
-                "car_modification": str(self.autocatalog_modification.id),
+                "vehicle_id": "4001",
                 "fitment": "only",
             },
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["count"], 2)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["slug"], self.product.slug)
+
+    @override_settings(FITMENT_PROVIDER="autodb")
+    @patch("apps.catalog.api.views.product_fitment_views.get_autodb_fitment_queryset")
+    @patch("apps.catalog.api.views.product_fitment_views.resolve_public_autodb_vehicle_map")
+    def test_fitment_options_fallback_filters_models_by_selected_make_and_make_id(
+        self,
+        resolve_vehicle_map_mock,
+        get_autodb_fitment_queryset_mock,
+    ):
+        get_autodb_fitment_queryset_mock.return_value = []
+
+        ProductFitment.objects.create(
+            product=self.product,
+            modification=None,
+            source=ProductFitment.SOURCE_AUTODB_PRO,
+            autodb_passanger_car_id=5001,
+            linkage_type="PassengerCar",
+            autodb_article_key="1001:AUTODB-FIT-001",
+            supplier_id=1001,
+            article_number="AUTODB-FIT-001",
+            quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
+            excluded_from_public_filtering=False,
+            is_stale=False,
+            note="Auto-DB Pro applicability",
+            is_exact=False,
+        )
+        ProductFitment.objects.create(
+            product=self.product,
+            modification=None,
+            source=ProductFitment.SOURCE_AUTODB_PRO,
+            autodb_passanger_car_id=5002,
+            linkage_type="PassengerCar",
+            autodb_article_key="1001:AUTODB-FIT-001",
+            supplier_id=1001,
+            article_number="AUTODB-FIT-001",
+            quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
+            excluded_from_public_filtering=False,
+            is_stale=False,
+            note="Auto-DB Pro applicability",
+            is_exact=False,
+        )
+        ProductFitment.objects.create(
+            product=self.product,
+            modification=None,
+            source=ProductFitment.SOURCE_AUTODB_PRO,
+            autodb_passanger_car_id=5003,
+            linkage_type="PassengerCar",
+            autodb_article_key="1001:AUTODB-FIT-001",
+            supplier_id=1001,
+            article_number="AUTODB-FIT-001",
+            quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
+            excluded_from_public_filtering=True,
+            is_stale=False,
+            note="excluded",
+            is_exact=False,
+        )
+        ProductFitment.objects.create(
+            product=self.product,
+            modification=None,
+            source=ProductFitment.SOURCE_AUTODB_PRO,
+            autodb_passanger_car_id=5004,
+            linkage_type="PassengerCar",
+            autodb_article_key="1001:AUTODB-FIT-001",
+            supplier_id=1001,
+            article_number="AUTODB-FIT-001",
+            quality_status=ProductFitment.QUALITY_STATUS_SUSPICIOUS,
+            excluded_from_public_filtering=False,
+            is_stale=False,
+            note="suspicious",
+            is_exact=False,
+        )
+
+        resolve_vehicle_map_mock.return_value = {
+            4001: {
+                "vehicle_id": 4001,
+                "model_id": 3001,
+                "manufacturer_id": 2001,
+                "make": "TOYOTA",
+                "model": "CAMRY",
+                "modification": "XV70",
+                "years": "2017–...",
+                "engine": "",
+                "body": "",
+                "label": "TOYOTA CAMRY XV70",
+                "subtitle": "",
+            },
+            5001: {
+                "vehicle_id": 5001,
+                "model_id": 3002,
+                "manufacturer_id": 2001,
+                "make": "TOYOTA",
+                "model": "COROLLA",
+                "modification": "E210",
+                "years": "2019–...",
+                "engine": "",
+                "body": "",
+                "label": "TOYOTA COROLLA E210",
+                "subtitle": "",
+            },
+            5002: {
+                "vehicle_id": 5002,
+                "model_id": 3101,
+                "manufacturer_id": 2100,
+                "make": "BMW",
+                "model": "3 SERIES",
+                "modification": "G20",
+                "years": "2018–...",
+                "engine": "",
+                "body": "",
+                "label": "BMW 3 SERIES G20",
+                "subtitle": "",
+            },
+        }
+
+        response_by_name = self.client.get(
+            reverse("catalog_api:product-fitment-options", kwargs={"slug": self.product.slug}),
+            {"make": "TOYOTA"},
+        )
+        self.assertEqual(response_by_name.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_by_name.data["total_fitments"], 3)
+        self.assertEqual(
+            {item["value"] for item in response_by_name.data["models"]},
+            {"CAMRY", "COROLLA"},
+        )
+        self.assertNotIn({"value": "3 SERIES", "label": "3 SERIES"}, response_by_name.data["models"])
+
+        response_by_id = self.client.get(
+            reverse("catalog_api:product-fitment-options", kwargs={"slug": self.product.slug}),
+            {"make_id": "2001"},
+        )
+        self.assertEqual(response_by_id.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            {item["value"] for item in response_by_id.data["models"]},
+            {"CAMRY", "COROLLA"},
+        )
+
+    @override_settings(FITMENT_PROVIDER="autodb")
+    @patch("apps.catalog.api.views.product_fitment_views.get_autodb_fitment_queryset")
+    @patch("apps.catalog.api.views.product_fitment_views.resolve_public_autodb_vehicle_map")
+    def test_fitment_options_fallback_filters_modifications_by_make_and_model_ids(
+        self,
+        resolve_vehicle_map_mock,
+        get_autodb_fitment_queryset_mock,
+    ):
+        get_autodb_fitment_queryset_mock.return_value = []
+        ProductFitment.objects.create(
+            product=self.product,
+            modification=None,
+            source=ProductFitment.SOURCE_AUTODB_PRO,
+            autodb_passanger_car_id=5001,
+            linkage_type="PassengerCar",
+            autodb_article_key="1001:AUTODB-FIT-001",
+            supplier_id=1001,
+            article_number="AUTODB-FIT-001",
+            quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
+            excluded_from_public_filtering=False,
+            is_stale=False,
+            note="Auto-DB Pro applicability",
+            is_exact=False,
+        )
+        ProductFitment.objects.create(
+            product=self.product,
+            modification=None,
+            source=ProductFitment.SOURCE_AUTODB_PRO,
+            autodb_passanger_car_id=5002,
+            linkage_type="PassengerCar",
+            autodb_article_key="1001:AUTODB-FIT-001",
+            supplier_id=1001,
+            article_number="AUTODB-FIT-001",
+            quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
+            excluded_from_public_filtering=False,
+            is_stale=False,
+            note="Auto-DB Pro applicability",
+            is_exact=False,
+        )
+        resolve_vehicle_map_mock.return_value = {
+            4001: {
+                "vehicle_id": 4001,
+                "model_id": 3001,
+                "manufacturer_id": 2001,
+                "make": "TOYOTA",
+                "model": "CAMRY",
+                "modification": "XV70",
+                "years": "2017–...",
+                "engine": "",
+                "body": "",
+                "label": "TOYOTA CAMRY XV70",
+                "subtitle": "",
+            },
+            5001: {
+                "vehicle_id": 5001,
+                "model_id": 3002,
+                "manufacturer_id": 2001,
+                "make": "TOYOTA",
+                "model": "COROLLA",
+                "modification": "E210",
+                "years": "2019–...",
+                "engine": "",
+                "body": "",
+                "label": "TOYOTA COROLLA E210",
+                "subtitle": "",
+            },
+            5002: {
+                "vehicle_id": 5002,
+                "model_id": 3101,
+                "manufacturer_id": 2100,
+                "make": "BMW",
+                "model": "3 SERIES",
+                "modification": "G20",
+                "years": "2018–...",
+                "engine": "",
+                "body": "",
+                "label": "BMW 3 SERIES G20",
+                "subtitle": "",
+            },
+        }
+
+        response = self.client.get(
+            reverse("catalog_api:product-fitment-options", kwargs={"slug": self.product.slug}),
+            {
+                "make_id": "2001",
+                "model_id": "3002",
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data["modifications"],
+            [{"value": "5001", "label": "TOYOTA COROLLA E210"}],
+        )
+        self.assertEqual(response.data["models"], [{"value": "COROLLA", "label": "COROLLA"}])
+
+    @override_settings(FITMENT_PROVIDER="autodb")
+    @patch("apps.catalog.services.product_fitment_lookup.resolve_product_utr_detail_ids")
+    @patch("apps.catalog.services.product_fitment_lookup.get_utr_fitment_queryset")
+    def test_fitment_options_do_not_use_utr_detail_runtime(
+        self,
+        get_utr_fitment_queryset_mock,
+        resolve_product_utr_detail_ids_mock,
+    ):
+        resolve_product_utr_detail_ids_mock.side_effect = AssertionError("UTR detail resolution must not be called")
+        get_utr_fitment_queryset_mock.side_effect = AssertionError("UTR fitment queryset must not be called")
+
+        self.product.utr_detail_id = "123456"
+        self.product.save(update_fields=["utr_detail_id"])
+
+        response = self.client.get(reverse("catalog_api:product-fitment-options", kwargs={"slug": self.product.slug}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)

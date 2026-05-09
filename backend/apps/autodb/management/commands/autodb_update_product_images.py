@@ -3,11 +3,12 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 
+from django.db.models import F
 from django.core.management.base import BaseCommand
 
 from apps.autodb.services.local_db_readiness import is_local_autodb_unavailable_error, wait_for_local_autodb_ready
 from apps.autodb.services.product_image_enrichment import AutoDbProductImageEnrichmentService
-from apps.catalog.models import Product
+from apps.catalog.models import AutoDbProductLinkQuality, Product
 from apps.supplier_imports.services.gpl_images import GplProductImageService
 
 
@@ -38,6 +39,7 @@ class Command(BaseCommand):
         parser.add_argument("--dry-run", action="store_true", help="Show changes without saving")
         parser.add_argument("--product-id", type=str, default="", help="Process one Product UUID")
         parser.add_argument("--only-linked", action="store_true", help="Process only products linked to Auto_DB_Pro")
+        parser.add_argument("--only-trusted", action="store_true", help="Process only products with trusted Auto_DB link quality")
         parser.add_argument(
             "--prefer-gpl",
             action=argparse.BooleanOptionalAction,
@@ -55,6 +57,7 @@ class Command(BaseCommand):
         dry_run = bool(options.get("dry_run"))
         product_id = str(options.get("product_id") or "").strip()
         only_linked = bool(options.get("only_linked"))
+        only_trusted = bool(options.get("only_trusted"))
         prefer_gpl = bool(options.get("prefer_gpl", True))
         wait_for_autodb = max(int(options.get("wait_for_autodb") or 0), 0)
         limit = max(int(options.get("limit") or 0), 0)
@@ -65,15 +68,22 @@ class Command(BaseCommand):
         qs = Product.objects.select_related("brand", "category").prefetch_related("images").order_by("id")
         if only_linked:
             qs = qs.filter(autodb_supplier_id__isnull=False).exclude(autodb_article_number="")
+        if only_trusted:
+            qs = qs.filter(
+                autodb_link_qualities__status=AutoDbProductLinkQuality.STATUS_TRUSTED,
+                autodb_link_qualities__autodb_article_key=F("autodb_article_key"),
+            )
         if product_id:
             qs = qs.filter(pk=product_id)
+        qs = qs.distinct()
         if limit > 0:
             qs = qs[:limit]
 
         summary = ProductImageUpdateSummary()
         self.stdout.write(
             "Auto_DB_Pro product image update started "
-            f"dry_run={dry_run} only_linked={only_linked} prefer_gpl={prefer_gpl} wait_for_autodb={wait_for_autodb}"
+            f"dry_run={dry_run} only_linked={only_linked} only_trusted={only_trusted} "
+            f"prefer_gpl={prefer_gpl} wait_for_autodb={wait_for_autodb}"
         )
 
         readiness = wait_for_local_autodb_ready(timeout_seconds=wait_for_autodb, interval_seconds=2.0)

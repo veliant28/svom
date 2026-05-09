@@ -40,6 +40,27 @@ class AutoDbArticleLookupServiceTests(SimpleTestCase):
         self.assertTrue(remote_called)
         storage.upsert_rows.assert_called_once()
 
+    def test_supplier_resolve_rejects_remote_rows_without_safe_match(self):
+        storage = Mock()
+        storage.upsert_rows.return_value = 0
+
+        service = AutoDbArticleLookupService(storage=storage)
+        with (
+            patch.object(service, "_find_supplier_local", return_value=None),
+            patch.object(service, "_find_supplier_remote", return_value=[{"id": 3, "description": "ATE", "matchcode": "ATE"}]),
+            patch.object(service, "_find_supplier_details_remote", return_value=[]),
+        ):
+            row, source, populated, remote_called = service._resolve_supplier(
+                brand_name="AT",
+                normalized_brand="AT",
+                allow_remote=True,
+            )
+
+        self.assertIsNone(row)
+        self.assertEqual(source, "not_found")
+        self.assertEqual(populated.get("suppliers"), 1)
+        self.assertTrue(remote_called)
+
     def test_lookup_returns_not_found_without_crash(self):
         service = AutoDbArticleLookupService(storage=Mock())
 
@@ -82,6 +103,29 @@ class AutoDbArticleLookupServiceTests(SimpleTestCase):
             result = service.lookup(brand_name="NGK", article="SIFR6A11")
 
         self.assertIn("SIFR6A-11", result.article_search_variants)
+
+    def test_pick_supplier_row_rejects_zero_score_fallback(self):
+        service = AutoDbArticleLookupService(storage=Mock())
+
+        result = service._pick_supplier_row(
+            rows=[{"id": 22, "description": "WABCO", "matchcode": "WABCO"}],
+            brand_name="AT",
+            normalized_brand="AT",
+        )
+
+        self.assertIsNone(result)
+
+    def test_pick_supplier_row_allows_safe_long_brand_extension(self):
+        service = AutoDbArticleLookupService(storage=Mock())
+
+        result = service._pick_supplier_row(
+            rows=[{"id": 324, "description": "WIX FILTERS", "matchcode": "WIX FILTERS"}],
+            brand_name="WIX",
+            normalized_brand="WIX",
+        )
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result["id"], 324)
 
     def test_article_resolve_uses_local_first_without_remote(self):
         service = AutoDbArticleLookupService(storage=Mock())
@@ -134,3 +178,15 @@ class AutoDbArticleLookupServiceTests(SimpleTestCase):
             service.lookup(brand_name="BOSCH", article="W712/95")
 
         utr_cls.assert_not_called()
+
+    def test_build_article_variants_keeps_original_case(self):
+        service = AutoDbArticleLookupService(storage=Mock())
+
+        variants = service._build_article_variants(
+            article_raw="HU 1381 x",
+            normalized_article="HU1381X",
+            article_variants=("HU 1381 x",),
+        )
+
+        self.assertIn("HU 1381 x", variants)
+        self.assertIn("HU 1381 X", variants)

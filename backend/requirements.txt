@@ -11,4 +11,5 @@ daphne==4.1.2
 redis==6.4.0
 elasticsearch==9.3.0
 Pillow==11.2.1
+openpyxl>=3.1,<4
 gunicorn==23.0.0

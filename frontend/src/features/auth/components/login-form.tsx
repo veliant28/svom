@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -13,18 +13,29 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, isAuthenticated } = useAuth();
-  const { showError } = useStorefrontFeedback();
+  const { showError, showInfo } = useStorefrontFeedback();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const alreadyLoggedToastShownRef = useRef(false);
+
+  useEffect(() => {
+    if (!isAuthenticated || alreadyLoggedToastShownRef.current) {
+      return;
+    }
+    alreadyLoggedToastShownRef.current = true;
+    showInfo(t("alreadyLoggedIn"));
+    const nextPath = searchParams.get("next");
+    if (nextPath && nextPath.startsWith("/")) {
+      router.replace(nextPath);
+      return;
+    }
+    router.replace("/account/profile");
+  }, [isAuthenticated, router, searchParams, showInfo, t]);
 
   if (isAuthenticated) {
-    return (
-      <p className="text-sm" style={{ color: "var(--success, #136f3a)" }}>
-        {t("alreadyLoggedIn")}
-      </p>
-    );
+    return null;
   }
 
   return (

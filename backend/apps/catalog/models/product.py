@@ -29,6 +29,16 @@ class Product(UUIDPrimaryKeyMixin, TimestampedMixin, PublishableMixin):
         (NAME_TRANSLATION_FAILED, _("Failed")),
         (NAME_TRANSLATION_MANUAL_LOCKED, _("Manual locked")),
     )
+    BRAND_SOURCE_AUTODB_PRO = "autodb_pro"
+    BRAND_SOURCE_MANUAL = "manual"
+    BRAND_SOURCE_SUPPLIER_FALLBACK = "supplier_fallback"
+    BRAND_SOURCE_UNKNOWN = "unknown"
+    BRAND_SOURCE_CHOICES = (
+        (BRAND_SOURCE_AUTODB_PRO, _("Auto_DB_Pro")),
+        (BRAND_SOURCE_MANUAL, _("Manual")),
+        (BRAND_SOURCE_SUPPLIER_FALLBACK, _("Supplier fallback")),
+        (BRAND_SOURCE_UNKNOWN, _("Unknown")),
+    )
 
     sku = models.CharField(_("SKU"), max_length=64, unique=True)
     article = models.CharField(_("Артикул"), max_length=128, blank=True)
@@ -36,8 +46,20 @@ class Product(UUIDPrimaryKeyMixin, TimestampedMixin, PublishableMixin):
     autodb_supplier_id = models.BigIntegerField(_("Auto_DB_Pro supplier ID"), blank=True, null=True, db_index=True)
     autodb_article_number = models.CharField(_("Auto_DB_Pro article number"), max_length=128, blank=True, default="", db_index=True)
     autodb_article_key = models.CharField(_("Auto_DB_Pro article key"), max_length=196, blank=True, default="", db_index=True)
+    autodb_supplier_name = models.CharField(_("Auto_DB_Pro supplier name"), max_length=255, blank=True, default="", db_index=True)
     normalized_brand = models.CharField(_("Нормализованный бренд"), max_length=180, blank=True, default="", db_index=True)
     normalized_article = models.CharField(_("Нормализованный артикул"), max_length=128, blank=True, default="", db_index=True)
+    display_brand_name = models.CharField(_("Отображаемый бренд"), max_length=255, blank=True, default="", db_index=True)
+    brand_source = models.CharField(
+        _("Источник бренда"),
+        max_length=32,
+        choices=BRAND_SOURCE_CHOICES,
+        blank=True,
+        default="",
+        db_index=True,
+    )
+    brand_source_hash = models.CharField(_("Хеш источника бренда"), max_length=64, blank=True, default="", db_index=True)
+    brand_manually_locked = models.BooleanField(_("Бренд закреплен вручную"), default=False, db_index=True)
     catalog_source = models.CharField(
         _("Источник каталога"),
         max_length=24,
@@ -83,6 +105,8 @@ class Product(UUIDPrimaryKeyMixin, TimestampedMixin, PublishableMixin):
         on_delete=models.PROTECT,
         related_name="products",
         verbose_name=_("Категория"),
+        blank=True,
+        null=True,
     )
     category_manually_locked = models.BooleanField(_("Категория закреплена вручную"), default=False)
     short_description = models.TextField(_("Короткое описание"), blank=True)

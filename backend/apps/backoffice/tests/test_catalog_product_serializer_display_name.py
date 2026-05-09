@@ -86,6 +86,26 @@ class BackofficeCatalogProductSerializerDisplayNameTests(TestCase):
         self.assertEqual(payload["raw_supplier_name"], "Bosch Oil Filter Raw")
         self.assertNotEqual(payload["name"], payload["raw_supplier_name"])
 
+    def test_display_brand_prefers_autodb_supplier_name(self):
+        self.product.autodb_supplier_id = 324
+        self.product.autodb_supplier_name = "WIX FILTERS"
+        self.product.display_brand_name = "WIX FILTERS"
+        self.product.brand_source = Product.BRAND_SOURCE_AUTODB_PRO
+        self.product.save(
+            update_fields=[
+                "autodb_supplier_id",
+                "autodb_supplier_name",
+                "display_brand_name",
+                "brand_source",
+                "updated_at",
+            ]
+        )
+        payload = self._serialize(locale="uk")
+        self.assertEqual(payload["brand_name"], "WIX FILTERS")
+        self.assertEqual(payload["display_brand"], "WIX FILTERS")
+        self.assertEqual(payload["brand_source"], Product.BRAND_SOURCE_AUTODB_PRO)
+        self.assertEqual(payload["current_brand_name"], "BOSCH")
+
     def test_code_like_name_uses_admin_fallback_label(self):
         self.product.name = "CS0100"
         self.product.name_uk = "CS0100"

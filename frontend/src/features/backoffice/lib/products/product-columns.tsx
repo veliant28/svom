@@ -295,7 +295,7 @@ export function createProductColumns({
                     : warehouse.source_code === "gpl"
                       ? tGpl("label")
                       : warehouse.source_code.toUpperCase();
-                const warehouseLabel = formatWarehouseLabel(warehouse.key);
+                const warehouseLabel = formatWarehouseLabel(warehouse.key, warehouse.source_code);
                 const qtyLabel = formatWarehouseQty(warehouse.qty);
 
                 return (

@@ -222,7 +222,7 @@ def _get_summary_aggregate_stats(*, since_24h) -> dict:
             "manually_resolved_offers": raw_offer_stats["manually_resolved"] or 0,
             "supplier_offers": SupplierOffer.objects.count(),
             "published_products": Product.objects.filter(is_active=True).count(),
-            "product_prices": ProductPrice.objects.count(),
+            "product_prices": ProductPrice.objects.filter(product__is_active=True).count(),
             "repriced_products_total": repriced_stats["total"] or 0,
             "repriced_products_24h": repriced_stats["last_24h"] or 0,
         },

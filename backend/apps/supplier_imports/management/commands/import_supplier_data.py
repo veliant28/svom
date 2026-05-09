@@ -81,6 +81,12 @@ class Command(BaseCommand):
             help="Limit raw offers processed by Auto_DB_Pro post-step for each run (0 = no limit).",
         )
         parser.add_argument(
+            "--row-limit",
+            type=int,
+            default=0,
+            help="Limit parsed supplier rows processed for each import run (0 = no limit).",
+        )
+        parser.add_argument(
             "--autodb-allow-remote",
             action="store_true",
             help="Allow remote Auto-DB fallback in supplier import postprocess.",
@@ -107,6 +113,11 @@ class Command(BaseCommand):
         update_images_enabled = bool(options.get("update_product_images"))
         update_images_disabled = bool(options.get("no_update_product_images"))
         autodb_limit = max(int(options.get("limit") or 0), 0)
+        row_limit = max(int(options.get("row_limit") or 0), 0)
+        if row_limit == 0 and autodb_limit > 0:
+            # Backward-compatible behavior for existing operator commands:
+            # when only --limit is provided, cap parsed supplier rows as well.
+            row_limit = autodb_limit
         autodb_allow_remote_enabled = bool(options.get("autodb_allow_remote"))
         autodb_no_remote_enabled = bool(options.get("autodb_no_remote"))
 
@@ -178,6 +189,7 @@ class Command(BaseCommand):
                 update_product_images=update_images_override,
                 autodb_limit=autodb_limit,
                 autodb_allow_remote=autodb_remote_override,
+                row_limit=row_limit,
             )
 
             self.stdout.write(self.style.SUCCESS(f"[{source.code}] run={result.run_id} status={result.status}"))

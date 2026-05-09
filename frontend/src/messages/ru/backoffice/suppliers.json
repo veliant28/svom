@@ -133,13 +133,25 @@
         "title": "Товары импорта",
         "subtitle": "Промежуточная таблица импортированных товаров до основного маппинга и дальнейшей обработки.",
         "search": "Поиск по SKU, артикулу, бренду и названию",
+        "filters": {
+          "allStatuses": "Все статусы"
+        },
         "empty": "Импортированные товары не найдены.",
         "actions": {
-          "publishMapped": "Опубликовать сопоставленные"
+          "publishMapped": "Опубликовать сопоставленные",
+          "bulkActions": "Массовые действия",
+          "publishSelected": "Опубликовать выбранные",
+          "selectPage": "Выбрать товары на странице",
+          "unselectPage": "Снять выбор на странице"
         },
         "messages": {
           "publishSuccess": "Публикация завершена. Сопоставленных: {matched}, создано: {created}, обновлено: {updated}, пропущено: {skipped}, ошибок: {errors}.",
-          "publishFailed": "Не удалось опубликовать сопоставленные товары."
+          "publishFailed": "Не удалось опубликовать сопоставленные товары.",
+          "publishSelectedSuccess": "Выбранные позиции опубликованы. Выбрано: {selected}, сопоставленных: {matched}, создано: {created}, обновлено: {updated}, пропущено: {skipped}, ошибок: {errors}.",
+          "publishSelectedFailed": "Не удалось опубликовать выбранные позиции."
+        },
+        "tooltips": {
+          "bulkActions": "Массовые действия"
         },
         "pagination": {
           "total": "Всего строк: {count}",
@@ -154,6 +166,7 @@
         },
         "table": {
           "columns": {
+            "select": "Выбор",
             "sku": "SKU / Артикул",
             "brand": "Бренд",
             "product": "Товар",
@@ -175,6 +188,12 @@
             "auto_mapped": "Авто-маппинг",
             "manual_mapped": "Подтверждено вручную",
             "unmapped": "Не сопоставлено"
+          },
+          "statusesShort": {
+            "needs_review": "Проверка",
+            "auto_mapped": "Авто",
+            "manual_mapped": "Вручную",
+            "unmapped": "Нет"
           },
           "sorting": {
             "confidenceDesc": "Уверенность: сначала высокие",

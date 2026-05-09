@@ -48,6 +48,7 @@
       "garageLoading": "Loading garage...",
       "activeVehicle": "Selected: {vehicle}",
       "noVehicleSelected": "Select a garage vehicle to show compatible products.",
+      "showAllWithBadgesNotice": "In this category, the selected vehicle does not hide products. Compatible products are marked with a badge.",
       "resultCountLoading": "Loading filtered results...",
       "resultCount": "Filtered results: {count}",
       "fitmentModes": {

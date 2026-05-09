@@ -1,4 +1,5 @@
 import type { BackofficeCatalogProduct } from "@/features/backoffice/types/catalog.types";
+import { resolveGplWarehouseLabel } from "@/features/backoffice/lib/gpl-field-labels";
 
 export type WarehouseSegment = {
   key: string;
@@ -86,7 +87,14 @@ export function formatWarehouseQty(qty: number | null): string {
   return String(normalized);
 }
 
-export function formatWarehouseLabel(key: string): string {
+export function formatWarehouseLabel(key: string, sourceCode?: string): string {
+  if ((sourceCode || "").toLowerCase() === "gpl") {
+    const mapped = resolveGplWarehouseLabel(key);
+    if (mapped) {
+      return mapped;
+    }
+  }
+
   return key
     .replace(/^count_warehouse_/i, "")
     .replace(/^warehouse[_\s-]*/i, "")

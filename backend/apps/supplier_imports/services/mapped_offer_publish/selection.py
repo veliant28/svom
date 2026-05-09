@@ -13,8 +13,17 @@ PUBLISHABLE_STATUSES = frozenset(
 )
 
 
-def get_publish_queryset(*, supplier_code: str, run_id: str | None = None):
-    return get_supplier_raw_offers_publish_queryset(supplier_code=supplier_code, run_id=run_id)
+def get_publish_queryset(
+    *,
+    supplier_code: str,
+    run_id: str | None = None,
+    raw_offer_ids: list[str] | None = None,
+):
+    return get_supplier_raw_offers_publish_queryset(
+        supplier_code=supplier_code,
+        run_id=run_id,
+        raw_offer_ids=raw_offer_ids,
+    )
 
 
 def resolve_supplier_sku(*, raw_offer: SupplierRawOffer) -> str:

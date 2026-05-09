@@ -74,12 +74,7 @@ export function CatalogShowcaseSection({
   const { products, totalCount, isLoading, cacheKey } = useCatalogProducts(
     { ...normalizedFilters, page, pageSize: CATALOG_PAGE_SIZE },
     {
-      useActiveVehicle: Boolean(
-        normalizedFilters.fitment
-          || normalizedFilters.garage_vehicle
-          || normalizedFilters.car_modification
-          || normalizedFilters.modification,
-      ),
+      useActiveVehicle: true,
       deferCachedRevalidation,
     },
   );

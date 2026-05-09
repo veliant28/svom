@@ -5,9 +5,11 @@ from hashlib import sha1
 import json
 from typing import Any
 
+from django.db.models import F
+
 from apps.autodb.services.column_helpers import find_column_name, find_value
 from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
-from apps.catalog.models import Product
+from apps.catalog.models import AutoDbProductLinkQuality, Product
 from apps.compatibility.models import ProductFitment
 
 
@@ -49,13 +51,18 @@ class AutoDbProductFitmentEnrichmentService:
     def __init__(self, *, storage: AutoDbRawCloneStorage | None = None):
         self.storage = storage or AutoDbRawCloneStorage()
 
-    def build_queryset(self, *, product_id: str = "", only_linked: bool = False):
+    def build_queryset(self, *, product_id: str = "", only_linked: bool = False, only_trusted: bool = False):
         qs = Product.objects.select_related("brand", "category").order_by("id")
         if only_linked:
             qs = qs.filter(autodb_supplier_id__isnull=False).exclude(autodb_article_number="")
+        if only_trusted:
+            qs = qs.filter(
+                autodb_link_qualities__status=AutoDbProductLinkQuality.STATUS_TRUSTED,
+                autodb_link_qualities__autodb_article_key=F("autodb_article_key"),
+            )
         if product_id:
             qs = qs.filter(pk=product_id)
-        return qs
+        return qs.distinct()
 
     def enrich_product(self, *, product: Product, dry_run: bool) -> ProductFitmentEnrichmentResult:
         supplier_id = self._safe_int(getattr(product, "autodb_supplier_id", None))
@@ -222,6 +229,9 @@ class AutoDbProductFitmentEnrichmentService:
                         source_hash=source_hash,
                         is_stale=False,
                         stale_reason="",
+                        quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
+                        quality_reason="",
+                        excluded_from_public_filtering=False,
                         manual_locked=False,
                     )
                 continue
@@ -258,6 +268,15 @@ class AutoDbProductFitmentEnrichmentService:
             if existing.source != ProductFitment.SOURCE_AUTODB_PRO:
                 existing.source = ProductFitment.SOURCE_AUTODB_PRO
                 changed = True
+            if str(existing.quality_status or "") != ProductFitment.QUALITY_STATUS_TRUSTED:
+                existing.quality_status = ProductFitment.QUALITY_STATUS_TRUSTED
+                changed = True
+            if str(existing.quality_reason or ""):
+                existing.quality_reason = ""
+                changed = True
+            if bool(existing.excluded_from_public_filtering):
+                existing.excluded_from_public_filtering = False
+                changed = True
 
             if changed:
                 updated += 1
@@ -273,6 +292,9 @@ class AutoDbProductFitmentEnrichmentService:
                             "source_hash",
                             "is_stale",
                             "stale_reason",
+                            "quality_status",
+                            "quality_reason",
+                            "excluded_from_public_filtering",
                             "updated_at",
                         )
                     )

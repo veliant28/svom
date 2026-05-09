@@ -258,3 +258,32 @@ class SupplierPublishMappedProductsAPISmokeTests(APITestCase):
         locked_product.refresh_from_db()
         self.assertEqual(locked_product.category_id, locked_category.id)
         self.assertTrue(locked_product.category_manually_locked)
+
+    def test_publish_mapped_products_accepts_selected_raw_offer_ids(self):
+        selected_manual = SupplierRawOffer.objects.get(run=self.run_new, external_sku="A-001")
+        selected_review = SupplierRawOffer.objects.get(run=self.run_new, external_sku="C-001")
+
+        with patch(
+            "apps.supplier_imports.services.mapped_offer_publish.images._download_image",
+            return_value=(b"fake-image-bytes", "image/webp"),
+        ):
+            response = self.client.post(
+                reverse("backoffice_api:supplier-publish-mapped-products", kwargs={"code": "gpl"}),
+                {
+                    "reprice_after_publish": False,
+                    "raw_offer_ids": [str(selected_manual.id), str(selected_review.id)],
+                },
+                format="json",
+                **self.auth,
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        result = response.data["result"]
+        self.assertEqual(result["raw_rows_scanned"], 2)
+        self.assertEqual(result["eligible_rows"], 1)
+        self.assertEqual(result["created_rows"], 1)
+        self.assertEqual(result["updated_rows"], 0)
+        self.assertEqual(result["offers_created"], 1)
+        self.assertEqual(SupplierOffer.objects.filter(supplier=self.supplier).count(), 1)
+        self.assertEqual(Product.objects.filter(sku="A-001").count(), 1)
+        self.assertEqual(Product.objects.filter(sku="B-001").count(), 0)

@@ -11,6 +11,7 @@ from apps.catalog.models import Brand, Category, Product
 from apps.pricing.models import ProductPrice, Supplier, SupplierOffer
 from apps.supplier_imports.models import ImportRun, ImportSource, SupplierRawOffer
 from apps.users.models import User
+from apps.users.rbac import set_user_system_role
 
 
 class BackofficeCatalogProductsAPISmokeTests(APITestCase):
@@ -29,6 +30,7 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
         )
         self.staff_token = Token.objects.create(user=self.staff_user)
         self.regular_token = Token.objects.create(user=self.regular_user)
+        set_user_system_role(user=self.staff_user, role_code="administrator")
 
         self.brand = Brand.objects.create(name="BOSCH", slug="bosch", is_active=True)
         self.category = Category.objects.create(name="Filters", slug="filters", is_active=True)
@@ -127,6 +129,8 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
         self.assertEqual(list_response.data["results"][0]["supplier_price_levels"][0]["label"], "ОПТ2")
         self.assertEqual(list_response.data["results"][0]["supplier_price_levels"][1]["label"], "РРЦ")
         self.assertTrue(list_response.data["results"][0]["supplier_price_levels"][1]["is_primary"])
+        self.assertEqual(list_response.data["results"][0]["stock_qty"], 5)
+        self.assertEqual(list_response.data["results"][0]["supplier_offer_stock_sum"], 5)
         self.assertIsNone(list_response.data["results"][0]["applied_markup_percent"])
         self.assertEqual(list_response.data["results"][0]["applied_markup_policy_name"], "")
         self.assertEqual(
@@ -194,12 +198,231 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
         self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Product.objects.filter(id=product_id).exists())
 
+    def test_utr_warehouse_segments_include_all_known_warehouses_with_zero_values(self):
+        utr_product = Product.objects.create(
+            sku="UTR-WH-015",
+            article="UTR-WH-015",
+            name="UTR Warehouse Product",
+            slug="utr-warehouse-product",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        SupplierOffer.objects.create(
+            supplier=self.supplier,
+            product=utr_product,
+            supplier_sku="UTR-WH-015",
+            purchase_price="55.00",
+            currency="UAH",
+            stock_qty=12,
+            is_available=True,
+        )
+        SupplierRawOffer.objects.create(
+            run=self.import_run,
+            source=self.import_source,
+            supplier=self.supplier,
+            row_number=2,
+            external_sku="UTR-WH-015",
+            article="UTR-WH-015",
+            normalized_article="UTRWH015",
+            brand_name="BOSCH",
+            normalized_brand="BOSCH",
+            product_name="UTR Warehouse Product",
+            price="55.00",
+            stock_qty=12,
+            lead_time_days=0,
+            matched_product=utr_product,
+            is_valid=True,
+            raw_payload={
+                "Миколаївська обл.": "",
+                "Одеська обл.": "3",
+                "КИЇВ-2": "> 10",
+            },
+        )
+
+        response = self.client.get(
+            reverse("backoffice_api:catalog-product-list-create"),
+            {"q": "UTR-WH-015"},
+            **self._auth(self.staff_token.key),
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        segments = response.data["results"][0]["warehouse_segments"]
+        self.assertEqual(len(segments), 15)
+        self.assertEqual(segments[0]["key"], "Миколаївська обл.")
+        self.assertEqual(segments[0]["value"], "0")
+        self.assertEqual(segments[1]["key"], "Одеська обл.")
+        self.assertEqual(segments[1]["value"], "3")
+        kyiv2 = [item for item in segments if item["key"] == "КИЇВ-2"][0]
+        self.assertEqual(kyiv2["value"], "> 10")
+        self.assertTrue(all(item["source_code"] == "utr" for item in segments))
+
     def test_non_staff_user_is_forbidden(self):
         response = self.client.get(
             reverse("backoffice_api:catalog-product-list-create"),
             **self._auth(self.regular_token.key),
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_gpl_product_exposes_display_sku_and_keeps_internal_import_key(self):
+        gpl_supplier = Supplier.objects.create(name="GPL", code="gpl", is_active=True)
+        gpl_source = ImportSource.objects.create(
+            code="gpl",
+            name="GPL Test Source",
+            supplier=gpl_supplier,
+            parser_type=ImportSource.PARSER_GPL,
+            input_path="",
+            is_active=True,
+            auto_reprice=False,
+        )
+        gpl_run = ImportRun.objects.create(
+            source=gpl_source,
+            status=ImportRun.STATUS_SUCCESS,
+            trigger="test",
+            dry_run=False,
+            processed_rows=1,
+            parsed_rows=1,
+            offers_created=1,
+            offers_updated=0,
+            offers_skipped=0,
+            errors_count=0,
+            repriced_products=0,
+            reindexed_products=0,
+        )
+        gpl_product = Product.objects.create(
+            sku="GPL-000000004363234",
+            article="V208",
+            name="K2 COSMO",
+            slug="k2-cosmo",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        SupplierOffer.objects.create(
+            supplier=gpl_supplier,
+            product=gpl_product,
+            supplier_sku="000000004363234",
+            purchase_price="100.00",
+            currency="UAH",
+            stock_qty=1,
+            is_available=True,
+        )
+        SupplierRawOffer.objects.create(
+            run=gpl_run,
+            source=gpl_source,
+            supplier=gpl_supplier,
+            row_number=2,
+            external_sku="000000004363234",
+            article="K20849",
+            normalized_article="K20849",
+            brand_name="K2",
+            normalized_brand="K2",
+            product_name="K2 COSMO",
+            price="100.00",
+            stock_qty=1,
+            lead_time_days=0,
+            matched_product=gpl_product,
+            is_valid=True,
+            raw_payload={"Код": "000000004363234", "Артикул": "K20849", "Артикул ТД": "V208"},
+        )
+
+        list_response = self.client.get(
+            reverse("backoffice_api:catalog-product-list-create"),
+            {"q": "000000004363234"},
+            **self._auth(self.staff_token.key),
+        )
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(list_response.data["count"], 1)
+        row = list_response.data["results"][0]
+        self.assertEqual(row["sku"], "000000004363234")
+        self.assertEqual(row["internal_import_key"], "GPL-000000004363234")
+
+        detail_response = self.client.get(
+            reverse("backoffice_api:catalog-product-update", kwargs={"id": gpl_product.id}),
+            **self._auth(self.staff_token.key),
+        )
+        self.assertEqual(detail_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(detail_response.data["sku"], "000000004363234")
+        self.assertEqual(detail_response.data["internal_import_key"], "GPL-000000004363234")
+
+    def test_gpl_price_type_fields_are_exposed_as_wholesale_price_levels(self):
+        gpl_supplier = Supplier.objects.create(name="GPL", code="gpl", is_active=True)
+        gpl_source = ImportSource.objects.create(
+            code="gpl",
+            name="GPL Test Source",
+            supplier=gpl_supplier,
+            parser_type=ImportSource.PARSER_GPL,
+            input_path="",
+            is_active=True,
+            auto_reprice=False,
+        )
+        gpl_run = ImportRun.objects.create(
+            source=gpl_source,
+            status=ImportRun.STATUS_SUCCESS,
+            trigger="test",
+            dry_run=False,
+            processed_rows=1,
+            parsed_rows=1,
+            offers_created=1,
+            offers_updated=0,
+            offers_skipped=0,
+            errors_count=0,
+            repriced_products=0,
+            reindexed_products=0,
+        )
+        gpl_product = Product.objects.create(
+            sku="GPL-000000000099999",
+            article="TEST-OPT",
+            name="K2 Test",
+            slug="k2-test-opt",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        SupplierOffer.objects.create(
+            supplier=gpl_supplier,
+            product=gpl_product,
+            supplier_sku="000000000099999",
+            purchase_price="100.00",
+            currency="UAH",
+            price_levels=[{"key": "price_type_10", "label": "РРЦ", "value": "199.99", "currency": "UAH", "is_primary": True, "order": 100}],
+            stock_qty=1,
+            is_available=True,
+        )
+        SupplierRawOffer.objects.create(
+            run=gpl_run,
+            source=gpl_source,
+            supplier=gpl_supplier,
+            row_number=1,
+            external_sku="000000000099999",
+            article="TEST-OPT",
+            normalized_article="TESTOPT",
+            brand_name="K2",
+            normalized_brand="K2",
+            product_name="K2 Test",
+            price="199.99",
+            stock_qty=1,
+            lead_time_days=0,
+            matched_product=gpl_product,
+            is_valid=True,
+            raw_payload={
+                "price_type_1": "140.24",
+                "price_type_2": "130.24",
+                "price_type_9": "120.24",
+                "price_type_10": "199.99",
+                "count_warehouse_1": "3",
+            },
+        )
+
+        response = self.client.get(
+            reverse("backoffice_api:catalog-product-list-create"),
+            {"q": "000000000099999"},
+            **self._auth(self.staff_token.key),
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        labels = [row["label"] for row in response.data["results"][0]["supplier_price_levels"]]
+        self.assertEqual(labels, ["ОПТ2", "ОПТ4", "ОПТ10", "РРЦ"])
 
     def test_backoffice_product_list_uses_localized_display_name(self):
         response = self.client.get(
@@ -317,6 +540,21 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
         self.assertEqual(response.data["count"], 31)
         self.assertEqual(len(response.data["results"]), 15)
 
+    def test_products_list_keeps_products_with_null_category_visible(self):
+        self.product.category = None
+        self.product.save(update_fields=["category", "updated_at"])
+
+        response = self.client.get(
+            reverse("backoffice_api:catalog-product-list-create"),
+            {"page": 1, "page_size": 25},
+            **self._auth(self.staff_token.key),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertIsNone(response.data["results"][0]["category"])
+
     @patch("apps.backoffice.api.views.pricing_actions_views.reindex_products_task")
     def test_staff_can_dispatch_product_reindex_action(self, reindex_task):
         reindex_task.delay.return_value = None
@@ -366,3 +604,17 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
             SupplierRawOffer.CATEGORY_MAPPING_REASON_MANUAL,
         )
         self.assertEqual(self.raw_offer.category_mapped_by_id, self.staff_user.id)
+
+    def test_backoffice_stock_qty_prefers_cached_value_when_present(self):
+        self.product.available_stock_qty_cached = 9
+        self.product.save(update_fields=["available_stock_qty_cached", "updated_at"])
+
+        response = self.client.get(
+            reverse("backoffice_api:catalog-product-list-create"),
+            **self._auth(self.staff_token.key),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        item = response.data["results"][0]
+        self.assertEqual(item["stock_qty"], 9)
+        self.assertEqual(item["supplier_offer_stock_sum"], 5)

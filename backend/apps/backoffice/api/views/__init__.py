@@ -113,8 +113,7 @@ from .supplier_actions_views import (
     SupplierPublishMappedProductsAPIView,
     SupplierPricesSyncAPIView,
     SupplierTokenObtainAPIView,
-    SupplierTokenRefreshAPIView,
-    UtrBrandsImportAPIView,
+    SupplierTokenRefreshAPIView
 )
 from .supplier_data_views import SupplierCooldownAPIView, SupplierErrorsListAPIView, SupplierPricesListAPIView, SupplierRunsListAPIView
 from .supplier_price_lists_views import (
@@ -288,9 +287,7 @@ __all__ = [
     "SupplierConnectionCheckAPIView",
     "SupplierImportRunAPIView",
     "SupplierPublishMappedProductsAPIView",
-    "SupplierPricesSyncAPIView",
-    "UtrBrandsImportAPIView",
-    "SupplierPriceListListAPIView",
+    "SupplierPricesSyncAPIView",    "SupplierPriceListListAPIView",
     "SupplierPriceListParamsAPIView",
     "SupplierPriceListRequestAPIView",
     "SupplierPriceListDeleteAPIView",

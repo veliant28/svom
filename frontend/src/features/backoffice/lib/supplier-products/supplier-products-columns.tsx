@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { BadgeDollarSign } from "lucide-react";
 
 import { SupplierProductsRowActions } from "@/features/backoffice/components/supplier-products/supplier-products-row-actions";
@@ -12,6 +13,45 @@ import type { BackofficeRawOffer } from "@/features/backoffice/types/imports.typ
 
 type Translator = (key: string, values?: Record<string, string | number>) => string;
 
+function SelectAllPageCheckbox({
+  checked,
+  indeterminate,
+  ariaLabel,
+  onChange,
+}: {
+  checked: boolean;
+  indeterminate: boolean;
+  ariaLabel: string;
+  onChange: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!inputRef.current) {
+      return;
+    }
+    inputRef.current.indeterminate = indeterminate;
+  }, [indeterminate]);
+
+  return (
+    <BackofficeTooltip
+      content={ariaLabel}
+      placement="bottom"
+      align="center"
+      wrapperClassName="inline-flex items-center justify-center"
+      tooltipClassName="whitespace-nowrap normal-case"
+    >
+      <input
+        ref={inputRef}
+        type="checkbox"
+        checked={checked}
+        aria-label={ariaLabel}
+        onChange={onChange}
+      />
+    </BackofficeTooltip>
+  );
+}
+
 export function createSupplierProductsColumns({
   t,
   tUtr,
@@ -19,6 +59,11 @@ export function createSupplierProductsColumns({
   onOpenCategoryMapping,
   isCategoryMappingOpen,
   selectedRawOfferId,
+  selectedSet,
+  allPageSelected,
+  somePageSelected,
+  onToggleSelectAllPage,
+  onToggleSelected,
 }: {
   t: Translator;
   tUtr: Translator;
@@ -26,12 +71,41 @@ export function createSupplierProductsColumns({
   onOpenCategoryMapping: (rawOfferId: string) => void;
   isCategoryMappingOpen: boolean;
   selectedRawOfferId: string | null;
+  selectedSet: Set<string>;
+  allPageSelected: boolean;
+  somePageSelected: boolean;
+  onToggleSelectAllPage: () => void;
+  onToggleSelected: (id: string) => void;
 }): Array<BackofficeColumn<BackofficeRawOffer>> {
   return [
     {
+      key: "select",
+      label: (
+        <span className="flex items-center justify-center">
+          <SelectAllPageCheckbox
+            checked={allPageSelected}
+            indeterminate={!allPageSelected && somePageSelected}
+            ariaLabel={allPageSelected ? t("productsPage.actions.unselectPage") : t("productsPage.actions.selectPage")}
+            onChange={onToggleSelectAllPage}
+          />
+        </span>
+      ),
+      className: "w-[5%] text-center",
+      render: (item) => (
+        <div className="flex items-center justify-center">
+          <input
+            type="checkbox"
+            checked={selectedSet.has(item.id)}
+            aria-label={`${t("productsPage.table.columns.select")}: ${item.product_name || item.article || item.external_sku || item.id}`}
+            onChange={() => onToggleSelected(item.id)}
+          />
+        </div>
+      ),
+    },
+    {
       key: "sku",
       label: t("productsPage.table.columns.sku"),
-      className: "w-[14%]",
+      className: "w-[12%]",
       render: (item) => (
         <div>
           <p className="truncate font-semibold" title={item.external_sku}>{item.external_sku}</p>
@@ -135,7 +209,7 @@ export function createSupplierProductsColumns({
                     : item.source_code === "gpl"
                       ? tGpl("label")
                       : item.source_code.toUpperCase();
-                const warehouseLabel = compactWarehouseName(warehouse.key);
+                const warehouseLabel = compactWarehouseName(warehouse.key, item.source_code);
                 const qtyLabel = formatWarehouseQty(warehouse.qty);
                 return (
                   <BackofficeTooltip
@@ -181,7 +255,7 @@ export function createSupplierProductsColumns({
     {
       key: "state",
       label: t("productsPage.table.columns.state"),
-      className: "w-[13%]",
+      className: "w-[10%]",
       render: (item) => (
         <SupplierProductsRowActions
           status={item.category_mapping_status || "unmapped"}

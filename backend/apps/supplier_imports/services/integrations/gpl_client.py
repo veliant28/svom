@@ -78,11 +78,13 @@ class GplClient:
         *,
         access_token: str,
         page: int = 1,
+        per_page: int = 100,
         filter_payload: dict | None = None,
     ) -> dict:
+        normalized_per_page = max(1, min(int(per_page), 100))
         response = http_json_request(
             method="POST",
-            url=f"{self.base_url}/api/prices?page={max(int(page), 1)}",
+            url=f"{self.base_url}/api/prices?page={max(int(page), 1)}&per_page={normalized_per_page}",
             headers={"Authorization": f"Bearer {access_token}"},
             payload={"filter": filter_payload or {}},
         )

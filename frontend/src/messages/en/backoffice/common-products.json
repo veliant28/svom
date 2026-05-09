@@ -297,7 +297,8 @@
           "name": "Category name",
           "parentNone": "No parent category",
           "description": "Description (optional)",
-          "isActive": "Active"
+          "isActive": "Active",
+          "showInHeader": "Show in header"
         },
         "filters": {
           "search": "Search by category name",
@@ -305,7 +306,12 @@
           "active": "Active only",
           "inactive": "Inactive only",
           "anyParent": "Any level",
-          "rootOnly": "Root only"
+          "rootOnly": "Root only",
+          "allSources": "All sources",
+          "anyHeaderVisibility": "Any header visibility",
+          "headerVisible": "Visible in header",
+          "headerHidden": "Hidden from header",
+          "duplicatesOnly": "Duplicates only"
         },
         "actions": {
           "create": "Create category",
@@ -331,10 +337,14 @@
           "columns": {
             "name": "Category",
             "status": "Status",
+            "source": "Source",
+            "navigation": "Navigation",
             "updated": "Updated",
             "actions": "Actions"
           },
-          "rootLabel": "Root"
+          "rootLabel": "Root",
+          "visibleInHeader": "Visible in header",
+          "hiddenFromHeader": "Hidden"
         },
         "pagination": {
           "total": "Total categories: {count}",

@@ -29,7 +29,6 @@ export function SuppliersToolbar({
   const topActions = useMemo(
     () => (
       <SupplierWorkflowTopActions
-        activeCode={activeCode}
         currentView="workspace"
         settingsHref={hrefFor("/backoffice/suppliers")}
         importHref={hrefFor("/backoffice/suppliers/import")}
@@ -37,7 +36,6 @@ export function SuppliersToolbar({
         importErrorsHref={hrefFor("/backoffice/suppliers/import-errors")}
         importQualityHref={hrefFor("/backoffice/suppliers/import-quality")}
         productsHref={hrefFor("/backoffice/suppliers/products")}
-        brandsHref={hrefFor("/backoffice/suppliers/brands", "utr")}
         onRefresh={onRefresh}
         settingsLabel={t("actions.settings")}
         importLabel={t("actions.import")}
@@ -45,11 +43,10 @@ export function SuppliersToolbar({
         importErrorsLabel={t("actions.importErrors")}
         importQualityLabel={t("actions.importQuality")}
         productsLabel={t("actions.products")}
-        brandsLabel={t("actions.brands")}
         refreshLabel={t("actions.refreshAll")}
       />
     ),
-    [activeCode, hrefFor, onRefresh, t],
+    [hrefFor, onRefresh, t],
   );
 
   const switcher = useMemo(

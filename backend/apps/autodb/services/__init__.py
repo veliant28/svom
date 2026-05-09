@@ -35,6 +35,13 @@ from .product_fitment_audit import AutoDbProductFitmentAuditService, ProductFitm
 from .clone_runtime_status import CloneRuntimeStatus, get_passanger_car_trees_runtime_status
 from .fitment_quality import AutoDbProductLinkQualityService, ProductFitmentQualityService, can_use_autodb_fitments_for_public_filtering
 from .product_name_translation import ProductNameTranslationResult, ProductNameTranslationService
+from .product_brand_enrichment import (
+    AutoDbProductBrandEnrichmentService,
+    ProductBrandDiagnostics,
+    ProductBrandEnrichmentResult,
+)
+from .prd_root_category_mapper import AutoDbPrdRootCategoryMapper, RootMappingResult
+from .root_group_to_site_root_mapper import AutoDbRootGroupToSiteRootMapper, RootGroupMappingResult
 from .remote_config import AutoDbRemoteConfigError, AutoDbRemoteConfigSnapshot, AutoDbRemoteConfigValidator
 from .raw_offer_enrichment import AutoDbRawOfferEnrichmentService, RawOfferEnrichmentSummary
 from .supplier_brand_matcher import SupplierBrandCandidate, SupplierBrandMatchResult, SupplierBrandMatcher
@@ -55,6 +62,15 @@ from .article_variant_checkpoint import (
     PolmoReviewSummary,
 )
 from .article_variant_apply_classifier import ArticleVariantApplyClassifier
+from .linked_product_related_enrichment import (
+    AutoDbLinkedProductRelatedEnrichmentService,
+    LinkedProductRelatedLocalState,
+    LinkedProductRelatedStateStore,
+    estimate_remote_queries_for_tables,
+    extract_related_tables,
+    is_related_local_complete,
+    is_remote_quota_error,
+)
 from .raw_clone_storage import AutoDbRawCloneStorage
 from .remote_client import (
     ARTICLE_CATALOG_TABLE_WHITELIST,
@@ -98,6 +114,13 @@ __all__ = [
     "can_use_autodb_fitments_for_public_filtering",
     "ProductNameTranslationService",
     "ProductNameTranslationResult",
+    "AutoDbProductBrandEnrichmentService",
+    "ProductBrandDiagnostics",
+    "ProductBrandEnrichmentResult",
+    "AutoDbPrdRootCategoryMapper",
+    "RootMappingResult",
+    "AutoDbRootGroupToSiteRootMapper",
+    "RootGroupMappingResult",
     "AutoDbRawOfferEnrichmentService",
     "RawOfferEnrichmentSummary",
     "AutoDbRemoteConfigSnapshot",
@@ -117,6 +140,13 @@ __all__ = [
     "RemoteDiagnosticsSummary",
     "ArticleVariantDiagnosticsReport",
     "ArticleVariantApplyClassifier",
+    "AutoDbLinkedProductRelatedEnrichmentService",
+    "LinkedProductRelatedLocalState",
+    "LinkedProductRelatedStateStore",
+    "estimate_remote_queries_for_tables",
+    "extract_related_tables",
+    "is_related_local_complete",
+    "is_remote_quota_error",
     "AutoDbArticleVariantApplyCheckpointService",
     "ArticleVariantCheckpointRow",
     "ArticleVariantCheckpointBrandSummary",

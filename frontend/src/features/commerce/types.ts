@@ -1,3 +1,5 @@
+import type { CatalogProduct } from "@/features/catalog/types";
+
 export type CommerceProductSummary = {
   id: string;
   sku: string;
@@ -11,7 +13,7 @@ export type CommerceProductSummary = {
 
 export type WishlistItem = {
   id: string;
-  product: CommerceProductSummary;
+  product: CatalogProduct;
   created_at: string;
 };
 

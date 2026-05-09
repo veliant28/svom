@@ -11,6 +11,24 @@ type SubcategorySectionProps = {
 };
 
 export function SubcategorySection({ title, items, activeCategoryKey, onNavigate }: SubcategorySectionProps) {
+  const normalize = (value: string) => value.trim().replace(/\s+/g, " ").toLocaleLowerCase();
+  const normalizedTitle = title ? normalize(title) : "";
+  const seenItemLabels = new Set<string>();
+  const visibleItems = items.filter((category) => {
+    const marker = normalize(category.name);
+    if (!marker) {
+      return false;
+    }
+    if (marker === normalizedTitle) {
+      return false;
+    }
+    if (seenItemLabels.has(marker)) {
+      return false;
+    }
+    seenItemLabels.add(marker);
+    return true;
+  });
+
   return (
     <section className="min-w-0">
       {title ? (
@@ -23,7 +41,7 @@ export function SubcategorySection({ title, items, activeCategoryKey, onNavigate
       ) : null}
 
       <div className="space-y-1.5">
-        {items.map((category) => (
+        {visibleItems.map((category) => (
           <div key={category.id}>
             <SubcategoryTile
               categoryId={category.id}

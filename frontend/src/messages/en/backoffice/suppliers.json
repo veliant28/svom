@@ -133,13 +133,25 @@
         "title": "Imported Products",
         "subtitle": "Intermediate table of imported products before core mapping and further processing.",
         "search": "Search by SKU, article, brand, or name",
+        "filters": {
+          "allStatuses": "All statuses"
+        },
         "empty": "No imported products found.",
         "actions": {
-          "publishMapped": "Publish mapped items"
+          "publishMapped": "Publish mapped items",
+          "bulkActions": "Bulk actions",
+          "publishSelected": "Publish selected",
+          "selectPage": "Select products on page",
+          "unselectPage": "Unselect products on page"
         },
         "messages": {
           "publishSuccess": "Publish completed. Mapped: {matched}, created: {created}, updated: {updated}, skipped: {skipped}, errors: {errors}.",
-          "publishFailed": "Failed to publish mapped supplier products."
+          "publishFailed": "Failed to publish mapped supplier products.",
+          "publishSelectedSuccess": "Selected rows published. Selected: {selected}, mapped: {matched}, created: {created}, updated: {updated}, skipped: {skipped}, errors: {errors}.",
+          "publishSelectedFailed": "Failed to publish selected rows."
+        },
+        "tooltips": {
+          "bulkActions": "Bulk actions"
         },
         "pagination": {
           "total": "Total rows: {count}",
@@ -154,6 +166,7 @@
         },
         "table": {
           "columns": {
+            "select": "Select",
             "sku": "SKU / Article",
             "brand": "Brand",
             "product": "Product",
@@ -175,6 +188,12 @@
             "auto_mapped": "Auto mapped",
             "manual_mapped": "Manual mapped",
             "unmapped": "Unmapped"
+          },
+          "statusesShort": {
+            "needs_review": "Review",
+            "auto_mapped": "Auto",
+            "manual_mapped": "Manual",
+            "unmapped": "None"
           },
           "sorting": {
             "confidenceDesc": "Confidence: high to low",

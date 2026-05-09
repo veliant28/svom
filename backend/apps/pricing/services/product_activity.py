@@ -57,7 +57,8 @@ def sync_products_activity_by_price_freshness(
     eligible_products = _product_activity_queryset(cutoff=cutoff).filter(
         has_fresh_offer=True,
     ).filter(
-        Q(has_active_override=True) | Q(has_safe_auto_price=True),
+        Q(has_active_override=True)
+        | Q(has_safe_auto_price=True)
     )
     eligible_product_ids = eligible_products.values("id")
 
@@ -67,7 +68,9 @@ def sync_products_activity_by_price_freshness(
     ).update(is_active=True, published_at=now)
 
     active_products = _product_activity_queryset(cutoff=cutoff).filter(is_active=True)
-    deactivated_no_fresh_offer = active_products.filter(has_fresh_offer=False).count()
+    deactivated_no_fresh_offer = active_products.filter(
+        has_fresh_offer=False,
+    ).count()
     active_with_fresh_offer = active_products.filter(has_fresh_offer=True)
     deactivated_invalid_price = active_with_fresh_offer.filter(
         has_active_override=False,
@@ -131,7 +134,6 @@ def _product_activity_queryset(*, cutoff):
         is_active=True,
         override_price__gt=0,
     )
-
     return (
         Product.objects.annotate(
             has_fresh_offer=Exists(fresh_offer),

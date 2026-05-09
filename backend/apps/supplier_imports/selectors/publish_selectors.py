@@ -9,6 +9,7 @@ def get_supplier_raw_offers_publish_queryset(
     *,
     supplier_code: str,
     run_id: str | None = None,
+    raw_offer_ids: list[str] | None = None,
 ) -> QuerySet[SupplierRawOffer]:
     queryset = (
         SupplierRawOffer.objects.select_related(
@@ -23,4 +24,6 @@ def get_supplier_raw_offers_publish_queryset(
     )
     if run_id:
         queryset = queryset.filter(run_id=run_id)
+    if raw_offer_ids:
+        queryset = queryset.filter(id__in=raw_offer_ids)
     return queryset

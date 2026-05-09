@@ -19,7 +19,10 @@ class WishlistListAPIView(ListAPIView):
     pagination_class = None
 
     def get_queryset(self):
-        return get_wishlist_items_queryset(user_id=self.request.user.id)
+        return get_wishlist_items_queryset(
+            user_id=self.request.user.id,
+            fitment_params=self.request.query_params,
+        )
 
 
 class WishlistItemCreateAPIView(APIView):
@@ -33,9 +36,18 @@ class WishlistItemCreateAPIView(APIView):
         product = get_object_or_404(Product.objects.filter(is_active=True), id=serializer.validated_data["product_id"])
 
         item, _ = WishlistItem.objects.get_or_create(user=request.user, product=product)
+        item_for_response = (
+            get_wishlist_items_queryset(
+                user_id=request.user.id,
+                fitment_params=request.query_params,
+            )
+            .filter(id=item.id)
+            .first()
+            or item
+        )
 
         response_data = WishlistItemSerializer(
-            item,
+            item_for_response,
             context={"request": request},
         ).data
         return Response(response_data, status=status.HTTP_201_CREATED)
@@ -48,4 +60,7 @@ class WishlistItemDeleteAPIView(DestroyAPIView):
     lookup_url_kwarg = "item_id"
 
     def get_queryset(self):
-        return get_wishlist_items_queryset(user_id=self.request.user.id)
+        return get_wishlist_items_queryset(
+            user_id=self.request.user.id,
+            fitment_params=self.request.query_params,
+        )

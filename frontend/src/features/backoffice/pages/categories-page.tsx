@@ -82,11 +82,13 @@ export function CategoriesPage() {
         name={form.createName}
         parentId={form.createParentId}
         isActive={form.createIsActive}
+        showInHeader={form.createShowInHeader}
         parentOptions={sortedParentOptions}
         getParentOptionLabel={getParentOptionLabel}
         onNameChange={form.setCreateName}
         onParentChange={form.setCreateParentId}
         onIsActiveChange={form.setCreateIsActive}
+        onShowInHeaderChange={form.setCreateShowInHeader}
         onClose={() => {
           if (actions.isCreating) {
             return;
@@ -107,12 +109,14 @@ export function CategoriesPage() {
         name={form.editName}
         parentId={form.editParentId}
         isActive={form.editIsActive}
+        showInHeader={form.editShowInHeader}
         parentOptions={sortedParentOptions}
         disabledParentIds={disabledParentIds}
         getParentOptionLabel={getParentOptionLabel}
         onNameChange={form.setEditName}
         onParentChange={form.setEditParentId}
         onIsActiveChange={form.setEditIsActive}
+        onShowInHeaderChange={form.setEditShowInHeader}
         onClose={() => {
           if (actions.isUpdating) {
             return;

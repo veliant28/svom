@@ -4,21 +4,19 @@ import { useEffect, useMemo, useRef } from "react";
 import { ArrowRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { CatalogTaxonomyPanel } from "@/features/catalog/components/catalog-taxonomy-panel";
 import { useCatalogFilters } from "@/features/catalog/hooks/use-catalog-filters";
 import { useCatalogTaxonomy } from "@/features/catalog/hooks/use-catalog-taxonomy";
 import { CatalogShowcaseSection } from "@/features/catalog/sections/catalog-showcase-section";
-import type { BrandSummary, CategorySummary } from "@/features/catalog/types";
+import type { CategorySummary } from "@/features/catalog/types";
 
 type CatalogInteractiveSectionProps = {
-  initialBrands?: BrandSummary[];
   initialCategories?: CategorySummary[];
 };
 
-export function CatalogInteractiveSection({ initialBrands = [], initialCategories = [] }: CatalogInteractiveSectionProps) {
+export function CatalogInteractiveSection({ initialCategories = [] }: CatalogInteractiveSectionProps) {
   const t = useTranslations("catalog");
   const { filters, setFilters } = useCatalogFilters();
-  const { brands, categories } = useCatalogTaxonomy({ brands: initialBrands, categories: initialCategories });
+  const { categories } = useCatalogTaxonomy({ categories: initialCategories });
   const catalogHeaderRef = useRef<HTMLElement | null>(null);
   const currentCategoryLabel = useMemo(() => {
     const categoryId = filters.category_id?.trim();
@@ -80,7 +78,6 @@ export function CatalogInteractiveSection({ initialBrands = [], initialCategorie
       </section>
 
       <CatalogShowcaseSection filters={filters} showHeading={false} scrollAnchorRef={catalogHeaderRef} />
-      <CatalogTaxonomyPanel brands={brands} categories={categories} />
     </>
   );
 }

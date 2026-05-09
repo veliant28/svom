@@ -7,17 +7,20 @@ export function useCategoryForm() {
   const [createName, setCreateName] = useState("");
   const [createParentId, setCreateParentId] = useState("");
   const [createIsActive, setCreateIsActive] = useState(true);
+  const [createShowInHeader, setCreateShowInHeader] = useState(false);
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editParentId, setEditParentId] = useState("");
   const [editIsActive, setEditIsActive] = useState(true);
+  const [editShowInHeader, setEditShowInHeader] = useState(false);
 
   const resetCreate = useCallback(() => {
     setCreateName("");
     setCreateParentId("");
     setCreateIsActive(true);
+    setCreateShowInHeader(false);
   }, []);
 
   const resetEdit = useCallback(() => {
@@ -25,6 +28,7 @@ export function useCategoryForm() {
     setEditName("");
     setEditParentId("");
     setEditIsActive(true);
+    setEditShowInHeader(false);
   }, []);
 
   const openCreate = useCallback(() => {
@@ -41,6 +45,7 @@ export function useCategoryForm() {
     setEditName(category.name);
     setEditParentId(category.parent ?? "");
     setEditIsActive(category.is_active);
+    setEditShowInHeader(category.show_in_header);
     setEditModalOpen(true);
   }, []);
 
@@ -57,6 +62,8 @@ export function useCategoryForm() {
     setCreateParentId,
     createIsActive,
     setCreateIsActive,
+    createShowInHeader,
+    setCreateShowInHeader,
     editModalOpen,
     editingCategoryId,
     editName,
@@ -65,6 +72,8 @@ export function useCategoryForm() {
     setEditParentId,
     editIsActive,
     setEditIsActive,
+    editShowInHeader,
+    setEditShowInHeader,
     openCreate,
     closeCreate,
     openEdit,

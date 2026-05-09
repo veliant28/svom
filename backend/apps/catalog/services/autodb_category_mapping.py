@@ -4,7 +4,9 @@ from django.db import transaction
 
 from apps.autodb.models import AutoDbArticleProductGroup, AutoDbProductGroup, AutoDbSupplier
 from apps.catalog.models import AutoDbPrdCategoryMap, Category
+from apps.catalog.services.category_assignment import assignable_category_or_none
 from apps.catalog.services.category_management import find_category_by_normalized_name
+from apps.catalog.services.taxonomy_v2 import find_seeded_leaf_by_name
 from apps.supplier_imports.models import SupplierRawOffer
 from apps.supplier_imports.parsers.utils import normalize_article, normalize_brand
 
@@ -37,14 +39,15 @@ def resolve_autodb_category_for_raw_offer(*, raw_offer: SupplierRawOffer) -> Cat
 
     mapped = AutoDbPrdCategoryMap.objects.filter(prd_id__in=group_ids).select_related("category").order_by("updated_at").first()
     if mapped is not None:
-        return mapped.category
+        return assignable_category_or_none(mapped.category)
 
     groups = AutoDbProductGroup.objects.filter(id__in=group_ids).order_by("id")
     for group in groups:
         group_name = str(group.name or "").strip()
         if not group_name:
             continue
-        category = find_category_by_normalized_name(name=group_name, parent=None)
+        category = find_seeded_leaf_by_name(group_name) or find_category_by_normalized_name(name=group_name, parent=None)
+        category = assignable_category_or_none(category)
         if category is None:
             continue
         with transaction.atomic():

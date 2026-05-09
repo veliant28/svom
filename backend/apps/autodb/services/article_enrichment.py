@@ -15,6 +15,8 @@ class ArticleEnrichmentResult:
     populated_tables: dict[str, int] = field(default_factory=dict)
     skipped_tables: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    remote_queries: int = 0
+    remote_hits: int = 0
 
 
 class AutoDbArticleEnrichmentService:
@@ -46,11 +48,14 @@ class AutoDbArticleEnrichmentService:
         supplier_id: int | None = None,
         article_number: str = "",
         tables: list[str] | None = None,
+        dry_run: bool = False,
     ) -> ArticleEnrichmentResult:
         target_tables = tuple(tables or self.RELATED_TABLES)
         populated: dict[str, int] = {}
         skipped: list[str] = []
         warnings: list[str] = []
+        remote_queries = 0
+        remote_hits = 0
 
         for table in target_tables:
             if table == "prd":
@@ -66,19 +71,28 @@ class AutoDbArticleEnrichmentService:
                 warnings.append(f"{table}: relation columns are not resolved")
                 continue
 
+            remote_queries += 1
             rows = self.storage.fetch_remote_rows_exact(table=table, filters=filters, limit=20000)
             if not rows:
                 populated[table] = 0
                 continue
+            remote_hits += len(rows)
 
-            failed = self.storage.upsert_rows(table=table, rows=rows)
-            populated[table] = max(len(rows) - failed, 0)
+            if dry_run:
+                populated[table] = len(rows)
+            else:
+                failed = self.storage.upsert_rows(table=table, rows=rows)
+                populated[table] = max(len(rows) - failed, 0)
 
         if "prd" in target_tables:
-            populated["prd"] = self._enrich_prd_from_relations(
+            prd_populated, prd_queries, prd_hits = self._enrich_prd_from_relations(
                 supplier_id=supplier_id,
                 article_number=article_number,
+                dry_run=dry_run,
             )
+            populated["prd"] = prd_populated
+            remote_queries += prd_queries
+            remote_hits += prd_hits
 
         return ArticleEnrichmentResult(
             article_id=article_id,
@@ -87,11 +101,19 @@ class AutoDbArticleEnrichmentService:
             populated_tables=populated,
             skipped_tables=skipped,
             warnings=warnings,
+            remote_queries=remote_queries,
+            remote_hits=remote_hits,
         )
 
-    def _enrich_prd_from_relations(self, *, supplier_id: int | None, article_number: str) -> int:
+    def _enrich_prd_from_relations(
+        self,
+        *,
+        supplier_id: int | None,
+        article_number: str,
+        dry_run: bool,
+    ) -> tuple[int, int, int]:
         if supplier_id is None or not article_number:
-            return 0
+            return 0, 0, 0
 
         product_ids = self._collect_product_ids_from_local_relation(
             table="article_prd",
@@ -106,12 +128,12 @@ class AutoDbArticleEnrichmentService:
             product_candidates=["productId", "productid", "ProductId"],
         )
         if not product_ids:
-            return 0
+            return 0, 0, 0
 
         remote_columns = self.storage.get_remote_columns("prd")
         id_column = find_column_name(remote_columns, ["id", "productId", "productid", "ProductId"])
         if not id_column:
-            return 0
+            return 0, 0, 0
         rows = self.storage.fetch_remote_rows_in(
             table="prd",
             column=id_column,
@@ -120,9 +142,11 @@ class AutoDbArticleEnrichmentService:
             columns=remote_columns,
         )
         if not rows:
-            return 0
+            return 0, 1, 0
+        if dry_run:
+            return len(rows), 1, len(rows)
         failed = self.storage.upsert_rows(table="prd", rows=rows)
-        return max(len(rows) - failed, 0)
+        return max(len(rows) - failed, 0), 1, len(rows)
 
     def _collect_product_ids_from_local_relation(
         self,

@@ -19,8 +19,13 @@ class CategoryUpdateSummary:
     skipped_no_autodb_category: int = 0
     skipped_manual_locked: int = 0
     skipped_suspicious_link: int = 0
+    skipped_no_root_mapping: int = 0
     skipped_parent_missing: int = 0
     translation_pending: int = 0
+    root_mapping_stats: dict[str, int] | None = None
+    child_categories_created: int = 0
+    child_categories_reused: int = 0
+    autodb_root_category_creation_blocked: int = 0
     failed: int = 0
 
 
@@ -96,8 +101,16 @@ class Command(BaseCommand):
         self.stdout.write(f"- skipped_no_autodb_category: {summary.skipped_no_autodb_category}")
         self.stdout.write(f"- skipped_manual_locked: {summary.skipped_manual_locked}")
         self.stdout.write(f"- skipped_suspicious_link: {summary.skipped_suspicious_link}")
+        self.stdout.write(f"- skipped_no_root_mapping: {summary.skipped_no_root_mapping}")
         self.stdout.write(f"- skipped_parent_missing: {summary.skipped_parent_missing}")
         self.stdout.write(f"- translation_pending: {summary.translation_pending}")
+        self.stdout.write(f"- child_categories_created: {summary.child_categories_created}")
+        self.stdout.write(f"- child_categories_reused: {summary.child_categories_reused}")
+        self.stdout.write(f"- autodb_root_category_creation_blocked: {summary.autodb_root_category_creation_blocked}")
+        if summary.root_mapping_stats:
+            self.stdout.write("- root_mapping_stats:")
+            for root_name, count in sorted(summary.root_mapping_stats.items()):
+                self.stdout.write(f"  - {root_name}: {count}")
         self.stdout.write(f"- failed: {summary.failed}")
         self.stdout.write("- UTR calls: 0")
 
@@ -121,6 +134,7 @@ class Command(BaseCommand):
             f"old_category={result.old_category_name or '-'}({result.old_category_id or '-'}) "
             f"new_category={result.new_category_name or '-'}({result.new_category_id or '-'}) "
             f"prd_id={result.chosen_prd_id or '-'} source={result.chosen_source or '-'} "
+            f"mapped_root={result.mapped_root_name or '-'}({result.mapped_root_slug or '-'}) "
             f"article_title={result.autodb_article_title or '-'} prd_title={result.autodb_prd_title or '-'} "
             f"created_category={result.created_category} reused_category={result.reused_category} "
             f"parent_missing={result.parent_missing} translation_pending={result.translation_pending} suspicious_link={result.suspicious_link}"
@@ -141,12 +155,22 @@ class Command(BaseCommand):
             summary.skipped_manual_locked += 1
         elif result.status == "skipped_suspicious_link":
             summary.skipped_suspicious_link += 1
+        elif result.status == "skipped_no_root_mapping":
+            summary.skipped_no_root_mapping += 1
+            summary.autodb_root_category_creation_blocked += 1
 
         if result.created_category:
             summary.created_categories += 1
+            summary.child_categories_created += 1
         if result.reused_category:
             summary.reused_categories += 1
+            summary.child_categories_reused += 1
         if result.parent_missing:
             summary.skipped_parent_missing += 1
         if result.translation_pending:
             summary.translation_pending += 1
+        root_name = str(result.mapped_root_name or "").strip()
+        if root_name:
+            if summary.root_mapping_stats is None:
+                summary.root_mapping_stats = {}
+            summary.root_mapping_stats[root_name] = int(summary.root_mapping_stats.get(root_name, 0)) + 1

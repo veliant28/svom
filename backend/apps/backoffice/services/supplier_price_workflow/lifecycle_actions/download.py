@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import mimetypes
 import shutil
+import time
 from pathlib import Path
+from typing import Any
 
 from django.conf import settings
 from django.utils import timezone
 
 from apps.supplier_imports.models import SupplierPriceList
-from apps.supplier_imports.services.integrations.exceptions import SupplierIntegrationError
+from apps.supplier_imports.services.integrations.exceptions import SupplierClientError, SupplierIntegrationError
 
 from ..analyzers import extract_file_metadata, resolve_extension, resolve_source_file_path
 from ..gateway import hydrate_utr_remote_fields
@@ -69,6 +71,16 @@ def download_price_list(service, *, supplier_code: str, price_list_id: str) -> d
                 target_file = corrected
         if target_file.suffix.lower() != ".xlsx":
             raise SupplierIntegrationError("UTR вернул не-XLSX файл. Разрешен только XLSX.")
+    elif row.request_mode == "gpl_api" and supplier_code == "gpl":
+        if not integration.access_token:
+            raise SupplierIntegrationError("GPL access token отсутствует для скачивания прайса из API.")
+        file_ext = "xlsx"
+        target_file = target_dir / f"{supplier_code}_price_{timestamp}_{str(row.id)[:8]}.{file_ext}"
+        _download_gpl_api_price_list(
+            service=service,
+            access_token=integration.access_token,
+            target_file=target_file,
+        )
     else:
         source_file = Path(row.source_file_path) if row.source_file_path else None
         if source_file is None or not source_file.exists() or source_file.suffix.lower() != ".xlsx":
@@ -114,3 +126,113 @@ def download_price_list(service, *, supplier_code: str, price_list_id: str) -> d
     )
 
     return serialize_with_cooldown(service, integration=integration, row=row)
+
+
+def _download_gpl_api_price_list(
+    *,
+    service,
+    access_token: str,
+    target_file: Path,
+) -> None:
+    try:
+        from openpyxl import Workbook
+    except ModuleNotFoundError as exc:  # pragma: no cover - runtime container guard
+        raise SupplierIntegrationError(
+            "GPL API download requires openpyxl package for runtime XLSX build."
+        ) from exc
+
+    all_items: list[dict[str, Any]] = []
+    header_keys: list[str] = []
+    page = 1
+    last_page = 1
+    per_page = 100
+    max_pages = 5000
+    page_delay_seconds = max(float(getattr(settings, "GPL_API_PAGE_DELAY_SECONDS", 1.2)), 0.0)
+
+    while page <= last_page and page <= max_pages:
+        payload = _fetch_gpl_page_with_backoff(
+            service=service,
+            access_token=access_token,
+            page=page,
+            per_page=per_page,
+        )
+        data = payload.get("data") if isinstance(payload, dict) else None
+        if not isinstance(data, dict):
+            raise SupplierIntegrationError("GPL API вернул некорректный формат прайса (data).")
+        items = data.get("items")
+        if not isinstance(items, list):
+            raise SupplierIntegrationError("GPL API вернул некорректный формат прайса (items).")
+
+        titles = data.get("titles")
+        if isinstance(titles, dict) and titles and not header_keys:
+            header_keys = [str(key) for key in titles.keys()]
+
+        for item in items:
+            if isinstance(item, dict):
+                all_items.append(item)
+
+        meta = payload.get("meta") if isinstance(payload, dict) else None
+        if isinstance(meta, dict):
+            try:
+                last_page = max(1, int(meta.get("last_page") or last_page))
+            except (TypeError, ValueError):
+                last_page = max(1, last_page)
+        elif isinstance(payload, dict):
+            try:
+                top_level_last_page = int(payload.get("last_page") or last_page)
+            except (TypeError, ValueError):
+                top_level_last_page = last_page
+            last_page = max(1, top_level_last_page)
+        elif not items:
+            break
+
+        page += 1
+        # GPL API allows 100 rows per page; keep request pressure low and predictable.
+        if page <= last_page:
+            time.sleep(page_delay_seconds)
+
+    if not header_keys:
+        seen: set[str] = set()
+        for item in all_items:
+            for key in item.keys():
+                normalized = str(key)
+                if normalized not in seen:
+                    seen.add(normalized)
+                    header_keys.append(normalized)
+
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "GPL"
+    if header_keys:
+        sheet.append(header_keys)
+        for item in all_items:
+            sheet.append([_normalize_cell_value(item.get(key)) for key in header_keys])
+    workbook.save(target_file)
+
+
+def _normalize_cell_value(value: Any) -> Any:
+    if value is None:
+        return ""
+    if isinstance(value, (str, int, float, bool)):
+        return value
+    return str(value)
+
+
+def _fetch_gpl_page_with_backoff(*, service, access_token: str, page: int, per_page: int) -> dict[str, Any]:
+    attempts = 8
+    for attempt in range(1, attempts + 1):
+        try:
+            return service.gpl_client.fetch_prices_page(
+                access_token=access_token,
+                page=page,
+                per_page=per_page,
+                filter_payload={},
+            )
+        except SupplierClientError as exc:
+            message = str(exc)
+            rate_limited = "too many attempts" in message.lower() or "429" in message
+            if not rate_limited or attempt == attempts:
+                raise
+            # GPL API may temporarily block request bursts; use long backoff windows.
+            time.sleep(min(20 * attempt, 180))
+    raise SupplierIntegrationError("GPL API page download failed after retries.")

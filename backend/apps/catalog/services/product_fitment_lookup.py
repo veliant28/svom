@@ -4,12 +4,17 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass
 
-from django.conf import settings
-from django.db.models import Case, IntegerField, OuterRef, Q, Subquery, Value, When
+from django.db.models import OuterRef, Q, Subquery
 
 from apps.autocatalog.models import CarModification, UtrArticleDetailMap, UtrDetailCarMap
-from apps.autodb.models import AutoDbArticleLinkage, AutoDbPassengerCar, AutoDbSupplier
-from apps.catalog.models import Product
+from apps.autodb.models import AutoDbArticleLinkage, AutoDbSupplier
+from apps.autodb.selectors import list_passanger_cars, list_passanger_cars_by_ids, list_vehicle_manufacturers, list_vehicle_models
+from apps.catalog.models import AutoDbProductLinkQuality, Product
+from apps.catalog.services.autodb_vehicle_display import (
+    build_autodb_garage_vehicle_label,
+    build_autodb_passanger_car_label,
+)
+from apps.compatibility.models import ProductFitment
 from apps.supplier_imports.models import SupplierRawOffer
 from apps.supplier_imports.parsers.utils import normalize_article, normalize_brand
 from apps.users.models import GarageVehicle
@@ -29,10 +34,9 @@ class SelectedAutocatalogVehicle:
 
 
 def get_fitment_provider() -> str:
-    provider = str(getattr(settings, "FITMENT_PROVIDER", FITMENT_PROVIDER_AUTODB) or "").strip().lower()
-    if provider == FITMENT_PROVIDER_AUTODB:
-        return FITMENT_PROVIDER_AUTODB
-    return FITMENT_PROVIDER_UTR
+    # Catalog runtime policy: compatibility/filtering is Auto_DB-only.
+    # UTR remains a price supplier and must not be used as compatibility provider.
+    return FITMENT_PROVIDER_AUTODB
 
 
 def is_autodb_fitment_provider() -> bool:
@@ -66,6 +70,20 @@ def resolve_selected_car_modification_id(request) -> int | None:
 
 
 def resolve_selected_autocatalog_vehicle(request) -> SelectedAutocatalogVehicle | None:
+    selected_passanger_car_id = resolve_selected_passanger_car_id(request)
+    if selected_passanger_car_id:
+        row = list_passanger_cars_by_ids([selected_passanger_car_id]).get(int(selected_passanger_car_id))
+        if row is not None:
+            year_from = parse_positive_int(row.get("year_from")) or parse_positive_int(str(row.get("years") or "").split("–")[0] if row.get("years") else None)
+            return SelectedAutocatalogVehicle(
+                id=int(row.get("vehicle_id") or selected_passanger_car_id),
+                make_id=int(row.get("manufacturer_id") or 0),
+                make_name=str(row.get("make") or ""),
+                model_id=int(row.get("model_id") or 0),
+                model_name=str(row.get("model") or ""),
+                year=year_from,
+            )
+
     car_modification_id = resolve_selected_car_modification_id(request)
     if not car_modification_id:
         return None
@@ -87,6 +105,100 @@ def resolve_selected_autocatalog_vehicle(request) -> SelectedAutocatalogVehicle 
         model_name=str(row["model__name"]),
         year=parse_positive_int(row.get("year")),
     )
+
+
+def _resolve_selected_garage_vehicle(*, request, passanger_car_id: int | None):
+    if request is None:
+        return None
+
+    garage_vehicle_id = str(request.query_params.get("garage_vehicle") or "").strip()
+    if garage_vehicle_id:
+        user = getattr(request, "user", None)
+        if not user or not getattr(user, "is_authenticated", False):
+            return None
+        row = (
+            GarageVehicle.objects.filter(
+                id=garage_vehicle_id,
+                user=user,
+                catalog_source=GarageVehicle.CATALOG_SOURCE_AUTODB_PRO,
+            )
+            .select_related("make", "model")
+            .first()
+        )
+        if row and (
+            passanger_car_id is None
+            or parse_positive_int(row.autodb_passanger_car_id) == passanger_car_id
+        ):
+            return row
+
+    user = getattr(request, "user", None)
+    if not user or not getattr(user, "is_authenticated", False) or not passanger_car_id:
+        return None
+
+    return (
+        GarageVehicle.objects.filter(
+            user=user,
+            catalog_source=GarageVehicle.CATALOG_SOURCE_AUTODB_PRO,
+            autodb_passanger_car_id=passanger_car_id,
+        )
+        .select_related("make", "model")
+        .order_by("-is_primary", "-updated_at", "-created_at")
+        .first()
+    )
+
+
+def resolve_selected_autodb_vehicle_display(request) -> dict[str, str | int] | None:
+    passanger_car_id = resolve_selected_passanger_car_id(request)
+    if not passanger_car_id:
+        return None
+
+    selector_payload = list_passanger_cars_by_ids([passanger_car_id]).get(int(passanger_car_id))
+    if selector_payload is not None:
+        return selector_payload
+
+    garage_vehicle = _resolve_selected_garage_vehicle(request=request, passanger_car_id=passanger_car_id)
+    if garage_vehicle is not None:
+        return build_autodb_garage_vehicle_label(
+            garage_vehicle=garage_vehicle,
+            passanger_car_id=passanger_car_id,
+        )
+
+    return {
+        "vehicle_id": int(passanger_car_id),
+        "make": "",
+        "model": "",
+        "modification": "",
+        "years": "",
+        "engine": "",
+        "body": "",
+        "label": f"Автомобиль #{passanger_car_id}",
+        "subtitle": "",
+    }
+
+
+def resolve_selected_passanger_car_id(request) -> int | None:
+    if request is None:
+        return None
+
+    for key in ("passanger_car_id", "vehicle_id"):
+        parsed = parse_positive_int(request.query_params.get(key))
+        if parsed:
+            return parsed
+
+    garage_vehicle_id = str(request.query_params.get("garage_vehicle") or "").strip()
+    if not garage_vehicle_id:
+        return None
+
+    row = (
+        GarageVehicle.objects.filter(id=garage_vehicle_id)
+        .values("catalog_source", "autodb_passanger_car_id")
+        .first()
+    )
+    if not row:
+        return None
+    if str(row.get("catalog_source") or "").strip() != GarageVehicle.CATALOG_SOURCE_AUTODB_PRO:
+        return None
+    return parse_positive_int(row.get("autodb_passanger_car_id"))
 
 
 def resolve_product_utr_detail_ids(*, product: Product) -> set[str]:
@@ -193,24 +305,78 @@ def get_utr_fitment_queryset(*, detail_ids: set[str], selected_vehicle: Selected
     return queryset
 
 
-def build_autodb_generation(car: AutoDbPassengerCar) -> str:
-    if car.start_year or car.end_year:
-        start_label = str(car.start_year) if car.start_year else "?"
-        end_label = str(car.end_year) if car.end_year else "..."
-        return f"{start_label}-{end_label}"
-    return str(car.construction_interval or "").strip()
-
-
-def serialize_autodb_fitment_mapping(car: AutoDbPassengerCar) -> dict:
-    model = car.model
-    manufacturer = model.manufacturer if model is not None else None
+def serialize_autodb_fitment_mapping(car: dict[str, object]) -> dict:
+    label = build_autodb_passanger_car_label(car)
+    vehicle_id = int(label.get("vehicle_id") or car.get("vehicle_id") or 0)
     return {
-        "id": f"autodb-{car.id}",
-        "make": str(manufacturer.description if manufacturer is not None else ""),
-        "model": str(model.description if model is not None else ""),
-        "generation": build_autodb_generation(car),
+        "id": f"autodb-{vehicle_id}",
+        "vehicle_id": vehicle_id,
+        "make": str(label.get("make") or ""),
+        "model": str(label.get("model") or ""),
+        "generation": str(label.get("years") or ""),
+        "engine": str(label.get("engine") or ""),
+        "modification": str(label.get("modification") or label.get("label") or ""),
+        "body": str(label.get("body") or ""),
+        "label": str(label.get("label") or ""),
+        "subtitle": str(label.get("subtitle") or ""),
+        "model_id": int(car.get("model_id") or 0),
+        "manufacturer_id": int(car.get("manufacturer_id") or 0),
+        "note": "Auto-DB Pro applicability",
+        "is_exact": False,
+    }
+
+
+def serialize_autodb_fitment_mapping_from_selector(vehicle: dict[str, object]) -> dict:
+    vehicle_id = int(vehicle.get("vehicle_id") or 0)
+    label = str(vehicle.get("label") or "").strip() or (f"Автомобиль #{vehicle_id}" if vehicle_id else "Автомобиль")
+    return {
+        "id": f"autodb-{vehicle_id}",
+        "vehicle_id": vehicle_id,
+        "make": str(vehicle.get("make") or ""),
+        "model": str(vehicle.get("model") or ""),
+        "generation": str(vehicle.get("years") or ""),
+        "engine": str(vehicle.get("engine") or ""),
+        "modification": str(vehicle.get("modification") or label),
+        "body": str(vehicle.get("body") or ""),
+        "label": label,
+        "subtitle": str(vehicle.get("subtitle") or ""),
+        "model_id": int(vehicle.get("model_id") or 0),
+        "manufacturer_id": int(vehicle.get("manufacturer_id") or 0),
+        "note": "Auto-DB Pro applicability",
+        "is_exact": False,
+    }
+
+
+def serialize_autodb_fitment_fallback_row(*, passanger_car_id: int, selected_vehicle: dict[str, str | int] | None = None) -> dict:
+    selected_id = int(selected_vehicle.get("vehicle_id", 0)) if selected_vehicle else 0
+    if selected_vehicle and selected_id == int(passanger_car_id):
+        label = str(selected_vehicle.get("label") or "")
+        return {
+            "id": f"autodb-{passanger_car_id}",
+            "vehicle_id": int(passanger_car_id),
+            "make": str(selected_vehicle.get("make") or ""),
+            "model": str(selected_vehicle.get("model") or ""),
+            "generation": str(selected_vehicle.get("years") or ""),
+            "engine": str(selected_vehicle.get("engine") or ""),
+            "modification": str(selected_vehicle.get("modification") or label),
+            "body": str(selected_vehicle.get("body") or ""),
+            "label": label or f"Автомобиль #{passanger_car_id}",
+            "subtitle": str(selected_vehicle.get("subtitle") or ""),
+            "note": "Auto-DB Pro applicability",
+            "is_exact": False,
+        }
+
+    return {
+        "id": f"autodb-{passanger_car_id}",
+        "vehicle_id": int(passanger_car_id),
+        "make": "",
+        "model": "",
+        "generation": "",
         "engine": "",
-        "modification": str(car.full_description or car.description or ""),
+        "modification": "",
+        "body": "",
+        "label": f"Автомобиль #{passanger_car_id}",
+        "subtitle": "",
         "note": "Auto-DB Pro applicability",
         "is_exact": False,
     }
@@ -255,96 +421,97 @@ def _normalized_signature(value: str | None) -> str:
     return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
 
 
-def _annotate_autodb_selected_vehicle_order(
-    *,
-    queryset,
-    selected_vehicle: SelectedAutocatalogVehicle | None,
-):
-    if selected_vehicle is None:
-        return queryset.order_by(
-            "model__manufacturer__description",
-            "model__description",
-            "start_year",
-            "end_year",
-            "id",
-        )
-
-    make_signature = _normalized_signature(selected_vehicle.make_name)
-    model_signature = _normalized_signature(selected_vehicle.model_name)
-
-    # Prefer direct exact-name match if names are aligned between autocatalog and Auto-DB.
-    queryset = queryset.annotate(
-        selected_make_order=Case(
-            When(model__manufacturer__description=selected_vehicle.make_name, then=Value(0)),
-            default=Value(1),
-            output_field=IntegerField(),
-        ),
-        selected_model_order=Case(
-            When(
-                model__manufacturer__description=selected_vehicle.make_name,
-                model__description=selected_vehicle.model_name,
-                then=Value(0),
-            ),
-            default=Value(1),
-            output_field=IntegerField(),
-        ),
-    )
-
-    if make_signature or model_signature:
-        # Secondary order to keep likely matches close to top when exact text differs slightly.
-        queryset = queryset.annotate(
-            selected_signature_order=Case(
-                When(
-                    model__manufacturer__matchcode__iexact=make_signature,
-                    then=Value(0),
-                ),
-                default=Value(1),
-                output_field=IntegerField(),
-            )
-        )
-        return queryset.order_by(
-            "selected_model_order",
-            "selected_make_order",
-            "selected_signature_order",
-            "model__manufacturer__description",
-            "model__description",
-            "start_year",
-            "end_year",
-            "id",
-        )
-
-    return queryset.order_by(
-        "selected_model_order",
-        "selected_make_order",
-        "model__manufacturer__description",
-        "model__description",
-        "start_year",
-        "end_year",
-        "id",
-    )
-
-
 def get_autodb_fitment_queryset(*, product: Product, selected_vehicle: SelectedAutocatalogVehicle | None = None):
-    pairs = _resolve_product_autodb_article_brand_pairs(product=product)
-    if not pairs:
-        return AutoDbPassengerCar.objects.none()
+    if not _can_use_autodb_fitments_for_public(product=product):
+        return []
+    fitment_ids = get_public_autodb_fitment_ids(product=product)
+    vehicle_map = resolve_public_autodb_vehicle_map(passanger_car_ids=fitment_ids)
+    rows: list[dict[str, object]] = []
+    for car_id in sorted(set(fitment_ids)):
+        vehicle = vehicle_map.get(int(car_id))
+        if vehicle is not None:
+            rows.append(dict(vehicle))
+            continue
+        rows.append(
+            {
+                "vehicle_id": int(car_id),
+                "model_id": 0,
+                "manufacturer_id": 0,
+                "make": "",
+                "model": "",
+                "modification": "",
+                "years": "",
+                "engine": "",
+                "body": "",
+                "label": f"Автомобиль #{int(car_id)}",
+                "subtitle": "",
+            }
+        )
+    if selected_vehicle is None:
+        return rows
+    selected_make = _normalized_signature(selected_vehicle.make_name)
+    selected_model = _normalized_signature(selected_vehicle.model_name)
 
-    normalized_brands = {brand for _, brand in pairs}
-    supplier_ids = _resolve_autodb_supplier_ids_by_brands(normalized_brands=normalized_brands)
-    if not supplier_ids:
-        return AutoDbPassengerCar.objects.none()
+    def _order(row: dict[str, object]) -> tuple[int, int, str, str, int]:
+        make = _normalized_signature(str(row.get("make") or ""))
+        model = _normalized_signature(str(row.get("model") or ""))
+        model_match = 0 if (selected_make and selected_model and make == selected_make and model == selected_model) else 1
+        make_match = 0 if (selected_make and make == selected_make) else 1
+        return (
+            model_match,
+            make_match,
+            str(row.get("make") or ""),
+            str(row.get("model") or ""),
+            int(row.get("vehicle_id") or 0),
+        )
 
-    articles = {article for article, _ in pairs}
-    linkage_ids = AutoDbArticleLinkage.objects.filter(
-        supplier_id__in=sorted(supplier_ids),
-        normalized_article__in=sorted(articles),
-    ).values_list("linkage_id", flat=True)
+    return sorted(rows, key=_order)
 
-    queryset = AutoDbPassengerCar.objects.filter(id__in=Subquery(linkage_ids)).select_related(
-        "model",
-        "model__manufacturer",
+
+def get_public_autodb_fitment_ids(*, product: Product) -> list[int]:
+    if not _can_use_autodb_fitments_for_public(product=product):
+        return []
+    rows = (
+        ProductFitment.objects.filter(
+            product=product,
+            source=ProductFitment.SOURCE_AUTODB_PRO,
+            is_stale=False,
+            excluded_from_public_filtering=False,
+            quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
+        )
+        .exclude(autodb_passanger_car_id__isnull=True)
+        .values_list("autodb_passanger_car_id", flat=True)
+        .distinct()
     )
-    return _annotate_autodb_selected_vehicle_order(queryset=queryset, selected_vehicle=selected_vehicle)
+    return [int(value) for value in rows if value]
+
+
+def resolve_public_autodb_vehicle_map(*, passanger_car_ids: list[int]) -> dict[int, dict[str, object]]:
+    if not passanger_car_ids:
+        return {}
+    return list_passanger_cars_by_ids(passanger_car_ids)
+
+
+def _can_use_autodb_fitments_for_public(*, product: Product) -> bool:
+    article_key = str(getattr(product, "autodb_article_key", "") or "").strip()
+    if not article_key:
+        return False
+    has_trusted_quality = AutoDbProductLinkQuality.objects.filter(
+        product=product,
+        autodb_article_key=article_key,
+        status=AutoDbProductLinkQuality.STATUS_TRUSTED,
+    ).exists()
+    if not has_trusted_quality:
+        return False
+    return ProductFitment.objects.filter(
+        product=product,
+        source=ProductFitment.SOURCE_AUTODB_PRO,
+        autodb_article_key=article_key,
+        is_stale=False,
+        excluded_from_public_filtering=False,
+        quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
+        autodb_passanger_car_id__isnull=False,
+    ).exists()
 
 
 def _resolve_selected_vehicle_by_car_modification_id(*, car_modification_id: int) -> SelectedAutocatalogVehicle | None:
@@ -385,20 +552,45 @@ def resolve_autodb_matched_product_ids_for_selected_vehicle(
     if not make_name or not model_name:
         return set()
 
-    make_token = make_name.split()[0]
-    model_token = model_name.split()[0]
-    cars = AutoDbPassengerCar.objects.select_related("model", "model__manufacturer").filter(
-        model__manufacturer__description__icontains=make_token,
-        model__description__icontains=model_token,
-    )
+    make_token = _normalized_signature(make_name.split()[0])
+    model_token = _normalized_signature(model_name.split()[0])
     selected_year = parse_positive_int(selected_vehicle.year)
-    if selected_year:
-        cars = cars.filter(
-            Q(start_year__isnull=True) | Q(start_year__lte=selected_year),
-            Q(end_year__isnull=True) | Q(end_year__gte=selected_year),
-        )
 
-    car_ids = list(cars.values_list("id", flat=True))
+    manufacturer_ids: set[int] = set()
+    for manufacturer in list_vehicle_manufacturers():
+        manufacturer_name = str(manufacturer.get("name") or "")
+        manufacturer_sig = _normalized_signature(manufacturer_name)
+        if make_token and make_token in manufacturer_sig:
+            manufacturer_ids.add(int(manufacturer.get("id") or 0))
+    manufacturer_ids.discard(0)
+    if not manufacturer_ids:
+        return set()
+
+    model_ids: set[int] = set()
+    for manufacturer_id in sorted(manufacturer_ids):
+        for model in list_vehicle_models(manufacturer_id=manufacturer_id):
+            model_name_value = str(model.get("name") or "")
+            model_sig = _normalized_signature(model_name_value)
+            if model_token and model_token in model_sig:
+                model_ids.add(int(model.get("id") or 0))
+    model_ids.discard(0)
+    if not model_ids:
+        return set()
+
+    car_ids: list[int] = []
+    for model_id in sorted(model_ids):
+        for car in list_passanger_cars(model_id=model_id):
+            car_id = parse_positive_int(car.get("id"))
+            if not car_id:
+                continue
+            if selected_year:
+                year_from = parse_positive_int(car.get("year_from"))
+                year_to = parse_positive_int(car.get("year_to"))
+                if year_from and selected_year < year_from:
+                    continue
+                if year_to and selected_year > year_to:
+                    continue
+            car_ids.append(car_id)
     if not car_ids:
         return set()
 

@@ -2,9 +2,13 @@ import { getJson } from "@/shared/api/http-client";
 
 import type { CatalogFilters, ProductFitmentRowsResponse } from "../types";
 
-type ProductFitmentRowsParams = Pick<CatalogFilters, "car_modification" | "garage_vehicle"> & {
+type ProductFitmentRowsParams = Pick<
+  CatalogFilters,
+  "vehicle_id" | "passanger_car_id" | "car_modification" | "garage_vehicle"
+> & {
   make?: string;
   model?: string;
+  modification?: string;
   limit?: number;
   offset?: number;
 };

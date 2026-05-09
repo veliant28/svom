@@ -35,6 +35,7 @@ class AutoDbRawCloneStorage:
             return cached
         local_columns = sorted(self.get_local_columns(table))
         if local_columns:
+            primary_key_columns, unique_keys = self._get_local_keys(table)
             info = CloneSchemaInfo(
                 table=table,
                 columns=[
@@ -51,8 +52,8 @@ class AutoDbRawCloneStorage:
                     )
                     for index, column in enumerate(local_columns)
                 ],
-                primary_key_columns=[],
-                unique_keys=[],
+                primary_key_columns=primary_key_columns,
+                unique_keys=unique_keys,
             )
             self._schema_cache[table] = info
             self._local_columns_cache[table] = set(local_columns)
@@ -370,11 +371,23 @@ class AutoDbRawCloneStorage:
 
         payload_rows: list[dict[str, Any]] = []
         for row in rows:
-            payload: dict[str, Any] = {key: row.get(key) for key in remote_columns if key in row}
+            row_lookup = {str(key).lower(): key for key in row.keys()}
+            payload: dict[str, Any] = {}
+            for key in remote_columns:
+                raw_key = row_lookup.get(str(key).lower())
+                if raw_key is None:
+                    continue
+                payload[key] = row.get(raw_key)
+
+            if not payload:
+                continue
             source_json = json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)
             payload["_source_hash"] = hashlib.sha1(source_json.encode("utf-8")).hexdigest()  # noqa: S324
             payload.update(metadata)
             payload_rows.append(payload)
+
+        if not payload_rows:
+            return len(rows)
 
         columns = list(payload_rows[0].keys())
         conflict_columns = schema_info.primary_key_columns or (schema_info.unique_keys[0] if schema_info.unique_keys else ["_source_hash"])
@@ -394,15 +407,21 @@ class AutoDbRawCloneStorage:
         failed = 0
         with transaction.atomic(using=self.db_alias):
             with connections[self.db_alias].cursor() as cursor:
+                bulk_sid = transaction.savepoint(using=self.db_alias)
                 try:
                     cursor.executemany(sql, values)
+                    transaction.savepoint_commit(bulk_sid, using=self.db_alias)
                     return 0
                 except Exception:  # noqa: BLE001
-                    pass
+                    transaction.savepoint_rollback(bulk_sid, using=self.db_alias)
+
                 for item in values:
+                    row_sid = transaction.savepoint(using=self.db_alias)
                     try:
                         cursor.execute(sql, item)
+                        transaction.savepoint_commit(row_sid, using=self.db_alias)
                     except Exception:  # noqa: BLE001
+                        transaction.savepoint_rollback(row_sid, using=self.db_alias)
                         failed += 1
         return failed
 
@@ -434,3 +453,45 @@ class AutoDbRawCloneStorage:
         value = str(identifier or "").strip()
         if not _IDENTIFIER_RE.match(value):
             raise AutoDbProRemoteClientError("Invalid SQL identifier.")
+
+    def _get_local_keys(self, table: str) -> tuple[list[str], list[list[str]]]:
+        self._validate_identifier(table)
+        with connections[self.db_alias].cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT tc.constraint_name, tc.constraint_type, kcu.column_name, kcu.ordinal_position
+                FROM information_schema.table_constraints tc
+                JOIN information_schema.key_column_usage kcu
+                  ON tc.constraint_schema = kcu.constraint_schema
+                 AND tc.constraint_name = kcu.constraint_name
+                 AND tc.table_schema = kcu.table_schema
+                 AND tc.table_name = kcu.table_name
+                WHERE tc.table_schema = current_schema()
+                  AND tc.table_name = %s
+                  AND tc.constraint_type IN ('PRIMARY KEY', 'UNIQUE')
+                ORDER BY tc.constraint_name, kcu.ordinal_position
+                """,
+                [table],
+            )
+            rows = cursor.fetchall()
+
+        by_constraint: dict[str, tuple[str, list[str]]] = {}
+        for constraint_name, constraint_type, column_name, _ordinal_position in rows:
+            name = str(constraint_name)
+            kind = str(constraint_type)
+            entry = by_constraint.get(name)
+            if entry is None:
+                entry = (kind, [])
+                by_constraint[name] = entry
+            entry[1].append(str(column_name))
+
+        primary: list[str] = []
+        unique_keys: list[list[str]] = []
+        for kind, columns in by_constraint.values():
+            if not columns:
+                continue
+            if kind == "PRIMARY KEY":
+                primary = list(columns)
+            elif kind == "UNIQUE":
+                unique_keys.append(list(columns))
+        return primary, unique_keys

@@ -3,18 +3,15 @@
 import { useEffect, useState } from "react";
 import { useLocale } from "next-intl";
 
-import { getBrands } from "@/features/catalog/api/get-brands";
 import { getCategories } from "@/features/catalog/api/get-categories";
-import type { BrandSummary, CategorySummary } from "@/features/catalog/types";
+import type { CategorySummary } from "@/features/catalog/types";
 
 type CatalogTaxonomyInitialData = {
-  brands?: BrandSummary[];
   categories?: CategorySummary[];
 };
 
 export function useCatalogTaxonomy(initialData?: CatalogTaxonomyInitialData) {
   const locale = useLocale();
-  const [brands, setBrands] = useState<BrandSummary[]>(initialData?.brands ?? []);
   const [categories, setCategories] = useState<CategorySummary[]>(initialData?.categories ?? []);
 
   useEffect(() => {
@@ -22,14 +19,12 @@ export function useCatalogTaxonomy(initialData?: CatalogTaxonomyInitialData) {
 
     async function loadTaxonomy() {
       try {
-        const [brandData, categoryData] = await Promise.all([getBrands(), getCategories(locale)]);
+        const categoryData = await getCategories(locale);
         if (isMounted) {
-          setBrands(brandData);
           setCategories(categoryData);
         }
       } catch {
         if (isMounted) {
-          setBrands([]);
           setCategories([]);
         }
       }
@@ -42,5 +37,5 @@ export function useCatalogTaxonomy(initialData?: CatalogTaxonomyInitialData) {
     };
   }, [locale]);
 
-  return { brands, categories };
+  return { categories };
 }

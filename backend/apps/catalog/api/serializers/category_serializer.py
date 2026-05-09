@@ -9,7 +9,7 @@ class CategoryListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = ("id", "name", "slug", "parent")
+        fields = ("id", "name", "slug", "sort_order", "is_assignable", "parent")
 
     def _resolve_locale(self) -> str | None:
         request = self.context.get("request")
@@ -40,4 +40,5 @@ class CategoryListSerializer(serializers.ModelSerializer):
             "id": str(obj.parent.id),
             "name": obj.parent.get_localized_name(locale),
             "slug": obj.parent.slug,
+            "sort_order": int(obj.parent.sort_order or 0),
         }

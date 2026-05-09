@@ -3,6 +3,7 @@ from __future__ import annotations
 from unittest.mock import patch
 
 from django.urls import reverse
+from django.urls.exceptions import NoReverseMatch
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
@@ -101,82 +102,9 @@ class SupplierWorkspaceAPISmokeTests(APITestCase):
         self.assertEqual(prices_response.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(prices_response.data["count"], 1)
 
-    @patch("apps.backoffice.services.supplier_workspace_service.UtrClient.fetch_brands")
-    def test_utr_brands_import_persists_brands_with_dedupe(self, fetch_brands_mock):
-        Brand.objects.create(name="MANN FILTER", slug="mann-filter", is_active=False)
-        fetch_brands_mock.return_value = [
-            {"name": "MANN-FILTER", "externalCode": "0001"},
-            {"name": "BOSCH", "externalCode": "0002"},
-            {"name": "Bosch", "externalCode": "0003"},
-            {"name": "", "externalCode": "0004"},
-        ]
-
-        integration = get_supplier_integration_by_code(source_code="utr")
-        integration.access_token = "test-access-token"
-        integration.is_enabled = True
-        integration.save(update_fields=("access_token", "is_enabled", "updated_at"))
-
-        response = self.client.post(
-            reverse("backoffice_api:supplier-utr-brands-import"),
-            {},
-            format="json",
-            **self.auth,
-        )
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["summary"]["created"], 1)
-        self.assertEqual(response.data["summary"]["updated"], 1)
-        self.assertEqual(response.data["summary"]["duplicate_in_payload"], 1)
-        self.assertEqual(response.data["summary"]["errors"], 0)
-        self.assertEqual(response.data["summary"]["total_received"], 4)
-
-        self.assertEqual(Brand.objects.filter(name="BOSCH").count(), 1)
-        self.assertTrue(Brand.objects.get(slug="mann-filter").is_active)
-        self.assertEqual(SupplierBrandAlias.objects.filter(source=self.utr_source).count(), 2)
-
-    @patch("apps.backoffice.services.supplier_workspace_service.UtrClient.fetch_brands")
-    def test_utr_brands_import_is_idempotent(self, fetch_brands_mock):
-        fetch_brands_mock.return_value = [
-            {"name": "MANN FILTER", "externalCode": "0001"},
-            {"name": "MANN-FILTER", "externalCode": "0002"},
-            {"name": "BOSCH", "externalCode": "0003"},
-        ]
-
-        integration = get_supplier_integration_by_code(source_code="utr")
-        integration.access_token = "test-access-token"
-        integration.is_enabled = True
-        integration.next_allowed_request_at = None
-        integration.save(update_fields=("access_token", "is_enabled", "next_allowed_request_at", "updated_at"))
-
-        first = self.client.post(
-            reverse("backoffice_api:supplier-utr-brands-import"),
-            {},
-            format="json",
-            **self.auth,
-        )
-        self.assertEqual(first.status_code, status.HTTP_200_OK)
-        self.assertEqual(first.data["summary"]["created"], 2)
-        self.assertEqual(first.data["summary"]["duplicate_in_payload"], 1)
-
-        integration.refresh_from_db()
-        integration.next_allowed_request_at = None
-        integration.save(update_fields=("next_allowed_request_at", "updated_at"))
-
-        second = self.client.post(
-            reverse("backoffice_api:supplier-utr-brands-import"),
-            {},
-            format="json",
-            **self.auth,
-        )
-        self.assertEqual(second.status_code, status.HTTP_200_OK)
-        self.assertEqual(second.data["summary"]["created"], 0)
-        self.assertEqual(second.data["summary"]["updated"], 0)
-        self.assertEqual(second.data["summary"]["skipped"], 3)
-        self.assertEqual(second.data["summary"]["duplicate_in_payload"], 1)
-        self.assertEqual(second.data["summary"]["errors"], 0)
-
-        self.assertEqual(Brand.objects.filter(name__iexact="bosch").count(), 1)
-        self.assertEqual(Brand.objects.filter(name__iexact="mann filter").count(), 1)
+    def test_utr_brands_import_route_is_removed(self):
+        with self.assertRaises(NoReverseMatch):
+            reverse("backoffice_api:supplier-utr-brands-import")
 
     @patch("apps.backoffice.services.supplier_workspace_service.UtrClient.check_connection")
     @patch("apps.backoffice.services.supplier_workspace_service.UtrClient.obtain_token")

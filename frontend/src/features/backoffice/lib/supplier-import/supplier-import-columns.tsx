@@ -2,6 +2,7 @@ import type { BackofficeColumn } from "@/features/backoffice/components/table/ba
 import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { formatBackofficeDate } from "@/features/backoffice/lib/supplier-workspace";
 import type { BackofficeSupplierPriceList } from "@/features/backoffice/types/suppliers.types";
+import { Download, FileInput, RefreshCcw, Trash2 } from "lucide-react";
 
 type Translator = (key: string, values?: Record<string, string | number>) => string;
 
@@ -42,6 +43,11 @@ export function createSupplierImportColumns({
   onRowImport: (item: BackofficeSupplierPriceList) => void;
   onRowDelete: (item: BackofficeSupplierPriceList) => void;
 }): Array<BackofficeColumn<BackofficeSupplierPriceList>> {
+  const actionButtonClassName =
+    "inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors disabled:cursor-not-allowed disabled:opacity-50";
+  const actionTooltipClassName =
+    "pointer-events-none absolute bottom-full left-1/2 z-[220] mb-1.5 hidden -translate-x-1/2 whitespace-nowrap rounded-md border px-2 py-1 text-[11px] shadow-lg group-hover:block group-focus-within:block";
+
   return [
     {
       key: "file",
@@ -49,7 +55,7 @@ export function createSupplierImportColumns({
       className: "min-w-[230px]",
       render: (item) => (
         <div className="space-y-1">
-          <p className="font-semibold">{item.source_file_name || "-"}</p>
+          <p className="break-all font-semibold">{item.source_file_name || "-"}</p>
           <p className="text-xs" style={{ color: "var(--muted)" }}>
             {item.remote_id ? `ID ${item.remote_id}` : "-"}
           </p>
@@ -85,7 +91,7 @@ export function createSupplierImportColumns({
           <div className="space-y-1.5 text-xs">
             <p>{t("priceLifecycle.table.paramFormat", { format: item.requested_format || "-" })}</p>
             {isGplRow ? (
-              <div className="relative isolate flex items-center gap-5 whitespace-nowrap">
+              <div className="relative isolate flex flex-wrap items-center gap-3">
                 <span className="group relative inline-flex items-center gap-1.5">
                   <span style={{ color: "var(--muted)" }}>{`${t("priceLifecycle.table.columns.prices")}:`}</span>
                   <button
@@ -164,45 +170,85 @@ export function createSupplierImportColumns({
     {
       key: "actions",
       label: t("priceLifecycle.table.columns.actions"),
-      className: "min-w-[320px]",
+      className: "min-w-[170px]",
       render: (item) => (
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="h-8 cursor-pointer rounded-md border px-2 text-xs font-semibold disabled:cursor-not-allowed"
-            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-            disabled={!tokenReady || !cooldownCanRun}
-            onClick={() => onRowRequest(item)}
-          >
-            {t("priceLifecycle.actions.request")}
-          </button>
-          <button
-            type="button"
-            className="h-8 cursor-pointer rounded-md border px-2 text-xs font-semibold disabled:cursor-not-allowed"
-            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-            disabled={!tokenReady || !item.download_available}
-            onClick={() => onRowDownload(item)}
-          >
-            {t("priceLifecycle.actions.download")}
-          </button>
-          <button
-            type="button"
-            className="h-8 cursor-pointer rounded-md border px-2 text-xs font-semibold disabled:cursor-not-allowed"
-            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-            disabled={!tokenReady || !item.import_available}
-            onClick={() => onRowImport(item)}
-          >
-            {t("priceLifecycle.actions.import")}
-          </button>
-          <button
-            type="button"
-            className="h-8 cursor-pointer rounded-md border px-2 text-xs font-semibold disabled:cursor-not-allowed"
-            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-            disabled={!tokenReady}
-            onClick={() => onRowDelete(item)}
-          >
-            {t("priceLifecycle.actions.delete")}
-          </button>
+        <div className="flex flex-wrap gap-1.5">
+          <span className="group relative inline-flex">
+            <button
+              type="button"
+              aria-label={t("priceLifecycle.actions.request")}
+              className={actionButtonClassName}
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+              disabled={!tokenReady || !cooldownCanRun}
+              onClick={() => onRowRequest(item)}
+            >
+              <RefreshCcw size={14} />
+            </button>
+            <span
+              role="tooltip"
+              className={actionTooltipClassName}
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", color: "var(--text)" }}
+            >
+              {t("priceLifecycle.actions.request")}
+            </span>
+          </span>
+          <span className="group relative inline-flex">
+            <button
+              type="button"
+              aria-label={t("priceLifecycle.actions.download")}
+              className={actionButtonClassName}
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+              disabled={!tokenReady || !item.download_available}
+              onClick={() => onRowDownload(item)}
+            >
+              <Download size={14} />
+            </button>
+            <span
+              role="tooltip"
+              className={actionTooltipClassName}
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", color: "var(--text)" }}
+            >
+              {t("priceLifecycle.actions.download")}
+            </span>
+          </span>
+          <span className="group relative inline-flex">
+            <button
+              type="button"
+              aria-label={t("priceLifecycle.actions.import")}
+              className={actionButtonClassName}
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+              disabled={!tokenReady || !item.import_available}
+              onClick={() => onRowImport(item)}
+            >
+              <FileInput size={14} />
+            </button>
+            <span
+              role="tooltip"
+              className={actionTooltipClassName}
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", color: "var(--text)" }}
+            >
+              {t("priceLifecycle.actions.import")}
+            </span>
+          </span>
+          <span className="group relative inline-flex">
+            <button
+              type="button"
+              aria-label={t("priceLifecycle.actions.delete")}
+              className={actionButtonClassName}
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+              disabled={!tokenReady}
+              onClick={() => onRowDelete(item)}
+            >
+              <Trash2 size={14} />
+            </button>
+            <span
+              role="tooltip"
+              className={actionTooltipClassName}
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", color: "var(--text)" }}
+            >
+              {t("priceLifecycle.actions.delete")}
+            </span>
+          </span>
         </div>
       ),
     },

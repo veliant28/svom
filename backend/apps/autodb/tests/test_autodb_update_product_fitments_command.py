@@ -73,6 +73,7 @@ class AutoDbUpdateProductFitmentsCommandTests(SimpleTestCase):
 
         out = StringIO()
         call_command("autodb_update_product_fitments", "--dry-run", stdout=out)
+        service.build_queryset.assert_called_once_with(product_id="", only_linked=False, only_trusted=False)
 
         output = out.getvalue()
         self.assertIn("Auto_DB_Pro product fitment update summary", output)
@@ -104,6 +105,7 @@ class AutoDbUpdateProductFitmentsCommandTests(SimpleTestCase):
 
         out = StringIO()
         call_command("autodb_update_product_fitments", "--dry-run", "--wait-for-autodb", "300", stdout=out)
+        service.build_queryset.assert_called_once_with(product_id="", only_linked=False, only_trusted=False)
 
         output = out.getvalue()
         ready_mock.assert_called_once_with(timeout_seconds=300, interval_seconds=2.0)
@@ -111,3 +113,26 @@ class AutoDbUpdateProductFitmentsCommandTests(SimpleTestCase):
         self.assertIn("- failed: 0", output)
         self.assertIn("- aborted: True", output)
         self.assertIn("- abort_reason: local_autodb_not_ready", output)
+
+    @patch(
+        "apps.autodb.management.commands.autodb_update_product_fitments.wait_for_local_autodb_ready",
+        return_value=LocalAutoDbReadinessResult(
+            ready=True,
+            reason="ready",
+            error_message="",
+            host="127.0.0.1",
+            port="5434",
+            database="Auto_DB_Pro",
+            attempts=1,
+            waited_seconds=0.0,
+        ),
+    )
+    @patch("apps.autodb.management.commands.autodb_update_product_fitments.AutoDbProductFitmentEnrichmentService")
+    def test_only_trusted_flag_is_forwarded(self, service_cls_mock, _ready_mock):
+        service = service_cls_mock.return_value
+        service.build_queryset.return_value = _FakeQuerySet([])
+
+        out = StringIO()
+        call_command("autodb_update_product_fitments", "--dry-run", "--only-linked", "--only-trusted", stdout=out)
+
+        service.build_queryset.assert_called_once_with(product_id="", only_linked=True, only_trusted=True)

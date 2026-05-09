@@ -23,6 +23,10 @@ from .category_i18n import (
     translate_category_name_uk_to_en,
     translate_category_name_uk_to_ru,
 )
+from .category_assignment import (
+    assignable_category_or_none,
+    can_assign_products_to_category,
+)
 from .fitment_filtering import (
     FITMENT_ALL,
     FITMENT_ONLY,
@@ -41,6 +45,25 @@ from .product_management import (
     resolve_locale,
     sanitize_product_name,
 )
+from .product_branding import (
+    ProductBrandDisplay,
+    get_product_display_brand,
+    get_product_display_brand_payload,
+)
+from .product_sku import (
+    get_product_manufacturer_article,
+    get_product_display_sku,
+    get_product_internal_import_key,
+    is_gpl_product,
+)
+from .category_canonicalization import (
+    CANONICAL_CATEGORY_SPECS,
+    CanonicalCategorySpec,
+    canonical_specs_by_slug,
+    find_semantic_category_under_parent,
+    resolve_canonical_display_name,
+    resolve_canonical_spec_for_name,
+)
 
 __all__ = [
     "sanitize_brand_name",
@@ -54,6 +77,8 @@ __all__ = [
     "build_category_i18n_names",
     "translate_category_name_uk_to_ru",
     "translate_category_name_uk_to_en",
+    "can_assign_products_to_category",
+    "assignable_category_or_none",
     "FitmentFilteringService",
     "FITMENT_ONLY",
     "FITMENT_ALL",
@@ -68,6 +93,19 @@ __all__ = [
     "resolve_locale",
     "get_admin_display_name",
     "generate_unique_product_slug",
+    "ProductBrandDisplay",
+    "get_product_display_brand",
+    "get_product_display_brand_payload",
+    "get_product_display_sku",
+    "get_product_manufacturer_article",
+    "get_product_internal_import_key",
+    "is_gpl_product",
+    "CanonicalCategorySpec",
+    "CANONICAL_CATEGORY_SPECS",
+    "canonical_specs_by_slug",
+    "resolve_canonical_spec_for_name",
+    "resolve_canonical_display_name",
+    "find_semantic_category_under_parent",
     "get_autodb_product_content",
     "get_autodb_primary_image_url",
     "build_autodb_characteristic_attributes",

@@ -5,6 +5,7 @@ from .autodb_article_manual_mapping import AutoDbArticleManualMapping
 from .autodb_product_link_quality import AutoDbProductLinkQuality
 from .brand import Brand
 from .category import Category
+from .category_navigation import CategoryNavigationCollection, CategoryNavigationGroup, CategoryNavigationItem
 from .product import Product
 from .product_attribute import ProductAttribute
 from .product_image import ProductImage
@@ -13,6 +14,9 @@ from .utr_product_enrichment import UtrProductEnrichment
 __all__ = [
     "Brand",
     "Category",
+    "CategoryNavigationCollection",
+    "CategoryNavigationGroup",
+    "CategoryNavigationItem",
     "Product",
     "ProductImage",
     "Attribute",

@@ -10,12 +10,14 @@ export function CategoryFormModal({
   name,
   parentId,
   isActive,
+  showInHeader,
   parentOptions,
   disabledParentIds,
   getParentOptionLabel,
   onNameChange,
   onParentChange,
   onIsActiveChange,
+  onShowInHeaderChange,
   onClose,
   onSubmit,
   t,
@@ -27,12 +29,14 @@ export function CategoryFormModal({
   name: string;
   parentId: string;
   isActive: boolean;
+  showInHeader: boolean;
   parentOptions: BackofficeCatalogCategory[];
   disabledParentIds?: Set<string>;
   getParentOptionLabel: (category: BackofficeCatalogCategory) => string;
   onNameChange: (next: string) => void;
   onParentChange: (next: string) => void;
   onIsActiveChange: (next: boolean) => void;
+  onShowInHeaderChange: (next: boolean) => void;
   onClose: () => void;
   onSubmit: () => void;
   t: Translator;
@@ -81,6 +85,14 @@ export function CategoryFormModal({
               onChange={(event) => onIsActiveChange(event.target.checked)}
             />
             {t("categories.fields.isActive")}
+          </label>
+          <label className="inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}>
+            <input
+              type="checkbox"
+              checked={showInHeader}
+              onChange={(event) => onShowInHeaderChange(event.target.checked)}
+            />
+            {t("categories.fields.showInHeader")}
           </label>
         </div>
 

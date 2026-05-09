@@ -1156,15 +1156,15 @@ def _has_applicability_result(*, detail_id: str) -> bool:
 
 
 def _lazy_characteristics_enabled() -> bool:
-    return bool(getattr(settings, "UTR_LAZY_ENRICH_CHARACTERISTICS_ENABLED", True))
+    return bool(getattr(settings, "UTR_LAZY_ENRICH_CHARACTERISTICS_ENABLED", False))
 
 
 def _lazy_applicability_enabled() -> bool:
-    return bool(getattr(settings, "UTR_LAZY_ENRICH_APPLICABILITY_ENABLED", True))
+    return bool(getattr(settings, "UTR_LAZY_ENRICH_APPLICABILITY_ENABLED", False))
 
 
 def _lazy_catalog_applicability_enabled() -> bool:
-    return bool(getattr(settings, "UTR_LAZY_CATALOG_APPLICABILITY_ENABLED", True))
+    return bool(getattr(settings, "UTR_LAZY_CATALOG_APPLICABILITY_ENABLED", False))
 
 
 def _utr_catalog_enrichment_is_enabled() -> bool:

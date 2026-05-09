@@ -1,12 +1,11 @@
 from rest_framework import serializers
 
+from apps.catalog.api.serializers import ProductListSerializer
 from apps.commerce.models import WishlistItem
-
-from .product_summary_serializer import CommerceProductSummarySerializer
 
 
 class WishlistItemSerializer(serializers.ModelSerializer):
-    product = CommerceProductSummarySerializer(read_only=True)
+    product = ProductListSerializer(read_only=True)
 
     class Meta:
         model = WishlistItem

@@ -27,14 +27,18 @@ class BackofficeCatalogCategorySerializer(serializers.ModelSerializer):
             "name_ru",
             "name_en",
             "slug",
+            "source",
+            "autodb_prd_id",
             "parent",
             "parent_name",
             "description",
             "is_active",
+            "show_in_header",
+            "is_assignable",
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "created_at", "updated_at", "parent_name")
+        read_only_fields = ("id", "created_at", "updated_at", "parent_name", "source", "autodb_prd_id")
         extra_kwargs = {
             "slug": {"required": False, "allow_blank": True},
             "description": {"required": False, "allow_blank": True},

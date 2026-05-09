@@ -26,6 +26,11 @@ from .categorized_mapping_operational_service import (
     CategorizedOperationalRunResult,
 )
 from .mapped_offer_publish_service import SupplierMappedOffersPublishService, SupplierMappedPublishResult
+from .gpl_import_category_assignment import (
+    GplImportCategoryAssignmentResolver,
+    GroupAssignmentDecision,
+    RowAssignmentDecision,
+)
 
 __all__ = [
     "ImportExecutionResult",
@@ -54,4 +59,7 @@ __all__ = [
     "CategorizedOperationalRunResult",
     "SupplierMappedOffersPublishService",
     "SupplierMappedPublishResult",
+    "GplImportCategoryAssignmentResolver",
+    "GroupAssignmentDecision",
+    "RowAssignmentDecision",
 ]

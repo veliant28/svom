@@ -4,6 +4,7 @@
       "viewDetails": "Подробнее",
       "fitment": {
         "fits": "Совместимо",
+        "hasData": "Есть совместимость",
         "noData": "Совместимость не указана",
         "notFits": "Несовместимо"
       },
@@ -25,9 +26,15 @@
       "fitmentEmpty": "Совместимость для этого товара пока не указана.",
       "fitmentMakeLabel": "Марка",
       "fitmentModelLabel": "Модель",
+      "fitmentModificationLabel": "Модификация",
       "fitmentAllMakes": "Все марки",
       "fitmentAllModels": "Все модели",
-      "fitmentRows": "Показано совместимостей: {count}"
+      "fitmentAllModifications": "Все модификации",
+      "fitmentRows": "Показано совместимостей: {count}",
+      "fitmentShowMore": "Показать еще",
+      "fitmentShowLess": "Свернуть",
+      "fitmentVehicleCompatible": "Подходит к вашему авто",
+      "fitmentVehicleUnknown": "Для выбранного авто совместимость не подтверждена"
     }
   }
 }

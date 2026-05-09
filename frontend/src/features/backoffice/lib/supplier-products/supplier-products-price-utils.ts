@@ -1,4 +1,5 @@
 import type { BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { resolveGplPriceLevelMeta } from "@/features/backoffice/lib/gpl-field-labels";
 
 const PRICE_CHIP_TONES: BackofficeStatusChipTone[] = ["blue", "success", "orange", "red", "info"];
 
@@ -12,20 +13,7 @@ export type PriceLevel = {
 };
 
 function resolveGplPriceMeta(key: string): { badgeLabel: string; tone: BackofficeStatusChipTone; order: number } | null {
-  const normalized = key.toLowerCase().replace(/[\s_-]/g, "");
-  if (normalized.includes("ррц") || normalized.includes("rrc")) {
-    return { badgeLabel: "РРЦ", tone: "blue", order: 1 };
-  }
-  if (normalized.includes("опт2") || normalized.includes("opt2")) {
-    return { badgeLabel: "ОПТ2", tone: "success", order: 2 };
-  }
-  if (normalized.includes("опт4") || normalized.includes("opt4")) {
-    return { badgeLabel: "ОПТ4", tone: "orange", order: 3 };
-  }
-  if (normalized.includes("опт10") || normalized.includes("opt10")) {
-    return { badgeLabel: "ОПТ10", tone: "red", order: 4 };
-  }
-  return null;
+  return resolveGplPriceLevelMeta(key);
 }
 
 export function extractPriceLevels(payload: Record<string, unknown>, supplierCode: string): PriceLevel[] {

@@ -19,6 +19,11 @@ export function SupplierProductsPage() {
     rows,
     totalCount,
     pagesCount,
+    selectedSet,
+    allPageSelected,
+    somePageSelected,
+    bulkActionsOpen,
+    bulkActionsRef,
     isLoading,
     error,
     refetch,
@@ -30,6 +35,10 @@ export function SupplierProductsPage() {
     isPublishing,
     publishDisabled,
     publishMapped,
+    publishSelected,
+    toggleSelected,
+    toggleSelectAllPage,
+    setBulkActionsOpen,
     handleSupplierCodeChange,
   } = useSupplierProductsPage();
 
@@ -51,12 +60,23 @@ export function SupplierProductsPage() {
         t={t}
         tCommon={tCommon}
         q={filters.q}
+        status={filters.status}
         pageSize={filters.pageSize}
         pageSizeOptions={filters.pageSizeOptions}
         isPublishing={isPublishing}
         publishDisabled={publishDisabled}
+        bulkActionsRef={bulkActionsRef}
+        bulkActionsOpen={bulkActionsOpen}
+        selectedCount={selectedSet.size}
         onSearchChange={filters.onSearchChange}
+        onStatusChange={filters.onStatusChange}
         onPageSizeChange={filters.onPageSizeChange}
+        onToggleBulkActions={() => {
+          setBulkActionsOpen((prev) => !prev);
+        }}
+        onPublishSelected={() => {
+          void publishSelected();
+        }}
         onPublishMapped={() => {
           void publishMapped();
         }}
@@ -72,8 +92,13 @@ export function SupplierProductsPage() {
         totalCount={totalCount}
         page={filters.page}
         pagesCount={pagesCount}
+        selectedSet={selectedSet}
+        allPageSelected={allPageSelected}
+        somePageSelected={somePageSelected}
         isCategoryMappingOpen={isCategoryMappingOpen}
         selectedRawOfferId={selectedRawOfferId}
+        onToggleSelectAllPage={toggleSelectAllPage}
+        onToggleSelected={toggleSelected}
         onOpenCategoryMapping={openCategoryMapping}
         onPageChange={filters.setPage}
       />

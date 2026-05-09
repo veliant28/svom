@@ -18,9 +18,9 @@ class BulkMoveProductsCategoryActionAPIView(BackofficeAPIView):
         serializer.is_valid(raise_exception=True)
 
         category_id = serializer.validated_data["category_id"]
-        category = Category.objects.filter(id=category_id, is_active=True).first()
+        category = Category.objects.filter(id=category_id, is_active=True, is_assignable=True).first()
         if category is None:
-            return Response({"detail": "Category not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "Assignable category not found."}, status=status.HTTP_404_NOT_FOUND)
 
         product_ids = [str(value) for value in serializer.validated_data["product_ids"]]
         update_import_rules = serializer.validated_data["update_import_rules"]

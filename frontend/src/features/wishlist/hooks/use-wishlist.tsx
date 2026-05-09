@@ -1,10 +1,12 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { resolveActiveVehicleFitmentParams } from "@/features/catalog/lib/vehicle-fitment";
 import type { WishlistItem } from "@/features/commerce/types";
+import { useActiveVehicle } from "@/features/garage/hooks/use-active-vehicle";
 import { addWishlistItem } from "@/features/wishlist/api/add-wishlist-item";
 import { getWishlist } from "@/features/wishlist/api/get-wishlist";
 import { removeWishlistItem } from "@/features/wishlist/api/remove-wishlist-item";
@@ -22,10 +24,41 @@ const WishlistContext = createContext<WishlistContextValue | null>(null);
 
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const { token, isAuthenticated } = useAuth();
+  const locale = useLocale();
+  const {
+    activeGarageVehicleId,
+    activeGarageVehicle,
+    activeTemporaryCarModificationId,
+    activeTemporaryAutoDbPassangerCarId,
+    activeVehicleSource,
+  } = useActiveVehicle();
   const t = useTranslations("commerce.wishlist.messages");
   const { showApiError, showSuccess } = useStorefrontFeedback();
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const fitmentParams = useMemo(() => {
+    const resolved = resolveActiveVehicleFitmentParams({
+      activeVehicleSource,
+      activeGarageVehicleId,
+      activeGarageVehicleCatalogSource: activeGarageVehicle?.catalog_source ?? null,
+      activeGarageVehicleAutoDbPassangerCarId: activeGarageVehicle?.autodb_passanger_car_id ?? null,
+      activeTemporaryCarModificationId,
+      activeTemporaryAutoDbPassangerCarId,
+    });
+    const hasVehicleContext = Boolean(resolved.vehicle_id || resolved.passanger_car_id);
+    return {
+      ...resolved,
+      fitment: hasVehicleContext ? "only" as const : undefined,
+      locale,
+    };
+  }, [
+    activeGarageVehicle,
+    activeGarageVehicleId,
+    activeTemporaryCarModificationId,
+    activeTemporaryAutoDbPassangerCarId,
+    activeVehicleSource,
+    locale,
+  ]);
 
   const refresh = useCallback(async () => {
     if (!token || !isAuthenticated) {
@@ -35,7 +68,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 
     setIsLoading(true);
     try {
-      const data = await getWishlist(token);
+      const data = await getWishlist(token, fitmentParams);
       setItems(Array.isArray(data) ? data : []);
     } catch (error) {
       setItems([]);
@@ -43,7 +76,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, showApiError, t, token]);
+  }, [fitmentParams, isAuthenticated, showApiError, t, token]);
 
   useEffect(() => {
     void refresh();

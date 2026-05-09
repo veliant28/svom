@@ -7,7 +7,7 @@ from django.test import TestCase
 
 from apps.catalog.models import Brand, Category, Product
 from apps.pricing.models import Supplier, SupplierOffer
-from apps.supplier_imports.models import ImportRun, ImportSource, SupplierIntegration
+from apps.supplier_imports.models import ImportRun, ImportSource, SupplierIntegration, SupplierPriceList
 from apps.supplier_imports.services.scheduling.pipeline import ScheduledSupplierImportPipelineService
 
 
@@ -107,3 +107,70 @@ class ScheduledSupplierImportPipelineTests(TestCase):
         workspace_service.publish_mapped_products.assert_not_called()
         reprice.assert_called_once_with(product_ids=product_ids, source_code="utr", run_id=str(run.id))
         indexer.reindex_products.assert_called_once_with(product_ids=product_ids)
+
+    def test_pipeline_reuses_unimported_downloaded_price_list_without_new_request(self):
+        run = ImportRun.objects.create(
+            source=self.source,
+            status=ImportRun.STATUS_PARTIAL,
+            trigger="test",
+            summary={"persistence_mode": "current_offers"},
+        )
+        downloaded = SupplierPriceList.objects.create(
+            supplier=self.supplier,
+            source=self.source,
+            integration=self.source.integration,
+            status=SupplierPriceList.STATUS_DOWNLOADED,
+            request_mode="gpl_api",
+            downloaded_file_path="/tmp/gpl_price.xlsx",
+            row_count=123,
+        )
+
+        workspace_service = MagicMock()
+        price_workflow = MagicMock()
+        indexer = MagicMock()
+        indexer.reindex_products.return_value = {
+            "indexed": 1,
+            "errors": 0,
+            "total": 1,
+            "backend": "test",
+        }
+        service = ScheduledSupplierImportPipelineService()
+        product_ids = [str(self.product.id)]
+
+        with (
+            patch(
+                "apps.backoffice.services.supplier_workspace_service.SupplierWorkspaceService",
+                return_value=workspace_service,
+            ),
+            patch(
+                "apps.backoffice.services.supplier_price_workflow_service.SupplierPriceWorkflowService",
+                return_value=price_workflow,
+            ),
+            patch("apps.supplier_imports.services.scheduling.pipeline.ProductIndexer", return_value=indexer),
+            patch.object(service, "_ensure_token", return_value={"mode": "noop", "status": "ok"}),
+            patch.object(
+                service,
+                "_import_with_cooldown_retry",
+                return_value={
+                    "run_id": str(run.id),
+                    "result": {"persistence_mode": "current_offers"},
+                },
+            ) as import_mock,
+            patch.object(service, "_wait_utr_price_cooldown", return_value=None),
+            patch.object(service, "_collect_reindex_product_ids", return_value=product_ids),
+            patch.object(service, "_reprice_product_ids", return_value={"repriced": 1, "skipped": 0, "errors": 0}),
+            patch.object(service, "_request_with_cooldown_retry") as request_mock,
+            patch.object(service, "_download_with_polling") as download_mock,
+        ):
+            result = service.run(source_code="utr")
+
+        self.assertEqual(result.status, "success")
+        self.assertTrue(result.payload["request"]["reused_downloaded_price_list"])
+        self.assertTrue(result.payload["download"]["reused_downloaded_price_list"])
+        request_mock.assert_not_called()
+        download_mock.assert_not_called()
+        import_mock.assert_called_once_with(
+            price_workflow=price_workflow,
+            source_code="utr",
+            price_list_id=str(downloaded.id),
+        )

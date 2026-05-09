@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 
-from apps.catalog.models import Brand, Category, Product
+from apps.catalog.models import Brand, Category, Product, ProductImage
 from apps.commerce.models import Cart, CartItem, Order, WishlistItem
 from apps.pricing.models import ProductPrice
 from apps.users.models import User
@@ -29,6 +29,14 @@ class CommerceAPISmokeTests(APITestCase):
         ProductPrice.objects.create(product=self.product, final_price="123.00", currency="UAH")
 
     def test_wishlist_add_list_delete_flow(self):
+        ProductImage.objects.create(
+            product=self.product,
+            image=None,
+            remote_url="https://cdn.example.test/commerce-product.webp",
+            is_primary=True,
+            source=ProductImage.SOURCE_GPL_PRICE,
+        )
+
         create_response = self.client.post(
             reverse("commerce_api:wishlist-item-create"),
             {"product_id": str(self.product.id)},
@@ -40,6 +48,10 @@ class CommerceAPISmokeTests(APITestCase):
         list_response = self.client.get(reverse("commerce_api:wishlist-list"), **self.auth)
         self.assertEqual(list_response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(list_response.data), 1)
+        self.assertEqual(
+            list_response.data[0]["product"]["primary_image"],
+            "https://cdn.example.test/commerce-product.webp",
+        )
 
         item_id = list_response.data[0]["id"]
         delete_response = self.client.delete(reverse("commerce_api:wishlist-item-delete", kwargs={"item_id": item_id}), **self.auth)

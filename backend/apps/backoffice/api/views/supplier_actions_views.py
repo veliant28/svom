@@ -21,6 +21,11 @@ class SupplierPublishMappedProductsSerializer(serializers.Serializer):
     include_needs_review = serializers.BooleanField(default=False)
     dry_run = serializers.BooleanField(default=False)
     reprice_after_publish = serializers.BooleanField(default=True)
+    raw_offer_ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        required=False,
+        allow_empty=False,
+    )
 
 
 class SupplierTokenObtainAPIView(BackofficeAPIView):
@@ -99,6 +104,7 @@ class SupplierPublishMappedProductsAPIView(BackofficeAPIView):
         try:
             payload = SupplierWorkspaceService().publish_mapped_products(
                 supplier_code=code,
+                raw_offer_ids=[str(item) for item in data.get("raw_offer_ids", [])] if data.get("raw_offer_ids") else None,
                 include_needs_review=data.get("include_needs_review", False),
                 dry_run=data.get("dry_run", False),
                 reprice_after_publish=data.get("reprice_after_publish", True),
@@ -109,13 +115,3 @@ class SupplierPublishMappedProductsAPIView(BackofficeAPIView):
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(payload, status=status.HTTP_200_OK)
 
-
-class UtrBrandsImportAPIView(BackofficeAPIView):
-    def post(self, request):
-        try:
-            payload = SupplierWorkspaceService().import_utr_brands()
-        except ObjectDoesNotExist:
-            return Response({"detail": "Supplier workspace not found."}, status=status.HTTP_404_NOT_FOUND)
-        except (SupplierCooldownError, SupplierClientError, SupplierIntegrationError) as exc:
-            return supplier_action_error_response(exc)
-        return Response(payload, status=status.HTTP_200_OK)

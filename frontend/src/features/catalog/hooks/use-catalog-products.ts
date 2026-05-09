@@ -29,6 +29,7 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
     activeGarageVehicleId,
     activeGarageVehicle,
     activeTemporaryCarModificationId,
+    activeTemporaryAutoDbPassangerCarId,
     activeVehicleSource,
   } = useActiveVehicle();
   const [products, setProducts] = useState<CatalogProduct[]>([]);
@@ -52,7 +53,9 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
     const result: UseCatalogProductsParams = { ...baseParams };
 
     if (options.useActiveVehicle) {
-      const hasExplicitVehicle = Boolean(result.garage_vehicle || result.car_modification);
+      const hasExplicitVehicle = Boolean(
+        result.vehicle_id || result.passanger_car_id || result.garage_vehicle || result.car_modification,
+      );
       if (!hasExplicitVehicle) {
         Object.assign(
           result,
@@ -60,12 +63,14 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
             activeVehicleSource,
             activeGarageVehicleId,
             activeGarageVehicleCatalogSource: activeGarageVehicle?.catalog_source ?? null,
+            activeGarageVehicleAutoDbPassangerCarId: activeGarageVehicle?.autodb_passanger_car_id ?? null,
             activeTemporaryCarModificationId,
+            activeTemporaryAutoDbPassangerCarId,
           }),
         );
       }
 
-      const hasActiveVehicle = Boolean(result.garage_vehicle || result.car_modification);
+      const hasActiveVehicle = Boolean(result.vehicle_id || result.passanger_car_id);
       if (hasActiveVehicle && !result.fitment) {
         result.fitment = "only";
       }
@@ -76,6 +81,7 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
     activeGarageVehicleId,
     activeGarageVehicle,
     activeTemporaryCarModificationId,
+    activeTemporaryAutoDbPassangerCarId,
     activeVehicleSource,
     options.useActiveVehicle,
     baseParams,

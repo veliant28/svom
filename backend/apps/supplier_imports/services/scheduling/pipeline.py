@@ -12,7 +12,7 @@ from apps.catalog.models import Product
 from apps.pricing.models import PriceHistory, SupplierOffer
 from apps.pricing.services import ProductRepricer
 from apps.search.services import ProductIndexer
-from apps.supplier_imports.models import ImportRun
+from apps.supplier_imports.models import ImportRun, SupplierPriceList
 from apps.supplier_imports.selectors import ensure_default_import_sources, get_import_source_by_code, get_supplier_integration_by_code
 from apps.supplier_imports.services.integrations.exceptions import SupplierClientError, SupplierCooldownError, SupplierIntegrationError
 
@@ -74,24 +74,41 @@ class ScheduledSupplierImportPipelineService:
 
         params = price_workflow.get_request_params(supplier_code=source_code)
         defaults = params.get("defaults", {}) if isinstance(params, dict) else {}
-        requested = self._request_with_cooldown_retry(
-            price_workflow=price_workflow,
-            source_code=source_code,
-            requested_format="xlsx",
-            in_stock=bool(defaults.get("in_stock", True)),
-            show_scancode=bool(defaults.get("show_scancode", False)),
-            utr_article=bool(defaults.get("utr_article", source_code == "utr")),
-        )
-        price_list_id = str(requested.get("id", "")).strip()
-        if not price_list_id:
-            raise SupplierIntegrationError("Не удалось получить идентификатор запрошенного прайса.")
+        reusable_download = self._find_latest_unimported_downloaded_price_list(source_code=source_code)
+        if reusable_download is not None:
+            price_list_id = str(reusable_download.id)
+            requested = {
+                "id": price_list_id,
+                "status": reusable_download.status,
+                "request_mode": reusable_download.request_mode,
+                "reused_downloaded_price_list": True,
+            }
+            downloaded = {
+                "id": price_list_id,
+                "status": reusable_download.status,
+                "downloaded_file_path": reusable_download.downloaded_file_path,
+                "row_count": reusable_download.row_count,
+                "reused_downloaded_price_list": True,
+            }
+        else:
+            requested = self._request_with_cooldown_retry(
+                price_workflow=price_workflow,
+                source_code=source_code,
+                requested_format="xlsx",
+                in_stock=bool(defaults.get("in_stock", True)),
+                show_scancode=bool(defaults.get("show_scancode", False)),
+                utr_article=bool(defaults.get("utr_article", source_code == "utr")),
+            )
+            price_list_id = str(requested.get("id", "")).strip()
+            if not price_list_id:
+                raise SupplierIntegrationError("Не удалось получить идентификатор запрошенного прайса.")
 
-        self._wait_utr_price_cooldown(source_code=source_code)
-        downloaded = self._download_with_polling(
-            price_workflow=price_workflow,
-            source_code=source_code,
-            price_list_id=price_list_id,
-        )
+            self._wait_utr_price_cooldown(source_code=source_code)
+            downloaded = self._download_with_polling(
+                price_workflow=price_workflow,
+                source_code=source_code,
+                price_list_id=price_list_id,
+            )
 
         self._wait_utr_price_cooldown(source_code=source_code)
         imported = self._import_with_cooldown_retry(
@@ -155,6 +172,23 @@ class ScheduledSupplierImportPipelineService:
             },
         )
 
+    def _find_latest_unimported_downloaded_price_list(self, *, source_code: str) -> SupplierPriceList | None:
+        source = get_import_source_by_code(source_code)
+        row = (
+            SupplierPriceList.objects.filter(
+                source=source,
+                status=SupplierPriceList.STATUS_DOWNLOADED,
+                imported_run__isnull=True,
+            )
+            .order_by("-downloaded_at", "-created_at")
+            .first()
+        )
+        if row is None:
+            return None
+        if not str(row.downloaded_file_path or "").strip():
+            return None
+        return row
+
     def _download_with_polling(
         self,
         *,
@@ -182,6 +216,9 @@ class ScheduledSupplierImportPipelineService:
                 message = str(exc).lower()
                 if "формируется" in message and attempt < attempts - 1:
                     time.sleep(poll_delay_seconds)
+                    continue
+                if ("too many attempts" in message or "429" in message) and attempt < attempts - 1:
+                    time.sleep(min(20 * (attempt + 1), 180))
                     continue
                 raise
         if last_error is not None:

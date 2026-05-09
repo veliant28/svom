@@ -18,8 +18,13 @@ export function SupplierProductsTable({
   totalCount,
   page,
   pagesCount,
+  selectedSet,
+  allPageSelected,
+  somePageSelected,
   isCategoryMappingOpen,
   selectedRawOfferId,
+  onToggleSelectAllPage,
+  onToggleSelected,
   onOpenCategoryMapping,
   onPageChange,
 }: {
@@ -32,8 +37,13 @@ export function SupplierProductsTable({
   totalCount: number;
   page: number;
   pagesCount: number;
+  selectedSet: Set<string>;
+  allPageSelected: boolean;
+  somePageSelected: boolean;
   isCategoryMappingOpen: boolean;
   selectedRawOfferId: string | null;
+  onToggleSelectAllPage: () => void;
+  onToggleSelected: (id: string) => void;
   onOpenCategoryMapping: (rawOfferId: string) => void;
   onPageChange: (next: number) => void;
 }) {
@@ -47,8 +57,25 @@ export function SupplierProductsTable({
       onOpenCategoryMapping,
       isCategoryMappingOpen,
       selectedRawOfferId,
+      selectedSet,
+      allPageSelected,
+      somePageSelected,
+      onToggleSelectAllPage,
+      onToggleSelected,
     }),
-    [isCategoryMappingOpen, onOpenCategoryMapping, selectedRawOfferId, t, tGpl, tUtr],
+    [
+      allPageSelected,
+      isCategoryMappingOpen,
+      onOpenCategoryMapping,
+      onToggleSelectAllPage,
+      onToggleSelected,
+      selectedRawOfferId,
+      selectedSet,
+      somePageSelected,
+      t,
+      tGpl,
+      tUtr,
+    ],
   );
 
   return (

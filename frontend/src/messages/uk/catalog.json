@@ -48,6 +48,7 @@
       "garageLoading": "Завантажуємо гараж...",
       "activeVehicle": "Вибрано: {vehicle}",
       "noVehicleSelected": "Оберіть авто з гаража, щоб показати сумісні товари.",
+      "showAllWithBadgesNotice": "У цій категорії товари не приховуються за вибраним авто. Сумісні товари позначені бейджем.",
       "resultCountLoading": "Завантажуємо відфільтровані результати...",
       "resultCount": "Результатів після фільтра: {count}",
       "fitmentModes": {

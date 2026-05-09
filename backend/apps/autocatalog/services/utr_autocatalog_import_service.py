@@ -62,7 +62,7 @@ class UtrAutocatalogImportService:
             return AutocatalogImportSummary(detail_ids_total=len(detail_ids), detail_ids_skipped_disabled=len(detail_ids))
 
         effective_force_refresh = bool(getattr(settings, "UTR_FORCE_REFRESH", False)) if force_refresh is None else bool(force_refresh)
-        applicability_enabled = bool(getattr(settings, "UTR_APPLICABILITY_ENABLED", True))
+        applicability_enabled = bool(getattr(settings, "UTR_APPLICABILITY_ENABLED", False))
 
         normalized_detail_ids: list[str] = []
         seen_ids: set[str] = set()

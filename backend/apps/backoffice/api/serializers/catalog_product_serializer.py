@@ -1,27 +1,60 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from hashlib import sha1
 
 from rest_framework import serializers
 
+from apps.autodb.selectors.admin_supplier_brands import get_admin_supplier_brand_name_by_id
 from apps.backoffice.services import ProductOperationsService
-from apps.catalog.models import Brand, Category, Product
+from apps.catalog.models import AutoDbProductLinkQuality, Brand, Category, Product, ProductAttribute
 from apps.catalog.services import (
+    find_brand_by_normalized_name,
     generate_unique_product_slug,
+    generate_unique_brand_slug,
+    get_product_display_brand_payload,
     get_product_display_name_with_meta,
+    get_product_display_sku,
+    get_product_internal_import_key,
     is_code_like_product_name,
+    is_gpl_product,
     resolve_locale,
     sanitize_product_name,
 )
+from apps.compatibility.models import ProductFitment
+from apps.catalog.services.product_stock import get_available_supplier_offer_stock_sum, resolve_display_stock_qty
 from apps.pricing.models import SupplierOffer
 from apps.supplier_imports.parsers.gpl_parser import extract_gpl_price_levels
 
 
 class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
-    brand = serializers.PrimaryKeyRelatedField(queryset=Brand.objects.all())
-    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
-    brand_name = serializers.CharField(source="brand.name", read_only=True)
-    category_name = serializers.CharField(source="category.name", read_only=True)
+    UTR_WAREHOUSE_COLUMNS: tuple[str, ...] = (
+        "Миколаївська обл.",
+        "Одеська обл.",
+        "Запорізька обл.",
+        "Київська обл.",
+        "Херсонська обл.",
+        "Харківська обл.",
+        "КИЇВ-2",
+        "Дніпровська обл.",
+        "Львівська обл.",
+        "Черкаська обл.",
+        "Хмельницька обл.",
+        "Рівненська обл.",
+        "Вінницька обл.",
+        "Житомирська обл.",
+        "Івано-Франківська обл.",
+    )
+
+    brand = serializers.PrimaryKeyRelatedField(queryset=Brand.objects.all(), required=False, allow_null=True)
+    autodb_supplier_id = serializers.IntegerField(required=False, allow_null=True)
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.filter(is_assignable=True), allow_null=True, required=False)
+    brand_name = serializers.SerializerMethodField(read_only=True)
+    current_brand_name = serializers.CharField(source="brand.name", read_only=True)
+    display_brand = serializers.SerializerMethodField(read_only=True)
+    brand_source = serializers.SerializerMethodField(read_only=True)
+    autodb_supplier_name = serializers.CharField(read_only=True)
+    category_name = serializers.SerializerMethodField(read_only=True)
     final_price = serializers.SerializerMethodField()
     currency = serializers.SerializerMethodField()
     price_updated_at = serializers.SerializerMethodField()
@@ -33,17 +66,26 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
     applied_markup_policy_scope = serializers.SerializerMethodField()
     warehouse_segments = serializers.SerializerMethodField()
     supplier_sku = serializers.SerializerMethodField()
+    internal_import_key = serializers.SerializerMethodField(read_only=True)
     supplier_offer_seen_at = serializers.SerializerMethodField()
+    stock_qty = serializers.SerializerMethodField()
+    supplier_offer_stock_sum = serializers.SerializerMethodField()
     display_name = serializers.SerializerMethodField()
     display_name_source = serializers.SerializerMethodField()
     name_quality_flags = serializers.SerializerMethodField()
     raw_supplier_name = serializers.SerializerMethodField()
+    raw_supplier_brand = serializers.SerializerMethodField()
+    autodb_link_quality_status = serializers.SerializerMethodField(read_only=True)
+    autodb_attributes_count = serializers.SerializerMethodField(read_only=True)
+    autodb_fitments_count = serializers.SerializerMethodField(read_only=True)
+    is_autodb_compatible_data_available = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Product
         fields = (
             "id",
             "sku",
+            "internal_import_key",
             "article",
             "name",
             "display_name",
@@ -54,6 +96,9 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
             "slug",
             "brand",
             "brand_name",
+            "current_brand_name",
+            "display_brand",
+            "brand_source",
             "category",
             "category_name",
             "catalog_source",
@@ -61,8 +106,15 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
             "name_translation_status",
             "name_manually_locked",
             "autodb_article_key",
+            "autodb_supplier_id",
+            "autodb_supplier_name",
             "name_quality_flags",
             "raw_supplier_name",
+            "raw_supplier_brand",
+            "autodb_link_quality_status",
+            "autodb_attributes_count",
+            "autodb_fitments_count",
+            "is_autodb_compatible_data_available",
             "final_price",
             "currency",
             "price_updated_at",
@@ -75,6 +127,8 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
             "warehouse_segments",
             "supplier_sku",
             "supplier_offer_seen_at",
+            "stock_qty",
+            "supplier_offer_stock_sum",
             "short_description",
             "description",
             "is_active",
@@ -89,15 +143,21 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "brand_name",
+            "current_brand_name",
+            "display_brand",
+            "brand_source",
             "category_name",
             "display_name",
             "display_name_source",
+            "internal_import_key",
             "name_uk",
             "name_ru",
             "name_en",
             "autodb_article_key",
+            "autodb_supplier_name",
             "name_quality_flags",
             "raw_supplier_name",
+            "raw_supplier_brand",
         )
         extra_kwargs = {
             "slug": {"required": False, "allow_blank": True},
@@ -132,7 +192,11 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
             attrs["article"] = sanitize_product_name(attrs["article"])
 
         if "sku" in attrs:
-            attrs["sku"] = sanitize_product_name(attrs["sku"])
+            normalized_sku = sanitize_product_name(attrs["sku"])
+            if instance is not None and self._should_preserve_gpl_internal_key(instance=instance):
+                attrs["sku"] = instance.sku
+            else:
+                attrs["sku"] = normalized_sku
 
         name_for_slug = attrs.get("name") or (instance.name if instance is not None else "")
         provided_slug = attrs.get("slug", None)
@@ -143,7 +207,60 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
                 exclude_product_id=instance_id,
             )
 
+        resolved_supplier_id = attrs.get("autodb_supplier_id", getattr(instance, "autodb_supplier_id", None))
+        if resolved_supplier_id in ("", None):
+            raise serializers.ValidationError({"autodb_supplier_id": "Auto_DB_Pro supplier is required."})
+
+        supplier_id = int(resolved_supplier_id)
+        supplier_name = get_admin_supplier_brand_name_by_id(supplier_id)
+        if not supplier_name:
+            raise serializers.ValidationError({"autodb_supplier_id": "Supplier missing in local Auto_DB_Pro."})
+
+        brand = find_brand_by_normalized_name(name=supplier_name)
+        if brand is None:
+            brand = Brand.objects.create(
+                name=supplier_name,
+                slug=generate_unique_brand_slug(name=supplier_name),
+                is_active=True,
+            )
+
+        attrs["brand"] = brand
+        attrs["autodb_supplier_id"] = supplier_id
+        attrs["autodb_supplier_name"] = supplier_name
+        attrs["display_brand_name"] = supplier_name
+        attrs["brand_source"] = Product.BRAND_SOURCE_AUTODB_PRO
+        attrs["brand_source_hash"] = sha1(
+            f"{supplier_id}:{Product.BRAND_SOURCE_AUTODB_PRO}:{supplier_name}".encode("utf-8")
+        ).hexdigest()
+
         return attrs
+
+    def _should_preserve_gpl_internal_key(self, *, instance: Product) -> bool:
+        internal_key = str(getattr(instance, "sku", "") or "").strip()
+        if not internal_key.upper().startswith("GPL-"):
+            return False
+        return is_gpl_product(instance)
+
+    def get_category_name(self, obj: Product) -> str:
+        category = getattr(obj, "category", None)
+        if category is None:
+            return ""
+        return str(category.name or "")
+
+    def _brand_payload(self, obj: Product):
+        return get_product_display_brand_payload(obj)
+
+    def get_brand_name(self, obj: Product) -> str:
+        return self._brand_payload(obj).display_brand
+
+    def get_display_brand(self, obj: Product) -> str:
+        return self._brand_payload(obj).display_brand
+
+    def get_brand_source(self, obj: Product) -> str:
+        return self._brand_payload(obj).brand_source
+
+    def get_internal_import_key(self, obj: Product) -> str:
+        return get_product_internal_import_key(obj)
 
     def create(self, validated_data):
         if not validated_data.get("slug"):
@@ -220,10 +337,59 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
             return ""
         return sanitize_product_name(str(rows[0] or ""))
 
+    def get_raw_supplier_brand(self, obj: Product) -> str:
+        prefetched = getattr(obj, "backoffice_raw_offers", None)
+        if prefetched is not None:
+            if not prefetched:
+                return ""
+            return sanitize_product_name(str(getattr(prefetched[0], "brand_name", "") or ""))
+
+        rows = obj.raw_supplier_offers.order_by("-updated_at", "-id").values_list("brand_name", flat=True)[:1]
+        if not rows:
+            return ""
+        return sanitize_product_name(str(rows[0] or ""))
+
     def to_representation(self, instance):
         payload = super().to_representation(instance)
+        payload["sku"] = get_product_display_sku(instance)
+        payload["internal_import_key"] = get_product_internal_import_key(instance)
         payload["name"] = payload.get("display_name") or payload.get("name") or ""
         return payload
+
+    def _get_link_quality_status(self, obj: Product) -> str:
+        article_key = str(getattr(obj, "autodb_article_key", "") or "").strip()
+        if not article_key:
+            return ""
+        status = (
+            AutoDbProductLinkQuality.objects.filter(product=obj, autodb_article_key=article_key)
+            .order_by("-checked_at", "-updated_at")
+            .values_list("status", flat=True)
+            .first()
+        )
+        return str(status or "")
+
+    def get_autodb_link_quality_status(self, obj: Product) -> str:
+        return self._get_link_quality_status(obj)
+
+    def get_autodb_attributes_count(self, obj: Product) -> int:
+        return ProductAttribute.objects.filter(
+            product=obj,
+            source=ProductAttribute.SOURCE_AUTODB_PRO,
+        ).count()
+
+    def get_autodb_fitments_count(self, obj: Product) -> int:
+        return ProductFitment.objects.filter(
+            product=obj,
+            source=ProductFitment.SOURCE_AUTODB_PRO,
+            is_stale=False,
+            excluded_from_public_filtering=False,
+            quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
+        ).count()
+
+    def get_is_autodb_compatible_data_available(self, obj: Product) -> bool:
+        if self._get_link_quality_status(obj) != AutoDbProductLinkQuality.STATUS_TRUSTED:
+            return False
+        return self.get_autodb_fitments_count(obj) > 0 or self.get_autodb_attributes_count(obj) > 0
 
     @staticmethod
     def _resolve_product_price(obj: Product):
@@ -292,15 +458,6 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
         return supplier_currency
 
     def get_supplier_price_levels(self, obj: Product):
-        prefetched_offers = getattr(obj, "backoffice_supplier_offers", None)
-        offers = prefetched_offers
-        if offers is None:
-            offers = SupplierOffer.objects.filter(product=obj).select_related("supplier").order_by("supplier__priority", "-updated_at", "id")
-
-        for offer in offers:
-            if isinstance(offer.price_levels, list) and offer.price_levels:
-                return offer.price_levels
-
         prefetched = getattr(obj, "backoffice_raw_offers", None)
         raw_offers = prefetched
         if raw_offers is None:
@@ -309,13 +466,28 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
                 .order_by("supplier__priority", "source__code", "-updated_at", "-id")
             )
 
+        # GPL offers are now received as price_type_* fields; build readable
+        # levels from raw payload first so ops sees wholesale tiers in admin.
+        gpl_levels: list[dict] = []
         for raw_offer in raw_offers:
             source_code = str(getattr(raw_offer.source, "code", "") or "").lower()
             if source_code != "gpl":
                 continue
             levels = extract_gpl_price_levels(item=raw_offer.raw_payload or {}, default_currency=raw_offer.currency)
-            if levels:
-                return levels
+            if levels and len(levels) > len(gpl_levels):
+                gpl_levels = levels
+
+        if gpl_levels:
+            return gpl_levels
+
+        prefetched_offers = getattr(obj, "backoffice_supplier_offers", None)
+        offers = prefetched_offers
+        if offers is None:
+            offers = SupplierOffer.objects.filter(product=obj).select_related("supplier").order_by("supplier__priority", "-updated_at", "id")
+
+        for offer in offers:
+            if isinstance(offer.price_levels, list) and offer.price_levels:
+                return offer.price_levels
         return []
 
     def get_applied_markup_percent(self, obj: Product):
@@ -340,6 +512,26 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
     def _extract_warehouse_segments(raw_payload: dict, *, source_code: str) -> list[dict]:
         if not isinstance(raw_payload, dict):
             return []
+
+        if source_code == "utr":
+            # UTR admin display must keep all known warehouse labels visible,
+            # including zero-quantity rows.
+            utr_segments: list[dict] = []
+            has_known_utr_keys = any(key in raw_payload for key in BackofficeCatalogProductSerializer.UTR_WAREHOUSE_COLUMNS)
+            if has_known_utr_keys:
+                for key in BackofficeCatalogProductSerializer.UTR_WAREHOUSE_COLUMNS:
+                    raw_value = raw_payload.get(key, "")
+                    normalized = str(raw_value).strip() if raw_value is not None else ""
+                    if not normalized:
+                        normalized = "0"
+                    utr_segments.append(
+                        {
+                            "key": key,
+                            "value": normalized,
+                            "source_code": source_code,
+                        }
+                    )
+                return utr_segments
 
         segments: list[dict] = []
         for key, value in raw_payload.items():
@@ -402,7 +594,7 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
         )
         if offer and offer.supplier_sku:
             return offer.supplier_sku
-        return obj.sku
+        return get_product_display_sku(obj)
 
     def get_supplier_offer_seen_at(self, obj: Product):
         prefetched = getattr(obj, "backoffice_supplier_offers", None)
@@ -417,3 +609,9 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
             if offer.last_seen_at or offer.updated_at
         ]
         return max(seen_values) if seen_values else None
+
+    def get_stock_qty(self, obj: Product) -> int:
+        return resolve_display_stock_qty(obj)
+
+    def get_supplier_offer_stock_sum(self, obj: Product) -> int:
+        return get_available_supplier_offer_stock_sum(obj)

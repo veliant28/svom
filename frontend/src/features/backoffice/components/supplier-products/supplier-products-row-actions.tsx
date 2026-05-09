@@ -1,4 +1,5 @@
-import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
+import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { AlertTriangle, CheckCircle2, MinusCircle, UserCheck, type LucideIcon } from "lucide-react";
 
 type Translator = (key: string, values?: Record<string, string | number>) => string;
 
@@ -15,6 +16,36 @@ export function SupplierProductsRowActions({
   onOpen: () => void;
   t: Translator;
 }) {
+  const normalizedStatus = String(status || "unmapped").trim().toLowerCase();
+  const toneByStatus: Record<string, BackofficeStatusChipTone> = {
+    auto_mapped: "success",
+    manual_mapped: "blue",
+    needs_review: "warning",
+    unmapped: "gray",
+  };
+  const iconByStatus: Record<string, LucideIcon> = {
+    auto_mapped: CheckCircle2,
+    manual_mapped: UserCheck,
+    needs_review: AlertTriangle,
+    unmapped: MinusCircle,
+  };
+  const shortLabelByStatus: Record<string, string> = {
+    auto_mapped: t("productsPage.review.statusesShort.auto_mapped"),
+    manual_mapped: t("productsPage.review.statusesShort.manual_mapped"),
+    needs_review: t("productsPage.review.statusesShort.needs_review"),
+    unmapped: t("productsPage.review.statusesShort.unmapped"),
+  };
+  const fullLabelByStatus: Record<string, string> = {
+    auto_mapped: t("productsPage.review.statuses.auto_mapped"),
+    manual_mapped: t("productsPage.review.statuses.manual_mapped"),
+    needs_review: t("productsPage.review.statuses.needs_review"),
+    unmapped: t("productsPage.review.statuses.unmapped"),
+  };
+  const shortLabel = shortLabelByStatus[normalizedStatus] || t("productsPage.review.statusesShort.unmapped");
+  const fullLabel = fullLabelByStatus[normalizedStatus] || t("productsPage.review.statuses.unmapped");
+  const tone = toneByStatus[normalizedStatus] || "gray";
+  const Icon = iconByStatus[normalizedStatus] || MinusCircle;
+
   return (
     <button
       type="button"
@@ -24,9 +55,11 @@ export function SupplierProductsRowActions({
       aria-label={t("productsPage.categoryMapping.openBadgeAria")}
       aria-haspopup="dialog"
       aria-expanded={expanded}
-      title={mappedCategoryPath || t("productsPage.categoryMapping.states.notMapped")}
+      title={`${fullLabel}${mappedCategoryPath ? ` • ${mappedCategoryPath}` : ""}`}
     >
-      <StatusChip status={status || "unmapped"} />
+      <BackofficeStatusChip tone={tone} icon={Icon}>
+        {shortLabel}
+      </BackofficeStatusChip>
     </button>
   );
 }

@@ -32,11 +32,13 @@ class AutoDbRawCloneStorageCacheTests(SimpleTestCase):
         schema_service.introspect_table.return_value = info_remote
         storage = AutoDbRawCloneStorage(remote_client=Mock(), schema_service=schema_service)
         storage.get_local_columns = Mock(return_value={"id", "description"})
+        storage._get_local_keys = Mock(return_value=(["id"], []))
 
         info = storage.ensure_table("suppliers")
 
         self.assertEqual(info.table, "suppliers")
         self.assertEqual(sorted(col.name for col in info.columns), ["description", "id"])
+        self.assertEqual(info.primary_key_columns, ["id"])
         schema_service.ensure_table.assert_not_called()
         remote_cols = storage.get_remote_columns("suppliers")
         self.assertEqual(remote_cols, ["supplierid"])

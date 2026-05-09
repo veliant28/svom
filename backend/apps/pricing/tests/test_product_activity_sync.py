@@ -23,6 +23,14 @@ class ProductActivitySyncTests(TestCase):
             priority=1,
             quality_score="9.00",
         )
+        self.gpl_supplier = Supplier.objects.create(
+            name="GPL Supplier",
+            code="gpl",
+            is_active=True,
+            is_preferred=False,
+            priority=2,
+            quality_score="9.00",
+        )
         self.policy = PricingPolicy.objects.create(
             name="Activity Global Policy",
             scope=PricingPolicy.SCOPE_GLOBAL,
@@ -58,13 +66,14 @@ class ProductActivitySyncTests(TestCase):
         self,
         *,
         product: Product,
+        supplier: Supplier | None = None,
         stock_qty: int = 5,
         is_available: bool = True,
         last_seen_at=None,
         purchase_price: str = "100.00",
     ) -> SupplierOffer:
         return SupplierOffer.objects.create(
-            supplier=self.supplier,
+            supplier=supplier or self.supplier,
             product=product,
             supplier_sku=f"SUP-{product.sku}",
             purchase_price=purchase_price,
@@ -75,6 +84,58 @@ class ProductActivitySyncTests(TestCase):
             is_available=is_available,
             last_seen_at=last_seen_at or timezone.now(),
         )
+
+    def test_sync_deactivates_gpl_product_with_fresh_offer_but_without_product_price(self):
+        now = timezone.now()
+        cutoff = now - timedelta(hours=24)
+
+        product = self._create_product(is_active=True, prefix="GPL-NO-PRICE")
+        self._create_offer(product=product, supplier=self.gpl_supplier, last_seen_at=now, purchase_price="99.00")
+
+        result = sync_products_activity_by_price_freshness(freshness_hours=24, cutoff_at=cutoff)
+
+        product.refresh_from_db()
+        self.assertFalse(product.is_active)
+        self.assertEqual(result.deactivated, 1)
+        self.assertEqual(result.deactivated_invalid_price, 1)
+
+    def test_sync_deactivates_gpl_product_with_stale_offer_even_with_price(self):
+        now = timezone.now()
+        cutoff = now - timedelta(hours=24)
+
+        product = self._create_product(is_active=True, prefix="GPL-STALE")
+        self._create_safe_price(product=product, purchase_price="100.00", final_price="130.00")
+        self._create_offer(
+            product=product,
+            supplier=self.gpl_supplier,
+            last_seen_at=now - timedelta(hours=72),
+            purchase_price="120.00",
+        )
+
+        result = sync_products_activity_by_price_freshness(freshness_hours=24, cutoff_at=cutoff)
+
+        product.refresh_from_db()
+        self.assertFalse(product.is_active)
+        self.assertEqual(result.deactivated_no_fresh_offer, 1)
+
+    def test_sync_keeps_gpl_product_active_with_valid_product_price_and_fresh_offer(self):
+        now = timezone.now()
+        cutoff = now - timedelta(hours=24)
+
+        product = self._create_product(is_active=True, prefix="GPL-WITH-PRICE")
+        self._create_safe_price(product=product, purchase_price="110.00", final_price="150.00")
+        self._create_offer(
+            product=product,
+            supplier=self.gpl_supplier,
+            last_seen_at=now,
+            purchase_price="110.00",
+        )
+
+        result = sync_products_activity_by_price_freshness(freshness_hours=24, cutoff_at=cutoff)
+
+        product.refresh_from_db()
+        self.assertTrue(product.is_active)
+        self.assertEqual(result.deactivated, 0)
 
     def test_sync_deactivates_products_with_stale_or_missing_price(self):
         now = timezone.now()

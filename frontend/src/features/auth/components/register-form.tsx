@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { useAuth } from "@/features/auth/hooks/use-auth";
@@ -20,7 +20,7 @@ export function RegisterForm() {
   const locale = useLocale() as AppLocale;
   const router = useRouter();
   const { register, isAuthenticated } = useAuth();
-  const { showApiError, showError, showSuccess } = useStorefrontFeedback();
+  const { showApiError, showError, showInfo, showSuccess } = useStorefrontFeedback();
   const [values, setValues] = useState({
     email: "",
     password: "",
@@ -30,6 +30,7 @@ export function RegisterForm() {
     phone: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const alreadyLoggedToastShownRef = useRef(false);
 
   const canSubmit = useMemo(() => {
     return (
@@ -41,12 +42,17 @@ export function RegisterForm() {
     );
   }, [values]);
 
+  useEffect(() => {
+    if (!isAuthenticated || alreadyLoggedToastShownRef.current) {
+      return;
+    }
+    alreadyLoggedToastShownRef.current = true;
+    showInfo(t("alreadyLoggedIn"));
+    router.replace("/account/profile");
+  }, [isAuthenticated, router, showInfo, t]);
+
   if (isAuthenticated) {
-    return (
-      <p className="text-sm" style={{ color: "var(--success, #136f3a)" }}>
-        {t("alreadyLoggedIn")}
-      </p>
-    );
+    return null;
   }
 
   return (

@@ -297,7 +297,8 @@
           "name": "Назва категорії",
           "parentNone": "Без батьківської категорії",
           "description": "Опис (необов'язково)",
-          "isActive": "Активна"
+          "isActive": "Активна",
+          "showInHeader": "Показувати в шапці"
         },
         "filters": {
           "search": "Пошук за назвою категорії",
@@ -305,7 +306,12 @@
           "active": "Лише активні",
           "inactive": "Лише неактивні",
           "anyParent": "Будь-який рівень",
-          "rootOnly": "Лише кореневі"
+          "rootOnly": "Лише кореневі",
+          "allSources": "Усі джерела",
+          "anyHeaderVisibility": "Будь-яка видимість у шапці",
+          "headerVisible": "Видима у шапці",
+          "headerHidden": "Прихована з шапки",
+          "duplicatesOnly": "Лише дублікати"
         },
         "actions": {
           "create": "Створити категорію",
@@ -331,10 +337,14 @@
           "columns": {
             "name": "Категорія",
             "status": "Статус",
+            "source": "Джерело",
+            "navigation": "Навігація",
             "updated": "Оновлено",
             "actions": "Дії"
           },
-          "rootLabel": "Корінь"
+          "rootLabel": "Корінь",
+          "visibleInHeader": "У шапці",
+          "hiddenFromHeader": "Прихована"
         },
         "pagination": {
           "total": "Усього категорій: {count}",

@@ -16,6 +16,7 @@ class BackofficeCatalogCategoriesAPISmokeTests(APITestCase):
             first_name="categories-ops",
             password="demo12345",
             is_staff=True,
+            is_superuser=True,
         )
         self.regular_user = User.objects.create_user(
             email="categories-customer@test.local",
@@ -37,6 +38,14 @@ class BackofficeCatalogCategoriesAPISmokeTests(APITestCase):
             parent=self.root_category,
             is_active=True,
         )
+        self.autodb_category = Category.objects.create(
+            name="Амортизатор",
+            slug="autodb-prd-100",
+            source=Category.SOURCE_AUTODB_PRO,
+            autodb_prd_id=100,
+            show_in_header=False,
+            is_active=True,
+        )
 
     def _auth(self, token: str) -> dict[str, str]:
         return {"HTTP_AUTHORIZATION": f"Token {token}"}
@@ -47,7 +56,11 @@ class BackofficeCatalogCategoriesAPISmokeTests(APITestCase):
             **self._auth(self.staff_token.key),
         )
         self.assertEqual(list_response.status_code, status.HTTP_200_OK)
-        self.assertEqual(list_response.data["count"], 2)
+        self.assertEqual(list_response.data["count"], 3)
+        first_row = list_response.data["results"][0]
+        self.assertIn("source", first_row)
+        self.assertIn("autodb_prd_id", first_row)
+        self.assertIn("show_in_header", first_row)
 
         create_response = self.client.post(
             reverse("backoffice_api:catalog-category-list-create"),
@@ -86,6 +99,16 @@ class BackofficeCatalogCategoriesAPISmokeTests(APITestCase):
         )
         self.assertEqual(search_response.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(search_response.data["count"], 1)
+
+    def test_staff_can_filter_categories_by_source_and_navigation(self):
+        response = self.client.get(
+            reverse("backoffice_api:catalog-category-list-create"),
+            {"source": "autodb_pro", "show_in_header": "false"},
+            **self._auth(self.staff_token.key),
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["source"], Category.SOURCE_AUTODB_PRO)
 
     def test_create_blocks_duplicate_name_within_same_parent(self):
         response = self.client.post(

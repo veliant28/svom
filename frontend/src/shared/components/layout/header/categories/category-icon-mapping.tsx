@@ -34,6 +34,9 @@ const CATEGORY_ICON_SRC: Record<CategoryToken, string> = {
 function resolveCategoryToken(slug: string, name: string): CategoryToken {
   const token = `${slug} ${name}`.toLowerCase();
 
+  if (/(klimat-komfort-i-bezopasnost|климат,\s*комфорт|клімат,\s*комфорт)/.test(token)) {
+    return "cooling";
+  }
   if (/(подвес|підвіс|рулев|кермов|susp|steer)/.test(token)) {
     return "suspension";
   }
@@ -57,6 +60,9 @@ function resolveCategoryToken(slug: string, name: string): CategoryToken {
   }
   if (/(хим|хім|аксесс|аксесу|fluid|масл|олив|oil|антифриз|герметик)/.test(token)) {
     return "fluids";
+  }
+  if (/(климат|клімат|комфорт|безопас|безпек|climate|comfort|safety|вентиляц)/.test(token)) {
+    return "cooling";
   }
   if (/(шин|шини|диск|колес|коліс|wheel|tire|tyre|rim)/.test(token)) {
     return "wheels";

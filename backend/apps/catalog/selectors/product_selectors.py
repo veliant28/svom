@@ -1,7 +1,6 @@
 from django.db.models import Case, IntegerField, Prefetch, QuerySet, Sum, When
 
 from apps.catalog.models import Product, ProductImage
-from apps.compatibility.models import ProductFitment
 from apps.pricing.models import SupplierOffer
 
 
@@ -39,16 +38,6 @@ def get_public_products_queryset() -> QuerySet[Product]:
 
 
 def get_product_detail_queryset() -> QuerySet[Product]:
-    fitments_queryset = ProductFitment.objects.filter(modification__isnull=False).exclude(
-        source=ProductFitment.SOURCE_AUTODB_PRO
-    ).select_related(
-        "modification",
-        "modification__engine",
-        "modification__engine__generation",
-        "modification__engine__generation__model",
-        "modification__engine__generation__model__make",
-    )
-
     supplier_offers = SupplierOffer.objects.select_related("supplier").order_by("supplier__priority", "supplier__name", "id")
 
     return (
@@ -58,7 +47,6 @@ def get_product_detail_queryset() -> QuerySet[Product]:
             "images",
             "product_attributes__attribute",
             "product_attributes__attribute_value",
-            Prefetch("fitments", queryset=fitments_queryset),
             Prefetch("supplier_offers", queryset=supplier_offers),
         )
     )
