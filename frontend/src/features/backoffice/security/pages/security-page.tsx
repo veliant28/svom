@@ -65,13 +65,26 @@ export function SecurityPage() {
   const timeseriesState = useBackofficeQuery(timeseriesQuery);
   const actorsState = useBackofficeQuery(actorsQuery, [page, pageSize, searchQuery]);
   const whitelistState = useBackofficeQuery(whitelistActorsQuery, [page, pageSize, searchQuery]);
+  const summaryRefetch = summaryState.refetch;
+  const timeseriesRefetch = timeseriesState.refetch;
+  const actorsRefetch = actorsState.refetch;
+  const whitelistRefetch = whitelistState.refetch;
 
   const refreshAll = useCallback(() => {
-    void summaryState.refetch();
-    void timeseriesState.refetch();
-    void actorsState.refetch();
-    void whitelistState.refetch();
-  }, [actorsState, summaryState, timeseriesState, whitelistState]);
+    void summaryRefetch();
+    void timeseriesRefetch();
+    void actorsRefetch();
+    void whitelistRefetch();
+  }, [actorsRefetch, summaryRefetch, timeseriesRefetch, whitelistRefetch]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      refreshAll();
+    }, 60_000);
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [refreshAll]);
 
   const actions = useSecurityActions(refreshAll);
 
@@ -108,6 +121,10 @@ export function SecurityPage() {
       setHistoryLoading(false);
     }
   }, [actorsState.token]);
+
+  const openWhitelistToggleAction = useCallback((actor: SecurityActor) => {
+    setActionTarget({ kind: actor.status === "whitelisted" ? "unwhitelist" : "whitelist", actor });
+  }, []);
 
   const tabs = useMemo(() => (
     <div className="inline-flex items-center gap-2 rounded-xl border p-1" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}>
@@ -202,12 +219,13 @@ export function SecurityPage() {
           onOpenDetails={openDetails}
           onOpenHistory={openHistory}
           onRelease={setReleaseTarget}
-          onWhitelist={(actor) => setActionTarget({ kind: "whitelist", actor })}
+          onWhitelist={openWhitelistToggleAction}
           onExtend={(actor) => setActionTarget({ kind: "extend", actor })}
           onCopy={actions.copyIp}
           onComment={(actor) => setActionTarget({ kind: "comment", actor })}
           onFalsePositive={(actor) => setActionTarget({ kind: "falsePositive", actor })}
           onReblock={(actor) => setActionTarget({ kind: "reblock", actor })}
+          isWhitelistView={false}
         />
       ) : (
         <SecurityCenterTable
@@ -222,12 +240,13 @@ export function SecurityPage() {
           onOpenDetails={openDetails}
           onOpenHistory={openHistory}
           onRelease={setReleaseTarget}
-          onWhitelist={(actor) => setActionTarget({ kind: "whitelist", actor })}
+          onWhitelist={openWhitelistToggleAction}
           onExtend={(actor) => setActionTarget({ kind: "extend", actor })}
           onCopy={actions.copyIp}
           onComment={(actor) => setActionTarget({ kind: "comment", actor })}
           onFalsePositive={(actor) => setActionTarget({ kind: "falsePositive", actor })}
           onReblock={(actor) => setActionTarget({ kind: "reblock", actor })}
+          isWhitelistView
         />
       )}
 
@@ -240,7 +259,7 @@ export function SecurityPage() {
         onHistory={openHistory}
         onRelease={setReleaseTarget}
         onReblock={(actor) => setActionTarget({ kind: "reblock", actor })}
-        onWhitelist={(actor) => setActionTarget({ kind: "whitelist", actor })}
+        onWhitelist={openWhitelistToggleAction}
       />
       <SecurityHistoryModal actor={historyActor} events={historyEvents} isLoading={historyLoading} locale={locale} t={t} onClose={() => setHistoryActor(null)} />
       <SecurityReleaseModal
@@ -264,7 +283,7 @@ export function SecurityPage() {
           if (!actionTarget) {
             return;
           }
-          if (actionTarget.kind === "whitelist") {
+          if (actionTarget.kind === "whitelist" || actionTarget.kind === "unwhitelist") {
             void actions.whitelist(actionTarget.actor, reason);
           } else if (actionTarget.kind === "extend") {
             void actions.extend(actionTarget.actor, minutes, reason);

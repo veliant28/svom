@@ -90,7 +90,8 @@
         "view": "Просмотр",
         "history": "История",
         "release": "Разблокировать",
-        "whitelist": "В whitelist",
+        "whitelist": "В белый список",
+        "removeWhitelist": "Удалить из белого списка",
         "extend": "Продлить блокировку",
         "copyIp": "Скопировать IP",
         "comment": "Добавить комментарий",
@@ -129,14 +130,16 @@
         "action": {
           "minutes": "Длительность, минут",
           "title": {
-            "whitelist": "Добавить в whitelist?",
+            "whitelist": "Добавить в белый список?",
+            "unwhitelist": "Удалить из белого списка?",
             "extend": "Продлить блокировку?",
             "comment": "Добавить комментарий",
             "falsePositive": "Пометить как ложная тревога?",
             "reblock": "Заблокировать?"
           },
           "reason": {
-            "whitelist": "Причина whitelist",
+            "whitelist": "Причина добавления в белый список",
+            "unwhitelist": "Причина удаления из белого списка",
             "extend": "Причина продления",
             "comment": "Комментарий",
             "falsePositive": "Причина ложной тревоги",
@@ -144,6 +147,7 @@
           },
           "confirm": {
             "whitelist": "Добавить",
+            "unwhitelist": "Удалить",
             "extend": "Продлить",
             "comment": "Сохранить",
             "falsePositive": "Пометить",
@@ -189,6 +193,30 @@
         "password_reset": "Сброс пароля",
         "checkout": "Попытки checkout"
       },
+      "activityShort": {
+        "requests_5m": "5м",
+        "requests_1h": "1ч",
+        "requests_24h": "24ч",
+        "status_429": "429",
+        "status_403": "403",
+        "status_401": "401",
+        "status_500": "500",
+        "failed_login": "401",
+        "password_reset": "Пароль",
+        "checkout": "Check\nout"
+      },
+      "activityTooltip": {
+        "requests_5m": "Количество запросов за последние 5 минут.",
+        "requests_1h": "Количество запросов за последний 1 час.",
+        "requests_24h": "Количество запросов за последние 24 часа.",
+        "status_429": "HTTP 429 Too Many Requests: превышение лимитов запросов.",
+        "status_403": "HTTP 403 Forbidden: доступ запрещен.",
+        "status_401": "HTTP 401 Unauthorized: требуется авторизация или сессия недействительна.",
+        "status_500": "HTTP 500 Internal Server Error: внутренняя ошибка сервера.",
+        "failed_login": "Количество неуспешных попыток входа в аккаунт.",
+        "password_reset": "Активность и попытки по сценарию сброса пароля.",
+        "checkout": "Активность и попытки по checkout: корзина, оформление заказа и связанные действия."
+      },
       "eventTypes": {
         "request": "Запрос",
         "rate_limit_exceeded": "Превышен rate limit",
@@ -203,6 +231,7 @@
         "unblock": "Разблокировка",
         "request_rejected_by_block": "Запрос отклонен блокировкой безопасности",
         "whitelist": "Белый список",
+        "unwhitelist": "Удален из белого списка",
         "false_positive": "Ложное срабатывание",
         "comment_added": "Добавлен комментарий"
       },
@@ -228,20 +257,23 @@
       },
       "toasts": {
         "releaseSuccess": "Источник разблокирован.",
-        "whitelistSuccess": "Источник добавлен в whitelist.",
+        "whitelistSuccess": "Источник добавлен в белый список.",
+        "unwhitelistSuccess": "Источник удален из белого списка.",
         "extendSuccess": "Блокировка продлена.",
         "commentSuccess": "Комментарий добавлен.",
-        "reblockSuccess": "Источник заблокирован повторно.",
+        "reblockSuccess": "Источник заблокирован.",
         "falsePositiveSuccess": "Источник помечен как ложная тревога.",
         "copySuccess": "IP скопирован."
       },
       "errors": {
         "releaseFailed": "Не удалось разблокировать источник.",
-        "whitelistFailed": "Не удалось добавить источник в whitelist.",
+        "whitelistFailed": "Не удалось добавить источник в белый список.",
+        "unwhitelistFailed": "Не удалось удалить источник из белого списка.",
         "extendFailed": "Не удалось продлить блокировку.",
         "commentFailed": "Не удалось добавить комментарий.",
-        "reblockFailed": "Не удалось заблокировать источник повторно.",
+        "reblockFailed": "Не удалось заблокировать источник.",
         "falsePositiveFailed": "Не удалось пометить источник как ложная тревога.",
+        "respondPermission": "Недостаточно прав для действий блокировки/разблокировки.",
         "noActiveBlock": "У источника нет активной блокировки.",
         "copyFailed": "Не удалось скопировать IP."
       }

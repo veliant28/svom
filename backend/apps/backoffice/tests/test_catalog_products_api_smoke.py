@@ -8,6 +8,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 
 from apps.catalog.models import Brand, Category, Product
+from apps.catalog.models import AutoDbProductLinkQuality
 from apps.pricing.models import ProductPrice, Supplier, SupplierOffer
 from apps.supplier_imports.models import ImportRun, ImportSource, SupplierRawOffer
 from apps.users.models import User
@@ -256,6 +257,165 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
         kyiv2 = [item for item in segments if item["key"] == "КИЇВ-2"][0]
         self.assertEqual(kyiv2["value"], "> 10")
         self.assertTrue(all(item["source_code"] == "utr" for item in segments))
+        summary = response.data["results"][0]["warehouse_summary"]
+        self.assertEqual(summary["warehouse_total_count"], 15)
+        self.assertEqual(summary["warehouse_nonzero_count"], 2)
+        self.assertEqual(summary["supplier_offer_stock_sum"], 12)
+
+    def test_products_filters_supplier_has_product_price_and_status_fields(self):
+        priced_product = Product.objects.create(
+            sku="UTR-PRICED-1",
+            article="UTR-PRICED-1",
+            name="UTR Priced",
+            slug="utr-priced-1",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        SupplierOffer.objects.create(
+            supplier=self.supplier,
+            product=priced_product,
+            supplier_sku="UTR-PRICED-1",
+            purchase_price="50.00",
+            currency="UAH",
+            stock_qty=4,
+            is_available=True,
+        )
+        ProductPrice.objects.create(
+            product=priced_product,
+            purchase_price="50.00",
+            landed_cost="50.00",
+            raw_sale_price="60.00",
+            final_price="60.00",
+        )
+
+        no_price_product = Product.objects.create(
+            sku="UTR-NOPRICE-1",
+            article="UTR-NOPRICE-1",
+            name="UTR NoPrice",
+            slug="utr-noprice-1",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        SupplierOffer.objects.create(
+            supplier=self.supplier,
+            product=no_price_product,
+            supplier_sku="UTR-NOPRICE-1",
+            purchase_price="40.00",
+            currency="UAH",
+            stock_qty=1,
+            is_available=True,
+        )
+
+        no_offer_product = Product.objects.create(
+            sku="UTR-NOOFFER-1",
+            article="UTR-NOOFFER-1",
+            name="UTR NoOffer",
+            slug="utr-nooffer-1",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        SupplierOffer.objects.create(
+            supplier=self.supplier,
+            product=no_offer_product,
+            supplier_sku="UTR-NOOFFER-1",
+            purchase_price="40.00",
+            currency="UAH",
+            stock_qty=0,
+            is_available=False,
+        )
+
+        gpl_supplier = Supplier.objects.create(name="GPL Supplier", code="gpl")
+        gpl_product = Product.objects.create(
+            sku="GPL-ONLY-1",
+            article="GPL-ONLY-1",
+            name="GPL Product",
+            slug="gpl-only-1",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        SupplierOffer.objects.create(
+            supplier=gpl_supplier,
+            product=gpl_product,
+            supplier_sku="GPL-ONLY-1",
+            purchase_price="70.00",
+            currency="UAH",
+            stock_qty=2,
+            is_available=True,
+        )
+
+        AutoDbProductLinkQuality.objects.create(
+            product=priced_product,
+            autodb_article_key="KEY-UTR-PRICED-1",
+            autodb_supplier_id=1,
+            autodb_article_number="UTR-PRICED-1",
+            status=AutoDbProductLinkQuality.STATUS_TRUSTED,
+        )
+        priced_product.autodb_supplier_id = 1
+        priced_product.autodb_article_number = "UTR-PRICED-1"
+        priced_product.autodb_article_key = "KEY-UTR-PRICED-1"
+        priced_product.save(update_fields=["autodb_supplier_id", "autodb_article_number", "autodb_article_key", "updated_at"])
+
+        utr_response = self.client.get(
+            reverse("backoffice_api:catalog-product-list-create"),
+            {"supplier": "utr", "page_size": 500},
+            **self._auth(self.staff_token.key),
+        )
+        self.assertEqual(utr_response.status_code, status.HTTP_200_OK)
+        utr_skus = {row["sku"] for row in utr_response.data["results"]}
+        self.assertIn("UTR-PRICED-1", utr_skus)
+        self.assertIn("UTR-NOPRICE-1", utr_skus)
+        self.assertIn("UTR-NOOFFER-1", utr_skus)
+        self.assertNotIn("GPL-ONLY-1", utr_skus)
+
+        no_price_response = self.client.get(
+            reverse("backoffice_api:catalog-product-list-create"),
+            {"supplier": "utr", "has_product_price": "false", "page_size": 500},
+            **self._auth(self.staff_token.key),
+        )
+        self.assertEqual(no_price_response.status_code, status.HTTP_200_OK)
+        no_price_skus = {row["sku"] for row in no_price_response.data["results"]}
+        self.assertIn("UTR-NOPRICE-1", no_price_skus)
+        self.assertIn("UTR-NOOFFER-1", no_price_skus)
+        self.assertNotIn("UTR-PRICED-1", no_price_skus)
+
+        priced_response = self.client.get(
+            reverse("backoffice_api:catalog-product-list-create"),
+            {"supplier": "utr", "has_product_price": "true", "page_size": 500},
+            **self._auth(self.staff_token.key),
+        )
+        self.assertEqual(priced_response.status_code, status.HTTP_200_OK)
+        priced_skus = {row["sku"] for row in priced_response.data["results"]}
+        self.assertIn("UTR-PRICED-1", priced_skus)
+        self.assertNotIn("UTR-NOPRICE-1", priced_skus)
+
+        unavailable_response = self.client.get(
+            reverse("backoffice_api:catalog-product-list-create"),
+            {"supplier": "utr", "has_available_offer": "false", "page_size": 500},
+            **self._auth(self.staff_token.key),
+        )
+        self.assertEqual(unavailable_response.status_code, status.HTTP_200_OK)
+        unavailable_skus = {row["sku"] for row in unavailable_response.data["results"]}
+        self.assertIn("UTR-NOOFFER-1", unavailable_skus)
+        self.assertNotIn("UTR-PRICED-1", unavailable_skus)
+
+        status_response = self.client.get(
+            reverse("backoffice_api:catalog-product-list-create"),
+            {"q": "UTR-", "supplier": "utr", "page_size": 500},
+            **self._auth(self.staff_token.key),
+        )
+        self.assertEqual(status_response.status_code, status.HTTP_200_OK)
+        by_sku = {row["sku"]: row for row in status_response.data["results"]}
+        self.assertEqual(by_sku["UTR-PRICED-1"]["productprice_status"], "has_price")
+        self.assertEqual(by_sku["UTR-NOPRICE-1"]["productprice_status"], "no_product_price")
+        self.assertEqual(by_sku["UTR-NOOFFER-1"]["productprice_status"], "no_available_offer")
+        self.assertEqual(by_sku["UTR-PRICED-1"]["supplier_code"], "utr")
+        self.assertTrue(by_sku["UTR-PRICED-1"]["has_available_offer"])
+        self.assertTrue(by_sku["UTR-PRICED-1"]["has_product_price"])
+        self.assertEqual(by_sku["UTR-PRICED-1"]["autodb_link_status"], "trusted")
 
     def test_non_staff_user_is_forbidden(self):
         response = self.client.get(

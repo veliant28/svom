@@ -105,6 +105,31 @@ export function SecurityDashboard({
   onRelease: (block: SecurityBlock) => void;
   onOpenActorById: (actorId: string) => void;
 }) {
+  const hourlySeries = useMemo(() => {
+    const source = timeseries?.events_by_hour ?? [];
+    const totalsByHourIso = new Map<string, number>();
+
+    source.forEach((row) => {
+      const hour = new Date(row.bucket);
+      hour.setMinutes(0, 0, 0);
+      totalsByHourIso.set(hour.toISOString(), Number(row.total) || 0);
+    });
+
+    const now = new Date();
+    now.setMinutes(0, 0, 0);
+
+    const points: Array<{ label: string; total: number }> = [];
+    for (let offset = 23; offset >= 0; offset -= 1) {
+      const hour = new Date(now);
+      hour.setHours(now.getHours() - offset);
+      points.push({
+        label: hour.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        total: totalsByHourIso.get(hour.toISOString()) ?? 0,
+      });
+    }
+    return points;
+  }, [timeseries?.events_by_hour]);
+
   const translateEventType = useMemo(() => (eventType: string) => {
     try {
       return t(`eventTypes.${eventType}`);
@@ -114,13 +139,34 @@ export function SecurityDashboard({
   }, [t]);
 
   const seriesOption = useMemo(() => ({
+    animationDuration: 500,
     grid: { left: 32, right: 16, top: 16, bottom: 24 },
     tooltip: { trigger: "axis", appendToBody: true, confine: false },
-    xAxis: { type: "category", data: (timeseries?.events_by_hour ?? []).map((row) => new Date(row.bucket).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })) },
-    yAxis: { type: "value", min: 0 },
-    series: [{ type: "line", smooth: true, data: (timeseries?.events_by_hour ?? []).map((row) => row.total), areaStyle: {} }],
+    xAxis: {
+      type: "category",
+      boundaryGap: false,
+      data: hourlySeries.map((row) => row.label),
+      axisLabel: { color: "#64748b", fontSize: 11 },
+      axisLine: { lineStyle: { color: "#cbd5e1" } },
+    },
+    yAxis: {
+      type: "value",
+      min: 0,
+      minInterval: 1,
+      axisLabel: { color: "#64748b", fontSize: 11 },
+      splitLine: { lineStyle: { color: "#e2e8f0" } },
+    },
+    series: [{
+      type: "line",
+      smooth: true,
+      symbolSize: 6,
+      data: hourlySeries.map((row) => row.total),
+      lineStyle: { color: "#dc2626", width: 2 },
+      areaStyle: { color: "rgba(220,38,38,0.12)" },
+      itemStyle: { color: "#dc2626" },
+    }],
     color: ["#dc2626"],
-  }), [timeseries?.events_by_hour]);
+  }), [hourlySeries]);
 
   const donutOption = useMemo(() => ({
     tooltip: { trigger: "item", appendToBody: true, confine: false },

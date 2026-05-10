@@ -11,6 +11,7 @@ import type { BackofficeCatalogBrand, BackofficeCatalogCategory, BackofficeCatal
 type ProductsFiltersState = {
   q: string;
   isActiveFilter: string;
+  supplierFilter: string;
   brandFilter: string;
   categoryFilter: string;
   page: number;
@@ -23,18 +24,29 @@ export function useProductsPageData(filters: ProductsFiltersState, locale: strin
       getBackofficeCatalogProducts(token, {
         q: filters.q,
         is_active: filters.isActiveFilter,
+        supplier: filters.supplierFilter,
         brand: filters.brandFilter,
         category: filters.categoryFilter,
         locale,
         page: filters.page,
         page_size: filters.pageSize,
       }),
-    [filters.brandFilter, filters.categoryFilter, filters.isActiveFilter, filters.page, filters.pageSize, filters.q, locale],
+    [
+      filters.brandFilter,
+      filters.categoryFilter,
+      filters.isActiveFilter,
+      filters.supplierFilter,
+      filters.page,
+      filters.pageSize,
+      filters.q,
+      locale,
+    ],
   );
 
   const products = useBackofficeQuery<{ count: number; results: BackofficeCatalogProduct[] }>(productsQuery, [
     filters.q,
     filters.isActiveFilter,
+    filters.supplierFilter,
     filters.brandFilter,
     filters.categoryFilter,
     filters.page,

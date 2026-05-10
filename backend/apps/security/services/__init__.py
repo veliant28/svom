@@ -1,4 +1,4 @@
-from .actions import add_actor_comment, create_manual_block, extend_block, mark_false_positive, release_block, whitelist_actor
+from .actions import add_actor_comment, create_manual_block, extend_block, mark_false_positive, release_block, unwhitelist_actor, whitelist_actor
 from .events import record_security_event_from_request
 from .selectors import (
     get_security_actor_detail,
@@ -24,5 +24,6 @@ __all__ = [
     "release_block",
     "security_summary",
     "security_timeseries",
+    "unwhitelist_actor",
     "whitelist_actor",
 ]

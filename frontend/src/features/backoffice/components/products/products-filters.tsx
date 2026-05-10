@@ -13,6 +13,7 @@ export function ProductsFilters({
   pageSize,
   pageSizeOptions,
   isActiveFilter,
+  supplierFilter,
   brandFilter,
   categoryFilter,
   brands,
@@ -20,6 +21,7 @@ export function ProductsFilters({
   onSearchChange,
   onPageSizeChange,
   onIsActiveFilterChange,
+  onSupplierFilterChange,
   onBrandFilterChange,
   onCategoryFilterChange,
   onCreate,
@@ -37,6 +39,7 @@ export function ProductsFilters({
   pageSize: ProductPageSize;
   pageSizeOptions: readonly ProductPageSize[];
   isActiveFilter: string;
+  supplierFilter: string;
   brandFilter: string;
   categoryFilter: string;
   brands: BackofficeCatalogBrand[];
@@ -44,6 +47,7 @@ export function ProductsFilters({
   onSearchChange: (value: string) => void;
   onPageSizeChange: (value: ProductPageSize) => void;
   onIsActiveFilterChange: (value: string) => void;
+  onSupplierFilterChange: (value: string) => void;
   onBrandFilterChange: (value: string) => void;
   onCategoryFilterChange: (value: string) => void;
   onCreate: () => void;
@@ -92,7 +96,7 @@ export function ProductsFilters({
         <select
           value={isActiveFilter}
           onChange={(event) => onIsActiveFilterChange(event.target.value)}
-          className="h-10 w-[160px] rounded-md border px-3 text-sm shrink-0"
+          className="h-10 w-[132px] rounded-md border px-3 text-sm shrink-0"
           style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
         >
           <option value="">{t("products.filters.allStates")}</option>
@@ -100,9 +104,19 @@ export function ProductsFilters({
           <option value="false">{t("products.filters.inactive")}</option>
         </select>
         <select
+          value={supplierFilter}
+          onChange={(event) => onSupplierFilterChange(event.target.value)}
+          className="h-10 w-[142px] rounded-md border px-2 text-sm shrink-0"
+          style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+        >
+          <option value="">{t("products.filters.allSuppliers")}</option>
+          <option value="gpl">{t("products.filters.supplierGpl")}</option>
+          <option value="utr">{t("products.filters.supplierUtr")}</option>
+        </select>
+        <select
           value={brandFilter}
           onChange={(event) => onBrandFilterChange(event.target.value)}
-          className="h-10 w-[170px] rounded-md border px-3 text-sm shrink-0"
+          className="h-10 basis-[120px] min-w-[110px] max-w-[150px] grow rounded-md border px-2 text-sm truncate"
           style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
         >
           <option value="">{t("products.filters.allBrands")}</option>
@@ -113,7 +127,7 @@ export function ProductsFilters({
         <select
           value={categoryFilter}
           onChange={(event) => onCategoryFilterChange(event.target.value)}
-          className="h-10 w-[180px] rounded-md border px-3 text-sm shrink-0"
+          className="h-10 basis-[120px] min-w-[110px] max-w-[150px] grow rounded-md border px-2 text-sm truncate"
           style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
         >
           <option value="">{t("products.filters.allCategories")}</option>

@@ -132,6 +132,25 @@ class BackofficeSecurityAPITests(APITestCase):
         self.assertTrue(SecurityAuditLog.objects.filter(action="release_block", target_id=str(self.block.id)).exists())
         self.assertTrue(SecurityEvent.objects.filter(actor=self.actor, event_type="unblock").exists())
 
+    def test_create_block_from_actor_works(self):
+        self.block.status = SecurityBlock.STATUS_RELEASED
+        self.block.released_at = timezone.now()
+        self.block.save(update_fields=("status", "released_at"))
+        self.actor.status = SecurityActor.STATUS_UNBLOCKED
+        self.actor.save(update_fields=("status", "updated_at"))
+
+        response = self.client.post(
+            reverse("backoffice_api:security-block-list"),
+            {"actor_id": str(self.actor.id), "reason": "manual reblock"},
+            format="json",
+            **self._auth(self.admin_token),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.actor.refresh_from_db()
+        self.assertEqual(self.actor.status, SecurityActor.STATUS_BLOCKED)
+        self.assertTrue(SecurityEvent.objects.filter(actor=self.actor, event_type="manual_block").exists())
+
     def test_user_without_security_view_cannot_access_security(self):
         response = self.client.get(reverse("backoffice_api:security-actor-list"), **self._auth(self.manager_token))
 
@@ -146,6 +165,23 @@ class BackofficeSecurityAPITests(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_unwhitelist_actor_changes_status_and_writes_event(self):
+        self.actor.status = SecurityActor.STATUS_WHITELISTED
+        self.actor.save(update_fields=("status", "updated_at"))
+
+        response = self.client.post(
+            reverse("backoffice_api:security-actor-unwhitelist", kwargs={"id": self.actor.id}),
+            {"reason": "remove from whitelist"},
+            format="json",
+            **self._auth(self.admin_token),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.actor.refresh_from_db()
+        self.assertEqual(self.actor.status, SecurityActor.STATUS_BLOCKED)
+        self.assertTrue(SecurityAuditLog.objects.filter(action="unwhitelist_actor", target_id=str(self.actor.id)).exists())
+        self.assertTrue(SecurityEvent.objects.filter(actor=self.actor, event_type="unwhitelist").exists())
 
     def test_actor_list_search_matches_source_client_email_and_phone(self):
         customer = User.objects.create_user(

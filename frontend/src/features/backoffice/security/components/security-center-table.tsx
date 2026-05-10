@@ -1,6 +1,6 @@
 "use client";
 
-import { Clipboard, Eye, History, MoreHorizontal, Unlock } from "lucide-react";
+import { Clipboard, Eye, History, Lock, MoreHorizontal, ShieldCheck, Unlock } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -40,6 +40,7 @@ function MoreActions({
   onCopy,
   onComment,
   onFalsePositive,
+  isWhitelistView,
 }: {
   actor: SecurityActor;
   t: Translator;
@@ -48,6 +49,7 @@ function MoreActions({
   onCopy: (actor: SecurityActor) => void;
   onComment: (actor: SecurityActor) => void;
   onFalsePositive: (actor: SecurityActor) => void;
+  isWhitelistView: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -111,7 +113,12 @@ function MoreActions({
           visibility: menuPosition ? "visible" : "hidden",
         }}
       >
-        {actor.active_block ? <button type="button" className={itemClass} onClick={() => { setOpen(false); onWhitelist(actor); }}>{t("actions.whitelist")}</button> : null}
+        {actor.active_block && actor.status !== "whitelisted" ? (
+          <button type="button" className={itemClass} onClick={() => { setOpen(false); onWhitelist(actor); }}>{t("actions.whitelist")}</button>
+        ) : null}
+        {isWhitelistView && actor.status === "whitelisted" ? (
+          <button type="button" className={itemClass} onClick={() => { setOpen(false); onWhitelist(actor); }}>{t("actions.removeWhitelist")}</button>
+        ) : null}
         {actor.active_block ? <button type="button" className={itemClass} onClick={() => { setOpen(false); onExtend(actor); }}>{t("actions.extend")}</button> : null}
         <button type="button" className={itemClass} onClick={() => { setOpen(false); onCopy(actor); }}>{t("actions.copyIp")}</button>
         <button type="button" className={itemClass} onClick={() => { setOpen(false); onComment(actor); }}>{t("actions.comment")}</button>
@@ -158,6 +165,7 @@ export function SecurityCenterTable({
   onComment,
   onFalsePositive,
   onReblock,
+  isWhitelistView,
 }: {
   rows: SecurityActor[];
   totalCount: number;
@@ -176,6 +184,7 @@ export function SecurityCenterTable({
   onComment: (actor: SecurityActor) => void;
   onFalsePositive: (actor: SecurityActor) => void;
   onReblock: (actor: SecurityActor) => void;
+  isWhitelistView: boolean;
 }) {
   const columns = useMemo(() => [
     {
@@ -202,7 +211,7 @@ export function SecurityCenterTable({
     {
       key: "block",
       label: t("table.columns.block"),
-      className: "w-[18%]",
+      className: "w-[16%]",
       render: (actor: SecurityActor) => (
         <SecurityBlockTimer block={actor.active_block} t={t} />
       ),
@@ -210,25 +219,40 @@ export function SecurityCenterTable({
     {
       key: "actions",
       label: t("table.columns.actions"),
-      className: "relative w-[18%]",
+      className: "relative w-[20%]",
       render: (actor: SecurityActor) => (
-        <div className="flex flex-wrap justify-end gap-1">
+        <div className="flex flex-nowrap items-center justify-end gap-1 whitespace-nowrap">
           <ActionIconButton label={t("actions.view")} icon={Eye} onClick={() => onOpenDetails(actor)} />
           <ActionIconButton label={t("actions.history")} icon={History} onClick={() => onOpenHistory(actor)} />
           <ActionIconButton label={t("actions.copyIp")} icon={Clipboard} onClick={() => onCopy(actor)} />
+          <BackofficeTooltip content={actor.status === "whitelisted" ? t("actions.removeWhitelist") : t("actions.whitelist")} placement="top" align="center" wrapperClassName="inline-flex">
+            <button
+              type="button"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors"
+              aria-label={actor.status === "whitelisted" ? t("actions.removeWhitelist") : t("actions.whitelist")}
+              style={{
+                borderColor: actor.status === "whitelisted" ? "#2563eb" : "var(--border)",
+                backgroundColor: actor.status === "whitelisted" ? "#2563eb" : "var(--surface)",
+                color: actor.status === "whitelisted" ? "#ffffff" : "var(--text)",
+              }}
+              onClick={() => onWhitelist(actor)}
+            >
+              <ShieldCheck className="size-4" />
+            </button>
+          </BackofficeTooltip>
           <BackofficeTooltip content={actor.active_block ? t("actions.release") : t("actions.reblock")} placement="top" align="center" wrapperClassName="inline-flex">
             <button
               type="button"
               className="inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors"
               aria-label={actor.active_block ? t("actions.release") : t("actions.reblock")}
               style={{
-                borderColor: actor.active_block ? "#16a34a" : "var(--border)",
-                backgroundColor: actor.active_block ? "#16a34a" : "var(--surface)",
-                color: actor.active_block ? "#ffffff" : "var(--text)",
+                borderColor: actor.active_block ? "#16a34a" : "#111827",
+                backgroundColor: actor.active_block ? "#16a34a" : "#111827",
+                color: "#ffffff",
               }}
               onClick={() => (actor.active_block ? onRelease(actor.active_block) : onReblock(actor))}
             >
-              <Unlock className="size-4" />
+              {actor.active_block ? <Unlock className="size-4" /> : <Lock className="size-4" />}
             </button>
           </BackofficeTooltip>
           <MoreActions
@@ -239,11 +263,12 @@ export function SecurityCenterTable({
             onCopy={onCopy}
             onComment={onComment}
             onFalsePositive={onFalsePositive}
+            isWhitelistView={isWhitelistView}
           />
         </div>
       ),
     },
-  ], [onComment, onCopy, onExtend, onFalsePositive, onOpenDetails, onOpenHistory, onReblock, onRelease, onWhitelist, t]);
+  ], [isWhitelistView, onComment, onCopy, onExtend, onFalsePositive, onOpenDetails, onOpenHistory, onReblock, onRelease, onWhitelist, t]);
 
   return (
     <AsyncState isLoading={isLoading} error={error} empty={!rows.length} emptyLabel={t("empty.center")}>

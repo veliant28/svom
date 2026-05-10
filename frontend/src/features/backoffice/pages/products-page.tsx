@@ -54,6 +54,7 @@ export function ProductsPage() {
         pageSize={filters.pageSize}
         pageSizeOptions={filters.pageSizeOptions}
         isActiveFilter={filters.isActiveFilter}
+        supplierFilter={filters.supplierFilter}
         brandFilter={filters.brandFilter}
         categoryFilter={filters.categoryFilter}
         brands={brands}
@@ -61,6 +62,7 @@ export function ProductsPage() {
         onSearchChange={filters.onSearchChange}
         onPageSizeChange={filters.onPageSizeChange}
         onIsActiveFilterChange={filters.onIsActiveFilterChange}
+        onSupplierFilterChange={filters.onSupplierFilterChange}
         onBrandFilterChange={filters.onBrandFilterChange}
         onCategoryFilterChange={filters.onCategoryFilterChange}
         onCreate={openCreate}

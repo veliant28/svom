@@ -10,6 +10,7 @@ from apps.security.models import SecurityActor, SecurityBlock
 from apps.security.services.audit import write_admin_event, write_audit_log
 from apps.security.services.enforcement import (
     SECURITY_BLOCK_MODE_HARD,
+    SECURITY_BLOCK_MODE_SOFT,
     resolve_block_mode,
     touch_block_enforcement_revision,
 )
@@ -101,6 +102,29 @@ def whitelist_actor(*, actor: SecurityActor, request, reason: str) -> SecurityAc
 
     write_audit_log(request=request, action="whitelist_actor", target=actor, old_value=old_value, new_value={"status": actor.status}, comment=comment)
     write_admin_event(actor=actor, request=request, event_type="whitelist", metadata={"reason": comment})
+    touch_block_enforcement_revision()
+    return actor
+
+
+@transaction.atomic
+def unwhitelist_actor(*, actor: SecurityActor, request, reason: str) -> SecurityActor:
+    comment = _require_text(reason, "reason")
+    old_value = {"status": actor.status}
+
+    has_active_blocks = actor.blocks.filter(status=SecurityBlock.STATUS_ACTIVE).exists()
+    actor.status = SecurityActor.STATUS_BLOCKED if has_active_blocks else SecurityActor.STATUS_UNBLOCKED
+    actor.last_unblocked_at = timezone.now()
+    actor.save(update_fields=("status", "last_unblocked_at", "updated_at"))
+
+    write_audit_log(
+        request=request,
+        action="unwhitelist_actor",
+        target=actor,
+        old_value=old_value,
+        new_value={"status": actor.status},
+        comment=comment,
+    )
+    write_admin_event(actor=actor, request=request, event_type="unwhitelist", metadata={"reason": comment})
     touch_block_enforcement_revision()
     return actor
 

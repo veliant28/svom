@@ -134,7 +134,12 @@
         "subtitle": "Проміжна таблиця імпортованих товарів до основного мапінгу та подальшої обробки.",
         "search": "Пошук за SKU, артикулом, брендом і назвою",
         "filters": {
-          "allStatuses": "Усі статуси"
+          "allStatuses": "Усі статуси",
+          "offerAllStatuses": "Усі статуси",
+          "offerNeedsReview": "Потребує перевірки",
+          "offerManualMapped": "Підтверджено вручну",
+          "offerAutoMapped": "Авто-мапінг",
+          "offerUnmapped": "Не зіставлено"
         },
         "empty": "Імпортовані товари не знайдено.",
         "actions": {

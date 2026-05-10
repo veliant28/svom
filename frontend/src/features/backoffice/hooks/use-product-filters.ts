@@ -6,6 +6,7 @@ export type ProductPageSize = (typeof PRODUCTS_PAGE_SIZE_OPTIONS)[number];
 export function useProductFilters() {
   const [q, setQ] = useState("");
   const [isActiveFilter, setIsActiveFilter] = useState("");
+  const [supplierFilter, setSupplierFilter] = useState("");
   const [brandFilter, setBrandFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [page, setPage] = useState(1);
@@ -18,6 +19,11 @@ export function useProductFilters() {
 
   const onIsActiveFilterChange = useCallback((value: string) => {
     setIsActiveFilter(value);
+    setPage(1);
+  }, []);
+
+  const onSupplierFilterChange = useCallback((value: string) => {
+    setSupplierFilter(value);
     setPage(1);
   }, []);
 
@@ -39,6 +45,7 @@ export function useProductFilters() {
   return {
     q,
     isActiveFilter,
+    supplierFilter,
     brandFilter,
     categoryFilter,
     page,
@@ -47,6 +54,7 @@ export function useProductFilters() {
     setPage,
     onSearchChange,
     onIsActiveFilterChange,
+    onSupplierFilterChange,
     onBrandFilterChange,
     onCategoryFilterChange,
     onPageSizeChange,

@@ -35,7 +35,7 @@ function StatusIconChip({
       <BackofficeStatusChip
         tone={tone}
         icon={icon}
-        className="cursor-help justify-center gap-0 px-1.5 [&>span:last-child]:hidden"
+        className="cursor-pointer justify-center gap-0 px-1.5 [&>span:last-child]:hidden"
       >
         <span className="sr-only">{label}</span>
       </BackofficeStatusChip>
@@ -143,7 +143,7 @@ export function createProductColumns({
     {
       key: "product",
       label: t("products.table.columns.product"),
-      className: "w-[24%]",
+      className: "w-[20%]",
       render: (item) => {
         const displayName = (item.display_name || item.name || "").trim() || "-";
         const supplierSku = (item.supplier_sku || item.sku || "").trim() || "-";
@@ -170,7 +170,7 @@ export function createProductColumns({
     {
       key: "price",
       label: t("products.table.columns.price"),
-      className: "w-[14%]",
+      className: "w-[16%]",
       render: (item) => {
         if (!item.final_price && !item.supplier_price && !(item.supplier_price_levels ?? []).length) {
           return <span>-</span>;
@@ -226,7 +226,7 @@ export function createProductColumns({
             <BackofficeStatusChip
               tone="blue"
               icon={BadgeDollarSign}
-              className="w-full max-w-full min-w-0 cursor-help justify-start overflow-hidden"
+              className="w-full max-w-full min-w-0 cursor-pointer justify-start overflow-hidden"
             >
               <span className="block min-w-0 truncate tabular-nums">{priceMeta.badgeLabel}</span>
             </BackofficeStatusChip>
@@ -240,32 +240,57 @@ export function createProductColumns({
       className: "w-[7%]",
       render: (item) => {
         const statusLabel = item.is_active ? t("statuses.active") : t("statuses.inactive");
+        const supplierCode = (
+          item.primary_supplier_code
+          || item.supplier_code
+          || (item.supplier_codes ?? [])[0]
+          || "-"
+        ).trim().toLowerCase();
         const supplierOfferSeenAtLabel = item.supplier_offer_seen_at
           ? formatBackofficeDate(item.supplier_offer_seen_at)
           : t("products.tooltips.notSet");
+        const supplierTooltip = supplierCode === "utr" ? "Юник Трейд" : supplierCode === "gpl" ? "GPL" : supplierCode.toUpperCase();
 
         return (
-          <div className="flex flex-wrap gap-1">
-            <StatusIconChip
-              label={statusLabel}
-              tooltipContent={(
-                <span className="grid gap-1">
-                  <span>
-                    <span style={{ color: "var(--muted)" }}>{t("products.table.columns.status")}:</span>{" "}
-                    {statusLabel}
+          <div className="grid gap-1">
+            <div className="flex items-center gap-1 whitespace-nowrap">
+              <StatusIconChip
+                label={statusLabel}
+                tooltipContent={(
+                  <span className="grid gap-1">
+                    <span>
+                      <span style={{ color: "var(--muted)" }}>{t("products.table.columns.status")}:</span>{" "}
+                      {statusLabel}
+                    </span>
+                    <span>
+                      <span style={{ color: "var(--muted)" }}>{t("products.tooltips.importedFromPriceAt")}:</span>{" "}
+                      {supplierOfferSeenAtLabel}
+                    </span>
                   </span>
-                  <span>
-                    <span style={{ color: "var(--muted)" }}>{t("products.tooltips.importedFromPriceAt")}:</span>{" "}
-                    {supplierOfferSeenAtLabel}
-                  </span>
-                </span>
-              )}
-              tone={item.is_active ? "success" : "gray"}
-              icon={item.is_active ? CheckCircle2 : XCircle}
-            />
-            {item.is_featured ? <StatusIconChip label={t("products.flags.featured")} tone="info" icon={Star} /> : null}
-            {item.is_new ? <StatusIconChip label={t("products.flags.new")} tone="orange" icon={Sparkles} /> : null}
-            {item.is_bestseller ? <StatusIconChip label={t("products.flags.bestseller")} tone="blue" icon={Flame} /> : null}
+                )}
+                tone={item.is_active ? "success" : "gray"}
+                icon={item.is_active ? CheckCircle2 : XCircle}
+              />
+              <BackofficeTooltip
+                content={supplierTooltip}
+                placement="top"
+                align="center"
+                wrapperClassName="inline-flex"
+                tooltipClassName="whitespace-nowrap"
+              >
+                <BackofficeStatusChip
+                  tone={supplierCode === "utr" ? "blue" : supplierCode === "gpl" ? "teal" : "gray"}
+                  className="cursor-pointer [&>span]:leading-[14px]"
+                >
+                  {supplierCode}
+                </BackofficeStatusChip>
+              </BackofficeTooltip>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {item.is_featured ? <StatusIconChip label={t("products.flags.featured")} tone="info" icon={Star} /> : null}
+              {item.is_new ? <StatusIconChip label={t("products.flags.new")} tone="orange" icon={Sparkles} /> : null}
+              {item.is_bestseller ? <StatusIconChip label={t("products.flags.bestseller")} tone="blue" icon={Flame} /> : null}
+            </div>
           </div>
         );
       },

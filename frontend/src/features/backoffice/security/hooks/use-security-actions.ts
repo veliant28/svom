@@ -5,24 +5,28 @@ import { useTranslations } from "next-intl";
 
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
+import { BACKOFFICE_CAPABILITIES, hasBackofficeCapability } from "@/features/backoffice/lib/capabilities";
 import {
   addSecurityComment,
   createSecurityBlock,
   extendSecurityBlock,
   markSecurityActorFalsePositive,
   releaseSecurityBlock,
+  unwhitelistSecurityActor,
   whitelistSecurityBlock,
 } from "@/features/backoffice/security/api/security-api";
 import type { SecurityActor, SecurityBlock } from "@/features/backoffice/security/types/security.types";
 
 export function useSecurityActions(onAfterAction: () => void) {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const feedback = useBackofficeFeedback();
   const t = useTranslations("backoffice.security");
   const [submitting, setSubmitting] = useState(false);
+  const canRespond = hasBackofficeCapability(user, BACKOFFICE_CAPABILITIES.securityRespond);
 
   const release = useCallback(async (block: SecurityBlock, reason: string) => {
-    if (!token) {
+    if (!token || !canRespond) {
+      feedback.showWarning(t("errors.respondPermission"));
       return;
     }
     setSubmitting(true);
@@ -35,10 +39,33 @@ export function useSecurityActions(onAfterAction: () => void) {
     } finally {
       setSubmitting(false);
     }
-  }, [feedback, onAfterAction, t, token]);
+  }, [canRespond, feedback, onAfterAction, t, token]);
 
   const whitelist = useCallback(async (actor: SecurityActor, reason: string) => {
-    if (!token || !actor.active_block) {
+    if (!canRespond) {
+      feedback.showWarning(t("errors.respondPermission"));
+      return;
+    }
+    if (!token) {
+      feedback.showWarning(t("errors.respondPermission"));
+      return;
+    }
+
+    if (actor.status === "whitelisted") {
+      setSubmitting(true);
+      try {
+        await unwhitelistSecurityActor(token, actor.id, reason);
+        feedback.showSuccess(t("toasts.unwhitelistSuccess"));
+        onAfterAction();
+      } catch (error) {
+        feedback.showApiError(error, t("errors.unwhitelistFailed"));
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    if (!actor.active_block) {
       feedback.showWarning(t("errors.noActiveBlock"));
       return;
     }
@@ -52,9 +79,13 @@ export function useSecurityActions(onAfterAction: () => void) {
     } finally {
       setSubmitting(false);
     }
-  }, [feedback, onAfterAction, t, token]);
+  }, [canRespond, feedback, onAfterAction, t, token]);
 
   const extend = useCallback(async (actor: SecurityActor, minutes: number, reason: string) => {
+    if (!canRespond) {
+      feedback.showWarning(t("errors.respondPermission"));
+      return;
+    }
     if (!token || !actor.active_block) {
       feedback.showWarning(t("errors.noActiveBlock"));
       return;
@@ -69,10 +100,11 @@ export function useSecurityActions(onAfterAction: () => void) {
     } finally {
       setSubmitting(false);
     }
-  }, [feedback, onAfterAction, t, token]);
+  }, [canRespond, feedback, onAfterAction, t, token]);
 
   const comment = useCallback(async (actor: SecurityActor, value: string) => {
-    if (!token) {
+    if (!token || !canRespond) {
+      feedback.showWarning(t("errors.respondPermission"));
       return;
     }
     setSubmitting(true);
@@ -85,10 +117,11 @@ export function useSecurityActions(onAfterAction: () => void) {
     } finally {
       setSubmitting(false);
     }
-  }, [feedback, onAfterAction, t, token]);
+  }, [canRespond, feedback, onAfterAction, t, token]);
 
   const reblock = useCallback(async (actor: SecurityActor, reason: string) => {
-    if (!token) {
+    if (!token || !canRespond) {
+      feedback.showWarning(t("errors.respondPermission"));
       return;
     }
     setSubmitting(true);
@@ -101,10 +134,11 @@ export function useSecurityActions(onAfterAction: () => void) {
     } finally {
       setSubmitting(false);
     }
-  }, [feedback, onAfterAction, t, token]);
+  }, [canRespond, feedback, onAfterAction, t, token]);
 
   const falsePositive = useCallback(async (actor: SecurityActor, reason: string) => {
-    if (!token) {
+    if (!token || !canRespond) {
+      feedback.showWarning(t("errors.respondPermission"));
       return;
     }
     setSubmitting(true);
@@ -117,7 +151,7 @@ export function useSecurityActions(onAfterAction: () => void) {
     } finally {
       setSubmitting(false);
     }
-  }, [feedback, onAfterAction, t, token]);
+  }, [canRespond, feedback, onAfterAction, t, token]);
 
   const copyIp = useCallback(async (actor: SecurityActor) => {
     try {

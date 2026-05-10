@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 
 import type { SecurityActor } from "@/features/backoffice/security/types/security.types";
 
-export type SecurityActionKind = "whitelist" | "extend" | "comment" | "falsePositive" | "reblock";
+export type SecurityActionKind = "whitelist" | "unwhitelist" | "extend" | "comment" | "falsePositive" | "reblock";
 
 type Translator = (key: string, values?: Record<string, string | number>) => string;
 

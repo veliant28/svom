@@ -197,9 +197,12 @@
         },
         "filters": {
           "search": "Поиск по SKU, названию, бренду или категории",
-          "allStates": "Любой статус",
+          "allStates": "Все статусы",
           "active": "Только активные",
           "inactive": "Только неактивные",
+          "allSuppliers": "Все поставщики",
+          "supplierGpl": "GPL",
+          "supplierUtr": "UTR",
           "allBrands": "Все бренды",
           "allCategories": "Все категории"
         },

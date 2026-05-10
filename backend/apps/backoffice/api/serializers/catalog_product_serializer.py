@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 from hashlib import sha1
+import re
 
 from rest_framework import serializers
 
@@ -70,6 +71,19 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
     supplier_offer_seen_at = serializers.SerializerMethodField()
     stock_qty = serializers.SerializerMethodField()
     supplier_offer_stock_sum = serializers.SerializerMethodField()
+    supplier_code = serializers.SerializerMethodField()
+    supplier_codes = serializers.SerializerMethodField()
+    primary_supplier_code = serializers.SerializerMethodField()
+    has_product_price = serializers.SerializerMethodField()
+    has_available_offer = serializers.SerializerMethodField()
+    productprice_status = serializers.SerializerMethodField()
+    productprice_status_reason = serializers.SerializerMethodField()
+    product_is_active = serializers.BooleanField(source="is_active", read_only=True)
+    is_public = serializers.SerializerMethodField()
+    published_at = serializers.DateTimeField(read_only=True)
+    autodb_link_status = serializers.SerializerMethodField()
+    compatibility_available = serializers.SerializerMethodField()
+    warehouse_summary = serializers.SerializerMethodField()
     display_name = serializers.SerializerMethodField()
     display_name_source = serializers.SerializerMethodField()
     name_quality_flags = serializers.SerializerMethodField()
@@ -129,6 +143,19 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
             "supplier_offer_seen_at",
             "stock_qty",
             "supplier_offer_stock_sum",
+            "supplier_code",
+            "supplier_codes",
+            "primary_supplier_code",
+            "has_product_price",
+            "has_available_offer",
+            "productprice_status",
+            "productprice_status_reason",
+            "product_is_active",
+            "is_public",
+            "published_at",
+            "autodb_link_status",
+            "compatibility_available",
+            "warehouse_summary",
             "short_description",
             "description",
             "is_active",
@@ -406,9 +433,9 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def _resolve_supplier_offer(obj: Product) -> SupplierOffer | None:
-        prefetched = getattr(obj, "backoffice_supplier_offers", None)
-        if prefetched:
-            return prefetched[0]
+        offers = BackofficeCatalogProductSerializer._resolve_supplier_offers(obj)
+        if offers:
+            return offers[0]
 
         return (
             SupplierOffer.objects.filter(product=obj)
@@ -416,6 +443,47 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
             .order_by("supplier__priority", "-updated_at", "id")
             .first()
         )
+
+    @staticmethod
+    def _resolve_supplier_offers(obj: Product) -> list[SupplierOffer]:
+        prefetched = getattr(obj, "backoffice_supplier_offers", None)
+        if prefetched is not None:
+            return list(prefetched)
+        return list(
+            SupplierOffer.objects.filter(product=obj)
+            .select_related("supplier")
+            .order_by("supplier__priority", "-updated_at", "id")
+        )
+
+    @staticmethod
+    def _resolve_available_offers(obj: Product) -> list[SupplierOffer]:
+        return [offer for offer in BackofficeCatalogProductSerializer._resolve_supplier_offers(obj) if offer.is_available]
+
+    @classmethod
+    def _resolve_productprice_status(cls, obj: Product) -> tuple[str, str]:
+        product_price = cls._resolve_product_price(obj)
+        if product_price is not None and product_price.final_price and product_price.final_price > 0:
+            return "has_price", "product_price_present"
+
+        offers = cls._resolve_supplier_offers(obj)
+        if not offers:
+            return "no_available_offer", "no_supplier_offers"
+
+        available_offers = [offer for offer in offers if offer.is_available]
+        if not available_offers:
+            return "no_available_offer", "all_supplier_offers_unavailable"
+
+        has_valid_available_offer = any((offer.purchase_price or 0) > 0 for offer in available_offers)
+        if not has_valid_available_offer:
+            return "invalid_offer", "available_offer_nonpositive_purchase_price"
+
+        if product_price is None:
+            return "no_product_price", "product_price_missing"
+
+        if (product_price.final_price or 0) <= 0:
+            return "invalid_offer", "product_price_nonpositive"
+
+        return "no_product_price", "product_price_missing"
 
     @classmethod
     def _resolve_supplier_purchase_price(cls, obj: Product) -> tuple[Decimal | None, str | None]:
@@ -611,7 +679,118 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
         return max(seen_values) if seen_values else None
 
     def get_stock_qty(self, obj: Product) -> int:
-        return resolve_display_stock_qty(obj)
+        display_stock_qty = int(resolve_display_stock_qty(obj) or 0)
+        if display_stock_qty > 0:
+            return display_stock_qty
+
+        offers = self._resolve_supplier_offers(obj)
+        max_offer_stock = max((int(offer.stock_qty or 0) for offer in offers), default=0)
+        if max_offer_stock > 0:
+            return max_offer_stock
+
+        raw_offers = getattr(obj, "backoffice_raw_offers", None)
+        if raw_offers is None:
+            raw_offers = (
+                obj.raw_supplier_offers
+                .only("stock_qty")
+                .order_by("-updated_at", "-id")[:20]
+            )
+        max_raw_stock = max((int(getattr(raw_offer, "stock_qty", 0) or 0) for raw_offer in raw_offers), default=0)
+        if max_raw_stock > 0:
+            return max_raw_stock
+
+        return display_stock_qty
 
     def get_supplier_offer_stock_sum(self, obj: Product) -> int:
         return get_available_supplier_offer_stock_sum(obj)
+
+    def get_supplier_codes(self, obj: Product) -> list[str]:
+        seen: set[str] = set()
+        codes: list[str] = []
+        for offer in self._resolve_supplier_offers(obj):
+            code = str(getattr(offer.supplier, "code", "") or "").strip().lower()
+            if not code or code in seen:
+                continue
+            seen.add(code)
+            codes.append(code)
+        return codes
+
+    def get_primary_supplier_code(self, obj: Product) -> str:
+        offer = self._resolve_supplier_offer(obj)
+        if offer is None:
+            return ""
+        return str(getattr(offer.supplier, "code", "") or "").strip().lower()
+
+    def get_supplier_code(self, obj: Product) -> str:
+        return self.get_primary_supplier_code(obj)
+
+    def get_has_product_price(self, obj: Product) -> bool:
+        return self._resolve_product_price(obj) is not None
+
+    def get_has_available_offer(self, obj: Product) -> bool:
+        return bool(self._resolve_available_offers(obj))
+
+    def get_productprice_status(self, obj: Product) -> str:
+        cached = getattr(obj, "_backoffice_productprice_status", None)
+        if cached is None:
+            cached = self._resolve_productprice_status(obj)
+            obj._backoffice_productprice_status = cached
+        status, _ = cached
+        return status
+
+    def get_productprice_status_reason(self, obj: Product) -> str:
+        cached = getattr(obj, "_backoffice_productprice_status", None)
+        if cached is None:
+            cached = self._resolve_productprice_status(obj)
+            obj._backoffice_productprice_status = cached
+        _, reason = cached
+        return reason
+
+    def get_is_public(self, obj: Product) -> bool:
+        return bool(obj.is_active and obj.published_at)
+
+    def get_autodb_link_status(self, obj: Product) -> str:
+        if not obj.autodb_supplier_id or not str(obj.autodb_article_number or "").strip():
+            return "unlinked"
+
+        link_quality_status = self._get_link_quality_status(obj)
+        if link_quality_status == AutoDbProductLinkQuality.STATUS_TRUSTED:
+            return "trusted"
+        if link_quality_status == AutoDbProductLinkQuality.STATUS_SUSPICIOUS:
+            return "suspicious"
+        if link_quality_status == AutoDbProductLinkQuality.STATUS_NEEDS_MANUAL_REVIEW:
+            return "needs_review"
+        return "linked"
+
+    def get_compatibility_available(self, obj: Product) -> bool:
+        return self.get_is_autodb_compatible_data_available(obj)
+
+    @staticmethod
+    def _parse_segment_qty(value: str) -> Decimal | None:
+        normalized = re.sub(r"[^\d,.\-]", "", str(value or "")).replace(",", ".").strip()
+        if not normalized:
+            return None
+        try:
+            return Decimal(normalized)
+        except Exception:
+            return None
+
+    def get_warehouse_summary(self, obj: Product) -> dict[str, int]:
+        segments = self.get_warehouse_segments(obj)
+        warehouse_total_count = len(segments)
+        warehouse_nonzero_count = 0
+        stock_qty_total = Decimal("0")
+        for segment in segments:
+            quantity = self._parse_segment_qty(str(segment.get("value", "") or ""))
+            if quantity is None:
+                continue
+            stock_qty_total += quantity
+            if quantity > 0:
+                warehouse_nonzero_count += 1
+
+        return {
+            "warehouse_total_count": warehouse_total_count,
+            "warehouse_nonzero_count": warehouse_nonzero_count,
+            "stock_qty_total": int(stock_qty_total),
+            "supplier_offer_stock_sum": self.get_supplier_offer_stock_sum(obj),
+        }

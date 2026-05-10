@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 from django.db.models import Prefetch
 from django.db.models.functions import Length
 from django.db.models.deletion import ProtectedError
@@ -11,6 +11,7 @@ from rest_framework.response import Response
 
 from apps.backoffice.api.serializers import BackofficeCatalogProductSerializer
 from apps.backoffice.permissions import IsStaffOrSuperuser
+from apps.catalog.models import AutoDbProductLinkQuality
 from apps.catalog.models import Product
 from apps.pricing.models import SupplierOffer
 from apps.supplier_imports.models import SupplierRawOffer
@@ -29,6 +30,17 @@ def _parse_bool_param(value: str) -> bool | None:
     if normalized in {"false", "0", "no"}:
         return False
     return None
+
+
+def _normalize_autodb_link_status(value: str) -> str:
+    normalized = (value or "").strip().lower()
+    if normalized in {"", "all"}:
+        return ""
+    if normalized in {"linked", "unlinked", "trusted", "suspicious"}:
+        return normalized
+    if normalized in {"needs_review", "needs_manual_review"}:
+        return "needs_review"
+    return ""
 
 
 class BackofficeCatalogProductListCreateAPIView(ListCreateAPIView):
@@ -63,6 +75,10 @@ class BackofficeCatalogProductListCreateAPIView(ListCreateAPIView):
         query = self.request.query_params.get("q", "").strip()
         brand = self.request.query_params.get("brand", "").strip()
         category = self.request.query_params.get("category", "").strip()
+        supplier_code = self.request.query_params.get("supplier", "").strip().lower()
+        has_product_price = _parse_bool_param(self.request.query_params.get("has_product_price", ""))
+        has_available_offer = _parse_bool_param(self.request.query_params.get("has_available_offer", ""))
+        autodb_link_status = _normalize_autodb_link_status(self.request.query_params.get("autodb_link_status", ""))
 
         is_active = _parse_bool_param(self.request.query_params.get("is_active", ""))
         is_featured = _parse_bool_param(self.request.query_params.get("is_featured", ""))
@@ -94,6 +110,17 @@ class BackofficeCatalogProductListCreateAPIView(ListCreateAPIView):
                 queryset = queryset.filter(brand_id=brand)
         if category:
             queryset = queryset.filter(category_id=category)
+        if supplier_code and supplier_code != "all":
+            queryset = queryset.filter(supplier_offers__supplier__code=supplier_code).distinct()
+        if has_product_price is not None:
+            queryset = queryset.filter(product_price__isnull=not has_product_price)
+        if has_available_offer is not None:
+            available_offer_exists = SupplierOffer.objects.filter(
+                product_id=OuterRef("pk"),
+                is_available=True,
+            )
+            queryset = queryset.annotate(_has_available_offer=Exists(available_offer_exists))
+            queryset = queryset.filter(_has_available_offer=has_available_offer)
         if is_active is not None:
             queryset = queryset.filter(is_active=is_active)
         if is_featured is not None:
@@ -124,6 +151,22 @@ class BackofficeCatalogProductListCreateAPIView(ListCreateAPIView):
                 queryset = queryset.exclude(
                     Q(catalog_source=Product.CATALOG_SOURCE_AUTODB_PRO) & (Q(autodb_supplier_id__isnull=True) | Q(autodb_article_number=""))
                 )
+        if autodb_link_status == "linked":
+            queryset = queryset.filter(autodb_supplier_id__isnull=False).exclude(autodb_article_number="")
+        elif autodb_link_status == "unlinked":
+            queryset = queryset.filter(Q(autodb_supplier_id__isnull=True) | Q(autodb_article_number=""))
+        elif autodb_link_status == "trusted":
+            queryset = queryset.filter(
+                autodb_link_qualities__status=AutoDbProductLinkQuality.STATUS_TRUSTED
+            ).distinct()
+        elif autodb_link_status == "suspicious":
+            queryset = queryset.filter(
+                autodb_link_qualities__status=AutoDbProductLinkQuality.STATUS_SUSPICIOUS
+            ).distinct()
+        elif autodb_link_status == "needs_review":
+            queryset = queryset.filter(
+                autodb_link_qualities__status=AutoDbProductLinkQuality.STATUS_NEEDS_MANUAL_REVIEW
+            ).distinct()
 
         return queryset
 

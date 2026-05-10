@@ -197,9 +197,12 @@
         },
         "filters": {
           "search": "Пошук за SKU, назвою, брендом або категорією",
-          "allStates": "Будь-який статус",
+          "allStates": "Усі статуси",
           "active": "Лише активні",
           "inactive": "Лише неактивні",
+          "allSuppliers": "Усі постачальники",
+          "supplierGpl": "GPL",
+          "supplierUtr": "UTR",
           "allBrands": "Усі бренди",
           "allCategories": "Усі категорії"
         },

@@ -31,6 +31,7 @@ from apps.security.services import (
     release_block,
     security_summary,
     security_timeseries,
+    unwhitelist_actor,
     whitelist_actor,
 )
 
@@ -173,6 +174,17 @@ class SecurityActorFalsePositiveAPIView(BackofficeAPIView):
         serializer.is_valid(raise_exception=True)
         actor = get_object_or_404(SecurityActor, id=id)
         actor = mark_false_positive(actor=actor, request=request, reason=serializer.validated_data["reason"])
+        return Response(SecurityActorSerializer(actor, context={"now": timezone.now()}).data)
+
+
+class SecurityActorUnwhitelistAPIView(BackofficeAPIView):
+    required_capability = "security.respond"
+
+    def post(self, request, id):
+        serializer = SecurityReasonSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        actor = get_object_or_404(SecurityActor, id=id)
+        actor = unwhitelist_actor(actor=actor, request=request, reason=serializer.validated_data["reason"])
         return Response(SecurityActorSerializer(actor, context={"now": timezone.now()}).data)
 
 

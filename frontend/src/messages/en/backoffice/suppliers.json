@@ -134,7 +134,12 @@
         "subtitle": "Intermediate table of imported products before core mapping and further processing.",
         "search": "Search by SKU, article, brand, or name",
         "filters": {
-          "allStatuses": "All statuses"
+          "allStatuses": "All statuses",
+          "offerAllStatuses": "All statuses",
+          "offerNeedsReview": "Needs review",
+          "offerManualMapped": "Manual mapped",
+          "offerAutoMapped": "Auto mapped",
+          "offerUnmapped": "Unmapped"
         },
         "empty": "No imported products found.",
         "actions": {

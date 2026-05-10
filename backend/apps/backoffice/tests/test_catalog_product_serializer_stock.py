@@ -33,6 +33,11 @@ class BackofficeCatalogProductSerializerStockTests(TestCase):
         payload = BackofficeCatalogProductSerializer(instance=self.product).data
         self.assertEqual(payload["stock_qty"], 5)
         self.assertEqual(payload["supplier_offer_stock_sum"], 5)
+        self.assertEqual(payload["supplier_code"], "supplier-1")
+        self.assertEqual(payload["supplier_codes"], ["supplier-1"])
+        self.assertTrue(payload["has_available_offer"])
+        self.assertFalse(payload["has_product_price"])
+        self.assertEqual(payload["productprice_status"], "no_product_price")
 
     def test_serializer_prefers_cached_stock_when_present(self):
         self.product.available_stock_qty_cached = 9

@@ -73,7 +73,7 @@ export function OrdersFilters({
         <select
           value={status}
           onChange={(event) => onStatusChange(event.target.value)}
-          className="h-10 rounded-md border px-3 text-sm shrink-0"
+          className="h-10 w-[132px] rounded-md border px-3 text-sm shrink-0"
           style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
         >
           <option value="">{t("orders.filters.allStatuses")}</option>

@@ -43,6 +43,10 @@ export function whitelistSecurityBlock(token: string, blockId: string, reason: s
   return postJson<SecurityActor, { reason: string }>(`/backoffice/security/blocks/${blockId}/whitelist/`, { reason }, undefined, { token });
 }
 
+export function unwhitelistSecurityActor(token: string, actorId: string, reason: string): Promise<SecurityActor> {
+  return postJson<SecurityActor, { reason: string }>(`/backoffice/security/actors/${actorId}/unwhitelist/`, { reason }, undefined, { token });
+}
+
 export function extendSecurityBlock(token: string, blockId: string, minutes: number, reason: string): Promise<SecurityBlock> {
   return postJson<SecurityBlock, { minutes: number; reason: string }>(
     `/backoffice/security/blocks/${blockId}/extend/`,

@@ -197,9 +197,12 @@
         },
         "filters": {
           "search": "Search by SKU, product name, brand, or category",
-          "allStates": "Any state",
+          "allStates": "All statuses",
           "active": "Active only",
           "inactive": "Inactive only",
+          "allSuppliers": "All suppliers",
+          "supplierGpl": "GPL",
+          "supplierUtr": "UTR",
           "allBrands": "All brands",
           "allCategories": "All categories"
         },

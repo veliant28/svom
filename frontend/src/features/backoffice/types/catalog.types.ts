@@ -87,6 +87,24 @@ export type BackofficeCatalogProduct = {
   }>;
   supplier_sku: string;
   supplier_offer_seen_at: string | null;
+  supplier_code?: string;
+  supplier_codes?: string[];
+  primary_supplier_code?: string;
+  has_product_price?: boolean;
+  has_available_offer?: boolean;
+  productprice_status?: "has_price" | "no_product_price" | "no_available_offer" | "invalid_offer";
+  productprice_status_reason?: string;
+  product_is_active?: boolean;
+  is_public?: boolean;
+  published_at?: string | null;
+  autodb_link_status?: "linked" | "unlinked" | "trusted" | "suspicious" | "needs_review";
+  compatibility_available?: boolean;
+  warehouse_summary?: {
+    warehouse_total_count: number;
+    warehouse_nonzero_count: number;
+    stock_qty_total: number;
+    supplier_offer_stock_sum: number;
+  };
   short_description: string;
   description: string;
   is_active: boolean;
