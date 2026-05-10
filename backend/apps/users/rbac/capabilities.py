@@ -217,6 +217,30 @@ BACKOFFICE_CAPABILITIES: tuple[BackofficeCapabilityDefinition, ...] = (
         description="Customer service actions in order flow.",
     ),
     BackofficeCapabilityDefinition(
+        code="security.view",
+        permission_codename="bo_cap_security_view",
+        title="Security view",
+        description="Read security dashboard and threat actors.",
+    ),
+    BackofficeCapabilityDefinition(
+        code="security.manage",
+        permission_codename="bo_cap_security_manage",
+        title="Security manage",
+        description="Manage security rules and settings.",
+    ),
+    BackofficeCapabilityDefinition(
+        code="security.audit",
+        permission_codename="bo_cap_security_audit",
+        title="Security audit",
+        description="Read security audit and activity history.",
+    ),
+    BackofficeCapabilityDefinition(
+        code="security.respond",
+        permission_codename="bo_cap_security_respond",
+        title="Security respond",
+        description="Respond to blocked and suspicious sources.",
+    ),
+    BackofficeCapabilityDefinition(
         code="procurement.manage",
         permission_codename="bo_cap_procurement_manage",
         title="Procurement manage",

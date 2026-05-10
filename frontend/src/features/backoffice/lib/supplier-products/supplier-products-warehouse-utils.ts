@@ -6,6 +6,32 @@ export type WarehouseSegment = {
   qty: number | null;
 };
 
+const UTR_WAREHOUSE_COLUMNS: readonly string[] = [
+  "Миколаївська обл.",
+  "Одеська обл.",
+  "Запорізька обл.",
+  "Київська обл.",
+  "Херсонська обл.",
+  "Харківська обл.",
+  "КИЇВ-2",
+  "Дніпровська обл.",
+  "Львівська обл.",
+  "Черкаська обл.",
+  "Хмельницька обл.",
+  "Рівненська обл.",
+  "Вінницька обл.",
+  "Житомирська обл.",
+  "Івано-Франківська обл.",
+];
+
+function isScalarWarehouseValue(value: unknown): value is string | number {
+  return typeof value === "string" || typeof value === "number";
+}
+
+function isTechnicalWarehouseKey(label: string): boolean {
+  return label.startsWith("_");
+}
+
 function parseWarehouseQty(value: string): number | null {
   const normalized = value
     .replace(",", ".")
@@ -40,12 +66,49 @@ function warehouseVisualRank(qty: number | null): number {
   return Number.MAX_SAFE_INTEGER;
 }
 
-export function extractWarehouses(payload: Record<string, unknown>): WarehouseSegment[] {
+export function extractWarehouses(payload: Record<string, unknown>, sourceCode?: string): WarehouseSegment[] {
+  if ((sourceCode || "").toLowerCase() === "utr") {
+    const utrRows: Array<WarehouseSegment & { index: number }> = UTR_WAREHOUSE_COLUMNS.map((key, index) => {
+      const rawValue = payload[key];
+      const normalized = isScalarWarehouseValue(rawValue) ? String(rawValue).trim() : "";
+      const value = normalized || "0";
+      return {
+        key,
+        value,
+        qty: parseWarehouseQty(value),
+        index,
+      };
+    });
+
+    return utrRows
+      .sort((left, right) => {
+        const rankCompare = warehouseVisualRank(left.qty) - warehouseVisualRank(right.qty);
+        if (rankCompare !== 0) {
+          return rankCompare;
+        }
+        if (left.qty !== null && right.qty !== null) {
+          const qtyCompare = right.qty - left.qty;
+          if (qtyCompare !== 0) {
+            return qtyCompare;
+          }
+        } else if (left.qty === null && right.qty !== null) {
+          return 1;
+        } else if (left.qty !== null && right.qty === null) {
+          return -1;
+        }
+        return left.index - right.index;
+      })
+      .map(({ key, value, qty }) => ({ key, value, qty }));
+  }
+
   const entries = Object.entries(payload);
   const result: Array<WarehouseSegment & { index: number }> = [];
 
   for (const [key, value] of entries) {
     const label = key.toLowerCase();
+    if (isTechnicalWarehouseKey(label)) {
+      continue;
+    }
     const isWarehouse =
       label.includes("склад")
       || label.includes("warehouse")
@@ -55,7 +118,11 @@ export function extractWarehouses(payload: Record<string, unknown>): WarehouseSe
       continue;
     }
 
-    const normalized = String(value ?? "").trim();
+    if (!isScalarWarehouseValue(value)) {
+      continue;
+    }
+
+    const normalized = String(value).trim();
     if (!normalized) {
       continue;
     }

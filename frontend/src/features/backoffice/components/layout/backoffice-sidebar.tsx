@@ -5,6 +5,7 @@ import {
   Car,
   CircleDollarSign,
   ShieldCheck,
+  ShieldAlert,
   LayoutDashboard,
   Package,
   UsersRound,
@@ -36,6 +37,7 @@ type SidebarNavItem = {
   icon: ComponentType<{ size?: number }>;
   key:
     | "dashboard"
+    | "securityCenter"
     | "suppliers"
     | "products"
     | "pricing"
@@ -62,6 +64,7 @@ type SidebarNavItem = {
 
 const NAV_ITEMS: SidebarNavItem[] = [
   { href: "/backoffice", icon: LayoutDashboard, key: "dashboard", requiredCapability: BACKOFFICE_CAPABILITIES.backofficeAccess },
+  { href: "/backoffice/security", icon: ShieldAlert, key: "securityCenter", requiredCapability: BACKOFFICE_CAPABILITIES.securityView },
   { href: "/backoffice/support", icon: Headset, key: "support", requiredCapability: BACKOFFICE_CAPABILITIES.customersSupport },
   { href: "/backoffice/orders", icon: ShoppingBag, key: "orders", requiredCapability: BACKOFFICE_CAPABILITIES.ordersView },
   { href: "/backoffice/loyalty", icon: TicketPercent, key: "loyalty", requiredCapability: BACKOFFICE_CAPABILITIES.loyaltyIssue },

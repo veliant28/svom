@@ -84,6 +84,7 @@ INSTALLED_APPS = [
     "apps.marketing.apps.MarketingConfig",
     "apps.seo.apps.SeoConfig",
     "apps.search.apps.SearchConfig",
+    "apps.security.apps.SecurityConfig",
     "apps.pricing.apps.PricingConfig",
     "apps.supplier_imports.apps.SupplierImportsConfig",
     "apps.backoffice.apps.BackofficeConfig",
@@ -107,6 +108,8 @@ MIDDLEWARE = [
     "apps.core.middleware.RequestTimingMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.security.middleware.SecurityBlockEnforcementMiddleware",
+    "apps.security.middleware.SecurityEventCaptureMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]

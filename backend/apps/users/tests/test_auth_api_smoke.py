@@ -1,9 +1,11 @@
 from django.urls import reverse
 from django.core import mail
 from django.core.cache import cache
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
+from apps.security.models import SecurityActor, SecurityBlock
 from apps.users.models import User
 
 
@@ -194,3 +196,65 @@ class AuthAPISmokeTests(APITestCase):
 
         self.assertEqual(reset_response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(len(mail.outbox), 0)
+
+    def test_login_is_denied_for_security_blocked_ip(self):
+        actor = SecurityActor.objects.create(
+            source_identifier="203.0.113.10",
+            source_ip="203.0.113.10",
+            source_kind=SecurityActor.SOURCE_IPV4,
+            status=SecurityActor.STATUS_BLOCKED,
+        )
+        SecurityBlock.objects.create(
+            actor=actor,
+            block_type=SecurityBlock.TYPE_IP,
+            value="203.0.113.10",
+            status=SecurityBlock.STATUS_ACTIVE,
+            blocked_at=timezone.now(),
+            is_automatic=True,
+        )
+
+        response = self.client.post(
+            reverse("users_api:auth-login"),
+            {
+                "email": self.user.email,
+                "password": self.password,
+            },
+            format="json",
+            HTTP_X_FORWARDED_FOR="203.0.113.10",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.json()["code"], "security_blocked")
+
+    def test_register_is_denied_for_security_blocked_ip(self):
+        actor = SecurityActor.objects.create(
+            source_identifier="203.0.113.11",
+            source_ip="203.0.113.11",
+            source_kind=SecurityActor.SOURCE_IPV4,
+            status=SecurityActor.STATUS_BLOCKED,
+        )
+        SecurityBlock.objects.create(
+            actor=actor,
+            block_type=SecurityBlock.TYPE_IP,
+            value="203.0.113.11",
+            status=SecurityBlock.STATUS_ACTIVE,
+            blocked_at=timezone.now(),
+            is_automatic=True,
+        )
+
+        response = self.client.post(
+            reverse("users_api:auth-register"),
+            {
+                "email": "blocked-register@test.local",
+                "password": "StrongPass12345",
+                "first_name": "Blocked",
+                "last_name": "User",
+                "phone": "38 (099) 111-22-33",
+                "preferred_language": "ru",
+            },
+            format="json",
+            HTTP_X_FORWARDED_FOR="203.0.113.11",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.json()["code"], "security_blocked")

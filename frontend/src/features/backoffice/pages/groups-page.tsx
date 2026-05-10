@@ -370,7 +370,7 @@ export function GroupsPage() {
                 const checked = (form.capability_codes || []).includes(capability.code);
                 const isReadOnly = !canManageGroups || isSystemRoleReadonly;
                 return (
-                  <label key={capability.code} className="inline-flex items-start gap-2">
+                  <label key={capability.code} className="grid grid-cols-[1rem_minmax(0,1fr)] items-start gap-2 py-1">
                     <input
                       type="checkbox"
                       checked={checked}
@@ -389,7 +389,7 @@ export function GroupsPage() {
                       }}
                     />
                     <span
-                      className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded border"
+                      className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border"
                       style={{
                         borderColor: checked ? "#1d4ed8" : "var(--border)",
                         backgroundColor: checked ? "#2563eb" : "var(--surface)",
@@ -399,11 +399,11 @@ export function GroupsPage() {
                     >
                       {checked ? <Check className="h-3 w-3" /> : null}
                     </span>
-                    <span>
-                      <span className="font-semibold">
+                    <span className="min-w-0 text-left">
+                      <span className="block text-sm font-semibold leading-5">
                         {getCapabilityTitle(capability.code, capability.title)}
                       </span>
-                      <span className="block" style={{ color: "var(--muted)" }}>
+                      <span className="mt-0.5 block text-xs leading-4" style={{ color: "var(--muted)" }}>
                         {getCapabilityDescription(capability.code, capability.description)}
                       </span>
                     </span>

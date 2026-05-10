@@ -122,6 +122,17 @@ from .loyalty_serializer import (
     BackofficeLoyaltyStaffStatsSerializer,
 )
 from .support_serializer import BackofficeSupportAssignSerializer, BackofficeSupportStatusUpdateSerializer
+from .security_serializer import (
+    SecurityActorDetailSerializer,
+    SecurityActorSerializer,
+    SecurityAuditLogSerializer,
+    SecurityBlockSerializer,
+    SecurityCommentSerializer,
+    SecurityCreateBlockSerializer,
+    SecurityEventSerializer,
+    SecurityExtendBlockSerializer,
+    SecurityReasonSerializer,
+)
 from .vehicle_engine_serializer import BackofficeVehicleEngineSerializer
 from .vehicle_generation_serializer import BackofficeVehicleGenerationSerializer
 from .vehicle_make_serializer import BackofficeVehicleMakeSerializer
@@ -236,6 +247,15 @@ __all__ = [
     "BackofficeLoyaltyCustomerLookupSerializer",
     "BackofficeSupportAssignSerializer",
     "BackofficeSupportStatusUpdateSerializer",
+    "SecurityActorDetailSerializer",
+    "SecurityActorSerializer",
+    "SecurityAuditLogSerializer",
+    "SecurityBlockSerializer",
+    "SecurityCommentSerializer",
+    "SecurityCreateBlockSerializer",
+    "SecurityEventSerializer",
+    "SecurityExtendBlockSerializer",
+    "SecurityReasonSerializer",
     "BackofficePromoBannerSerializer",
     "BackofficePromoBannerSettingsSerializer",
     "EmailDeliverySettingsSerializer",

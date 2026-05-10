@@ -56,6 +56,7 @@ const localeModuleLoaders: Record<AppLocale, LocaleModuleLoaders> = {
       () => import("../messages/en/backoffice/common-marketing.json").then((module) => module.default as Messages),
       () => import("../messages/en/backoffice/common-rbac.json").then((module) => module.default as Messages),
       () => import("../messages/en/backoffice/common-support.json").then((module) => module.default as Messages),
+      () => import("../messages/en/backoffice/common-security.json").then((module) => module.default as Messages),
     ],
     backofficeNavigation: () =>
       import("../messages/en/backoffice/navigation.json").then((module) => module.default as Messages),
@@ -101,6 +102,7 @@ const localeModuleLoaders: Record<AppLocale, LocaleModuleLoaders> = {
       () => import("../messages/ru/backoffice/common-marketing.json").then((module) => module.default as Messages),
       () => import("../messages/ru/backoffice/common-rbac.json").then((module) => module.default as Messages),
       () => import("../messages/ru/backoffice/common-support.json").then((module) => module.default as Messages),
+      () => import("../messages/ru/backoffice/common-security.json").then((module) => module.default as Messages),
     ],
     backofficeNavigation: () =>
       import("../messages/ru/backoffice/navigation.json").then((module) => module.default as Messages),
@@ -146,6 +148,7 @@ const localeModuleLoaders: Record<AppLocale, LocaleModuleLoaders> = {
       () => import("../messages/uk/backoffice/common-marketing.json").then((module) => module.default as Messages),
       () => import("../messages/uk/backoffice/common-rbac.json").then((module) => module.default as Messages),
       () => import("../messages/uk/backoffice/common-support.json").then((module) => module.default as Messages),
+      () => import("../messages/uk/backoffice/common-security.json").then((module) => module.default as Messages),
     ],
     backofficeNavigation: () =>
       import("../messages/uk/backoffice/navigation.json").then((module) => module.default as Messages),

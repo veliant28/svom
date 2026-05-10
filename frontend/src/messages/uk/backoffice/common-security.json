@@ -1,0 +1,148 @@
+{
+  "backoffice": {
+    "security": {
+      "title": "Центр безпеки",
+      "subtitle": "Моніторинг блокувань, підозрілих джерел і дій реагування.",
+      "loading": "Завантаження даних безпеки...",
+      "tabs": { "dashboard": "Дашборд", "center": "Центр", "whitelist": "Білий список" },
+      "dashboard": {
+        "kpis": {
+          "activeBlocks": "Активні блокування",
+          "suspiciousSources": "Підозрілі джерела",
+          "blocked24h": "Заблоковано за 24 години",
+          "failedLogins": "Помилки входу",
+          "rateLimit": "Спрацювання rate limit / 429",
+          "criticalThreats": "Критичні загрози"
+        },
+        "charts": { "events": "Події безпеки за часом", "types": "Типи подій", "sources": "Топ джерел/IP", "endpoints": "Топ endpoint-атак" },
+        "latestCritical": "Останні критичні події",
+        "activeBlocks": "Активні блокування"
+      },
+      "table": {
+        "columns": { "status": "Статус", "source": "Джерело", "client": "Клієнт", "threat": "Загроза", "block": "Блокування", "actions": "Дії" },
+        "anonymous": "Анонім",
+        "fingerprint": "fingerprint/session",
+        "userId": "user #{id}"
+      },
+      "status": { "blocked": "Заблокований", "suspicious": "Підозрілий", "whitelisted": "У білому списку", "unblocked": "Розблокований", "expired": "Минув", "error": "Помилка" },
+      "threat": { "low": "Низька", "medium": "Середня", "high": "Висока", "critical": "Критична" },
+      "sourceKind": { "ipv4": "IPv4", "ipv6": "IPv6", "vpn": "VPN", "proxy": "Проксі", "tor": "Tor", "datacenter": "Дата-центр", "bot": "Бот", "crawler": "Краулер", "user": "Користувач", "unknown": "Невідомо" },
+      "block": {
+        "count": "{count, plural, one {# блокування} few {# блокування} many {# блокувань} other {# блокування}}",
+        "remaining": "Залишилось {value}",
+        "indefinite": "Безстроково",
+        "expired": "Минув",
+        "noActive": "Немає активного",
+        "noReason": "Причину не вказано",
+        "automatic": "Автоматичне",
+        "manual": "Ручне",
+        "system": "Система",
+        "mode": { "soft": "М'який", "hard": "Жорсткий" },
+        "status": { "active": "Активне", "released": "Зняте", "expired": "Минуло" }
+      },
+      "actions": {
+        "view": "Перегляд",
+        "history": "Історія",
+        "release": "Розблокувати",
+        "whitelist": "У білий список",
+        "extend": "Продовжити блокування",
+        "copyIp": "Скопіювати IP",
+        "comment": "Додати коментар",
+        "falsePositive": "Позначити як хибну тривогу",
+        "reblock": "Заблокувати",
+        "more": "Ще",
+        "close": "Закрити",
+        "cancel": "Скасувати",
+        "defaultReason": "Оперативна дія адміністратора",
+        "defaultComment": "Коментар адміністратора"
+      },
+      "filters": {
+        "searchPlaceholder": "Пошук за джерелом, ім'ям клієнта, email або телефоном",
+        "pageSize": "Рядків"
+      },
+      "modals": {
+        "details": {
+          "title": "Джерело: {source}",
+          "sections": { "main": "Основна інформація", "client": "Клієнт / акаунт", "threat": "Зведення загрози", "block": "Поточне блокування", "activity": "Активність", "recentEvents": "Останні події", "endpoints": "Топ endpoints" }
+        },
+        "history": { "title": "Історія активності" },
+        "release": { "title": "Розблокувати джерело?", "reason": "Причина розблокування" },
+        "action": {
+          "minutes": "Тривалість, хвилин",
+          "title": { "whitelist": "Додати у білий список?", "extend": "Продовжити блокування?", "comment": "Додати коментар", "falsePositive": "Позначити як хибну тривогу?", "reblock": "Заблокувати?" },
+          "reason": { "whitelist": "Причина додавання у білий список", "extend": "Причина продовження", "comment": "Коментар", "falsePositive": "Причина хибної тривоги", "reblock": "Причина блокування" },
+          "confirm": { "whitelist": "Додати", "extend": "Продовжити", "comment": "Зберегти", "falsePositive": "Позначити", "reblock": "Заблокувати" }
+        }
+      },
+      "fields": {
+        "ip": "IP",
+        "ipType": "Тип IP",
+        "userAgent": "User-Agent",
+        "fingerprint": "Fingerprint",
+        "session": "ID сесії",
+        "firstSeen": "Перша активність",
+        "lastSeen": "Остання активність",
+        "login": "Логін",
+        "email": "Email",
+        "phone": "Телефон",
+        "userId": "ID користувача",
+        "accountStatus": "Статус акаунта",
+        "roles": "Групи/ролі",
+        "threat": "Загроза",
+        "threatScore": "Оцінка загрози",
+        "blockCount": "Кількість блокувань",
+        "blockType": "Тип блокування",
+        "blockMode": "Режим блокування",
+        "status": "Статус",
+        "reason": "Причина",
+        "blockedAt": "Заблоковано з",
+        "expiresAt": "Спливає",
+        "blockedBy": "Хто заблокував",
+        "comment": "Коментар"
+      },
+      "activity": {
+        "requests_5m": "Запити 5хв",
+        "requests_1h": "Запити 1г",
+        "requests_24h": "Запити 24г",
+        "status_429": "429",
+        "status_403": "403",
+        "status_401": "401",
+        "status_500": "500",
+        "failed_login": "Помилки входу",
+        "password_reset": "Скидання пароля",
+        "checkout": "Спроби checkout"
+      },
+      "eventTypes": {
+        "request": "Запит",
+        "rate_limit_exceeded": "Перевищено rate limit",
+        "throttle_applied": "Застосовано throttle",
+        "failed_login": "Помилка входу",
+        "password_reset_abuse": "Зловживання скиданням пароля",
+        "checkout_abuse": "Зловживання checkout",
+        "suspicious_search": "Підозрілий пошук",
+        "auth_or_forbidden": "401/403",
+        "auto_block": "Автоблокування",
+        "manual_block": "Ручне блокування",
+        "unblock": "Розблокування",
+        "request_rejected_by_block": "Запит відхилено блокуванням безпеки",
+        "whitelist": "Білий список",
+        "false_positive": "Хибне спрацювання",
+        "comment_added": "Додано коментар"
+      },
+      "empty": {
+        "dashboard": "Немає даних безпеки.",
+        "center": "Джерела загроз не знайдені.",
+        "chart": "Немає даних для графіка.",
+        "criticalEvents": "Критичних подій немає.",
+        "activeBlocks": "Активних блокувань немає.",
+        "history": "Історія порожня.",
+        "reasons": "Причини загрози не вказані.",
+        "value": "—"
+      },
+      "pagination": { "total": "Усього: {count}", "page": "Сторінка {current} з {total}", "perPage": "На сторінці", "prev": "Назад", "next": "Вперед" },
+      "punctuation": { "separator": " · " },
+      "toasts": { "releaseSuccess": "Джерело розблоковано.", "whitelistSuccess": "Джерело додано у whitelist.", "extendSuccess": "Блокування продовжено.", "commentSuccess": "Коментар додано.", "reblockSuccess": "Джерело заблоковано повторно.", "falsePositiveSuccess": "Джерело позначено як хибну тривогу.", "copySuccess": "IP скопійовано." },
+      "errors": { "releaseFailed": "Не вдалося розблокувати джерело.", "whitelistFailed": "Не вдалося додати джерело у whitelist.", "extendFailed": "Не вдалося продовжити блокування.", "commentFailed": "Не вдалося додати коментар.", "reblockFailed": "Не вдалося заблокувати джерело повторно.", "falsePositiveFailed": "Не вдалося позначити джерело як хибну тривогу.", "noActiveBlock": "У джерела немає активного блокування.", "copyFailed": "Не вдалося скопіювати IP." }
+    }
+  }
+}

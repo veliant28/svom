@@ -1,0 +1,250 @@
+{
+  "backoffice": {
+    "security": {
+      "title": "Центр безопасности",
+      "subtitle": "Мониторинг блокировок, подозрительных источников и действий реагирования.",
+      "loading": "Загрузка данных безопасности...",
+      "tabs": {
+        "dashboard": "Дашборд",
+        "center": "Центр",
+        "whitelist": "Белый список"
+      },
+      "dashboard": {
+        "kpis": {
+          "activeBlocks": "Активные блокировки",
+          "suspiciousSources": "Подозрительные источники",
+          "blocked24h": "Заблокировано за 24 часа",
+          "failedLogins": "Ошибки входа",
+          "rateLimit": "Срабатывания rate limit / 429",
+          "criticalThreats": "Критические угрозы"
+        },
+        "charts": {
+          "events": "События безопасности по времени",
+          "types": "Типы событий",
+          "sources": "Топ источников/IP",
+          "endpoints": "Топ endpoint-атак"
+        },
+        "latestCritical": "Последние критические события",
+        "activeBlocks": "Активные блокировки"
+      },
+      "table": {
+        "columns": {
+          "status": "Статус",
+          "source": "Источник",
+          "client": "Клиент",
+          "threat": "Угроза",
+          "block": "Блокировка",
+          "actions": "Действия"
+        },
+        "anonymous": "Аноним",
+        "fingerprint": "fingerprint/session",
+        "userId": "user #{id}"
+      },
+      "status": {
+        "blocked": "Заблокирован",
+        "suspicious": "Подозрительный",
+        "whitelisted": "В белом списке",
+        "unblocked": "Разблокирован",
+        "expired": "Истекла",
+        "error": "Ошибка"
+      },
+      "threat": {
+        "low": "Низкая",
+        "medium": "Средняя",
+        "high": "Высокая",
+        "critical": "Критическая"
+      },
+      "sourceKind": {
+        "ipv4": "IPv4",
+        "ipv6": "IPv6",
+        "vpn": "VPN",
+        "proxy": "Прокси",
+        "tor": "Tor",
+        "datacenter": "Дата-центр",
+        "bot": "Бот",
+        "crawler": "Краулер",
+        "user": "Пользователь",
+        "unknown": "Неизвестно"
+      },
+      "block": {
+        "count": "{count, plural, one {# блокировка} few {# блокировки} many {# блокировок} other {# блокировки}}",
+        "remaining": "Осталось {value}",
+        "indefinite": "Бессрочно",
+        "expired": "Истекла",
+        "noActive": "Нет активной",
+        "noReason": "Причина не указана",
+        "automatic": "Автоматическая",
+        "manual": "Ручная",
+        "system": "Система",
+        "mode": {
+          "soft": "Мягкий",
+          "hard": "Жесткий"
+        },
+        "status": {
+          "active": "Активна",
+          "released": "Снята",
+          "expired": "Истекла"
+        }
+      },
+      "actions": {
+        "view": "Просмотр",
+        "history": "История",
+        "release": "Разблокировать",
+        "whitelist": "В whitelist",
+        "extend": "Продлить блокировку",
+        "copyIp": "Скопировать IP",
+        "comment": "Добавить комментарий",
+        "falsePositive": "Пометить как ложная тревога",
+        "reblock": "Заблокировать",
+        "more": "Ещё",
+        "close": "Закрыть",
+        "cancel": "Отмена",
+        "defaultReason": "Оперативное действие администратора",
+        "defaultComment": "Комментарий администратора"
+      },
+      "filters": {
+        "searchPlaceholder": "Поиск по источнику, имени клиента, email или телефону",
+        "pageSize": "Строк"
+      },
+      "modals": {
+        "details": {
+          "title": "Источник: {source}",
+          "sections": {
+            "main": "Основная информация",
+            "client": "Клиент / аккаунт",
+            "threat": "Сводка угрозы",
+            "block": "Текущая блокировка",
+            "activity": "Активность",
+            "recentEvents": "Последние события",
+            "endpoints": "Топ endpoints"
+          }
+        },
+        "history": {
+          "title": "История активности"
+        },
+        "release": {
+          "title": "Разблокировать источник?",
+          "reason": "Причина разблокировки"
+        },
+        "action": {
+          "minutes": "Длительность, минут",
+          "title": {
+            "whitelist": "Добавить в whitelist?",
+            "extend": "Продлить блокировку?",
+            "comment": "Добавить комментарий",
+            "falsePositive": "Пометить как ложная тревога?",
+            "reblock": "Заблокировать?"
+          },
+          "reason": {
+            "whitelist": "Причина whitelist",
+            "extend": "Причина продления",
+            "comment": "Комментарий",
+            "falsePositive": "Причина ложной тревоги",
+            "reblock": "Причина блокировки"
+          },
+          "confirm": {
+            "whitelist": "Добавить",
+            "extend": "Продлить",
+            "comment": "Сохранить",
+            "falsePositive": "Пометить",
+            "reblock": "Заблокировать"
+          }
+        }
+      },
+      "fields": {
+        "ip": "IP",
+        "ipType": "Тип IP",
+        "userAgent": "User-Agent",
+        "fingerprint": "Fingerprint",
+        "session": "ID сессии",
+        "firstSeen": "Первая активность",
+        "lastSeen": "Последняя активность",
+        "login": "Логин",
+        "email": "Email",
+        "phone": "Телефон",
+        "userId": "ID пользователя",
+        "accountStatus": "Статус аккаунта",
+        "roles": "Группы/роли",
+        "threat": "Угроза",
+        "threatScore": "Оценка угрозы",
+        "blockCount": "Количество блокировок",
+        "blockType": "Тип блокировки",
+        "blockMode": "Режим блокировки",
+        "status": "Статус",
+        "reason": "Причина",
+        "blockedAt": "Заблокирован с",
+        "expiresAt": "Истекает",
+        "blockedBy": "Кто заблокировал",
+        "comment": "Комментарий"
+      },
+      "activity": {
+        "requests_5m": "Запросы 5м",
+        "requests_1h": "Запросы 1ч",
+        "requests_24h": "Запросы 24ч",
+        "status_429": "429",
+        "status_403": "403",
+        "status_401": "401",
+        "status_500": "500",
+        "failed_login": "Ошибки входа",
+        "password_reset": "Сброс пароля",
+        "checkout": "Попытки checkout"
+      },
+      "eventTypes": {
+        "request": "Запрос",
+        "rate_limit_exceeded": "Превышен rate limit",
+        "throttle_applied": "Применён throttle",
+        "failed_login": "Ошибка входа",
+        "password_reset_abuse": "Злоупотребление сбросом пароля",
+        "checkout_abuse": "Злоупотребление checkout",
+        "suspicious_search": "Подозрительный поиск",
+        "auth_or_forbidden": "401/403",
+        "auto_block": "Автоблокировка",
+        "manual_block": "Ручная блокировка",
+        "unblock": "Разблокировка",
+        "request_rejected_by_block": "Запрос отклонен блокировкой безопасности",
+        "whitelist": "Белый список",
+        "false_positive": "Ложное срабатывание",
+        "comment_added": "Добавлен комментарий"
+      },
+      "empty": {
+        "dashboard": "Нет данных безопасности.",
+        "center": "Источники угроз не найдены.",
+        "chart": "Нет данных для графика.",
+        "criticalEvents": "Критических событий нет.",
+        "activeBlocks": "Активных блокировок нет.",
+        "history": "История пустая.",
+        "reasons": "Причины угрозы не указаны.",
+        "value": "—"
+      },
+      "pagination": {
+        "total": "Всего: {count}",
+        "page": "Страница {current} из {total}",
+        "perPage": "На странице",
+        "prev": "Назад",
+        "next": "Вперед"
+      },
+      "punctuation": {
+        "separator": " · "
+      },
+      "toasts": {
+        "releaseSuccess": "Источник разблокирован.",
+        "whitelistSuccess": "Источник добавлен в whitelist.",
+        "extendSuccess": "Блокировка продлена.",
+        "commentSuccess": "Комментарий добавлен.",
+        "reblockSuccess": "Источник заблокирован повторно.",
+        "falsePositiveSuccess": "Источник помечен как ложная тревога.",
+        "copySuccess": "IP скопирован."
+      },
+      "errors": {
+        "releaseFailed": "Не удалось разблокировать источник.",
+        "whitelistFailed": "Не удалось добавить источник в whitelist.",
+        "extendFailed": "Не удалось продлить блокировку.",
+        "commentFailed": "Не удалось добавить комментарий.",
+        "reblockFailed": "Не удалось заблокировать источник повторно.",
+        "falsePositiveFailed": "Не удалось пометить источник как ложная тревога.",
+        "noActiveBlock": "У источника нет активной блокировки.",
+        "copyFailed": "Не удалось скопировать IP."
+      }
+    }
+  }
+}

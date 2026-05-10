@@ -7,6 +7,10 @@ type LoginErrorView = {
 
 export function resolveLoginError(error: unknown): LoginErrorView {
   if (isApiRequestError(error)) {
+    if (error.status === 403 && error.payload && typeof error.payload === "object" && error.payload.code === "security_blocked") {
+      return { translationKey: "errors.securityBlocked" };
+    }
+
     if (error.status === 400 || error.status === 401) {
       return { translationKey: "errors.invalidCredentials" };
     }

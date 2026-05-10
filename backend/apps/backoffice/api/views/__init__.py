@@ -153,6 +153,20 @@ from .support_views import (
     BackofficeSupportThreadStatusAPIView,
     BackofficeSupportWallboardAPIView,
 )
+from .security_views import (
+    SecurityActorCommentAPIView,
+    SecurityActorDetailAPIView,
+    SecurityActorFalsePositiveAPIView,
+    SecurityActorHistoryAPIView,
+    SecurityActorListAPIView,
+    SecurityAuditListAPIView,
+    SecurityBlockExtendAPIView,
+    SecurityBlockListCreateAPIView,
+    SecurityBlockReleaseAPIView,
+    SecurityBlockWhitelistAPIView,
+    SecuritySummaryAPIView,
+    SecurityTimeseriesAPIView,
+)
 from .summary_view import BackofficeSummaryAPIView
 from .staff_activity_view import BackofficeStaffActivityAPIView
 from .hero_block_views import (
@@ -339,6 +353,18 @@ __all__ = [
     "BackofficeSupportThreadReadAPIView",
     "BackofficeSupportThreadStatusAPIView",
     "BackofficeSupportWallboardAPIView",
+    "SecurityActorCommentAPIView",
+    "SecurityActorDetailAPIView",
+    "SecurityActorFalsePositiveAPIView",
+    "SecurityActorHistoryAPIView",
+    "SecurityActorListAPIView",
+    "SecurityAuditListAPIView",
+    "SecurityBlockExtendAPIView",
+    "SecurityBlockListCreateAPIView",
+    "SecurityBlockReleaseAPIView",
+    "SecurityBlockWhitelistAPIView",
+    "SecuritySummaryAPIView",
+    "SecurityTimeseriesAPIView",
     "BackofficeHeroBlockSettingsAPIView",
     "BackofficeHeroSlideListCreateAPIView",
     "BackofficeHeroSlideRetrieveUpdateDestroyAPIView",

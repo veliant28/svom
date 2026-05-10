@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from django.db.models import Exists, OuterRef
 from django.db.models import F
 from django.db.models import QuerySet
 
@@ -35,6 +36,38 @@ def get_import_raw_offers_queryset() -> QuerySet[SupplierRawOffer]:
         "mapped_category",
         "mapped_category__parent",
     ).order_by("-created_at")
+
+
+def _resolve_latest_raw_offers_run_id(*, source_code: str, supplier_code: str) -> str | None:
+    runs = ImportRun.objects.all()
+    if source_code:
+        runs = runs.filter(source__code=source_code)
+    if supplier_code:
+        runs = runs.filter(source__supplier__code=supplier_code)
+
+    latest_run_id = runs.order_by("-created_at").values_list("id", flat=True).first()
+    if latest_run_id is None:
+        return None
+
+    is_utr_scope = source_code == "utr" or supplier_code == "utr"
+    if not is_utr_scope:
+        return latest_run_id
+
+    priced_run_id = (
+        runs.annotate(
+            has_price=Exists(
+                SupplierRawOffer.objects.filter(
+                    run_id=OuterRef("pk"),
+                    price__isnull=False,
+                )
+            )
+        )
+        .filter(has_price=True)
+        .order_by("-created_at")
+        .values_list("id", flat=True)
+        .first()
+    )
+    return priced_run_id or latest_run_id
 
 
 def apply_import_run_filters(queryset: QuerySet[ImportRun], *, params) -> QuerySet[ImportRun]:
@@ -118,12 +151,10 @@ def apply_import_raw_offer_filters(queryset: QuerySet[SupplierRawOffer], *, para
     if run_id:
         queryset = queryset.filter(run_id=run_id)
     elif latest_only and (source_code or supplier_code):
-        runs = ImportRun.objects.all()
-        if source_code:
-            runs = runs.filter(source__code=source_code)
-        if supplier_code:
-            runs = runs.filter(source__supplier__code=supplier_code)
-        latest_run = runs.order_by("-created_at").values_list("id", flat=True).first()
+        latest_run = _resolve_latest_raw_offers_run_id(
+            source_code=source_code,
+            supplier_code=supplier_code,
+        )
         if latest_run is None:
             return queryset.none()
         queryset = queryset.filter(run_id=latest_run)

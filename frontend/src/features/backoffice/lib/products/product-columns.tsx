@@ -237,7 +237,7 @@ export function createProductColumns({
     {
       key: "status",
       label: t("products.table.columns.status"),
-      className: "w-[8%]",
+      className: "w-[7%]",
       render: (item) => {
         const statusLabel = item.is_active ? t("statuses.active") : t("statuses.inactive");
         const supplierOfferSeenAtLabel = item.supplier_offer_seen_at
@@ -273,7 +273,7 @@ export function createProductColumns({
     {
       key: "warehouses",
       label: t("products.table.columns.warehouses"),
-      className: "w-[32%]",
+      className: "w-[33%] whitespace-nowrap",
       render: (item) => {
         const warehouses = extractWarehouseSegments(item);
 
@@ -282,9 +282,9 @@ export function createProductColumns({
         }
 
         return (
-          <div className="max-w-full pb-0.5 pt-1">
+          <div className="max-w-full overflow-x-auto pb-0.5 pt-1">
             <div
-              className="inline-flex max-w-full flex-wrap items-center gap-px rounded-[6px] border p-px"
+              className="inline-flex min-w-max flex-nowrap items-center gap-px rounded-[6px] border p-px"
               style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
             >
               {warehouses.map((warehouse) => {

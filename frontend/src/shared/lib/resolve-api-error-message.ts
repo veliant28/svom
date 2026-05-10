@@ -10,6 +10,7 @@ type KnownStorefrontApiErrorMessages = {
   emailAlreadyExists: string;
   invalidChoice: string;
   currentPasswordIncorrect: string;
+  securityBlocked: string;
   maxLength: (max: number) => string;
   minLength: (min: number) => string;
   exactLength: (count: number) => string;
@@ -170,6 +171,13 @@ export function resolveApiErrorMessage(
       return fallbackMessage;
     }
     return sanitizeMessage(directMessage);
+  }
+
+  const payloadCode = typeof (payload as Record<string, unknown>).code === "string"
+    ? String((payload as Record<string, unknown>).code)
+    : "";
+  if (payloadCode === "security_blocked" && options?.knownMessages?.securityBlocked) {
+    return options.knownMessages.securityBlocked;
   }
 
   const payloadMessage = extractStringFromPayload(payload as Record<string, unknown>) || error.message?.trim() || "";

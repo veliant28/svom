@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { Link, useRouter } from "@/i18n/navigation";
+import { isApiRequestError } from "@/shared/api/http-client";
 import { useStorefrontFeedback } from "@/shared/hooks/use-storefront-feedback";
 import {
   PHONE_INPUT_MAX_LENGTH,
@@ -86,6 +87,10 @@ export function RegisterForm() {
           showSuccess(t("messages.created"));
           router.push("/account/profile");
         } catch (error) {
+          if (isApiRequestError(error) && error.status === 403 && error.payload && typeof error.payload === "object" && error.payload.code === "security_blocked") {
+            showError(t("errors.securityBlocked"));
+            return;
+          }
           showApiError(error, t("errors.failed"));
         } finally {
           setIsSubmitting(false);

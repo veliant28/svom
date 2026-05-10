@@ -13,6 +13,7 @@ import type { BackofficeUser } from "@/features/backoffice/types/backoffice";
 
 const ROUTE_PREFETCH_LIST = [
   "/backoffice/users",
+  "/backoffice/security",
   "/backoffice/groups",
   "/backoffice/hero-block",
   "/backoffice/promo-banners",

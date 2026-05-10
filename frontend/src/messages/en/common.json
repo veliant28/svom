@@ -149,6 +149,7 @@
       "invalidEmail": "Enter a valid email address.",
       "invalidChoice": "Selected value is invalid.",
       "currentPasswordIncorrect": "Current password is incorrect.",
+      "securityBlocked": "Access is temporarily restricted by the security system. Contact support.",
       "maxLength": "Ensure this value has no more than {max} characters.",
       "minLength": "Ensure this value has at least {min} characters.",
       "exactLength": "Ensure this value has exactly {count} characters.",

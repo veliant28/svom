@@ -189,16 +189,16 @@ export function createSupplierProductsColumns({
     {
       key: "warehouses",
       label: t("productsPage.table.columns.warehouses"),
-      className: "w-[32%]",
+      className: "w-[32%] whitespace-nowrap",
       render: (item) => {
-        const warehouses = extractWarehouses(item.raw_payload ?? {});
+        const warehouses = extractWarehouses(item.raw_payload ?? {}, item.source_code);
         if (!warehouses.length) {
           return <span>-</span>;
         }
         return (
-          <div className="max-w-full pb-0.5 pt-1">
+          <div className="max-w-full overflow-x-auto pb-0.5 pt-1">
             <div
-              className="inline-flex max-w-full flex-wrap items-center gap-px rounded-[6px] border p-px"
+              className="inline-flex min-w-max flex-nowrap items-center gap-px rounded-[6px] border p-px"
               style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
             >
               {warehouses.map((warehouse) => {

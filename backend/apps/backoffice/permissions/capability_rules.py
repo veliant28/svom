@@ -17,6 +17,8 @@ RULES: tuple[BackofficeCapabilityRule, ...] = (
     BackofficeCapabilityRule("users/", ("users.view",), ("users.manage",)),
     BackofficeCapabilityRule("groups/", ("groups.view",), ("groups.manage",)),
     BackofficeCapabilityRule("summary/", ("backoffice.access",), ("backoffice.access",)),
+    BackofficeCapabilityRule("security/audit/", ("security.audit",), ("security.audit",)),
+    BackofficeCapabilityRule("security/", ("security.view",), ("security.respond",)),
     BackofficeCapabilityRule("payments/checkout-methods/", ("checkout.methods.manage",), ("checkout.methods.manage",)),
     BackofficeCapabilityRule("payments/", ("payments.view",), ("payments.view",)),
     BackofficeCapabilityRule("vchasno-kasa/", ("vchasno_kasa.manage",), ("vchasno_kasa.manage",)),

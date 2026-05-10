@@ -1,0 +1,148 @@
+{
+  "backoffice": {
+    "security": {
+      "title": "Security Center",
+      "subtitle": "Security blocks, suspicious sources and response actions.",
+      "loading": "Loading security data...",
+      "tabs": { "dashboard": "Dashboard", "center": "Center", "whitelist": "Whitelist" },
+      "dashboard": {
+        "kpis": {
+          "activeBlocks": "Active blocks",
+          "suspiciousSources": "Suspicious sources",
+          "blocked24h": "Blocked in 24h",
+          "failedLogins": "Login failures",
+          "rateLimit": "Rate limit events / 429",
+          "criticalThreats": "Critical threats"
+        },
+        "charts": { "events": "Security events over time", "types": "Event types", "sources": "Top sources/IP", "endpoints": "Top endpoint abuse" },
+        "latestCritical": "Latest critical events",
+        "activeBlocks": "Active blocks"
+      },
+      "table": {
+        "columns": { "status": "Status", "source": "Source", "client": "Client", "threat": "Threat", "block": "Block", "actions": "Actions" },
+        "anonymous": "Anonymous",
+        "fingerprint": "fingerprint/session",
+        "userId": "user #{id}"
+      },
+      "status": { "blocked": "Blocked", "suspicious": "Suspicious", "whitelisted": "Whitelisted", "unblocked": "Unblocked", "expired": "Expired", "error": "Error" },
+      "threat": { "low": "Low", "medium": "Medium", "high": "High", "critical": "Critical" },
+      "sourceKind": { "ipv4": "IPv4", "ipv6": "IPv6", "vpn": "VPN", "proxy": "Proxy", "tor": "Tor", "datacenter": "Datacenter", "bot": "Bot", "crawler": "Crawler", "user": "User", "unknown": "Unknown" },
+      "block": {
+        "count": "{count, plural, one {# block} other {# blocks}}",
+        "remaining": "Left {value}",
+        "indefinite": "Indefinite",
+        "expired": "Expired",
+        "noActive": "No active block",
+        "noReason": "No reason",
+        "automatic": "Automatic",
+        "manual": "Manual",
+        "system": "System",
+        "mode": { "soft": "Soft", "hard": "Hard" },
+        "status": { "active": "Active", "released": "Released", "expired": "Expired" }
+      },
+      "actions": {
+        "view": "View",
+        "history": "History",
+        "release": "Release",
+        "whitelist": "Whitelist",
+        "extend": "Extend block",
+        "copyIp": "Copy IP",
+        "comment": "Add comment",
+        "falsePositive": "Mark as false alarm",
+        "reblock": "Block",
+        "more": "More",
+        "close": "Close",
+        "cancel": "Cancel",
+        "defaultReason": "Admin response action",
+        "defaultComment": "Admin comment"
+      },
+      "filters": {
+        "searchPlaceholder": "Search by source, client name, email, or phone",
+        "pageSize": "Rows"
+      },
+      "modals": {
+        "details": {
+          "title": "Source: {source}",
+          "sections": { "main": "Main information", "client": "Client / account", "threat": "Threat summary", "block": "Current block", "activity": "Activity", "recentEvents": "Recent events", "endpoints": "Top endpoints" }
+        },
+        "history": { "title": "Activity history" },
+        "release": { "title": "Release source?", "reason": "Release reason" },
+        "action": {
+          "minutes": "Duration, minutes",
+          "title": { "whitelist": "Add to whitelist?", "extend": "Extend block?", "comment": "Add comment", "falsePositive": "Mark as false alarm?", "reblock": "Block?" },
+          "reason": { "whitelist": "Whitelist reason", "extend": "Extension reason", "comment": "Comment", "falsePositive": "False alarm reason", "reblock": "Block reason" },
+          "confirm": { "whitelist": "Add", "extend": "Extend", "comment": "Save", "falsePositive": "Mark", "reblock": "Block" }
+        }
+      },
+      "fields": {
+        "ip": "IP",
+        "ipType": "IP type",
+        "userAgent": "User-agent",
+        "fingerprint": "Fingerprint",
+        "session": "Session ID",
+        "firstSeen": "First activity",
+        "lastSeen": "Last activity",
+        "login": "Login",
+        "email": "Email",
+        "phone": "Phone",
+        "userId": "User ID",
+        "accountStatus": "Account status",
+        "roles": "Groups/roles",
+        "threat": "Threat",
+        "threatScore": "Threat score",
+        "blockCount": "Block count",
+        "blockType": "Block type",
+        "blockMode": "Block mode",
+        "status": "Status",
+        "reason": "Reason",
+        "blockedAt": "Blocked at",
+        "expiresAt": "Expires at",
+        "blockedBy": "Blocked by",
+        "comment": "Comment"
+      },
+      "activity": {
+        "requests_5m": "Requests 5m",
+        "requests_1h": "Requests 1h",
+        "requests_24h": "Requests 24h",
+        "status_429": "429",
+        "status_403": "403",
+        "status_401": "401",
+        "status_500": "500",
+        "failed_login": "Failed login",
+        "password_reset": "Password reset",
+        "checkout": "Checkout attempts"
+      },
+      "eventTypes": {
+        "request": "Request",
+        "rate_limit_exceeded": "Rate limit exceeded",
+        "throttle_applied": "Throttle applied",
+        "failed_login": "Failed login",
+        "password_reset_abuse": "Password reset abuse",
+        "checkout_abuse": "Checkout abuse",
+        "suspicious_search": "Suspicious search",
+        "auth_or_forbidden": "401/403",
+        "auto_block": "Auto block",
+        "manual_block": "Manual block",
+        "unblock": "Unblock",
+        "request_rejected_by_block": "Request rejected by security block",
+        "whitelist": "Whitelist",
+        "false_positive": "False positive",
+        "comment_added": "Comment added"
+      },
+      "empty": {
+        "dashboard": "No security data.",
+        "center": "No threat sources found.",
+        "chart": "No chart data.",
+        "criticalEvents": "No critical events.",
+        "activeBlocks": "No active blocks.",
+        "history": "History is empty.",
+        "reasons": "Threat reasons are not specified.",
+        "value": "—"
+      },
+      "pagination": { "total": "Total: {count}", "page": "Page {current} of {total}", "perPage": "Per page", "prev": "Previous", "next": "Next" },
+      "punctuation": { "separator": " · " },
+      "toasts": { "releaseSuccess": "Source released.", "whitelistSuccess": "Source whitelisted.", "extendSuccess": "Block extended.", "commentSuccess": "Comment added.", "reblockSuccess": "Source blocked again.", "falsePositiveSuccess": "Source marked as false alarm.", "copySuccess": "IP copied." },
+      "errors": { "releaseFailed": "Failed to release source.", "whitelistFailed": "Failed to whitelist source.", "extendFailed": "Failed to extend block.", "commentFailed": "Failed to add comment.", "reblockFailed": "Failed to block source again.", "falsePositiveFailed": "Failed to mark source as false alarm.", "noActiveBlock": "The source has no active block.", "copyFailed": "Failed to copy IP." }
+    }
+  }
+}

@@ -216,6 +216,24 @@
               "title": "Manage procurement",
               "description": "Allows working with procurement recommendations and supplier overrides."
             }
+          },
+          "security": {
+            "view": {
+              "title": "View security",
+              "description": "Allows reading the security dashboard and threat actors."
+            },
+            "manage": {
+              "title": "Manage security",
+              "description": "Allows managing security rules and settings."
+            },
+            "audit": {
+              "title": "Security audit",
+              "description": "Allows reading security audit and activity history."
+            },
+            "respond": {
+              "title": "Security response",
+              "description": "Allows responding to blocked and suspicious sources."
+            }
           }
         },
         "users": {

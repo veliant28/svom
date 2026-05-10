@@ -122,7 +122,7 @@ export function BackofficeTooltip({
           <span
             ref={tooltipRef}
             role="tooltip"
-            className={`pointer-events-none fixed z-[260] rounded-md border px-2 py-1.5 text-xs shadow-md ${tooltipClassName}`}
+            className={`pointer-events-none fixed z-[1700] rounded-md border px-2 py-1.5 text-xs shadow-md ${tooltipClassName}`}
             style={tooltipStyle}
           >
             {content}

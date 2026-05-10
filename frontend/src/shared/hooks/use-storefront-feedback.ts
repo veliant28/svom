@@ -18,6 +18,7 @@ export function useStorefrontFeedback() {
       emailAlreadyExists: tApiErrors("emailAlreadyExists"),
       invalidChoice: tApiErrors("invalidChoice"),
       currentPasswordIncorrect: tApiErrors("currentPasswordIncorrect"),
+      securityBlocked: tApiErrors("securityBlocked"),
       maxLength: (max: number) => tApiErrors("maxLength", { max }),
       minLength: (min: number) => tApiErrors("minLength", { min }),
       exactLength: (count: number) => tApiErrors("exactLength", { count }),
