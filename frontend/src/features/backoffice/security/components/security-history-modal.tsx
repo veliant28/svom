@@ -51,8 +51,16 @@ export function SecurityHistoryModal({
             <ol>
               {events.map((event, index) => (
                 <li key={event.id} className="relative pb-5 pl-10 last:pb-0">
-                  {index > 0 ? <span className="absolute left-4 top-0 h-4 w-px bg-slate-300" /> : null}
-                  <span className="absolute left-4 top-1.5 h-3.5 w-3.5 -translate-x-1/2 rounded-full border-2 border-blue-600 bg-blue-600" />
+                  {index > 0 ? (
+                    <span className="absolute left-4 top-0 h-3 w-px -translate-x-1/2" style={{ backgroundColor: "var(--border)" }} />
+                  ) : null}
+                  {index < events.length - 1 ? (
+                    <span className="absolute bottom-0 left-4 top-3 w-px -translate-x-1/2" style={{ backgroundColor: "var(--border)" }} />
+                  ) : null}
+                  <span
+                    className="absolute left-4 top-1 inline-flex h-4 w-4 -translate-x-1/2 items-center justify-center rounded-full border-2 border-blue-600 bg-blue-600"
+                    style={index === 0 ? { boxShadow: "0 0 0 4px rgba(37,99,235,.2)" } : undefined}
+                  />
                   <div className="rounded-lg border p-3" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}>
                     <div className="flex flex-wrap justify-between gap-2">
                       <p className="font-semibold">{t(`eventTypes.${event.event_type}`)}</p>
