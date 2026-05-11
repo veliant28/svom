@@ -288,7 +288,7 @@ export function UsersPage() {
               setPage(1);
             }}
             placeholder={t("rbac.users.filters.search")}
-            className="h-9 min-w-[240px] rounded-md border px-3 text-sm"
+            className="h-10 min-w-[240px] rounded-md border px-3 text-sm"
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
           />
           <select
@@ -297,7 +297,7 @@ export function UsersPage() {
               setStatusFilter(event.target.value);
               setPage(1);
             }}
-            className="h-9 rounded-md border px-3 text-sm"
+            className="h-10 rounded-md border px-3 text-sm"
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
           >
             <option value="">{t("rbac.users.filters.allStatuses")}</option>
@@ -310,7 +310,7 @@ export function UsersPage() {
               setRoleFilter(event.target.value);
               setPage(1);
             }}
-            className="h-9 rounded-md border px-3 text-sm"
+            className="h-10 rounded-md border px-3 text-sm"
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
           >
             <option value="">{t("rbac.users.filters.allRoles")}</option>
@@ -321,7 +321,7 @@ export function UsersPage() {
           {canManageUsers ? (
             <button
               type="button"
-              className="h-9 rounded-md border px-3 text-xs font-semibold"
+              className="h-10 rounded-md border px-3 text-sm font-semibold"
               style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
               onClick={openCreate}
             >

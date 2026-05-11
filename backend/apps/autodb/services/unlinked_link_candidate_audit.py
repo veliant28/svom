@@ -151,6 +151,10 @@ class UnlinkedLinkCandidateAuditService:
         allow_remote: bool,
         source_id: str | None,
         supplier_id: str | None,
+        canonical_article: str = "",
+        remote_stored_article: str = "",
+        mapped_supplier_id: int | str | None = None,
+        deterministic_exact_only: bool = False,
     ) -> UnlinkedLinkCandidateRow:
         normalized_brand = normalize_brand(raw_brand or display_brand)
         extracted = self._extract_payload(raw_payload)
@@ -160,8 +164,21 @@ class UnlinkedLinkCandidateAuditService:
             article=raw_article,
             external_sku=external_sku,
         )
-        supplier_article_candidate = extracted["raw_article_td"] or raw_article
-        manufacturer_article_candidate = gpl_resolved.manufacturer_article or raw_article
+
+        canonical_article_value = str(canonical_article or "").strip()
+        remote_stored_article_value = str(remote_stored_article or "").strip()
+        supplier_article_candidate = (
+            canonical_article_value
+            or remote_stored_article_value
+            or extracted["raw_article_td"]
+            or raw_article
+        )
+        manufacturer_article_candidate = (
+            canonical_article_value
+            or remote_stored_article_value
+            or gpl_resolved.manufacturer_article
+            or raw_article
+        )
         external_sku_candidate = extracted["raw_code"] or external_sku
         article_from_name_candidate = self._extract_article_from_text(extracted["raw_name"] or product_name)
         article_from_description_candidate = self._extract_article_from_text(extracted["raw_description"])
@@ -194,20 +211,26 @@ class UnlinkedLinkCandidateAuditService:
         if allow_remote and semantic_status != "conflict":
             remote_suppliers = self._resolve_remote_supplier_candidates(raw_brand=raw_brand, normalized_brand=normalized_brand)
 
-        candidates = [
-            ("manufacturer_article_candidate", manufacturer_article_candidate),
-            ("supplier_article_candidate", supplier_article_candidate),
-            ("external_sku_candidate", external_sku_candidate),
-            ("article_from_name_candidate", article_from_name_candidate),
-            ("article_from_description_candidate", article_from_description_candidate),
-        ]
+        candidates = self._build_article_candidates(
+            deterministic_exact_only=deterministic_exact_only,
+            canonical_article=canonical_article_value,
+            remote_stored_article=remote_stored_article_value,
+            manufacturer_article_candidate=manufacturer_article_candidate,
+            supplier_article_candidate=supplier_article_candidate,
+            external_sku_candidate=external_sku_candidate,
+            article_from_name_candidate=article_from_name_candidate,
+            article_from_description_candidate=article_from_description_candidate,
+        )
 
         local_match: tuple[str, str, str] | None = None
         remote_match: tuple[str, str, str] | None = None
         used_candidate_source = ""
         used_candidate_value = ""
 
-        supplier_pool = [item.supplier_id for item in local_suppliers[: self.LOCAL_SUPPLIER_POOL_LIMIT]]
+        forced_supplier_id = self._safe_int(mapped_supplier_id)
+        supplier_pool = [forced_supplier_id] if forced_supplier_id is not None else []
+        if not supplier_pool:
+            supplier_pool = [item.supplier_id for item in local_suppliers[: self.LOCAL_SUPPLIER_POOL_LIMIT]]
         if not supplier_pool:
             supplier_pool = [item.supplier_id for item in remote_suppliers[: self.REMOTE_SUPPLIER_POOL_LIMIT]] if remote_suppliers else []
 
@@ -216,21 +239,21 @@ class UnlinkedLinkCandidateAuditService:
             if not normalized_candidate:
                 continue
             for sid in supplier_pool:
-                local_hit = self._find_article_local(supplier_id=sid, article_candidate=normalized_candidate)
+                local_hit = self._find_article_local(supplier_id=sid, article_candidate=candidate_value)
                 if local_hit is not None:
                     local_match = local_hit
                     used_candidate_source = source_name
-                    used_candidate_value = normalized_candidate
+                    used_candidate_value = candidate_value
                     break
             if local_match is not None:
                 break
             if allow_remote:
                 for sid in supplier_pool:
-                    remote_hit = self._find_article_remote(supplier_id=sid, article_candidate=normalized_candidate)
+                    remote_hit = self._find_article_remote(supplier_id=sid, article_candidate=candidate_value)
                     if remote_hit is not None:
                         remote_match = remote_hit
                         used_candidate_source = source_name
-                        used_candidate_value = normalized_candidate
+                        used_candidate_value = candidate_value
                         break
             if remote_match is not None:
                 break
@@ -274,11 +297,21 @@ class UnlinkedLinkCandidateAuditService:
                     variant_match = "yes"
 
                 if semantic_status == "compatible":
-                    if used_candidate_source in {"manufacturer_article_candidate", "supplier_article_candidate"} and exact_local == "yes":
+                    if used_candidate_source in {
+                        "canonical_article_candidate",
+                        "remote_stored_article_candidate",
+                        "manufacturer_article_candidate",
+                        "supplier_article_candidate",
+                    } and exact_local == "yes":
                         recommendation = "safe_auto_link_candidate"
                         reason = f"local_exact_{used_candidate_source}"
                         confidence = 0.98
-                    elif used_candidate_source in {"manufacturer_article_candidate", "supplier_article_candidate"}:
+                    elif used_candidate_source in {
+                        "canonical_article_candidate",
+                        "remote_stored_article_candidate",
+                        "manufacturer_article_candidate",
+                        "supplier_article_candidate",
+                    }:
                         recommendation = "safe_article_variant_candidate"
                         reason = f"local_variant_{used_candidate_source}" if local_used else f"remote_variant_{used_candidate_source}"
                         confidence = 0.95
@@ -413,6 +446,48 @@ class UnlinkedLinkCandidateAuditService:
             if match:
                 return str(match.group(0)).strip()
         return ""
+
+    def _build_article_candidates(
+        self,
+        *,
+        deterministic_exact_only: bool,
+        canonical_article: str,
+        remote_stored_article: str,
+        manufacturer_article_candidate: str,
+        supplier_article_candidate: str,
+        external_sku_candidate: str,
+        article_from_name_candidate: str,
+        article_from_description_candidate: str,
+    ) -> list[tuple[str, str]]:
+        if deterministic_exact_only:
+            seed = [
+                ("canonical_article_candidate", canonical_article),
+                ("remote_stored_article_candidate", remote_stored_article),
+                ("manufacturer_article_candidate", manufacturer_article_candidate),
+                ("supplier_article_candidate", supplier_article_candidate),
+            ]
+        else:
+            seed = [
+                ("manufacturer_article_candidate", manufacturer_article_candidate),
+                ("supplier_article_candidate", supplier_article_candidate),
+                ("external_sku_candidate", external_sku_candidate),
+                ("article_from_name_candidate", article_from_name_candidate),
+                ("article_from_description_candidate", article_from_description_candidate),
+            ]
+
+        out: list[tuple[str, str]] = []
+        seen: set[tuple[str, str]] = set()
+        for source_name, candidate_value in seed:
+            raw_value = str(candidate_value or "").strip()
+            if not raw_value:
+                continue
+            normalized_candidate = self._normalize_candidate(raw_value)
+            key = (source_name, normalized_candidate)
+            if not normalized_candidate or key in seen:
+                continue
+            seen.add(key)
+            out.append((source_name, raw_value))
+        return out
 
     def _semantic_status(self, *, brand: str, text: str) -> str:
         brand_up = str(brand or "").strip().upper()
@@ -627,6 +702,12 @@ class UnlinkedLinkCandidateAuditService:
             confidence=confidence,
             reason=reason,
         )
+
+    def _safe_int(self, value: Any) -> int | None:
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
 
 
 def summarize_rows(rows: list[UnlinkedLinkCandidateRow]) -> AuditSummary:

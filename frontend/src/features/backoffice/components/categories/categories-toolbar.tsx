@@ -35,13 +35,13 @@ export function CategoriesToolbar({
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder={t("categories.filters.search")}
-          className="h-9 min-w-[220px] flex-1 rounded-md border px-3 text-sm"
+          className="h-10 min-w-[220px] flex-1 rounded-md border px-3 text-sm"
           style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
         />
         <select
           value={isActiveFilter}
           onChange={(event) => onIsActiveFilterChange(event.target.value)}
-          className="h-9 w-[170px] shrink-0 rounded-md border px-3 text-sm"
+          className="h-10 w-[170px] shrink-0 rounded-md border px-3 text-sm"
           style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
         >
           <option value="">{t("categories.filters.all")}</option>
@@ -51,7 +51,7 @@ export function CategoriesToolbar({
         <select
           value={parentFilter}
           onChange={(event) => onParentFilterChange(event.target.value)}
-          className="h-9 min-w-[220px] flex-1 rounded-md border px-3 text-sm"
+          className="h-10 min-w-[220px] flex-1 rounded-md border px-3 text-sm"
           style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
         >
           <option value="">{t("categories.filters.anyParent")}</option>
@@ -62,7 +62,7 @@ export function CategoriesToolbar({
         </select>
         <button
           type="button"
-          className="h-9 shrink-0 rounded-md border px-3 text-xs font-semibold"
+          className="h-10 shrink-0 rounded-md border px-3 text-sm font-semibold"
           style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
           onClick={onOpenCreate}
         >

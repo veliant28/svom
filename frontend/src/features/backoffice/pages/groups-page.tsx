@@ -286,13 +286,13 @@ export function GroupsPage() {
               setPage(1);
             }}
             placeholder={t("rbac.groups.filters.search")}
-            className="h-9 min-w-[240px] rounded-md border px-3 text-sm"
+            className="h-10 min-w-[240px] rounded-md border px-3 text-sm"
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
           />
           {canCreateGroups ? (
             <button
               type="button"
-              className="h-9 rounded-md border px-3 text-xs font-semibold"
+              className="h-10 rounded-md border px-3 text-sm font-semibold"
               style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
               onClick={openCreate}
             >

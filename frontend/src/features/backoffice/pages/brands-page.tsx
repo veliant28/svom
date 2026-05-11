@@ -62,7 +62,7 @@ export function BrandsPage() {
             setPage(1);
           }}
           placeholder={t("brands.filters.search")}
-          className="h-9 min-w-[260px] rounded-md border px-3 text-sm"
+          className="h-10 min-w-[260px] rounded-md border px-3 text-sm"
           style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
         />
         <select
@@ -71,7 +71,7 @@ export function BrandsPage() {
             setIsActiveFilter(event.target.value);
             setPage(1);
           }}
-          className="h-9 rounded-md border px-3 text-sm"
+          className="h-10 rounded-md border px-3 text-sm"
           style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
         >
           <option value="">{t("brands.filters.all")}</option>
