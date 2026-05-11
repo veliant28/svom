@@ -1,3 +1,4 @@
+from django.core.paginator import InvalidPage
 from django.db.models import F
 from rest_framework.generics import ListAPIView
 from rest_framework.pagination import PageNumberPagination
@@ -14,6 +15,27 @@ class ProductListAPIView(ListAPIView):
         page_size = 52
         page_size_query_param = "page_size"
         max_page_size = 100
+
+        def paginate_queryset(self, queryset, request, view=None):
+            page_size = self.get_page_size(request)
+            if not page_size:
+                return None
+
+            paginator = self.django_paginator_class(queryset, page_size)
+            page_number = self.get_page_number(request, paginator)
+
+            try:
+                self.page = paginator.page(page_number)
+            except InvalidPage:
+                # When filters shrink result set (for example after selecting vehicle),
+                # keep API stable by returning the first page instead of HTTP 404.
+                self.page = paginator.page(1)
+
+            if paginator.num_pages > 1 and self.template is not None:
+                self.display_page_controls = True
+
+            self.request = request
+            return list(self.page)
 
     serializer_class = ProductListSerializer
     pagination_class = CatalogProductPagination

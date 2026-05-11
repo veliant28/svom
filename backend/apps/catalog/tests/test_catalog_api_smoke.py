@@ -39,6 +39,14 @@ class CatalogAPISmokeTests(APITestCase):
         self.assertEqual(response.data["results"][0]["slug"], "test-product")
         self.assertEqual(response.data["results"][0]["name"], "Свічка запалювання")
 
+    def test_products_endpoint_out_of_range_page_falls_back_to_first_page(self):
+        response = self.client.get(reverse("catalog_api:product-list"), {"page": 999, "page_size": 52})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["slug"], "test-product")
+
     def test_product_detail_works_by_slug_and_article_fallback(self):
         by_slug = self.client.get(reverse("catalog_api:product-detail", kwargs={"slug": "test-product"}), {"locale": "ru"})
         by_article = self.client.get(reverse("catalog_api:product-detail", kwargs={"slug": "ART-001"}), {"locale": "en"})
