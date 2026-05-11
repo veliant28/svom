@@ -9,7 +9,6 @@ import { GoogleTrackingScripts } from "@/features/seo/components/google-tracking
 import { getSeoPublicConfig } from "@/features/seo/server/get-seo-public-config";
 import { resolveSeoMetadata } from "@/features/seo/server/resolve-seo-metadata";
 import { StorefrontProviders } from "@/shared/components/providers/storefront-providers";
-import { ThemeProvider } from "@/shared/components/theme/theme-provider";
 
 export async function generateMetadata({
   params,
@@ -68,10 +67,8 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
-      <ThemeProvider>
-        <StorefrontProviders>{children}</StorefrontProviders>
-        <GoogleTrackingScripts settings={seoConfig?.google} />
-      </ThemeProvider>
+      <StorefrontProviders>{children}</StorefrontProviders>
+      <GoogleTrackingScripts settings={seoConfig?.google} />
     </NextIntlClientProvider>
   );
 }

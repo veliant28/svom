@@ -142,6 +142,11 @@
         "system": "System"
       }
     },
+    "notFound": {
+      "title": "Page not found",
+      "subtitle": "The address changed or this page is no longer available.",
+      "action": "Home"
+    },
     "apiErrors": {
       "phoneFormat": "Enter phone in format 38(0XX)XXX-XX-XX.",
       "required": "Fill in the required field.",
