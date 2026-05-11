@@ -7,5 +7,5 @@ export const proxy = createMiddleware(routing);
 export default proxy;
 
 export const config = {
-  matcher: ["/", "/((?!api|backend-api|_next|_vercel|.*\\..*).*)"],
+  matcher: ["/", "/((?!api|backend-api|_next|_vercel|404|500|.*\\..*).*)"],
 };

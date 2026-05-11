@@ -23,7 +23,16 @@ def _supplier_offer_prefetch(*, relation_prefix: str = "product__") -> Prefetch:
     )
 
 
-def _wishlist_product_prefetch(*, fitment_params=None) -> Prefetch:
+def _has_wishlist_fitment_filter(fitment_params) -> bool:
+    if fitment_params is None:
+        return False
+    return any(
+        str(fitment_params.get(key) or "").strip()
+        for key in ("fitment", "vehicle_id", "passanger_car_id", "garage_vehicle", "category", "category_id")
+    )
+
+
+def _wishlist_product_queryset(*, fitment_params=None):
     product_queryset = (
         WishlistItem.product.field.related_model.objects.select_related(
             "brand",
@@ -42,13 +51,25 @@ def _wishlist_product_prefetch(*, fitment_params=None) -> Prefetch:
             queryset=product_queryset,
             params=fitment_params,
         )
+    return product_queryset
+
+
+def _wishlist_product_prefetch(*, product_queryset) -> Prefetch:
     return Prefetch("product", queryset=product_queryset)
 
 
 def get_wishlist_items_queryset(*, user_id, fitment_params=None) -> QuerySet[WishlistItem]:
+    apply_fitment_filter = _has_wishlist_fitment_filter(fitment_params)
+    product_queryset = _wishlist_product_queryset(
+        fitment_params=fitment_params if apply_fitment_filter else None,
+    )
+    queryset = WishlistItem.objects.filter(user_id=user_id)
+    if apply_fitment_filter:
+        queryset = queryset.filter(product_id__in=product_queryset.values("id"))
+
     return (
-        WishlistItem.objects.filter(user_id=user_id)
-        .prefetch_related(_wishlist_product_prefetch(fitment_params=fitment_params))
+        queryset
+        .prefetch_related(_wishlist_product_prefetch(product_queryset=product_queryset))
         .order_by("-created_at")
     )
 

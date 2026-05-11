@@ -654,7 +654,9 @@ label:has(select:disabled) {
   -webkit-background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 20px rgba(248, 250, 252, 0.18);
+  text-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.14),
+    0 1px 0 rgba(255, 255, 255, 0.28);
   animation: heroPerformanceHueShift 8s linear infinite;
 }
 
@@ -761,4 +763,102 @@ label:has(select:disabled) {
 .header-menu-item-danger:hover {
   background-color: color-mix(in srgb, #e11d48 14%, var(--surface));
   color: color-mix(in srgb, #be123c 68%, var(--text));
+}
+
+.error404-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background-image:
+    var(--page-bg-layer-1),
+    var(--page-bg-layer-2),
+    var(--page-bg-layer-3);
+  background-size: 220% 220%, 210% 210%, 170% 170%;
+  background-position: 0% 8%, 100% 22%, 0% 50%;
+}
+
+.error404-content {
+  position: relative;
+  width: min(100vw, 1160px);
+  text-align: center;
+  color: var(--text);
+  padding: 0 1rem;
+}
+
+.error404-brand {
+  margin: 0 0 0.65rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.error404-number {
+  display: inline-block;
+  margin: 0;
+}
+
+.error404-number-text {
+  display: block;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(8rem, 30vw, 22rem);
+  font-weight: 800;
+  line-height: 0.86;
+  letter-spacing: 0;
+  background-image: linear-gradient(90deg, #f8fafc 0%, #f59e0b 24%, #fb7185 48%, #38bdf8 74%, #f8fafc 100%);
+  background-size: 220% 220%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 10px 24px rgba(15, 23, 42, 0.12));
+  animation: heroPerformanceHueShift 8s linear infinite;
+}
+
+.error404-title {
+  margin: 1.25rem 0 0;
+  color: var(--text);
+  font-size: clamp(1.25rem, 2.4vw, 2rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.error404-subtitle {
+  margin: 0.75rem auto 0;
+  max-width: 34rem;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.error404-action {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background-color: var(--surface);
+  color: var(--text);
+  padding: 0 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+.error404-action:hover {
+  background-color: color-mix(in srgb, var(--surface-2) 70%, var(--surface));
+}
+
+.error404-action:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, #4b9264 40%, transparent);
 }

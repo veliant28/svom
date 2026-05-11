@@ -72,6 +72,7 @@ from .linked_product_related_enrichment import (
     is_remote_quota_error,
 )
 from .raw_clone_storage import AutoDbRawCloneStorage
+from .lookup_v3_readonly import AutoDbLookupV3ReadOnlyResult, AutoDbLookupV3ReadOnlyService
 from .remote_client import (
     ARTICLE_CATALOG_TABLE_WHITELIST,
     REMOTE_TABLE_WHITELIST,
@@ -83,6 +84,8 @@ from .remote_client import (
 __all__ = [
     "parse_construction_interval",
     "AutoDbRawCloneStorage",
+    "AutoDbLookupV3ReadOnlyService",
+    "AutoDbLookupV3ReadOnlyResult",
     "AutoDbArticleLookupService",
     "ArticleLookupResult",
     "AutoDbArticleEnrichmentService",

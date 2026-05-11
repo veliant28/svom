@@ -13,7 +13,7 @@ export type CommerceProductSummary = {
 
 export type WishlistItem = {
   id: string;
-  product: CatalogProduct;
+  product: CatalogProduct | null;
   created_at: string;
 };
 

@@ -11,6 +11,7 @@ export function WishlistPage() {
   const t = useTranslations("commerce.wishlist");
   const { isAuthenticated } = useAuth();
   const { items, isLoading } = useWishlist();
+  const visibleItems = items.filter((item) => Boolean(item.product));
 
   if (!isAuthenticated) {
     return (
@@ -38,14 +39,14 @@ export function WishlistPage() {
           <p className="text-sm" style={{ color: "var(--muted)" }}>
             {t("states.loading")}
           </p>
-        ) : items.length === 0 ? (
+        ) : visibleItems.length === 0 ? (
           <p className="text-sm" style={{ color: "var(--muted)" }}>
             {t("states.empty")}
           </p>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {items.map((item) => (
-              <ProductCard key={item.id} product={item.product} />
+            {visibleItems.map((item) => (
+              item.product ? <ProductCard key={item.id} product={item.product} /> : null
             ))}
           </div>
         )}

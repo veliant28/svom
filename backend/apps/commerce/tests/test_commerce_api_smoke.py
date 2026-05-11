@@ -3,7 +3,8 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 
-from apps.catalog.models import Brand, Category, Product, ProductImage
+from apps.catalog.models import AutoDbProductLinkQuality, Brand, Category, Product, ProductImage
+from apps.compatibility.models import ProductFitment
 from apps.commerce.models import Cart, CartItem, Order, WishlistItem
 from apps.pricing.models import ProductPrice
 from apps.users.models import User
@@ -57,6 +58,68 @@ class CommerceAPISmokeTests(APITestCase):
         delete_response = self.client.delete(reverse("commerce_api:wishlist-item-delete", kwargs={"item_id": item_id}), **self.auth)
         self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(WishlistItem.objects.filter(user=self.user, product=self.product).exists())
+
+    def test_wishlist_fitment_filter_excludes_non_matching_items_without_null_product(self):
+        matching = self.product
+        matching.autodb_supplier_id = 324
+        matching.autodb_article_number = "COMM-001"
+        matching.autodb_article_key = "324:COMM-001"
+        matching.save(update_fields=["autodb_supplier_id", "autodb_article_number", "autodb_article_key"])
+        other = Product.objects.create(
+            sku="COMM-002",
+            article="COMM-002",
+            name="Other Commerce Product",
+            slug="other-commerce-product",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+            autodb_supplier_id=324,
+            autodb_article_number="COMM-002",
+            autodb_article_key="324:COMM-002",
+        )
+        ProductPrice.objects.create(product=other, final_price="234.00", currency="UAH")
+        ProductImage.objects.create(
+            product=matching,
+            image=None,
+            remote_url="https://cdn.example.test/matching-commerce-product.webp",
+            is_primary=True,
+            source=ProductImage.SOURCE_GPL_PRICE,
+        )
+        WishlistItem.objects.create(user=self.user, product=matching)
+        WishlistItem.objects.create(user=self.user, product=other)
+        ProductFitment.objects.create(
+            product=matching,
+            source=ProductFitment.SOURCE_AUTODB_PRO,
+            autodb_passanger_car_id=901,
+            linkage_type="PassengerCar",
+            autodb_article_key="324:COMM-001",
+            supplier_id=324,
+            article_number="COMM-001",
+            quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
+            excluded_from_public_filtering=False,
+            note="Auto-DB Pro applicability",
+            is_exact=False,
+        )
+        AutoDbProductLinkQuality.objects.create(
+            product=matching,
+            autodb_article_key="324:COMM-001",
+            autodb_supplier_id=324,
+            autodb_article_number="COMM-001",
+            status=AutoDbProductLinkQuality.STATUS_TRUSTED,
+            reason="",
+            evidence={"source": "test"},
+        )
+
+        response = self.client.get(
+            reverse("commerce_api:wishlist-list"),
+            {"vehicle_id": "901", "fitment": "only"},
+            **self.auth,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["product"]["id"], str(matching.id))
+        self.assertNotIn(None, [item["product"] for item in response.data])
 
     def test_cart_and_checkout_flow(self):
         add_to_cart_response = self.client.post(

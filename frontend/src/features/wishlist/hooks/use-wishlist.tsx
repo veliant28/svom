@@ -22,6 +22,10 @@ type WishlistContextValue = {
 
 const WishlistContext = createContext<WishlistContextValue | null>(null);
 
+function normalizeWishlistItems(items: WishlistItem[]): WishlistItem[] {
+  return items.filter((item) => Boolean(item?.product?.id));
+}
+
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const { token, isAuthenticated } = useAuth();
   const locale = useLocale();
@@ -66,7 +70,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       const data = await getWishlist(token, fitmentParams);
-      setItems(Array.isArray(data) ? data : []);
+      setItems(Array.isArray(data) ? normalizeWishlistItems(data) : []);
     } catch (error) {
       setItems([]);
       showApiError(error, t("loadFailed"));
@@ -80,7 +84,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   }, [refresh]);
 
   const isInWishlist = useCallback(
-    (productId: string) => items.some((item) => item.product.id === productId),
+    (productId: string) => items.some((item) => item.product?.id === productId),
     [items],
   );
 
@@ -90,7 +94,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const existingItem = items.find((item) => item.product.id === productId);
+      const existingItem = items.find((item) => item.product?.id === productId);
       try {
         if (existingItem) {
           await removeWishlistItem(token, existingItem.id);
@@ -100,7 +104,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         }
 
         const created = await addWishlistItem(token, productId);
-        setItems((prev) => [created, ...prev.filter((item) => item.product.id !== productId)]);
+        setItems((prev) => normalizeWishlistItems([created, ...prev.filter((item) => item.product?.id !== productId)]));
         showSuccess(t("added"));
       } catch (error) {
         showApiError(error, t("actionFailed"));
