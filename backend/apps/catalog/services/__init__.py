@@ -55,7 +55,9 @@ from .product_sku import (
     get_product_display_sku,
     get_product_internal_import_key,
     is_gpl_product,
+    is_multi_offer_product,
 )
+from .svom_sku import ensure_product_svom_sku, is_valid_svom_sku, build_deterministic_svom_sku
 from .category_canonicalization import (
     CANONICAL_CATEGORY_SPECS,
     CanonicalCategorySpec,
@@ -100,6 +102,10 @@ __all__ = [
     "get_product_manufacturer_article",
     "get_product_internal_import_key",
     "is_gpl_product",
+    "is_multi_offer_product",
+    "ensure_product_svom_sku",
+    "is_valid_svom_sku",
+    "build_deterministic_svom_sku",
     "CanonicalCategorySpec",
     "CANONICAL_CATEGORY_SPECS",
     "canonical_specs_by_slug",

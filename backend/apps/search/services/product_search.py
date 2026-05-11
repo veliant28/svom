@@ -26,6 +26,7 @@ class ProductSearchService:
         return queryset.filter(
             Q(name__icontains=cleaned_query)
             | Q(sku__icontains=cleaned_query)
+            | Q(svom_sku__icontains=cleaned_query)
             | Q(article__icontains=cleaned_query)
             | Q(brand__name__icontains=cleaned_query)
         )
@@ -39,7 +40,7 @@ class ProductSearchService:
             "query": {
                 "multi_match": {
                     "query": query,
-                    "fields": ["name^4", "sku^5", "article^3", "brand_name^2"],
+                    "fields": ["name^4", "sku^5", "svom_sku^5", "article^3", "brand_name^2"],
                     "type": "best_fields",
                 }
             },

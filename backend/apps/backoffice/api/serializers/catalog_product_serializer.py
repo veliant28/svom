@@ -10,6 +10,7 @@ from apps.autodb.selectors.admin_supplier_brands import get_admin_supplier_brand
 from apps.backoffice.services import ProductOperationsService
 from apps.catalog.models import AutoDbProductLinkQuality, Brand, Category, Product, ProductAttribute
 from apps.catalog.services import (
+    ensure_product_svom_sku,
     find_brand_by_normalized_name,
     generate_unique_product_slug,
     generate_unique_brand_slug,
@@ -25,6 +26,7 @@ from apps.catalog.services import (
 from apps.compatibility.models import ProductFitment
 from apps.catalog.services.product_stock import get_available_supplier_offer_stock_sum, resolve_display_stock_qty
 from apps.pricing.models import SupplierOffer
+from apps.supplier_imports.models import SupplierRawOffer
 from apps.supplier_imports.parsers.gpl_parser import extract_gpl_price_levels
 
 
@@ -69,6 +71,12 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
     supplier_sku = serializers.SerializerMethodField()
     internal_import_key = serializers.SerializerMethodField(read_only=True)
     supplier_offer_seen_at = serializers.SerializerMethodField()
+    selected_offer_supplier_code = serializers.SerializerMethodField()
+    selected_offer_supplier_sku = serializers.SerializerMethodField()
+    selected_offer_purchase_price = serializers.SerializerMethodField()
+    selected_offer_stock_qty = serializers.SerializerMethodField()
+    selected_offer_raw_article = serializers.SerializerMethodField()
+    selected_offer_raw_brand = serializers.SerializerMethodField()
     stock_qty = serializers.SerializerMethodField()
     supplier_offer_stock_sum = serializers.SerializerMethodField()
     supplier_code = serializers.SerializerMethodField()
@@ -84,6 +92,7 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
     autodb_link_status = serializers.SerializerMethodField()
     compatibility_available = serializers.SerializerMethodField()
     warehouse_summary = serializers.SerializerMethodField()
+    price_tooltip_summary = serializers.SerializerMethodField()
     display_name = serializers.SerializerMethodField()
     display_name_source = serializers.SerializerMethodField()
     name_quality_flags = serializers.SerializerMethodField()
@@ -93,12 +102,15 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
     autodb_attributes_count = serializers.SerializerMethodField(read_only=True)
     autodb_fitments_count = serializers.SerializerMethodField(read_only=True)
     is_autodb_compatible_data_available = serializers.SerializerMethodField(read_only=True)
+    product_display_sku = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Product
         fields = (
             "id",
             "sku",
+            "svom_sku",
+            "product_display_sku",
             "internal_import_key",
             "article",
             "name",
@@ -141,6 +153,12 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
             "warehouse_segments",
             "supplier_sku",
             "supplier_offer_seen_at",
+            "selected_offer_supplier_code",
+            "selected_offer_supplier_sku",
+            "selected_offer_purchase_price",
+            "selected_offer_stock_qty",
+            "selected_offer_raw_article",
+            "selected_offer_raw_brand",
             "stock_qty",
             "supplier_offer_stock_sum",
             "supplier_code",
@@ -156,6 +174,7 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
             "autodb_link_status",
             "compatibility_available",
             "warehouse_summary",
+            "price_tooltip_summary",
             "short_description",
             "description",
             "is_active",
@@ -177,6 +196,8 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
             "display_name",
             "display_name_source",
             "internal_import_key",
+            "svom_sku",
+            "product_display_sku",
             "name_uk",
             "name_ru",
             "name_en",
@@ -289,10 +310,15 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
     def get_internal_import_key(self, obj: Product) -> str:
         return get_product_internal_import_key(obj)
 
+    def get_product_display_sku(self, obj: Product) -> str:
+        return get_product_display_sku(obj)
+
     def create(self, validated_data):
         if not validated_data.get("slug"):
             validated_data["slug"] = generate_unique_product_slug(name=validated_data["name"])
-        return super().create(validated_data)
+        product = super().create(validated_data)
+        ensure_product_svom_sku(product)
+        return product
 
     def update(self, instance, validated_data):
         previous_category_id = str(instance.category_id) if instance.category_id else ""
@@ -443,6 +469,93 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
             .order_by("supplier__priority", "-updated_at", "id")
             .first()
         )
+
+    @staticmethod
+    def _as_decimal(value: Decimal | int | str | None) -> Decimal:
+        if value in (None, ""):
+            return Decimal("0")
+        try:
+            return Decimal(str(value))
+        except Exception:
+            return Decimal("0")
+
+    @classmethod
+    def _offer_matches_product_price(cls, *, offer: SupplierOffer, product_price) -> bool:
+        if product_price is None:
+            return False
+        return (
+            str(offer.currency or "") == str(product_price.currency or "")
+            and cls._as_decimal(offer.purchase_price) == cls._as_decimal(product_price.purchase_price)
+            and cls._as_decimal(offer.logistics_cost) == cls._as_decimal(product_price.logistics_cost)
+            and cls._as_decimal(offer.extra_cost) == cls._as_decimal(product_price.extra_cost)
+        )
+
+    @classmethod
+    def _resolve_selected_offer(cls, obj: Product) -> SupplierOffer | None:
+        cached = getattr(obj, "_backoffice_selected_offer", None)
+        if cached is not None:
+            return cached
+
+        offers = cls._resolve_supplier_offers(obj)
+        product_price = cls._resolve_product_price(obj)
+        selected: SupplierOffer | None = None
+
+        if product_price is not None and cls._as_decimal(product_price.purchase_price) > 0:
+            matched = [offer for offer in offers if cls._offer_matches_product_price(offer=offer, product_price=product_price)]
+            if matched:
+                selected = next((offer for offer in matched if offer.is_available), matched[0])
+
+        if selected is None:
+            selected = cls._resolve_supplier_offer(obj)
+
+        obj._backoffice_selected_offer = selected
+        return selected
+
+    @staticmethod
+    def _normalize_compact(value: str | None) -> str:
+        return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
+
+    @classmethod
+    def _resolve_selected_raw_offer(cls, obj: Product) -> SupplierRawOffer | None:
+        cached = getattr(obj, "_backoffice_selected_raw_offer", None)
+        if cached is not None:
+            return cached
+
+        selected_offer = cls._resolve_selected_offer(obj)
+        if selected_offer is None:
+            obj._backoffice_selected_raw_offer = None
+            return None
+
+        offer_sku = str(getattr(selected_offer, "supplier_sku", "") or "").strip()
+        offer_sku_compact = cls._normalize_compact(offer_sku)
+        raw_offers = getattr(obj, "backoffice_raw_offers", None)
+        if raw_offers is None:
+            raw_offers = list(
+                obj.raw_supplier_offers.select_related("source", "supplier").order_by("supplier__priority", "source__code", "-updated_at", "-id")
+            )
+
+        candidate: SupplierRawOffer | None = None
+        for raw_offer in raw_offers:
+            if raw_offer.supplier_id != selected_offer.supplier_id:
+                continue
+            external_sku = str(getattr(raw_offer, "external_sku", "") or "").strip()
+            article = str(getattr(raw_offer, "article", "") or "").strip()
+            normalized_article = str(getattr(raw_offer, "normalized_article", "") or "").strip()
+            if offer_sku and (external_sku == offer_sku or article == offer_sku):
+                candidate = raw_offer
+                break
+            if offer_sku_compact and (
+                cls._normalize_compact(external_sku) == offer_sku_compact
+                or cls._normalize_compact(article) == offer_sku_compact
+                or cls._normalize_compact(normalized_article) == offer_sku_compact
+            ):
+                candidate = raw_offer
+                break
+            if candidate is None:
+                candidate = raw_offer
+
+        obj._backoffice_selected_raw_offer = candidate
+        return candidate
 
     @staticmethod
     def _resolve_supplier_offers(obj: Product) -> list[SupplierOffer]:
@@ -651,6 +764,10 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
         return flattened
 
     def get_supplier_sku(self, obj: Product) -> str:
+        selected_offer = self._resolve_selected_offer(obj)
+        if selected_offer is not None and selected_offer.supplier_sku:
+            return selected_offer.supplier_sku
+
         prefetched = getattr(obj, "backoffice_supplier_offers", None)
         if prefetched:
             return prefetched[0].supplier_sku
@@ -716,13 +833,62 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
         return codes
 
     def get_primary_supplier_code(self, obj: Product) -> str:
-        offer = self._resolve_supplier_offer(obj)
+        offer = self._resolve_selected_offer(obj) or self._resolve_supplier_offer(obj)
         if offer is None:
             return ""
         return str(getattr(offer.supplier, "code", "") or "").strip().lower()
 
     def get_supplier_code(self, obj: Product) -> str:
         return self.get_primary_supplier_code(obj)
+
+    def get_selected_offer_supplier_code(self, obj: Product) -> str:
+        offer = self._resolve_selected_offer(obj)
+        if offer is None:
+            return ""
+        return str(getattr(offer.supplier, "code", "") or "").strip().lower()
+
+    def get_selected_offer_supplier_sku(self, obj: Product) -> str:
+        offer = self._resolve_selected_offer(obj)
+        return str(getattr(offer, "supplier_sku", "") or "") if offer is not None else ""
+
+    def get_selected_offer_purchase_price(self, obj: Product):
+        offer = self._resolve_selected_offer(obj)
+        if offer is None:
+            return None
+        value = self._as_decimal(getattr(offer, "purchase_price", None))
+        return f"{value:.2f}" if value > 0 else None
+
+    def get_selected_offer_stock_qty(self, obj: Product) -> int | None:
+        offer = self._resolve_selected_offer(obj)
+        if offer is None:
+            return None
+        return int(getattr(offer, "stock_qty", 0) or 0)
+
+    def get_selected_offer_raw_article(self, obj: Product) -> str:
+        raw_offer = self._resolve_selected_raw_offer(obj)
+        if raw_offer is None:
+            return ""
+        payload = raw_offer.raw_payload if isinstance(raw_offer.raw_payload, dict) else {}
+        return (
+            str(payload.get("Артикул ТД") or "")
+            or str(payload.get("Артикул ТД.") or "")
+            or str(payload.get("manufacturer_article") or "")
+            or str(payload.get("article_td") or "")
+            or str(payload.get("Артикул") or "")
+            or str(payload.get("article") or "")
+            or str(getattr(raw_offer, "article", "") or "")
+        ).strip()
+
+    def get_selected_offer_raw_brand(self, obj: Product) -> str:
+        raw_offer = self._resolve_selected_raw_offer(obj)
+        if raw_offer is None:
+            return ""
+        payload = raw_offer.raw_payload if isinstance(raw_offer.raw_payload, dict) else {}
+        return (
+            str(payload.get("Бренд") or "")
+            or str(payload.get("brand") or "")
+            or str(getattr(raw_offer, "brand_name", "") or "")
+        ).strip()
 
     def get_has_product_price(self, obj: Product) -> bool:
         return self._resolve_product_price(obj) is not None
@@ -793,4 +959,62 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
             "warehouse_nonzero_count": warehouse_nonzero_count,
             "stock_qty_total": int(stock_qty_total),
             "supplier_offer_stock_sum": self.get_supplier_offer_stock_sum(obj),
+        }
+
+    @classmethod
+    def _resolve_utr_offer_price(cls, obj: Product) -> str | None:
+        for offer in cls._resolve_supplier_offers(obj):
+            supplier_code = str(getattr(getattr(offer, "supplier", None), "code", "") or "").strip().lower()
+            if supplier_code != "utr":
+                continue
+            price = cls._as_decimal(getattr(offer, "purchase_price", None))
+            if price > 0:
+                return f"{price:.2f}"
+        return None
+
+    @classmethod
+    def _resolve_gpl_rrc_price(cls, obj: Product) -> str | None:
+        prefetched = getattr(obj, "backoffice_raw_offers", None)
+        raw_offers = prefetched
+        if raw_offers is None:
+            raw_offers = (
+                obj.raw_supplier_offers.select_related("source", "supplier")
+                .filter(source__code="gpl")
+                .order_by("supplier__priority", "-updated_at", "-id")
+            )
+
+        for raw_offer in raw_offers:
+            source_code = str(getattr(getattr(raw_offer, "source", None), "code", "") or "").strip().lower()
+            if source_code != "gpl":
+                continue
+            levels = extract_gpl_price_levels(item=raw_offer.raw_payload or {}, default_currency=raw_offer.currency)
+            for level in levels:
+                key = str(level.get("key", "") or "").strip().lower()
+                label = str(level.get("label", "") or "").strip().lower()
+                is_rrc = (
+                    "ррц" in key
+                    or "ррц" in label
+                    or "rrc" in key
+                    or "rrc" in label
+                    or "rrp" in key
+                    or "rrp" in label
+                    or key == "price_type_10"
+                )
+                if not is_rrc:
+                    continue
+                value = cls._as_decimal(level.get("value"))
+                if value > 0:
+                    return f"{value:.2f}"
+        return None
+
+    def get_price_tooltip_summary(self, obj: Product) -> dict[str, object]:
+        selected_supplier_price = self.get_selected_offer_purchase_price(obj) or self.get_supplier_price(obj)
+        return {
+            "final_price": self.get_final_price(obj),
+            "selected_supplier_price": selected_supplier_price,
+            "utr_price": self._resolve_utr_offer_price(obj),
+            "gpl_rrc_price": self._resolve_gpl_rrc_price(obj),
+            "markup_percent": self.get_applied_markup_percent(obj),
+            "pricing_policy": self.get_applied_markup_policy_name(obj) or self.get_applied_markup_policy_scope(obj) or "",
+            "updated_at": self.get_price_updated_at(obj) or obj.updated_at,
         }

@@ -39,6 +39,7 @@ class ProductDetailAPIView(RetrieveAPIView):
             | Q(article__iexact=lookup_value)
             | Q(autodb_article_number__iexact=lookup_value)
             | Q(sku__iexact=lookup_value)
+            | Q(svom_sku__iexact=lookup_value)
         )
         candidate = candidates.order_by("-updated_at", "id").first()
         if candidate is None:

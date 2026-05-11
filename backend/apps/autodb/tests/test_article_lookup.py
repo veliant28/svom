@@ -190,3 +190,10 @@ class AutoDbArticleLookupServiceTests(SimpleTestCase):
 
         self.assertIn("HU 1381 x", variants)
         self.assertIn("HU 1381 X", variants)
+
+    def test_compose_article_key_uses_canonical_article_normalization(self):
+        service = AutoDbArticleLookupService(storage=Mock())
+
+        key = service._compose_article_key(supplier_id=64, article_number="4 РК 813")
+
+        self.assertEqual(key, "64:4PK813")

@@ -7,10 +7,8 @@ from apps.core.db.mixins import TimestampedMixin, UUIDPrimaryKeyMixin
 
 
 class GarageVehicle(UUIDPrimaryKeyMixin, TimestampedMixin):
-    CATALOG_SOURCE_LEGACY = "legacy"
     CATALOG_SOURCE_AUTODB_PRO = "autodb_pro"
     CATALOG_SOURCE_CHOICES = (
-        (CATALOG_SOURCE_LEGACY, _("Legacy")),
         (CATALOG_SOURCE_AUTODB_PRO, _("Auto_DB_Pro")),
     )
 
@@ -60,14 +58,6 @@ class GarageVehicle(UUIDPrimaryKeyMixin, TimestampedMixin):
         null=True,
         verbose_name=_("Модификация"),
     )
-    car_modification = models.ForeignKey(
-        "autocatalog.CarModification",
-        on_delete=models.PROTECT,
-        related_name="garage_vehicles",
-        blank=True,
-        null=True,
-        verbose_name=_("Автокаталог"),
-    )
     autodb_manufacturer_id = models.IntegerField(_("Auto_DB_Pro manufacturer id"), blank=True, null=True, db_index=True)
     autodb_model_id = models.IntegerField(_("Auto_DB_Pro model id"), blank=True, null=True, db_index=True)
     autodb_passanger_car_id = models.IntegerField(_("Auto_DB_Pro passanger car id"), blank=True, null=True, db_index=True)
@@ -80,7 +70,7 @@ class GarageVehicle(UUIDPrimaryKeyMixin, TimestampedMixin):
         _("Каталог-источник"),
         max_length=24,
         choices=CATALOG_SOURCE_CHOICES,
-        default=CATALOG_SOURCE_LEGACY,
+        default=CATALOG_SOURCE_AUTODB_PRO,
         db_index=True,
     )
     nickname = models.CharField(_("Название в гараже"), max_length=120, blank=True)
@@ -98,11 +88,6 @@ class GarageVehicle(UUIDPrimaryKeyMixin, TimestampedMixin):
                 name="users_garage_unique_vehicle_per_user",
             ),
             models.UniqueConstraint(
-                fields=("user", "car_modification"),
-                condition=Q(car_modification__isnull=False),
-                name="users_garage_unique_autocatalog_vehicle_per_user",
-            ),
-            models.UniqueConstraint(
                 fields=("user", "autodb_passanger_car_id"),
                 condition=Q(autodb_passanger_car_id__isnull=False),
                 name="users_garage_unique_autodb_vehicle_per_user",
@@ -117,9 +102,6 @@ class GarageVehicle(UUIDPrimaryKeyMixin, TimestampedMixin):
     def __str__(self) -> str:
         if self.autodb_passanger_car_id is not None:
             return self.autodb_vehicle_label or f"autodb:{self.autodb_passanger_car_id}"
-
-        if self.car_modification is not None:
-            return str(self.car_modification)
 
         parts = [str(part) for part in (self.make, self.model) if part]
         title = " ".join(parts).strip() or str(self.pk)

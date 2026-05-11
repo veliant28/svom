@@ -5,11 +5,10 @@ export type VehicleFitmentParams = {
 };
 
 export function resolveActiveVehicleFitmentParams(params: {
-  activeVehicleSource: "none" | "garage" | "temporary" | "temporary_autodb";
+  activeVehicleSource: "none" | "garage" | "temporary_autodb";
   activeGarageVehicleId: string | null;
-  activeGarageVehicleCatalogSource: "legacy" | "autodb_pro" | null;
+  activeGarageVehicleCatalogSource: "autodb_pro" | null;
   activeGarageVehicleAutoDbPassangerCarId: number | null;
-  activeTemporaryCarModificationId: number | null;
   activeTemporaryAutoDbPassangerCarId: number | null;
 }): VehicleFitmentParams {
   if (

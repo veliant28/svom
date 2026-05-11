@@ -9,8 +9,6 @@ from apps.backoffice.api.views import (
     BackofficeAutoDbVehicleModelsAPIView,
     ArticleRuleListCreateAPIView,
     ArticleRuleRetrieveUpdateAPIView,
-    BackofficeAutocatalogFilterOptionsAPIView,
-    BackofficeAutocatalogListAPIView,
     BackofficeEmailSettingsAPIView,
     BackofficeEmailSettingsTestAPIView,
     BackofficeSummaryAPIView,
@@ -257,8 +255,6 @@ urlpatterns = [
         BackofficeProductFitmentRetrieveUpdateDestroyAPIView.as_view(),
         name="product-fitment-update",
     ),
-    path("autocatalog/", BackofficeAutocatalogListAPIView.as_view(), name="autocatalog-list"),
-    path("autocatalog/filter-options/", BackofficeAutocatalogFilterOptionsAPIView.as_view(), name="autocatalog-filter-options"),
     path("autodb/vehicle-filter-options/", BackofficeAutoDbVehicleFilterOptionsAPIView.as_view(), name="autodb-vehicle-filter-options"),
     path("autodb/vehicle-manufacturers/", BackofficeAutoDbVehicleManufacturersAPIView.as_view(), name="autodb-vehicle-manufacturers"),
     path(

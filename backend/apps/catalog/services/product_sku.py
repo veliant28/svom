@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+import re
 
 from apps.catalog.models import AutoDbProductLinkQuality, Product
 from apps.pricing.models import SupplierOffer
@@ -42,22 +43,63 @@ def _first(items: Iterable[str]) -> str:
     return ""
 
 
-def is_gpl_product(product: Product) -> bool:
+def _normalize_code(value: str | None) -> str:
+    return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
+
+
+def _resolve_supplier_code_set(product: Product) -> set[str]:
+    codes: set[str] = set()
     for offer in _prefetched_supplier_offers(product):
-        if _clean(getattr(getattr(offer, "supplier", None), "code", "")).lower() == GPL_SUPPLIER_CODE:
-            return True
+        code = _clean(getattr(getattr(offer, "supplier", None), "code", "")).lower()
+        if code:
+            codes.add(code)
     for raw_offer in _prefetched_raw_offers(product):
         source_code = _clean(getattr(getattr(raw_offer, "source", None), "code", "")).lower()
         supplier_code = _clean(getattr(getattr(raw_offer, "supplier", None), "code", "")).lower()
-        if source_code == GPL_SUPPLIER_CODE or supplier_code == GPL_SUPPLIER_CODE:
-            return True
-    return product.supplier_offers.filter(supplier__code=GPL_SUPPLIER_CODE).exists()
+        if source_code:
+            codes.add(source_code)
+        if supplier_code:
+            codes.add(supplier_code)
+    if codes:
+        return codes
+    return {
+        _clean(code).lower()
+        for code in product.supplier_offers.values_list("supplier__code", flat=True).distinct()
+        if _clean(code)
+    }
 
 
-def get_product_display_sku(product: Product) -> str:
-    if not is_gpl_product(product):
-        return _clean(getattr(product, "sku", ""))
+def _resolve_offer_supplier_code_set(product: Product) -> set[str]:
+    codes: set[str] = set()
+    for offer in _prefetched_supplier_offers(product):
+        code = _clean(getattr(getattr(offer, "supplier", None), "code", "")).lower()
+        if code:
+            codes.add(code)
+    if codes:
+        return codes
+    return {
+        _clean(code).lower()
+        for code in product.supplier_offers.values_list("supplier__code", flat=True).distinct()
+        if _clean(code)
+    }
 
+
+def is_gpl_product(product: Product) -> bool:
+    return GPL_SUPPLIER_CODE in _resolve_supplier_code_set(product)
+
+
+def is_multi_offer_product(product: Product) -> bool:
+    return len(_resolve_offer_supplier_code_set(product)) > 1
+
+
+def _is_gpl_only_product(product: Product) -> bool:
+    codes = _resolve_supplier_code_set(product)
+    if not codes:
+        return False
+    return GPL_SUPPLIER_CODE in codes and all(code == GPL_SUPPLIER_CODE for code in codes)
+
+
+def _resolve_gpl_display_sku(product: Product) -> str:
     raw_offers = _prefetched_raw_offers(product)
     if not raw_offers:
         raw_offers = list(
@@ -91,6 +133,39 @@ def get_product_display_sku(product: Product) -> str:
     return _clean(getattr(product, "sku", ""))
 
 
+def get_product_display_sku(product: Product) -> str:
+    svom_sku = _clean(getattr(product, "svom_sku", ""))
+    if svom_sku:
+        return svom_sku
+
+    if is_multi_offer_product(product):
+        canonical_article = _clean(getattr(product, "article", ""))
+        if canonical_article:
+            return canonical_article
+
+        autodb_article = _clean(getattr(product, "autodb_article_number", ""))
+        if autodb_article:
+            return autodb_article
+
+        return _clean(getattr(product, "sku", ""))
+
+    if not is_gpl_product(product):
+        return _clean(getattr(product, "sku", ""))
+
+    if _is_gpl_only_product(product):
+        return _resolve_gpl_display_sku(product)
+
+    canonical_article = _clean(getattr(product, "article", ""))
+    if canonical_article:
+        return canonical_article
+
+    autodb_article = _clean(getattr(product, "autodb_article_number", ""))
+    if autodb_article:
+        return autodb_article
+
+    return _clean(getattr(product, "sku", ""))
+
+
 def get_product_internal_import_key(product: Product) -> str:
     return _clean(getattr(product, "sku", ""))
 
@@ -99,7 +174,7 @@ def get_product_manufacturer_article(product: Product) -> str:
     display_sku = get_product_display_sku(product)
 
     raw_offers = _prefetched_raw_offers(product)
-    if not raw_offers and is_gpl_product(product):
+    if not raw_offers and is_gpl_product(product) and _is_gpl_only_product(product):
         raw_offers = list(
             product.raw_supplier_offers.filter(source__code=GPL_SUPPLIER_CODE)
             .order_by("-updated_at", "-id")
@@ -116,7 +191,7 @@ def get_product_manufacturer_article(product: Product) -> str:
             return clean
         return ""
 
-    if raw_offers:
+    if raw_offers and _is_gpl_only_product(product):
         td_candidate = _candidate(
             (
                 (getattr(raw_offer, "raw_payload", {}) or {}).get("Артикул ТД")
@@ -140,7 +215,22 @@ def get_product_manufacturer_article(product: Product) -> str:
         if supplier_article_candidate:
             return supplier_article_candidate
 
+    if raw_offers:
+        generic_candidate = _candidate(
+            (
+                (getattr(raw_offer, "raw_payload", {}) or {}).get("manufacturer_article")
+                or (getattr(raw_offer, "raw_payload", {}) or {}).get("article_td")
+                or (getattr(raw_offer, "raw_payload", {}) or {}).get("article")
+                or getattr(raw_offer, "article", "")
+            )
+            for raw_offer in raw_offers
+        )
+        if generic_candidate:
+            return generic_candidate
+
     article_fallback = _clean(getattr(product, "article", ""))
+    if not _is_gpl_only_product(product) and article_fallback:
+        return article_fallback
     if article_fallback and article_fallback != display_sku:
         return article_fallback
 

@@ -28,7 +28,6 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const {
     activeGarageVehicleId,
     activeGarageVehicle,
-    activeTemporaryCarModificationId,
     activeTemporaryAutoDbPassangerCarId,
     activeVehicleSource,
   } = useActiveVehicle();
@@ -42,7 +41,6 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       activeGarageVehicleId,
       activeGarageVehicleCatalogSource: activeGarageVehicle?.catalog_source ?? null,
       activeGarageVehicleAutoDbPassangerCarId: activeGarageVehicle?.autodb_passanger_car_id ?? null,
-      activeTemporaryCarModificationId,
       activeTemporaryAutoDbPassangerCarId,
     });
     const hasVehicleContext = Boolean(resolved.vehicle_id || resolved.passanger_car_id);
@@ -54,7 +52,6 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   }, [
     activeGarageVehicle,
     activeGarageVehicleId,
-    activeTemporaryCarModificationId,
     activeTemporaryAutoDbPassangerCarId,
     activeVehicleSource,
     locale,

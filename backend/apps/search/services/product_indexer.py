@@ -72,6 +72,7 @@ class ProductIndexer:
             mappings={
                 "properties": {
                     "sku": {"type": "keyword"},
+                    "svom_sku": {"type": "keyword"},
                     "article": {"type": "keyword"},
                     "name": {"type": "text"},
                     "slug": {"type": "keyword"},

@@ -146,7 +146,7 @@ export function createProductColumns({
       className: "w-[20%]",
       render: (item) => {
         const displayName = (item.display_name || item.name || "").trim() || "-";
-        const supplierSku = (item.supplier_sku || item.sku || "").trim() || "-";
+        const productSku = (item.product_display_sku || item.svom_sku || item.sku || item.internal_import_key || "").trim() || "-";
         return (
           <div className="min-w-0">
             <BackofficeTooltip
@@ -161,7 +161,7 @@ export function createProductColumns({
               </span>
             </BackofficeTooltip>
             <p className="text-xs" style={{ color: "var(--muted)" }}>
-              {t("products.fields.sku")}: {supplierSku}
+              {t("products.fields.sku")}: {productSku}
             </p>
           </div>
         );
@@ -190,16 +190,16 @@ export function createProductColumns({
                   <span style={{ color: "var(--muted)" }}>{t("products.tooltips.supplierPrice")}:</span>{" "}
                   {priceMeta.supplierPrice}
                 </span>
-                {priceMeta.supplierPriceLevels.length ? (
-                  <span className="grid gap-0.5 border-t pt-1" style={{ borderColor: "var(--border)" }}>
-                    {priceMeta.supplierPriceLevels.map((level) => (
-                      <span key={`${item.id}-supplier-price-level-${level.key}`}>
-                        <span style={{ color: level.is_primary ? "var(--text)" : "var(--muted)" }}>
-                          {level.label}{level.is_primary ? " *" : ""}:
-                        </span>{" "}
-                        {level.formattedValue}
-                      </span>
-                    ))}
+                {priceMeta.utrPrice ? (
+                  <span>
+                    <span style={{ color: "var(--muted)" }}>{t("products.tooltips.utrPrice")}:</span>{" "}
+                    {priceMeta.utrPrice}
+                  </span>
+                ) : null}
+                {priceMeta.gplRrcPrice ? (
+                  <span>
+                    <span style={{ color: "var(--muted)" }}>{t("products.tooltips.gplRrcPrice")}:</span>{" "}
+                    {priceMeta.gplRrcPrice}
                   </span>
                 ) : null}
                 <span>
@@ -226,7 +226,7 @@ export function createProductColumns({
             <BackofficeStatusChip
               tone="blue"
               icon={BadgeDollarSign}
-              className="w-full max-w-full min-w-0 cursor-pointer justify-start overflow-hidden"
+              className="inline-flex max-w-full min-w-0 cursor-pointer justify-start overflow-hidden"
             >
               <span className="block min-w-0 truncate tabular-nums">{priceMeta.badgeLabel}</span>
             </BackofficeStatusChip>
@@ -280,9 +280,9 @@ export function createProductColumns({
               >
                 <BackofficeStatusChip
                   tone={supplierCode === "utr" ? "blue" : supplierCode === "gpl" ? "teal" : "gray"}
-                  className="cursor-pointer [&>span]:leading-[14px]"
+                  className="cursor-pointer h-6 py-0 items-center [&>span]:leading-none"
                 >
-                  {supplierCode}
+                  {supplierCode.toUpperCase()}
                 </BackofficeStatusChip>
               </BackofficeTooltip>
             </div>

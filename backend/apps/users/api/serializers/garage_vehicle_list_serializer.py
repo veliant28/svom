@@ -17,7 +17,6 @@ def _clean_text(value: Any) -> str:
 
 
 class GarageVehicleListSerializer(serializers.ModelSerializer):
-    car_modification_id = serializers.IntegerField(read_only=True, allow_null=True)
     catalog_source = serializers.CharField(read_only=True)
     autodb_manufacturer_id = serializers.IntegerField(read_only=True, allow_null=True)
     autodb_model_id = serializers.IntegerField(read_only=True, allow_null=True)
@@ -44,7 +43,6 @@ class GarageVehicleListSerializer(serializers.ModelSerializer):
             "id",
             "user",
             "catalog_source",
-            "car_modification_id",
             "autodb_manufacturer_id",
             "autodb_model_id",
             "autodb_passanger_car_id",
@@ -67,7 +65,7 @@ class GarageVehicleListSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
     def _resolve_autodb_payload(self, obj: GarageVehicle) -> dict[str, Any]:
-        if obj.catalog_source != GarageVehicle.CATALOG_SOURCE_AUTODB_PRO or obj.autodb_passanger_car_id is None:
+        if obj.autodb_passanger_car_id is None:
             return {}
 
         cache = self.context.setdefault("_autodb_payload_cache", {})
@@ -95,110 +93,75 @@ class GarageVehicleListSerializer(serializers.ModelSerializer):
         return resolved
 
     def get_brand(self, obj: GarageVehicle) -> str:
-        if obj.catalog_source == GarageVehicle.CATALOG_SOURCE_AUTODB_PRO:
-            return self._resolve_autodb_payload(obj).get("manufacturer_name", "")
-        if obj.car_modification and obj.car_modification.make:
-            return _clean_text(obj.car_modification.make.name)
-        return ""
+        return self._resolve_autodb_payload(obj).get("manufacturer_name", "")
 
     def get_model(self, obj: GarageVehicle) -> str:
-        if obj.catalog_source == GarageVehicle.CATALOG_SOURCE_AUTODB_PRO:
-            return self._resolve_autodb_payload(obj).get("model_name", "")
-        if obj.car_modification and obj.car_modification.model:
-            return _clean_text(obj.car_modification.model.name)
-        return ""
+        return self._resolve_autodb_payload(obj).get("model_name", "")
 
     def get_year(self, obj: GarageVehicle) -> int | None:
-        if obj.catalog_source == GarageVehicle.CATALOG_SOURCE_AUTODB_PRO:
-            if isinstance(obj.year, int):
-                return obj.year
-            payload = self._resolve_autodb_payload(obj)
-            year_from = payload.get("year_from")
-            return int(year_from) if isinstance(year_from, int) else obj.year
-
-        if obj.car_modification is not None:
-            return obj.car_modification.year
-        return obj.year
+        if isinstance(obj.year, int):
+            return obj.year
+        payload = self._resolve_autodb_payload(obj)
+        year_from = payload.get("year_from")
+        return int(year_from) if isinstance(year_from, int) else obj.year
 
     def get_modification(self, obj: GarageVehicle) -> str:
-        if obj.catalog_source == GarageVehicle.CATALOG_SOURCE_AUTODB_PRO:
-            if obj.autodb_modification:
-                return _clean_text(obj.autodb_modification)
-            payload = self._resolve_autodb_payload(obj)
-            return payload.get("passanger_description", "") or payload.get("passanger_name", "")
-        return _clean_text(getattr(obj.car_modification, "modification", "") if obj.car_modification else "")
+        if obj.autodb_modification:
+            return _clean_text(obj.autodb_modification)
+        payload = self._resolve_autodb_payload(obj)
+        return payload.get("passanger_description", "") or payload.get("passanger_name", "")
 
     def get_period(self, obj: GarageVehicle) -> str:
-        if obj.catalog_source == GarageVehicle.CATALOG_SOURCE_AUTODB_PRO:
-            payload = self._resolve_autodb_payload(obj)
-            year_from = payload.get("year_from")
-            year_to = payload.get("year_to")
-            if isinstance(year_from, int) and isinstance(year_to, int):
-                if year_from == year_to:
-                    return str(year_from)
-                return f"{year_from}–{year_to}"
-            if isinstance(year_from, int):
+        payload = self._resolve_autodb_payload(obj)
+        year_from = payload.get("year_from")
+        year_to = payload.get("year_to")
+        if isinstance(year_from, int) and isinstance(year_to, int):
+            if year_from == year_to:
                 return str(year_from)
-            if isinstance(year_to, int):
-                return str(year_to)
+            return f"{year_from}–{year_to}"
+        if isinstance(year_from, int):
+            return str(year_from)
+        if isinstance(year_to, int):
+            return str(year_to)
         return str(obj.year) if isinstance(obj.year, int) else ""
 
     def get_engine(self, obj: GarageVehicle) -> str:
-        if obj.catalog_source == GarageVehicle.CATALOG_SOURCE_AUTODB_PRO:
-            return _clean_text(obj.autodb_engine)
-        return _clean_text(getattr(obj.car_modification, "engine", "") if obj.car_modification else "")
+        return _clean_text(obj.autodb_engine)
 
     def get_power_hp(self, obj: GarageVehicle) -> int | None:
-        if obj.catalog_source == GarageVehicle.CATALOG_SOURCE_AUTODB_PRO:
-            return obj.autodb_power_hp
-        return getattr(obj.car_modification, "hp_from", None) if obj.car_modification else None
+        return obj.autodb_power_hp
 
     def get_power_kw(self, obj: GarageVehicle) -> int | None:
-        if obj.catalog_source == GarageVehicle.CATALOG_SOURCE_AUTODB_PRO:
-            return obj.autodb_power_kw
-        return getattr(obj.car_modification, "kw_from", None) if obj.car_modification else None
+        return obj.autodb_power_kw
 
     def get_vehicle_label(self, obj: GarageVehicle) -> str:
-        if obj.catalog_source == GarageVehicle.CATALOG_SOURCE_AUTODB_PRO:
-            payload = self._resolve_autodb_payload(obj)
-            if obj.autodb_vehicle_label:
-                return _clean_text(obj.autodb_vehicle_label)
+        payload = self._resolve_autodb_payload(obj)
+        if obj.autodb_vehicle_label:
+            return _clean_text(obj.autodb_vehicle_label)
 
-            year_from = payload.get("year_from")
-            year_to = payload.get("year_to")
-            year_label = ""
-            if isinstance(year_from, int) and isinstance(year_to, int):
-                year_label = f"{year_from}-{year_to}"
-            elif isinstance(year_from, int):
-                year_label = str(year_from)
+        year_from = payload.get("year_from")
+        year_to = payload.get("year_to")
+        year_label = ""
+        if isinstance(year_from, int) and isinstance(year_to, int):
+            year_label = f"{year_from}-{year_to}"
+        elif isinstance(year_from, int):
+            year_label = str(year_from)
 
-            return _clean_text(
-                ", ".join(
-                    part
-                    for part in [
-                        " ".join(
-                            part
-                            for part in [
-                                payload.get("manufacturer_name", ""),
-                                payload.get("model_name", ""),
-                                payload.get("passanger_name", ""),
-                            ]
-                            if part
-                        ),
-                        year_label,
-                    ]
-                    if part
-                )
+        return _clean_text(
+            ", ".join(
+                part
+                for part in [
+                    " ".join(
+                        part
+                        for part in [
+                            payload.get("manufacturer_name", ""),
+                            payload.get("model_name", ""),
+                            payload.get("passanger_name", ""),
+                        ]
+                        if part
+                    ),
+                    year_label,
+                ]
+                if part
             )
-
-        title = " ".join(
-            part
-            for part in [
-                _clean_text(getattr(getattr(obj.car_modification, "make", None), "name", "") if obj.car_modification else ""),
-                _clean_text(getattr(getattr(obj.car_modification, "model", None), "name", "") if obj.car_modification else ""),
-                str(obj.car_modification.year) if obj.car_modification and obj.car_modification.year else "",
-            ]
-            if part
         )
-        subtitle = _clean_text(getattr(obj.car_modification, "modification", "") if obj.car_modification else "")
-        return _clean_text(" - ".join(part for part in [title, subtitle] if part))

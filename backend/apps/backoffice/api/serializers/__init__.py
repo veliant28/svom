@@ -4,7 +4,6 @@ from .autodb_vehicle_selector_serializer import (
     BackofficeAutoDbVehicleManufacturerSerializer,
     BackofficeAutoDbVehicleModelSerializer,
 )
-from .autocatalog_car_serializer import BackofficeAutocatalogCarSerializer
 from .backoffice_summary_serializer import BackofficeSummarySerializer
 from .hero_block_serializer import BackofficeHeroBlockSettingsSerializer, BackofficeHeroSlideSerializer
 from .catalog_brand_serializer import BackofficeCatalogBrandSerializer
@@ -149,7 +148,6 @@ __all__ = [
     "BackofficeAutoDbVehicleCatalogRowSerializer",
     "BackofficeAutoDbVehicleManufacturerSerializer",
     "BackofficeAutoDbVehicleModelSerializer",
-    "BackofficeAutocatalogCarSerializer",
     "BackofficeSummarySerializer",
     "BackofficeHeroBlockSettingsSerializer",
     "BackofficeHeroSlideSerializer",

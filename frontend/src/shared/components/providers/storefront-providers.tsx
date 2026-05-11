@@ -1,5 +1,8 @@
 "use client";
 
+import { useMemo } from "react";
+import { usePathname } from "next/navigation";
+
 import { AuthProvider } from "@/features/auth/hooks/use-auth";
 import { BackofficeToastProvider } from "@/features/backoffice/components/notifications/backoffice-toast-provider";
 import { CartProvider } from "@/features/cart/hooks/use-cart";
@@ -9,6 +12,20 @@ import { StorefrontSupportReplyToastListener } from "@/features/support/componen
 import { WishlistProvider } from "@/features/wishlist/hooks/use-wishlist";
 
 export function StorefrontProviders({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isBackofficePath = useMemo(
+    () => /\/backoffice(?:\/|$)/.test(pathname ?? ""),
+    [pathname],
+  );
+
+  if (isBackofficePath) {
+    return (
+      <BackofficeToastProvider>
+        <AuthProvider>{children}</AuthProvider>
+      </BackofficeToastProvider>
+    );
+  }
+
   return (
     <BackofficeToastProvider>
       <AuthProvider>

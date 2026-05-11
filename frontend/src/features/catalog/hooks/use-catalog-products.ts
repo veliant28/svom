@@ -28,7 +28,6 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
   const {
     activeGarageVehicleId,
     activeGarageVehicle,
-    activeTemporaryCarModificationId,
     activeTemporaryAutoDbPassangerCarId,
     activeVehicleSource,
   } = useActiveVehicle();
@@ -54,7 +53,7 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
 
     if (options.useActiveVehicle) {
       const hasExplicitVehicle = Boolean(
-        result.vehicle_id || result.passanger_car_id || result.garage_vehicle || result.car_modification,
+        result.vehicle_id || result.passanger_car_id || result.garage_vehicle,
       );
       if (!hasExplicitVehicle) {
         Object.assign(
@@ -64,7 +63,6 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
             activeGarageVehicleId,
             activeGarageVehicleCatalogSource: activeGarageVehicle?.catalog_source ?? null,
             activeGarageVehicleAutoDbPassangerCarId: activeGarageVehicle?.autodb_passanger_car_id ?? null,
-            activeTemporaryCarModificationId,
             activeTemporaryAutoDbPassangerCarId,
           }),
         );
@@ -80,7 +78,6 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
   }, [
     activeGarageVehicleId,
     activeGarageVehicle,
-    activeTemporaryCarModificationId,
     activeTemporaryAutoDbPassangerCarId,
     activeVehicleSource,
     options.useActiveVehicle,

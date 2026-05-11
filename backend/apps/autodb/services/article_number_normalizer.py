@@ -17,13 +17,47 @@ class ArticleNumberNormalizer:
 
     _collapse_ws = re.compile(r"\s+")
     _non_alnum = re.compile(r"[^A-Z0-9]")
+    _separator_re = re.compile(r"[\s\-_/\\\.,\u2010\u2011\u2012\u2013\u2014\u2015\u2212]+")
     _trailing_digits = re.compile(r"^([A-Z0-9]*[A-Z])([0-9]{2,})$")
+    _cyr_to_latin = str.maketrans(
+        {
+            "А": "A",
+            "В": "B",
+            "С": "C",
+            "Е": "E",
+            "Н": "H",
+            "К": "K",
+            "М": "M",
+            "О": "O",
+            "Р": "P",
+            "Т": "T",
+            "Х": "X",
+            "У": "Y",
+        }
+    )
+    _latin_to_cyr = str.maketrans(
+        {
+            "A": "А",
+            "B": "В",
+            "C": "С",
+            "E": "Е",
+            "H": "Н",
+            "K": "К",
+            "M": "М",
+            "O": "О",
+            "P": "Р",
+            "T": "Т",
+            "X": "Х",
+            "Y": "У",
+        }
+    )
 
     def normalize(self, value: str | None) -> ArticleNumberNormalizationResult:
         original = str(value or "")
         trimmed = self._collapse_ws.sub(" ", original).strip().upper()
+        folded = self._fold_to_latin(trimmed)
 
-        canonical = trimmed.replace(" ", "")
+        canonical = self._separator_re.sub("", folded)
         normalized = self._non_alnum.sub("", canonical)
 
         variants: list[str] = []
@@ -34,13 +68,16 @@ class ArticleNumberNormalizer:
                 variants.append(text)
 
         add(trimmed)
+        add(folded)
+        add(trimmed.replace(" ", ""))
+        add(folded.replace(" ", ""))
+        add(trimmed.replace(" ", "").replace("/", "-"))
+        add(folded.replace(" ", "").replace("/", "-"))
         add(canonical)
-        add(canonical.replace("-", ""))
-        add(canonical.replace("/", ""))
-        add(canonical.replace("-", "").replace("/", ""))
-        add(canonical.replace("/", "-"))
         add(normalized)
         for variant in self._expand_compound_variants(normalized):
+            add(variant)
+        for variant in self._to_cyrillic_homoglyph_variants(tuple(variants)):
             add(variant)
 
         return ArticleNumberNormalizationResult(
@@ -61,6 +98,14 @@ class ArticleNumberNormalizer:
                 variants.append(text)
 
         boundaries = self._alpha_digit_boundaries(compact)
+        if boundaries:
+            with_spaces = self._insert_boundaries(compact, boundaries=boundaries, separator=" ")
+            if with_spaces:
+                add(with_spaces)
+            with_hyphen = self._insert_boundaries(compact, boundaries=boundaries, separator="-")
+            if with_hyphen:
+                add(with_hyphen)
+
         for idx in boundaries:
             left = compact[:idx]
             right = compact[idx:]
@@ -96,3 +141,30 @@ class ArticleNumberNormalizer:
         if not match:
             return None
         return match.group(1), match.group(2)
+
+    def _fold_to_latin(self, value: str) -> str:
+        if not value:
+            return ""
+        return value.translate(self._cyr_to_latin)
+
+    def _to_cyrillic_homoglyph_variants(self, variants: tuple[str, ...]) -> tuple[str, ...]:
+        out: list[str] = []
+        for item in variants:
+            text = str(item or "").strip().upper()
+            if not text:
+                continue
+            converted = text.translate(self._latin_to_cyr)
+            if converted != text and converted not in out:
+                out.append(converted)
+        return tuple(out)
+
+    def _insert_boundaries(self, value: str, *, boundaries: tuple[int, ...], separator: str) -> str:
+        if not value or not boundaries:
+            return value
+        parts: list[str] = []
+        start = 0
+        for boundary in boundaries:
+            parts.append(value[start:boundary])
+            start = boundary
+        parts.append(value[start:])
+        return separator.join(part for part in parts if part)

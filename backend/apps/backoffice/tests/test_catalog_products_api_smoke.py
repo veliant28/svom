@@ -9,6 +9,7 @@ from rest_framework.test import APITestCase
 
 from apps.catalog.models import Brand, Category, Product
 from apps.catalog.models import AutoDbProductLinkQuality
+from apps.catalog.services.svom_sku import is_valid_svom_sku
 from apps.pricing.models import ProductPrice, Supplier, SupplierOffer
 from apps.supplier_imports.models import ImportRun, ImportSource, SupplierRawOffer
 from apps.users.models import User
@@ -115,7 +116,10 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
     def _auth(self, token: str) -> dict[str, str]:
         return {"HTTP_AUTHORIZATION": f"Token {token}"}
 
-    def test_staff_can_list_create_update_delete_products(self):
+    @patch("apps.backoffice.api.serializers.catalog_product_serializer.get_admin_supplier_brand_name_by_id", return_value="BOSCH")
+    def test_staff_can_list_create_update_delete_products(self, _supplier_lookup_mock):
+        initial_supplier_sku = self.supplier_offer.supplier_sku
+
         list_response = self.client.get(
             reverse("backoffice_api:catalog-product-list-create"),
             **self._auth(self.staff_token.key),
@@ -132,6 +136,9 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
         self.assertTrue(list_response.data["results"][0]["supplier_price_levels"][1]["is_primary"])
         self.assertEqual(list_response.data["results"][0]["stock_qty"], 5)
         self.assertEqual(list_response.data["results"][0]["supplier_offer_stock_sum"], 5)
+        self.assertIn("price_tooltip_summary", list_response.data["results"][0])
+        self.assertEqual(list_response.data["results"][0]["price_tooltip_summary"]["utr_price"], "120.00")
+        self.assertIsNone(list_response.data["results"][0]["price_tooltip_summary"]["gpl_rrc_price"])
         self.assertIsNone(list_response.data["results"][0]["applied_markup_percent"])
         self.assertEqual(list_response.data["results"][0]["applied_markup_policy_name"], "")
         self.assertEqual(
@@ -159,6 +166,7 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
                 "slug": "",
                 "brand": str(self.brand.id),
                 "category": str(self.category.id),
+                "autodb_supplier_id": 1,
                 "is_active": True,
                 "is_featured": True,
                 "is_new": False,
@@ -169,8 +177,15 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
         )
         self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(bool(create_response.data["slug"]))
+        self.assertTrue(is_valid_svom_sku(create_response.data["svom_sku"]))
+        self.assertRegex(str(create_response.data["svom_sku"]), r"^\dS\dV\dO\dM\d{4}$")
 
         product_id = create_response.data["id"]
+        created_product = Product.objects.get(id=product_id)
+        created_svom_sku = str(created_product.svom_sku or "")
+        self.assertEqual(created_product.sku, "BOS-002")
+        self.assertTrue(is_valid_svom_sku(created_svom_sku))
+
         update_response = self.client.patch(
             reverse("backoffice_api:catalog-product-update", kwargs={"id": product_id}),
             {
@@ -183,6 +198,14 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
         self.assertEqual(update_response.status_code, status.HTTP_200_OK)
         self.assertFalse(update_response.data["is_active"])
         self.assertTrue(update_response.data["is_bestseller"])
+        self.assertEqual(update_response.data["sku"], created_svom_sku)
+        self.assertEqual(update_response.data["svom_sku"], created_svom_sku)
+
+        created_product.refresh_from_db()
+        self.assertEqual(created_product.sku, "BOS-002")
+        self.assertEqual(created_product.svom_sku, created_svom_sku)
+        self.supplier_offer.refresh_from_db()
+        self.assertEqual(self.supplier_offer.supplier_sku, initial_supplier_sku)
 
         filter_response = self.client.get(
             reverse("backoffice_api:catalog-product-list-create"),
@@ -409,6 +432,8 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
         )
         self.assertEqual(status_response.status_code, status.HTTP_200_OK)
         by_sku = {row["sku"]: row for row in status_response.data["results"]}
+        self.assertIn("UTR-PRICED-1", by_sku)
+        self.assertEqual(by_sku["UTR-PRICED-1"]["product_display_sku"], "UTR-PRICED-1")
         self.assertEqual(by_sku["UTR-PRICED-1"]["productprice_status"], "has_price")
         self.assertEqual(by_sku["UTR-NOPRICE-1"]["productprice_status"], "no_product_price")
         self.assertEqual(by_sku["UTR-NOOFFER-1"]["productprice_status"], "no_available_offer")
@@ -416,6 +441,87 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
         self.assertTrue(by_sku["UTR-PRICED-1"]["has_available_offer"])
         self.assertTrue(by_sku["UTR-PRICED-1"]["has_product_price"])
         self.assertEqual(by_sku["UTR-PRICED-1"]["autodb_link_status"], "trusted")
+
+    def test_selected_offer_source_fields_follow_productprice_selected_offer(self):
+        gpl_supplier = Supplier.objects.create(name="GPL Supplier", code="gpl", priority=1)
+        utr_supplier = Supplier.objects.create(name="UTR Supplier 2", code="utr2", priority=100)
+        mixed_product = Product.objects.create(
+            sku="000000000296825",
+            svom_sku="1S5V0O4M9273",
+            article="75.11",
+            name="POLMO Mixed",
+            slug="polmo-mixed",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        SupplierOffer.objects.create(
+            supplier=gpl_supplier,
+            product=mixed_product,
+            supplier_sku="000000000296825",
+            purchase_price="6312.00",
+            currency="UAH",
+            stock_qty=5,
+            is_available=True,
+        )
+        selected_offer = SupplierOffer.objects.create(
+            supplier=utr_supplier,
+            product=mixed_product,
+            supplier_sku="OSR7511",
+            purchase_price="29.01",
+            currency="UAH",
+            stock_qty=81,
+            is_available=True,
+        )
+        ProductPrice.objects.create(
+            product=mixed_product,
+            currency="UAH",
+            purchase_price="29.01",
+            logistics_cost="0.00",
+            extra_cost="0.00",
+            landed_cost="29.01",
+            raw_sale_price="31.91",
+            final_price="31.91",
+        )
+        SupplierRawOffer.objects.create(
+            run=self.import_run,
+            source=self.import_source,
+            supplier=utr_supplier,
+            row_number=7,
+            external_sku="OSR7511",
+            article="7511",
+            normalized_article="7511",
+            brand_name="POLMO",
+            normalized_brand="POLMO",
+            product_name="POLMO Mixed",
+            price="29.01",
+            stock_qty=81,
+            lead_time_days=0,
+            matched_product=mixed_product,
+            is_valid=True,
+            raw_payload={"article": "7511", "brand": "POLMO"},
+        )
+
+        response = self.client.get(
+            reverse("backoffice_api:catalog-product-list-create"),
+            {"q": "POLMO Mixed", "page_size": 50},
+            **self._auth(self.staff_token.key),
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        row = response.data["results"][0]
+
+        self.assertEqual(row["sku"], "1S5V0O4M9273")
+        self.assertEqual(row["product_display_sku"], "1S5V0O4M9273")
+        self.assertEqual(row["svom_sku"], "1S5V0O4M9273")
+        self.assertEqual(row["selected_offer_supplier_code"], "utr2")
+        self.assertEqual(row["selected_offer_supplier_sku"], "OSR7511")
+        self.assertEqual(row["selected_offer_purchase_price"], "29.01")
+        self.assertEqual(row["selected_offer_stock_qty"], 81)
+        self.assertEqual(row["selected_offer_raw_article"], "7511")
+        self.assertEqual(row["selected_offer_raw_brand"], "POLMO")
+        self.assertEqual(row["supplier_sku"], selected_offer.supplier_sku)
+        self.assertEqual(row["primary_supplier_code"], "utr2")
 
     def test_non_staff_user_is_forbidden(self):
         response = self.client.get(
@@ -495,6 +601,7 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
         self.assertEqual(list_response.data["count"], 1)
         row = list_response.data["results"][0]
         self.assertEqual(row["sku"], "000000004363234")
+        self.assertEqual(row["product_display_sku"], "000000004363234")
         self.assertEqual(row["internal_import_key"], "GPL-000000004363234")
 
         detail_response = self.client.get(
@@ -503,6 +610,7 @@ class BackofficeCatalogProductsAPISmokeTests(APITestCase):
         )
         self.assertEqual(detail_response.status_code, status.HTTP_200_OK)
         self.assertEqual(detail_response.data["sku"], "000000004363234")
+        self.assertEqual(detail_response.data["product_display_sku"], "000000004363234")
         self.assertEqual(detail_response.data["internal_import_key"], "GPL-000000004363234")
 
     def test_gpl_price_type_fields_are_exposed_as_wholesale_price_levels(self):

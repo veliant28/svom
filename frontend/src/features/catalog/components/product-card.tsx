@@ -136,6 +136,7 @@ export function ProductCard({
       <Link
         href={productHref}
         scroll
+        prefetch={false}
         onClick={handleDetailClick}
         className="mt-auto pt-4 inline-flex items-center gap-1 text-sm font-medium"
         style={{ color: "var(--accent)" }}

@@ -11,16 +11,15 @@ import { useActiveVehicle } from "@/features/garage/hooks/use-active-vehicle";
 
 export function resolveVehicleParams(params: {
   activeGarageVehicleId?: string | null;
-  activeGarageVehicleCatalogSource?: "legacy" | "autodb_pro" | null;
+  activeGarageVehicleCatalogSource?: "autodb_pro" | null;
   activeGarageVehicleAutoDbPassangerCarId?: number | null;
-  activeTemporaryCarModificationId?: string | number | null;
   activeTemporaryAutoDbPassangerCarId?: number | null;
-  activeVehicleSource?: "none" | "garage" | "temporary" | "temporary_autodb" | null;
+  activeVehicleSource?: "none" | "garage" | "temporary_autodb" | null;
   explicitParams?: Pick<
     CatalogFilters,
-    "vehicle_id" | "passanger_car_id" | "car_modification" | "garage_vehicle" | "modification"
+    "vehicle_id" | "passanger_car_id" | "garage_vehicle" | "modification"
   >;
-}): Pick<CatalogFilters, "vehicle_id" | "passanger_car_id" | "car_modification" | "garage_vehicle" | "modification"> {
+}): Pick<CatalogFilters, "vehicle_id" | "passanger_car_id" | "garage_vehicle" | "modification"> {
   if (params.explicitParams && Object.values(params.explicitParams).some(Boolean)) {
     return params.explicitParams;
   }
@@ -29,10 +28,6 @@ export function resolveVehicleParams(params: {
     activeGarageVehicleId: params.activeGarageVehicleId ?? null,
     activeGarageVehicleCatalogSource: params.activeGarageVehicleCatalogSource ?? null,
     activeGarageVehicleAutoDbPassangerCarId: params.activeGarageVehicleAutoDbPassangerCarId ?? null,
-    activeTemporaryCarModificationId:
-      typeof params.activeTemporaryCarModificationId === "number"
-        ? params.activeTemporaryCarModificationId
-        : Number(params.activeTemporaryCarModificationId || 0) || null,
     activeTemporaryAutoDbPassangerCarId: params.activeTemporaryAutoDbPassangerCarId ?? null,
   });
 }
@@ -42,13 +37,11 @@ export function useProductDetail(slug: string) {
   const searchParams = useSearchParams();
   const vehicleIdParam = searchParams.get("vehicle_id") || undefined;
   const passangerCarIdParam = searchParams.get("passanger_car_id") || undefined;
-  const carModificationParam = searchParams.get("car_modification") || undefined;
   const garageVehicleParam = searchParams.get("garage_vehicle") || undefined;
   const modificationParam = searchParams.get("modification") || undefined;
   const {
     activeGarageVehicleId,
     activeGarageVehicle,
-    activeTemporaryCarModificationId,
     activeTemporaryAutoDbPassangerCarId,
     activeVehicleSource,
   } = useActiveVehicle();
@@ -61,13 +54,11 @@ export function useProductDetail(slug: string) {
         activeGarageVehicleId,
         activeGarageVehicleCatalogSource: activeGarageVehicle?.catalog_source ?? null,
         activeGarageVehicleAutoDbPassangerCarId: activeGarageVehicle?.autodb_passanger_car_id ?? null,
-        activeTemporaryCarModificationId,
         activeTemporaryAutoDbPassangerCarId,
         activeVehicleSource,
         explicitParams: {
           vehicle_id: vehicleIdParam,
           passanger_car_id: passangerCarIdParam,
-          car_modification: carModificationParam,
           garage_vehicle: garageVehicleParam,
           modification: modificationParam,
         },
@@ -75,12 +66,10 @@ export function useProductDetail(slug: string) {
     [
       activeGarageVehicleId,
       activeGarageVehicle,
-      activeTemporaryCarModificationId,
       activeTemporaryAutoDbPassangerCarId,
       activeVehicleSource,
       vehicleIdParam,
       passangerCarIdParam,
-      carModificationParam,
       garageVehicleParam,
       modificationParam,
     ],

@@ -4,6 +4,7 @@ from rest_framework.test import APITestCase
 
 from apps.catalog.models import Brand, Category, Product, ProductImage
 from apps.pricing.models import ProductPrice, Supplier, SupplierOffer
+from apps.supplier_imports.models import ImportRun, ImportSource, SupplierRawOffer
 
 
 class CatalogAPISmokeTests(APITestCase):
@@ -224,3 +225,79 @@ class CatalogAPISmokeTests(APITestCase):
         self.assertEqual(detail_response.status_code, status.HTTP_200_OK)
         self.assertEqual(list_response.data["results"][0]["sku"], "000000004363234")
         self.assertEqual(detail_response.data["sku"], "000000004363234")
+
+    def test_multi_supplier_product_uses_canonical_identity_and_selected_offer_source(self):
+        gpl_supplier = Supplier.objects.create(name="GPL", code="gpl", is_active=True, priority=1)
+        utr_supplier = Supplier.objects.create(name="UTR", code="utr", is_active=True, priority=100)
+        utr_source = ImportSource.objects.create(
+            code="utr-smoke",
+            name="UTR Smoke",
+            supplier=utr_supplier,
+            parser_type=ImportSource.PARSER_UTR,
+            input_path="",
+            is_active=True,
+        )
+        utr_run = ImportRun.objects.create(
+            source=utr_source,
+            status=ImportRun.STATUS_SUCCESS,
+            trigger="test",
+            dry_run=False,
+        )
+        mixed_product = Product.objects.create(
+            sku="000000000296825",
+            svom_sku="1S5V0O4M9273",
+            article="75.11",
+            name="Глушник POLMO Volvo FH12 алюмінізована сталь (75.11)",
+            slug="polmo-75-11",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+        )
+        ProductPrice.objects.create(product=mixed_product, purchase_price="29.01", final_price="31.91", currency="UAH")
+        SupplierOffer.objects.create(
+            supplier=gpl_supplier,
+            product=mixed_product,
+            supplier_sku="000000000296825",
+            purchase_price="6312.00",
+            stock_qty=5,
+            is_available=False,
+        )
+        SupplierOffer.objects.create(
+            supplier=utr_supplier,
+            product=mixed_product,
+            supplier_sku="OSR7511",
+            purchase_price="29.01",
+            stock_qty=81,
+            is_available=True,
+        )
+        SupplierRawOffer.objects.create(
+            run=utr_run,
+            source=utr_source,
+            supplier=utr_supplier,
+            external_sku="OSR7511",
+            article="7511",
+            normalized_article="7511",
+            brand_name="POLMO",
+            normalized_brand="POLMO",
+            product_name="Глушник POLMO Volvo FH12 алюмінізована сталь (75.11)",
+            currency="UAH",
+            price="29.01",
+            stock_qty=81,
+            matched_product=mixed_product,
+            is_valid=True,
+            raw_payload={"article": "7511", "brand": "POLMO"},
+        )
+
+        list_response = self.client.get(reverse("catalog_api:product-list"), {"q": "POLMO"})
+        detail_response = self.client.get(reverse("catalog_api:product-detail", kwargs={"slug": "polmo-75-11"}))
+
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(detail_response.status_code, status.HTTP_200_OK)
+
+        row = next(item for item in list_response.data["results"] if item["slug"] == "polmo-75-11")
+        self.assertEqual(row["sku"], "1S5V0O4M9273")
+        self.assertEqual(detail_response.data["sku"], "1S5V0O4M9273")
+        self.assertEqual(row["selected_offer_supplier_code"], "utr")
+        self.assertEqual(row["selected_offer_supplier_sku"], "OSR7511")
+        self.assertEqual(detail_response.data["selected_offer_supplier_code"], "utr")
+        self.assertEqual(detail_response.data["selected_offer_supplier_sku"], "OSR7511")

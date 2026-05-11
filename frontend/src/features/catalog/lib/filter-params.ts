@@ -26,7 +26,6 @@ export function parseCatalogFilters(searchParams: URLSearchParams): CatalogFilte
     modification: searchParams.get("modification") || undefined,
     vehicle_id: searchParams.get("vehicle_id") || undefined,
     passanger_car_id: searchParams.get("passanger_car_id") || undefined,
-    car_modification: searchParams.get("car_modification") || undefined,
     garage_vehicle: searchParams.get("garage_vehicle") || undefined,
     fitment: (searchParams.get("fitment") as CatalogFilters["fitment"]) || undefined,
     popular: parseBoolean(searchParams.get("popular")),
@@ -46,7 +45,6 @@ export function buildCatalogFiltersQuery(filters: CatalogFilters): URLSearchPara
     "modification",
     "vehicle_id",
     "passanger_car_id",
-    "car_modification",
     "garage_vehicle",
     "fitment",
   ];

@@ -15,39 +15,36 @@ export function buildProductPriceMeta({
   locale: string;
   t: Translator;
 }) {
-  const displayPrice = formatProductPrice(item.final_price, item.currency, locale);
-  const supplierPrice = item.supplier_price
-    ? formatProductPrice(item.supplier_price, item.supplier_currency || item.currency, locale)
-    : "-";
-  const supplierPriceLevels = (item.supplier_price_levels ?? [])
-    .slice()
-    .sort((left, right) => (left.order ?? 0) - (right.order ?? 0))
-    .map((level) => ({
-      ...level,
-      formattedValue: formatProductPrice(level.value, level.currency || item.supplier_currency || item.currency, locale),
-    }));
-  const primarySupplierLevel = supplierPriceLevels.find((level) => level.is_primary) || supplierPriceLevels.at(-1);
-  const badgeLabel = item.final_price
-    ? displayPrice
-    : primarySupplierLevel
-      ? `${primarySupplierLevel.label} ${primarySupplierLevel.formattedValue}`
-      : supplierPrice;
-  const appliedMarkup = item.applied_markup_percent ? `${item.applied_markup_percent}%` : t("products.tooltips.notSet");
-  const appliedPolicyLabel = item.applied_markup_policy_scope === "global"
+  const summary = item.price_tooltip_summary;
+  const finalPriceRaw = summary?.final_price || item.final_price || null;
+  const selectedSupplierPriceRaw = summary?.selected_supplier_price || item.supplier_price || null;
+  const utrPriceRaw = summary?.utr_price || null;
+  const gplRrcPriceRaw = summary?.gpl_rrc_price || null;
+  const markupRaw = summary?.markup_percent || item.applied_markup_percent || null;
+  const appliedPolicyLabel = summary?.pricing_policy
+    || (item.applied_markup_policy_scope === "global"
     ? t("products.tooltips.policyGlobal")
     : item.applied_markup_policy_scope === "category"
       ? t("products.tooltips.policyCategory")
-      : item.applied_markup_policy_name || t("products.tooltips.notSet");
-  const priceUpdatedAt = item.price_updated_at || item.updated_at;
+      : item.applied_markup_policy_name || t("products.tooltips.notSet"));
+  const priceUpdatedAt = summary?.updated_at || item.price_updated_at || item.updated_at;
+
+  const displayPrice = formatProductPrice(finalPriceRaw, item.currency, locale);
+  const supplierPrice = formatProductPrice(selectedSupplierPriceRaw, item.supplier_currency || item.currency, locale);
+  const utrPrice = utrPriceRaw ? formatProductPrice(utrPriceRaw, item.supplier_currency || item.currency, locale) : "";
+  const gplRrcPrice = gplRrcPriceRaw ? formatProductPrice(gplRrcPriceRaw, item.supplier_currency || item.currency, locale) : "";
+  const badgeLabel = finalPriceRaw ? displayPrice : supplierPrice;
+  const appliedMarkup = markupRaw ? `${markupRaw}%` : t("products.tooltips.notSet");
 
   return {
     displayPrice,
     badgeLabel,
     supplierPrice,
-    supplierPriceLevels,
+    utrPrice,
+    gplRrcPrice,
     appliedMarkup,
     appliedPolicyLabel,
     priceUpdatedAtLabel: formatBackofficeDate(priceUpdatedAt),
-    hasPolicy: Boolean(item.applied_markup_policy_scope || item.applied_markup_policy_name),
+    hasPolicy: Boolean(summary?.pricing_policy || item.applied_markup_policy_scope || item.applied_markup_policy_name),
   };
 }

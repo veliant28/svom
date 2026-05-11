@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework import serializers
 
 from apps.catalog.models import AutoDbProductLinkQuality, Product
@@ -9,7 +10,9 @@ from apps.catalog.services.product_stock import resolve_display_stock_qty
 from apps.catalog.services.product_fitment_lookup import resolve_selected_passanger_car_id
 from apps.catalog.services.category_vehicle_filter_policy import get_vehicle_filter_policy
 from apps.compatibility.models import ProductFitment
+from apps.pricing.models import SupplierOffer
 from apps.pricing.services import ProductSellableSnapshotService
+from apps.supplier_imports.models import SupplierRawOffer
 
 from .product_shared_serializer import ProductBrandSerializer, ProductCategorySerializer
 
@@ -37,6 +40,12 @@ class ProductListSerializer(serializers.ModelSerializer):
     availability_label = serializers.SerializerMethodField()
     estimated_delivery_days = serializers.SerializerMethodField()
     procurement_source_summary = serializers.SerializerMethodField()
+    selected_offer_supplier_code = serializers.SerializerMethodField()
+    selected_offer_supplier_sku = serializers.SerializerMethodField()
+    selected_offer_purchase_price = serializers.SerializerMethodField()
+    selected_offer_stock_qty = serializers.SerializerMethodField()
+    selected_offer_raw_article = serializers.SerializerMethodField()
+    selected_offer_raw_brand = serializers.SerializerMethodField()
     is_sellable = serializers.SerializerMethodField()
     total_stock_qty = serializers.SerializerMethodField()
     has_fitment_data = serializers.BooleanField(read_only=True, default=False)
@@ -68,6 +77,12 @@ class ProductListSerializer(serializers.ModelSerializer):
             "availability_label",
             "estimated_delivery_days",
             "procurement_source_summary",
+            "selected_offer_supplier_code",
+            "selected_offer_supplier_sku",
+            "selected_offer_purchase_price",
+            "selected_offer_stock_qty",
+            "selected_offer_raw_article",
+            "selected_offer_raw_brand",
             "is_sellable",
             "total_stock_qty",
             "is_featured",
@@ -175,6 +190,94 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     def get_procurement_source_summary(self, obj: Product) -> str:
         return self._snapshot(obj).procurement_source_summary
+
+    def _selected_offer(self, obj: Product) -> SupplierOffer | None:
+        if hasattr(obj, "_public_selected_offer"):
+            return getattr(obj, "_public_selected_offer")
+        snapshot = self._snapshot(obj)
+        selected_offer_id = str(snapshot.selected_offer_id or "").strip()
+        if not selected_offer_id:
+            obj._public_selected_offer = None
+            return None
+        offer = SupplierOffer.objects.select_related("supplier").filter(id=selected_offer_id).first()
+        obj._public_selected_offer = offer
+        return offer
+
+    def _selected_raw_offer(self, obj: Product) -> SupplierRawOffer | None:
+        if hasattr(obj, "_public_selected_raw_offer"):
+            return getattr(obj, "_public_selected_raw_offer")
+        selected_offer = self._selected_offer(obj)
+        if selected_offer is None:
+            obj._public_selected_raw_offer = None
+            return None
+        supplier_sku = str(getattr(selected_offer, "supplier_sku", "") or "").strip()
+        raw_offer = (
+            SupplierRawOffer.objects.filter(matched_product=obj, supplier=selected_offer.supplier)
+            .filter(
+                Q(external_sku=supplier_sku)
+                | Q(article=supplier_sku)
+                | Q(external_sku__icontains=supplier_sku)
+                | Q(article__icontains=supplier_sku)
+            )
+            .order_by("-updated_at", "-id")
+            .first()
+        )
+        if raw_offer is None:
+            raw_offer = (
+                SupplierRawOffer.objects.filter(matched_product=obj, supplier=selected_offer.supplier)
+                .order_by("-updated_at", "-id")
+                .first()
+            )
+        obj._public_selected_raw_offer = raw_offer
+        return raw_offer
+
+    def get_selected_offer_supplier_code(self, obj: Product) -> str:
+        offer = self._selected_offer(obj)
+        if offer is None:
+            return ""
+        return str(getattr(offer.supplier, "code", "") or "").strip().lower()
+
+    def get_selected_offer_supplier_sku(self, obj: Product) -> str:
+        offer = self._selected_offer(obj)
+        return str(getattr(offer, "supplier_sku", "") or "") if offer is not None else ""
+
+    def get_selected_offer_purchase_price(self, obj: Product):
+        offer = self._selected_offer(obj)
+        if offer is None or not offer.purchase_price:
+            return None
+        return f"{offer.purchase_price:.2f}"
+
+    def get_selected_offer_stock_qty(self, obj: Product) -> int | None:
+        offer = self._selected_offer(obj)
+        if offer is None:
+            return None
+        return int(getattr(offer, "stock_qty", 0) or 0)
+
+    def get_selected_offer_raw_article(self, obj: Product) -> str:
+        raw_offer = self._selected_raw_offer(obj)
+        if raw_offer is None:
+            return ""
+        payload = raw_offer.raw_payload if isinstance(raw_offer.raw_payload, dict) else {}
+        return (
+            str(payload.get("Артикул ТД") or "")
+            or str(payload.get("Артикул ТД.") or "")
+            or str(payload.get("manufacturer_article") or "")
+            or str(payload.get("article_td") or "")
+            or str(payload.get("Артикул") or "")
+            or str(payload.get("article") or "")
+            or str(getattr(raw_offer, "article", "") or "")
+        ).strip()
+
+    def get_selected_offer_raw_brand(self, obj: Product) -> str:
+        raw_offer = self._selected_raw_offer(obj)
+        if raw_offer is None:
+            return ""
+        payload = raw_offer.raw_payload if isinstance(raw_offer.raw_payload, dict) else {}
+        return (
+            str(payload.get("Бренд") or "")
+            or str(payload.get("brand") or "")
+            or str(getattr(raw_offer, "brand_name", "") or "")
+        ).strip()
 
     def get_is_sellable(self, obj: Product) -> bool:
         return self._snapshot(obj).is_sellable

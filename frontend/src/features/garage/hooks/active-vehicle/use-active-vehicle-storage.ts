@@ -29,7 +29,6 @@ function readPersistedActiveVehicle(): PersistedActiveVehicle {
     const parsed = JSON.parse(raw) as Partial<PersistedActiveVehicle>;
     const source: ActiveVehicleSource =
       parsed.source === "garage" ||
-      parsed.source === "temporary" ||
       parsed.source === "temporary_autodb" ||
       parsed.source === "none"
         ? parsed.source
@@ -60,23 +59,19 @@ function writePersistedActiveVehicle(payload: PersistedActiveVehicle) {
 export function useActiveVehicleStorage({
   activeVehicleSource,
   activeGarageVehicleId,
-  activeTemporaryCarModificationId,
   activeTemporaryAutoDbPassangerCarId,
   isManualSelection,
   setActiveVehicleSource,
   setActiveGarageVehicleId,
-  setActiveTemporaryCarModificationId,
   setActiveTemporaryAutoDbPassangerCarId,
   setIsManualSelection,
 }: {
   activeVehicleSource: ActiveVehicleSource;
   activeGarageVehicleId: string | null;
-  activeTemporaryCarModificationId: number | null;
   activeTemporaryAutoDbPassangerCarId: number | null;
   isManualSelection: boolean;
   setActiveVehicleSource: SourceSetter;
   setActiveGarageVehicleId: StringSetter;
-  setActiveTemporaryCarModificationId: NumberSetter;
   setActiveTemporaryAutoDbPassangerCarId: NumberSetter;
   setIsManualSelection: BoolSetter;
 }): { hasHydratedFromStorage: MutableRefObject<boolean> } {
@@ -90,16 +85,6 @@ export function useActiveVehicleStorage({
 
     if (persisted.source === "garage") {
       setActiveGarageVehicleId(persisted.value);
-      setActiveTemporaryCarModificationId(null);
-      setActiveTemporaryAutoDbPassangerCarId(null);
-    } else if (persisted.source === "temporary") {
-      const parsed = persisted.value ? Number(persisted.value) : NaN;
-      if (Number.isInteger(parsed) && parsed > 0) {
-        setActiveTemporaryCarModificationId(parsed);
-      } else {
-        setActiveVehicleSource("none");
-      }
-      setActiveGarageVehicleId(null);
       setActiveTemporaryAutoDbPassangerCarId(null);
     } else if (persisted.source === "temporary_autodb") {
       const parsed = persisted.value ? Number(persisted.value) : NaN;
@@ -109,10 +94,8 @@ export function useActiveVehicleStorage({
         setActiveVehicleSource("none");
       }
       setActiveGarageVehicleId(null);
-      setActiveTemporaryCarModificationId(null);
     } else {
       setActiveGarageVehicleId(null);
-      setActiveTemporaryCarModificationId(null);
       setActiveTemporaryAutoDbPassangerCarId(null);
     }
 
@@ -121,7 +104,6 @@ export function useActiveVehicleStorage({
   }, [
     setActiveGarageVehicleId,
     setActiveTemporaryAutoDbPassangerCarId,
-    setActiveTemporaryCarModificationId,
     setActiveVehicleSource,
     setIsManualSelection,
   ]);
@@ -134,11 +116,9 @@ export function useActiveVehicleStorage({
     const value =
       activeVehicleSource === "garage"
         ? activeGarageVehicleId
-        : activeVehicleSource === "temporary" && activeTemporaryCarModificationId
-          ? String(activeTemporaryCarModificationId)
-          : activeVehicleSource === "temporary_autodb" && activeTemporaryAutoDbPassangerCarId
-            ? String(activeTemporaryAutoDbPassangerCarId)
-            : null;
+        : activeVehicleSource === "temporary_autodb" && activeTemporaryAutoDbPassangerCarId
+          ? String(activeTemporaryAutoDbPassangerCarId)
+          : null;
 
     writePersistedActiveVehicle({
       source: activeVehicleSource,
@@ -148,7 +128,6 @@ export function useActiveVehicleStorage({
   }, [
     activeGarageVehicleId,
     activeTemporaryAutoDbPassangerCarId,
-    activeTemporaryCarModificationId,
     activeVehicleSource,
     hasCompletedStorageHydration,
     isManualSelection,

@@ -56,11 +56,12 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   const stockTone: BackofficeStatusChipTone = totalStockQty <= 0 ? "red" : totalStockQty <= 5 ? "orange" : "blue";
   const fitmentBadge = (() => {
     const selectedVehicleCompatible = product?.compatibility_summary?.selected_vehicle?.is_compatible;
+    const hasFitmentData = (product?.compatibility_summary?.fitment_count || product?.fitment_count || 0) > 0;
     const state = resolveCompatibilityBadgeState({
       fitsSelectedVehicle:
         typeof selectedVehicleCompatible === "boolean" ? selectedVehicleCompatible : product?.fits_selected_vehicle,
-      hasFitmentData: (product?.compatibility_summary?.fitment_count || product?.fitment_count || 0) > 0,
-      isAutoDbCompatibleDataAvailable: product?.is_autodb_compatible_data_available,
+      hasFitmentData,
+      isAutoDbCompatibleDataAvailable: hasFitmentData ? product?.is_autodb_compatible_data_available : false,
       suppressIncompatibleBadge: product?.vehicle_filter_policy === "show_all_with_badges",
     });
 

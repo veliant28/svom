@@ -8,6 +8,7 @@ def build_product_document(product: Product) -> dict:
     return {
         "id": str(product.id),
         "sku": product.sku,
+        "svom_sku": product.svom_sku or "",
         "article": product.article,
         "name": product.name,
         "slug": product.slug,

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-import re
 from typing import Any
 
 from apps.autodb.models import AutoDbSupplierBrandAlias
@@ -45,8 +44,8 @@ class AutoDbArticleLookupService:
 
     def lookup(self, *, brand_name: str, article: str, allow_remote: bool = True) -> ArticleLookupResult:
         normalized_brand = normalize_brand(brand_name)
-        normalized_article = normalize_article(article)
         article_norm = self.article_normalizer.normalize(article)
+        normalized_article = article_norm.normalized or normalize_article(article)
         article_variants = article_norm.search_variants or tuple(item for item in [article, normalized_article] if str(item or "").strip())
         warnings: list[str] = []
         populated_tables: dict[str, int] = {}
@@ -496,7 +495,7 @@ class AutoDbArticleLookupService:
             return None
 
         article_variant_norms = {
-            normalize_article(item)
+            self._normalize_article_key(item)
             for item in self._build_article_variants(
                 article_raw=article_raw,
                 normalized_article=normalized_article,
@@ -530,7 +529,7 @@ class AutoDbArticleLookupService:
                 find_value(row, ["number"]),
             ]:
                 raw_value = str(value or "").strip().upper()
-                normalized_value = normalize_article(raw_value)
+                normalized_value = self._normalize_article_key(raw_value)
                 if raw_value and raw_value in article_variant_text:
                     score = max(score, 120)
                 elif normalized_value and normalized_value in article_variant_norms:
@@ -573,7 +572,7 @@ class AutoDbArticleLookupService:
     def _compose_article_key(self, *, supplier_id: int | None, article_number: str) -> str:
         if supplier_id is None:
             return ""
-        number = re.sub(r"\s+", "", str(article_number or "").strip())
+        number = self._normalize_article_key(article_number)
         if not number:
             return ""
         return f"{supplier_id}:{number}"
@@ -617,4 +616,16 @@ class AutoDbArticleLookupService:
         for value in article_variants:
             add(value)
         add(normalized_article)
+
+        # Add canonical deterministic keys for each variant (homoglyph folded, separators removed).
+        for value in tuple(result):
+            normalized_key = self._normalize_article_key(value)
+            if normalized_key:
+                add(normalized_key)
         return tuple(result)
+
+    def _normalize_article_key(self, value: str) -> str:
+        normalized = self.article_normalizer.normalize(value).normalized
+        if normalized:
+            return normalized
+        return normalize_article(value)

@@ -32,7 +32,6 @@ export function VehicleSelectorModal({ isOpen, onClose }: VehicleSelectorModalPr
     activeVehicleSource,
     activeGarageVehicleId,
     selectGarageVehicle,
-    selectTemporaryVehicle,
     selectTemporaryAutoDbVehicle,
     clearActiveVehicle,
   } = useActiveVehicle();
@@ -196,9 +195,6 @@ export function VehicleSelectorModal({ isOpen, onClose }: VehicleSelectorModalPr
           ) : (
             <NewVehicleSelectionForm
               isAuthenticated={isAuthenticated}
-              onUseTemporary={(carModificationId) => {
-                selectTemporaryVehicle(carModificationId);
-              }}
               onUseTemporaryAutoDb={({ manufacturerId, modelId, passangerCarId }) => {
                 selectTemporaryAutoDbVehicle({ manufacturerId, modelId, passangerCarId });
               }}

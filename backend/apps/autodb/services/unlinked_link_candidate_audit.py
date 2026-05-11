@@ -266,8 +266,8 @@ class UnlinkedLinkCandidateAuditService:
                 proposed_title = title
 
                 local_used = local_match is not None
-                exact_local = "yes" if local_used and used_candidate_value and normalize_article(used_candidate_value) == normalize_article(article_number) else "no"
-                exact_remote = "yes" if (not local_used) and used_candidate_value and normalize_article(used_candidate_value) == normalize_article(article_number) else "no"
+                exact_local = "yes" if local_used and used_candidate_value and self._normalize_candidate(used_candidate_value) == self._normalize_candidate(article_number) else "no"
+                exact_remote = "yes" if (not local_used) and used_candidate_value and self._normalize_candidate(used_candidate_value) == self._normalize_candidate(article_number) else "no"
                 normalized_match = "yes"
                 table_match = "yes"
                 if used_candidate_value and used_candidate_value != article_number:

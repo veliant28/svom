@@ -1,4 +1,3 @@
-from .autocatalog_selectors import apply_autocatalog_filters, get_autocatalog_filter_options, get_autocatalog_modifications_queryset
 from .config_selectors import (
     get_article_normalization_rules_queryset,
     get_import_schedule_sources_queryset,
@@ -41,9 +40,6 @@ __all__ = [
     "build_backoffice_staff_activity_payload",
     "build_import_quality_summary_payload",
     "build_run_quality_comparison_payload",
-    "get_autocatalog_modifications_queryset",
-    "apply_autocatalog_filters",
-    "get_autocatalog_filter_options",
     "get_import_schedule_sources_queryset",
     "get_supplier_brand_aliases_queryset",
     "get_article_normalization_rules_queryset",

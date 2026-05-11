@@ -17,12 +17,10 @@ export function useActiveVehicleSync({
   hasHydratedFromStorage,
   activeVehicleSource,
   activeGarageVehicleId,
-  activeTemporaryCarModificationId,
   activeTemporaryAutoDbPassangerCarId,
   isManualSelection,
   setActiveVehicleSource,
   setActiveGarageVehicleId,
-  setActiveTemporaryCarModificationId,
   setActiveTemporaryAutoDbPassangerCarId,
   setIsManualSelection,
 }: {
@@ -32,12 +30,10 @@ export function useActiveVehicleSync({
   hasHydratedFromStorage: MutableRefObject<boolean>;
   activeVehicleSource: ActiveVehicleSource;
   activeGarageVehicleId: string | null;
-  activeTemporaryCarModificationId: number | null;
   activeTemporaryAutoDbPassangerCarId: number | null;
   isManualSelection: boolean;
   setActiveVehicleSource: SourceSetter;
   setActiveGarageVehicleId: StringSetter;
-  setActiveTemporaryCarModificationId: NumberSetter;
   setActiveTemporaryAutoDbPassangerCarId: NumberSetter;
   setIsManualSelection: BoolSetter;
 }) {
@@ -97,7 +93,6 @@ export function useActiveVehicleSync({
       // User can switch to another vehicle manually afterwards.
       setActiveVehicleSource("none");
       setActiveGarageVehicleId(null);
-      setActiveTemporaryCarModificationId(null);
       setActiveTemporaryAutoDbPassangerCarId(null);
       setIsManualSelection(false);
     }
@@ -108,7 +103,6 @@ export function useActiveVehicleSync({
     isAuthLoading,
     setActiveGarageVehicleId,
     setActiveTemporaryAutoDbPassangerCarId,
-    setActiveTemporaryCarModificationId,
     setActiveVehicleSource,
     setIsManualSelection,
   ]);
@@ -119,12 +113,10 @@ export function useActiveVehicleSync({
     }
 
     if (!isAuthenticated) {
-      const hasTemporarySelection =
-        activeVehicleSource === "temporary" || activeVehicleSource === "temporary_autodb";
+      const hasTemporarySelection = activeVehicleSource === "temporary_autodb";
       if (!hasTemporarySelection) {
         setActiveVehicleSource("none");
         setActiveGarageVehicleId(null);
-        setActiveTemporaryCarModificationId(null);
         setActiveTemporaryAutoDbPassangerCarId(null);
         setIsManualSelection(false);
       }
@@ -142,7 +134,6 @@ export function useActiveVehicleSync({
         if (primaryVehicle) {
           setActiveVehicleSource("garage");
           setActiveGarageVehicleId(primaryVehicle.id);
-          setActiveTemporaryCarModificationId(null);
           setActiveTemporaryAutoDbPassangerCarId(null);
         } else {
           setActiveVehicleSource("none");
@@ -158,7 +149,6 @@ export function useActiveVehicleSync({
       if (activeVehicleSource !== "garage" || activeGarageVehicleId !== primaryVehicle.id) {
         setActiveVehicleSource("garage");
         setActiveGarageVehicleId(primaryVehicle.id);
-        setActiveTemporaryCarModificationId(null);
         setActiveTemporaryAutoDbPassangerCarId(null);
       }
       return;
@@ -167,18 +157,15 @@ export function useActiveVehicleSync({
     if (
       activeVehicleSource !== "none" ||
       activeGarageVehicleId !== null ||
-      activeTemporaryCarModificationId !== null ||
       activeTemporaryAutoDbPassangerCarId !== null
     ) {
       setActiveVehicleSource("none");
       setActiveGarageVehicleId(null);
-      setActiveTemporaryCarModificationId(null);
       setActiveTemporaryAutoDbPassangerCarId(null);
     }
   }, [
     activeGarageVehicleId,
     activeTemporaryAutoDbPassangerCarId,
-    activeTemporaryCarModificationId,
     activeVehicleSource,
     garageVehicles,
     hasHydratedFromStorage,
@@ -187,7 +174,6 @@ export function useActiveVehicleSync({
     isManualSelection,
     setActiveGarageVehicleId,
     setActiveTemporaryAutoDbPassangerCarId,
-    setActiveTemporaryCarModificationId,
     setActiveVehicleSource,
     setIsManualSelection,
   ]);

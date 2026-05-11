@@ -9,7 +9,6 @@ from apps.catalog.api.views import (
     ProductFitmentRowsAPIView,
     ProductListAPIView,
     ProductSellableSnapshotAPIView,
-    ProductUtrEnrichmentAPIView,
 )
 
 app_name = "catalog_api"
@@ -19,7 +18,6 @@ urlpatterns = [
     path("categories/", CategoryListAPIView.as_view(), name="category-list"),
     path("navigation/header/", HeaderNavigationAPIView.as_view(), name="header-navigation"),
     path("products/", ProductListAPIView.as_view(), name="product-list"),
-    path("products/utr-enrichment/", ProductUtrEnrichmentAPIView.as_view(), name="product-utr-enrichment"),
     path("products/<slug:slug>/", ProductDetailAPIView.as_view(), name="product-detail"),
     path("products/<slug:slug>/fitment-options/", ProductFitmentOptionsAPIView.as_view(), name="product-fitment-options"),
     path(

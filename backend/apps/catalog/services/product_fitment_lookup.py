@@ -4,9 +4,8 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass
 
-from django.db.models import OuterRef, Q, Subquery
+from django.db.models import Q
 
-from apps.autocatalog.models import CarModification, UtrArticleDetailMap, UtrDetailCarMap
 from apps.autodb.models import AutoDbArticleLinkage, AutoDbSupplier
 from apps.autodb.selectors import list_passanger_cars, list_passanger_cars_by_ids, list_vehicle_manufacturers, list_vehicle_models
 from apps.catalog.models import AutoDbProductLinkQuality, Product
@@ -19,7 +18,6 @@ from apps.supplier_imports.models import SupplierRawOffer
 from apps.supplier_imports.parsers.utils import normalize_article, normalize_brand
 from apps.users.models import GarageVehicle
 
-FITMENT_PROVIDER_UTR = "utr"
 FITMENT_PROVIDER_AUTODB = "autodb"
 
 
@@ -53,22 +51,6 @@ def parse_positive_int(value) -> int | None:
     return parsed if parsed > 0 else None
 
 
-def resolve_selected_car_modification_id(request) -> int | None:
-    if request is None:
-        return None
-
-    explicit_car_modification_id = parse_positive_int(request.query_params.get("car_modification"))
-    if explicit_car_modification_id:
-        return explicit_car_modification_id
-
-    garage_vehicle_id = str(request.query_params.get("garage_vehicle") or "").strip()
-    if not garage_vehicle_id:
-        return None
-
-    garage_vehicle = GarageVehicle.objects.filter(id=garage_vehicle_id).values("car_modification_id").first()
-    return parse_positive_int(garage_vehicle.get("car_modification_id")) if garage_vehicle else None
-
-
 def resolve_selected_autocatalog_vehicle(request) -> SelectedAutocatalogVehicle | None:
     selected_passanger_car_id = resolve_selected_passanger_car_id(request)
     if selected_passanger_car_id:
@@ -83,28 +65,7 @@ def resolve_selected_autocatalog_vehicle(request) -> SelectedAutocatalogVehicle 
                 model_name=str(row.get("model") or ""),
                 year=year_from,
             )
-
-    car_modification_id = resolve_selected_car_modification_id(request)
-    if not car_modification_id:
-        return None
-
-    row = (
-        CarModification.objects.filter(id=car_modification_id)
-        .select_related("make", "model")
-        .values("id", "make_id", "make__name", "model_id", "model__name", "year")
-        .first()
-    )
-    if not row:
-        return None
-
-    return SelectedAutocatalogVehicle(
-        id=int(row["id"]),
-        make_id=int(row["make_id"]),
-        make_name=str(row["make__name"]),
-        model_id=int(row["model_id"]),
-        model_name=str(row["model__name"]),
-        year=parse_positive_int(row.get("year")),
-    )
+    return None
 
 
 def _resolve_selected_garage_vehicle(*, request, passanger_car_id: int | None):
@@ -199,110 +160,6 @@ def resolve_selected_passanger_car_id(request) -> int | None:
     if str(row.get("catalog_source") or "").strip() != GarageVehicle.CATALOG_SOURCE_AUTODB_PRO:
         return None
     return parse_positive_int(row.get("autodb_passanger_car_id"))
-
-
-def resolve_product_utr_detail_ids(*, product: Product) -> set[str]:
-    detail_ids: set[str] = set()
-    product_detail_id = str(product.utr_detail_id or "").strip()
-    if product_detail_id:
-        detail_ids.add(product_detail_id)
-
-    mapped_detail_ids_qs = (
-        SupplierRawOffer.objects.filter(
-            matched_product_id=product.id,
-            supplier__code="utr",
-        )
-        .annotate(
-            map_detail_id=Subquery(
-                UtrArticleDetailMap.objects.filter(
-                    normalized_article=OuterRef("normalized_article"),
-                    normalized_brand=OuterRef("normalized_brand"),
-                )
-                .exclude(utr_detail_id="")
-                .values("utr_detail_id")[:1]
-            )
-        )
-        .exclude(map_detail_id__isnull=True)
-        .values_list("map_detail_id", flat=True)
-        .distinct()
-    )
-    for detail_id in mapped_detail_ids_qs:
-        normalized = str(detail_id or "").strip()
-        if normalized:
-            detail_ids.add(normalized)
-    return detail_ids
-
-
-def build_autocatalog_generation(car) -> str:
-    if car.start_date_at or car.end_date_at:
-        start_label = str(car.start_date_at.year) if car.start_date_at else "?"
-        end_label = str(car.end_date_at.year) if car.end_date_at else "..."
-        return f"{start_label}-{end_label}"
-    if car.year:
-        return str(car.year)
-    return ""
-
-
-def serialize_utr_fitment_mapping(mapping: UtrDetailCarMap) -> dict:
-    car = mapping.car_modification
-    return {
-        "id": f"utr-{mapping.utr_detail_id}-{car.id}",
-        "make": str(car.make.name),
-        "model": str(car.model.name),
-        "generation": build_autocatalog_generation(car),
-        "engine": str(car.engine or ""),
-        "modification": str(car.modification or ""),
-        "note": "UTR applicability",
-        "is_exact": False,
-    }
-
-
-def get_utr_fitment_queryset(*, detail_ids: set[str], selected_vehicle: SelectedAutocatalogVehicle | None = None):
-    queryset = UtrDetailCarMap.objects.filter(utr_detail_id__in=sorted(detail_ids)).select_related(
-        "car_modification",
-        "car_modification__make",
-        "car_modification__model",
-    )
-
-    if selected_vehicle is not None:
-        queryset = queryset.annotate(
-            selected_order=Case(
-                When(car_modification_id=selected_vehicle.id, then=Value(0)),
-                default=Value(1),
-                output_field=IntegerField(),
-            ),
-            selected_model_order=Case(
-                When(
-                    car_modification__make_id=selected_vehicle.make_id,
-                    car_modification__model_id=selected_vehicle.model_id,
-                    then=Value(0),
-                ),
-                default=Value(1),
-                output_field=IntegerField(),
-            ),
-        ).order_by(
-            "selected_order",
-            "selected_model_order",
-            "utr_detail_id",
-            "car_modification__make__name",
-            "car_modification__model__name",
-            "car_modification__year",
-            "car_modification__modification",
-            "car_modification__engine",
-            "car_modification_id",
-        )
-    else:
-        queryset = queryset.order_by(
-            "utr_detail_id",
-            "car_modification__make__name",
-            "car_modification__model__name",
-            "car_modification__year",
-            "car_modification__modification",
-            "car_modification__engine",
-            "car_modification_id",
-        )
-
-    return queryset
 
 
 def serialize_autodb_fitment_mapping(car: dict[str, object]) -> dict:
@@ -512,32 +369,6 @@ def _can_use_autodb_fitments_for_public(*, product: Product) -> bool:
         quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
         autodb_passanger_car_id__isnull=False,
     ).exists()
-
-
-def _resolve_selected_vehicle_by_car_modification_id(*, car_modification_id: int) -> SelectedAutocatalogVehicle | None:
-    row = (
-        CarModification.objects.filter(id=car_modification_id)
-        .select_related("make", "model")
-        .values("id", "make_id", "make__name", "model_id", "model__name", "year")
-        .first()
-    )
-    if not row:
-        return None
-    return SelectedAutocatalogVehicle(
-        id=int(row["id"]),
-        make_id=int(row["make_id"]),
-        make_name=str(row["make__name"]),
-        model_id=int(row["model_id"]),
-        model_name=str(row["model__name"]),
-        year=parse_positive_int(row.get("year")),
-    )
-
-
-def resolve_autodb_matched_product_ids_for_car_modification(*, car_modification_id: int) -> set[str]:
-    selected_vehicle = _resolve_selected_vehicle_by_car_modification_id(car_modification_id=car_modification_id)
-    if selected_vehicle is None:
-        return set()
-    return resolve_autodb_matched_product_ids_for_selected_vehicle(selected_vehicle=selected_vehicle)
 
 
 def resolve_autodb_matched_product_ids_for_selected_vehicle(

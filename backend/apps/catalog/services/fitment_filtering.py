@@ -67,7 +67,7 @@ class FitmentFilteringService:
                 if passanger_car_id:
                     return passanger_car_id, True
 
-        if params.get("car_modification") not in (None, "") or params.get("modification") not in (None, ""):
+        if params.get("car_modification") not in (None, ""):
             vehicle_param_present = True
 
         return None, vehicle_param_present
@@ -96,7 +96,6 @@ class FitmentFilteringService:
             _has_trusted_link_quality=Exists(trusted_link_subquery),
             _has_fitment_relations=Exists(fitments_subquery),
         )
-        queryset = queryset.annotate(_has_utr_article_map=Value(False, output_field=BooleanField()))
         queryset = queryset.annotate(
             has_fitment_data=Case(
                 When(Q(_has_trusted_link_quality=True) & Q(_has_fitment_relations=True), then=Value(True)),

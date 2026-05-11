@@ -95,6 +95,7 @@ class BackofficeCatalogProductListCreateAPIView(ListCreateAPIView):
         if query:
             queryset = queryset.filter(
                 Q(sku__icontains=query)
+                | Q(svom_sku__icontains=query)
                 | Q(article__icontains=query)
                 | Q(name__icontains=query)
                 | Q(slug__icontains=query)

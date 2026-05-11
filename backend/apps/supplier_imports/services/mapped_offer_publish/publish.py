@@ -7,6 +7,7 @@ from apps.catalog.models import Brand, Product
 from apps.catalog.services.autodb_category_mapping import resolve_autodb_category_for_raw_offer
 from apps.catalog.services.category_assignment import assignable_category_or_none
 from apps.catalog.services import generate_unique_product_slug, resolve_autodb_article_name, sanitize_product_name
+from apps.catalog.services.svom_sku import ensure_product_svom_sku
 from apps.pricing.models import Supplier, SupplierOffer
 from apps.supplier_imports.models import SupplierRawOffer
 from apps.supplier_imports.parsers.gpl_parser import extract_gpl_price_levels
@@ -83,6 +84,7 @@ def upsert_product(
                 is_active=True,
                 published_at=now,
             )
+            ensure_product_svom_sku(product)
             product_cache[product.sku] = product
             return product, True, False
 

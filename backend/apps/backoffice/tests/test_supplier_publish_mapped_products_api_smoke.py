@@ -11,6 +11,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 
 from apps.catalog.models import Brand, Category, Product, ProductImage
+from apps.catalog.services.svom_sku import is_valid_svom_sku
 from apps.pricing.models import Supplier, SupplierOffer
 from apps.supplier_imports.models import ImportRun, ImportSource, SupplierRawOffer
 from apps.users.models import User
@@ -44,6 +45,7 @@ class SupplierPublishMappedProductsAPISmokeTests(APITestCase):
         self.brand = Brand.objects.create(name="BOSCH", slug="bosch", is_active=True)
         self.existing_product = Product.objects.create(
             sku="EX-001",
+            svom_sku="1S5V0O4M9273",
             article="EX-001",
             name="Existing Product",
             slug="existing-product",
@@ -185,9 +187,17 @@ class SupplierPublishMappedProductsAPISmokeTests(APITestCase):
 
         self.assertEqual(Product.objects.filter(sku="A-001").count(), 1)
         self.assertEqual(Product.objects.filter(sku="B-001").count(), 1)
+        created_product = Product.objects.get(sku="A-001")
+        self.existing_product.refresh_from_db()
+        self.assertTrue(is_valid_svom_sku(created_product.svom_sku))
+        self.assertRegex(str(created_product.svom_sku), r"^\dS\dV\dO\dM\d{4}$")
+        self.assertEqual(self.existing_product.svom_sku, "1S5V0O4M9273")
+        self.assertEqual(created_product.sku, "A-001")
         self.assertTrue(Product.objects.get(sku="A-001").category_manually_locked)
         self.assertTrue(Product.objects.get(sku="B-001").category_manually_locked)
         self.assertEqual(SupplierOffer.objects.filter(supplier=self.supplier).count(), 2)
+        self.assertEqual(SupplierOffer.objects.get(supplier=self.supplier, product=created_product).supplier_sku, "A-001")
+        self.assertEqual(SupplierOffer.objects.get(supplier=self.supplier, product=self.existing_product).supplier_sku, "B-001")
         self.assertEqual(ProductImage.objects.filter(product__sku="A-001").count(), 1)
         self.assertEqual(ProductImage.objects.filter(product__sku="B-001").count(), 1)
 
@@ -212,6 +222,49 @@ class SupplierPublishMappedProductsAPISmokeTests(APITestCase):
         self.assertEqual(Product.objects.filter(sku="A-001").count(), 1)
         self.assertEqual(Product.objects.filter(sku="B-001").count(), 1)
         self.assertEqual(SupplierOffer.objects.filter(supplier=self.supplier).count(), 2)
+
+    def test_publish_mapped_products_for_utr_assigns_svom_sku_to_new_product(self):
+        utr_supplier = Supplier.objects.create(name="UTR", code="utr", is_active=True)
+        utr_source = ImportSource.objects.create(
+            code="utr",
+            name="UTR",
+            supplier=utr_supplier,
+            parser_type=ImportSource.PARSER_UTR,
+            input_path="",
+            is_active=True,
+        )
+        utr_run = ImportRun.objects.create(source=utr_source, status=ImportRun.STATUS_SUCCESS, trigger="test-utr")
+        SupplierRawOffer.objects.create(
+            run=utr_run,
+            source=utr_source,
+            supplier=utr_supplier,
+            external_sku="UTR-NEW-001",
+            article="UTR-NEW-001",
+            normalized_article="UTRNEW001",
+            brand_name="BOSCH",
+            normalized_brand="BOSCH",
+            product_name="UTR New Product",
+            currency="UAH",
+            price=Decimal("210.00"),
+            stock_qty=4,
+            mapped_category=self.category,
+            category_mapping_status=SupplierRawOffer.CATEGORY_MAPPING_STATUS_MANUAL_MAPPED,
+        )
+
+        response = self.client.post(
+            reverse("backoffice_api:supplier-publish-mapped-products", kwargs={"code": "utr"}),
+            {"reprice_after_publish": False},
+            format="json",
+            **self.auth,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        product = Product.objects.get(sku="UTR-NEW-001")
+        offer = SupplierOffer.objects.get(supplier=utr_supplier, product=product)
+        self.assertTrue(is_valid_svom_sku(product.svom_sku))
+        self.assertRegex(str(product.svom_sku), r"^\dS\dV\dO\dM\d{4}$")
+        self.assertEqual(product.sku, "UTR-NEW-001")
+        self.assertEqual(offer.supplier_sku, "UTR-NEW-001")
 
     def test_publish_mapped_products_does_not_override_locked_category(self):
         locked_category = Category.objects.create(name="Manual Category", slug="manual-category", is_active=True)

@@ -38,6 +38,8 @@ export type BackofficeCatalogCategory = {
 export type BackofficeCatalogProduct = {
   id: string;
   sku: string;
+  svom_sku?: string | null;
+  product_display_sku?: string;
   internal_import_key?: string;
   article: string;
   name: string;
@@ -87,6 +89,12 @@ export type BackofficeCatalogProduct = {
   }>;
   supplier_sku: string;
   supplier_offer_seen_at: string | null;
+  selected_offer_supplier_code?: string;
+  selected_offer_supplier_sku?: string;
+  selected_offer_purchase_price?: string | null;
+  selected_offer_stock_qty?: number | null;
+  selected_offer_raw_article?: string;
+  selected_offer_raw_brand?: string;
   supplier_code?: string;
   supplier_codes?: string[];
   primary_supplier_code?: string;
@@ -104,6 +112,15 @@ export type BackofficeCatalogProduct = {
     warehouse_nonzero_count: number;
     stock_qty_total: number;
     supplier_offer_stock_sum: number;
+  };
+  price_tooltip_summary?: {
+    final_price?: string | null;
+    selected_supplier_price?: string | null;
+    utr_price?: string | null;
+    gpl_rrc_price?: string | null;
+    markup_percent?: string | null;
+    pricing_policy?: string | null;
+    updated_at?: string | null;
   };
   short_description: string;
   description: string;

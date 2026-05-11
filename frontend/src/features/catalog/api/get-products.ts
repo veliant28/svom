@@ -28,7 +28,6 @@ export async function getProducts(params: GetProductsParams = {}): Promise<Pagin
     modification: params.modification,
     vehicle_id: params.vehicle_id,
     passanger_car_id: params.passanger_car_id,
-    car_modification: params.car_modification,
     garage_vehicle: params.garage_vehicle,
     fitment: params.fitment,
     popular: params.popular,

@@ -3,7 +3,6 @@ import re
 from django.db import IntegrityError, transaction
 from rest_framework import serializers
 
-from apps.autocatalog.models import CarModification
 from apps.autodb.selectors import get_passanger_car, get_vehicle_manufacturer, get_vehicle_model
 from apps.users.models import GarageVehicle
 
@@ -25,11 +24,6 @@ def _contains_ci(haystack: str, needle: str) -> bool:
 
 class GarageVehicleCreateSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
-    car_modification = serializers.PrimaryKeyRelatedField(
-        queryset=CarModification.objects.select_related("make", "model"),
-        required=False,
-        allow_null=True,
-    )
     autodb_manufacturer_id = serializers.IntegerField(required=False, allow_null=True)
     autodb_model_id = serializers.IntegerField(required=False, allow_null=True)
     autodb_passanger_car_id = serializers.IntegerField(required=False, allow_null=True)
@@ -43,7 +37,6 @@ class GarageVehicleCreateSerializer(serializers.ModelSerializer):
         model = GarageVehicle
         fields = (
             "id",
-            "car_modification",
             "year",
             "autodb_manufacturer_id",
             "autodb_model_id",
@@ -63,20 +56,9 @@ class GarageVehicleCreateSerializer(serializers.ModelSerializer):
         request = self.context["request"]
         attrs["user"] = request.user
 
-        car_modification = attrs.get("car_modification")
         autodb_passanger_car_id = attrs.get("autodb_passanger_car_id")
-
-        has_legacy_payload = car_modification is not None
-        has_autodb_payload = autodb_passanger_car_id is not None
-
-        if has_legacy_payload and has_autodb_payload:
-            raise serializers.ValidationError(
-                "Provide either legacy car_modification or Auto_DB_Pro ids, not both."
-            )
-        if not has_legacy_payload and not has_autodb_payload:
-            raise serializers.ValidationError(
-                "Provide car_modification for legacy flow or autodb_passanger_car_id for Auto_DB_Pro flow."
-            )
+        if autodb_passanger_car_id is None:
+            raise serializers.ValidationError("autodb_passanger_car_id is required.")
 
         attrs["make"] = None
         attrs["model"] = None
@@ -85,19 +67,6 @@ class GarageVehicleCreateSerializer(serializers.ModelSerializer):
         attrs["modification"] = None
         attrs["nickname"] = ""
         attrs["vin"] = ""
-
-        if has_legacy_payload:
-            attrs["year"] = car_modification.year
-            attrs["catalog_source"] = GarageVehicle.CATALOG_SOURCE_LEGACY
-            attrs["autodb_manufacturer_id"] = None
-            attrs["autodb_model_id"] = None
-            attrs["autodb_passanger_car_id"] = None
-            attrs["autodb_vehicle_label"] = ""
-            attrs["autodb_modification"] = ""
-            attrs["autodb_engine"] = ""
-            attrs["autodb_power_hp"] = None
-            attrs["autodb_power_kw"] = None
-            return attrs
 
         autodb_manufacturer_id = attrs.get("autodb_manufacturer_id")
         autodb_model_id = attrs.get("autodb_model_id")
@@ -155,7 +124,6 @@ class GarageVehicleCreateSerializer(serializers.ModelSerializer):
         generated_label = _clean_text(", ".join(part for part in [title_label, year_label] if part))
 
         attrs["year"] = resolved_year
-        attrs["car_modification"] = None
         attrs["catalog_source"] = GarageVehicle.CATALOG_SOURCE_AUTODB_PRO
         attrs["autodb_vehicle_label"] = _clean_text(attrs.get("autodb_vehicle_label") or generated_label)
         attrs["autodb_modification"] = selected_modification
@@ -167,17 +135,11 @@ class GarageVehicleCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = validated_data["user"]
         is_primary = validated_data.get("is_primary", False)
-        car_modification = validated_data.get("car_modification")
         autodb_passanger_car_id = validated_data.get("autodb_passanger_car_id")
 
         with transaction.atomic():
             existing = None
-            if car_modification is not None:
-                existing = GarageVehicle.objects.filter(
-                    user=user,
-                    car_modification=car_modification,
-                ).first()
-            elif autodb_passanger_car_id is not None:
+            if autodb_passanger_car_id is not None:
                 existing = GarageVehicle.objects.filter(
                     user=user,
                     autodb_passanger_car_id=autodb_passanger_car_id,
@@ -202,7 +164,6 @@ class GarageVehicleCreateSerializer(serializers.ModelSerializer):
                     "autodb_engine",
                     "autodb_power_hp",
                     "autodb_power_kw",
-                    "car_modification",
                 ):
                     next_value = validated_data.get(field)
                     if getattr(existing, field) != next_value:
@@ -220,6 +181,4 @@ class GarageVehicleCreateSerializer(serializers.ModelSerializer):
             try:
                 return GarageVehicle.objects.create(**validated_data)
             except IntegrityError:
-                if car_modification is not None:
-                    return GarageVehicle.objects.get(user=user, car_modification=car_modification)
                 return GarageVehicle.objects.get(user=user, autodb_passanger_car_id=autodb_passanger_car_id)

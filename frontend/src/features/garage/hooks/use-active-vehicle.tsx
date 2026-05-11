@@ -18,19 +18,16 @@ export function ActiveVehicleProvider({ children }: { children: React.ReactNode 
 
   const [activeVehicleSource, setActiveVehicleSource] = useState<ActiveVehicleSource>("none");
   const [activeGarageVehicleId, setActiveGarageVehicleId] = useState<string | null>(null);
-  const [activeTemporaryCarModificationId, setActiveTemporaryCarModificationId] = useState<number | null>(null);
   const [activeTemporaryAutoDbPassangerCarId, setActiveTemporaryAutoDbPassangerCarId] = useState<number | null>(null);
   const [isManualSelection, setIsManualSelection] = useState(false);
 
   const { hasHydratedFromStorage } = useActiveVehicleStorage({
     activeVehicleSource,
     activeGarageVehicleId,
-    activeTemporaryCarModificationId,
     activeTemporaryAutoDbPassangerCarId,
     isManualSelection,
     setActiveVehicleSource,
     setActiveGarageVehicleId,
-    setActiveTemporaryCarModificationId,
     setActiveTemporaryAutoDbPassangerCarId,
     setIsManualSelection,
   });
@@ -42,23 +39,20 @@ export function ActiveVehicleProvider({ children }: { children: React.ReactNode 
     hasHydratedFromStorage,
     activeVehicleSource,
     activeGarageVehicleId,
-    activeTemporaryCarModificationId,
     activeTemporaryAutoDbPassangerCarId,
     isManualSelection,
     setActiveVehicleSource,
     setActiveGarageVehicleId,
-    setActiveTemporaryCarModificationId,
     setActiveTemporaryAutoDbPassangerCarId,
     setIsManualSelection,
   });
 
-  const { selectGarageVehicle, selectTemporaryVehicle, selectTemporaryAutoDbVehicle, clearActiveVehicle, addVehicleToGarage } = useActiveVehicleActions({
+  const { selectGarageVehicle, selectTemporaryAutoDbVehicle, clearActiveVehicle, addVehicleToGarage } = useActiveVehicleActions({
     token,
     isAuthenticated,
     refreshGarageVehicles,
     setActiveVehicleSource,
     setActiveGarageVehicleId,
-    setActiveTemporaryCarModificationId,
     setActiveTemporaryAutoDbPassangerCarId,
     setIsManualSelection,
   });
@@ -78,20 +72,17 @@ export function ActiveVehicleProvider({ children }: { children: React.ReactNode 
       addVehicleToGarage,
       activeVehicleSource,
       activeGarageVehicleId,
-      activeTemporaryCarModificationId,
       activeTemporaryAutoDbPassangerCarId,
       activeGarageVehicle,
       isVehicleFilterActive,
       isManualSelection,
       selectGarageVehicle,
-      selectTemporaryVehicle,
       selectTemporaryAutoDbVehicle,
       clearActiveVehicle,
     }),
     [
       activeGarageVehicle,
       activeGarageVehicleId,
-      activeTemporaryCarModificationId,
       activeTemporaryAutoDbPassangerCarId,
       activeVehicleSource,
       addVehicleToGarage,
@@ -103,7 +94,6 @@ export function ActiveVehicleProvider({ children }: { children: React.ReactNode 
       isVehicleFilterActive,
       refreshGarageVehicles,
       selectGarageVehicle,
-      selectTemporaryVehicle,
       selectTemporaryAutoDbVehicle,
     ],
   );

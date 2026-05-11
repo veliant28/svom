@@ -11,6 +11,7 @@ from django.utils.text import slugify
 
 from apps.catalog.models import Brand, Category, Product
 from apps.catalog.services.product_management import generate_unique_product_slug, sanitize_product_name
+from apps.catalog.services.svom_sku import ensure_product_svom_sku
 from apps.pricing.models import SupplierOffer
 from apps.supplier_imports.models import (
     ImportArtifact,
@@ -1063,6 +1064,7 @@ def _get_or_create_bootstrap_product_for_offer(
         normalized_brand=str(getattr(brand, "name", "") or "").upper(),
         category=mapped_category,
     )
+    ensure_product_svom_sku(product)
     return product, True
 
 

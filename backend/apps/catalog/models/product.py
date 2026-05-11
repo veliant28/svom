@@ -41,6 +41,7 @@ class Product(UUIDPrimaryKeyMixin, TimestampedMixin, PublishableMixin):
     )
 
     sku = models.CharField(_("SKU"), max_length=64, unique=True)
+    svom_sku = models.CharField(_("SVOM Public SKU"), max_length=32, unique=True, blank=True, null=True, db_index=True)
     article = models.CharField(_("Артикул"), max_length=128, blank=True)
     autodb_article_id = models.BigIntegerField(_("Auto_DB_Pro article ID"), blank=True, null=True, db_index=True)
     autodb_supplier_id = models.BigIntegerField(_("Auto_DB_Pro supplier ID"), blank=True, null=True, db_index=True)

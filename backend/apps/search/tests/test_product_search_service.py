@@ -18,6 +18,7 @@ class ProductSearchServiceTests(TestCase):
         )
         self.product = Product.objects.create(
             sku="GPL-000000004396582",
+            svom_sku="1S5V0O4M9273",
             article="V203D",
             name="Освежитель K2",
             slug="osvezhitel-k2",
@@ -34,5 +35,11 @@ class ProductSearchServiceTests(TestCase):
         queryset = Product.objects.filter(is_active=True)
         result = ProductSearchService().apply(queryset, "000000004396582")
 
+        self.assertEqual(result.count(), 1)
+        self.assertEqual(result.first().id, self.product.id)
+
+    def test_db_fallback_supports_svom_sku(self):
+        queryset = Product.objects.filter(is_active=True)
+        result = ProductSearchService().apply(queryset, "1S5V0O4M9273")
         self.assertEqual(result.count(), 1)
         self.assertEqual(result.first().id, self.product.id)

@@ -65,7 +65,6 @@ export type CatalogFilters = {
   modification?: string;
   vehicle_id?: string;
   passanger_car_id?: string;
-  car_modification?: string;
   garage_vehicle?: string;
   fitment?: "all" | "only" | "unknown" | "with_data";
   popular?: boolean;

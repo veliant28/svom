@@ -5,7 +5,7 @@ import type { WishlistItem } from "@/features/commerce/types";
 
 type WishlistQueryParams = Pick<
   CatalogFilters,
-  "vehicle_id" | "passanger_car_id" | "garage_vehicle" | "car_modification" | "fitment"
+  "vehicle_id" | "passanger_car_id" | "garage_vehicle" | "fitment"
 > & {
   locale?: string;
 };

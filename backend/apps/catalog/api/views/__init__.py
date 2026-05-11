@@ -5,7 +5,6 @@ from .product_detail_view import ProductDetailAPIView
 from .product_fitment_views import ProductFitmentOptionsAPIView, ProductFitmentRowsAPIView
 from .product_list_view import ProductListAPIView
 from .product_sellable_view import ProductSellableSnapshotAPIView
-from .product_utr_enrichment_view import ProductUtrEnrichmentAPIView
 
 __all__ = [
     "BrandListAPIView",
@@ -16,5 +15,4 @@ __all__ = [
     "ProductFitmentOptionsAPIView",
     "ProductFitmentRowsAPIView",
     "ProductSellableSnapshotAPIView",
-    "ProductUtrEnrichmentAPIView",
 ]

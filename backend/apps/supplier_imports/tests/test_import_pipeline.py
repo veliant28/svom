@@ -11,6 +11,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from apps.catalog.models import Brand, Category, Product, ProductImage
+from apps.catalog.services.svom_sku import is_valid_svom_sku
 from apps.pricing.models import PriceHistory, PricingPolicy, ProductPrice, Supplier, SupplierOffer
 from apps.supplier_imports.models import ImportRowError, ImportRun, ImportSource, OfferMatchReview, SupplierRawOffer
 from apps.supplier_imports.services import SupplierImportRunner
@@ -394,6 +395,9 @@ class SupplierImportPipelineTests(TestCase):
         self.assertEqual(Product.objects.count(), 1)
         self.assertEqual(SupplierOffer.objects.filter(supplier=self.supplier).count(), 1)
         self.assertEqual(run.summary["current_offer_rows"]["bootstrap_unmatched_enabled"], 1)
+        bootstrap_product = Product.objects.get(sku="GPL-BOOT001")
+        self.assertTrue(is_valid_svom_sku(bootstrap_product.svom_sku))
+        self.assertRegex(str(bootstrap_product.svom_sku), r"^\dS\dV\dO\dM\d{4}$")
 
     @patch("apps.supplier_imports.services.import_runner.persistence.GplImportCategoryAssignmentResolver")
     def test_gpl_bootstrap_uses_combined_category_resolver_and_assigns_leaf_only(self, resolver_cls_mock):
