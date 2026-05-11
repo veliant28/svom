@@ -67,7 +67,6 @@ export type CatalogFilters = {
   passanger_car_id?: string;
   garage_vehicle?: string;
   fitment?: "all" | "only" | "unknown" | "with_data";
-  popular?: boolean;
 };
 
 export type ProductImage = {

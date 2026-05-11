@@ -1,7 +1,9 @@
 from django.db.models import Q
+from django.db.models import F
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework.generics import RetrieveAPIView
+from rest_framework.response import Response
 
 from apps.catalog.models import Product
 from apps.catalog.api.serializers import ProductDetailSerializer
@@ -46,3 +48,9 @@ class ProductDetailAPIView(RetrieveAPIView):
             raise Http404("Product not found.")
 
         return get_object_or_404(queryset, id=candidate.id)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        Product.objects.filter(id=instance.id).update(views_count=F("views_count") + 1)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)

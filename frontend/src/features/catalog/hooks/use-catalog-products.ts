@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "next-intl";
 
+import { getHomePopularProducts } from "@/features/catalog/api/get-home-popular-products";
 import { getProducts } from "@/features/catalog/api/get-products";
 import {
   buildCatalogCacheKey,
@@ -21,6 +22,7 @@ type UseCatalogProductsOptions = {
   enabled?: boolean;
   useActiveVehicle?: boolean;
   deferCachedRevalidation?: boolean;
+  useHomePopularEndpoint?: boolean;
 };
 
 export function useCatalogProducts(params: UseCatalogProductsParams = {}, options: UseCatalogProductsOptions = {}) {
@@ -87,6 +89,7 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
   const cacheKey = useMemo(() => buildCatalogCacheKey(paramsKey), [paramsKey]);
   const isEnabled = options.enabled ?? true;
   const deferCachedRevalidation = options.deferCachedRevalidation ?? false;
+  const useHomePopularEndpoint = options.useHomePopularEndpoint ?? false;
 
   useEffect(() => {
     if (!isEnabled) {
@@ -112,6 +115,26 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
         setProducts([]);
       }
       try {
+        if (useHomePopularEndpoint) {
+          const homePopularProducts = await getHomePopularProducts({
+            locale,
+            vehicle_id: effectiveParams.vehicle_id,
+            passanger_car_id: effectiveParams.passanger_car_id,
+            garage_vehicle: effectiveParams.garage_vehicle,
+            fitment: effectiveParams.fitment,
+          });
+          if (isMounted) {
+            setProducts(homePopularProducts);
+            setTotalCount(homePopularProducts.length);
+            setIsLoading(false);
+            writeCachedCatalogPayload(cacheKey, {
+              products: homePopularProducts,
+              totalCount: homePopularProducts.length,
+            });
+          }
+          return;
+        }
+
         const response = await getProducts({ ...effectiveParams, pageSize: effectiveParams.pageSize, locale });
         if (isMounted) {
           setProducts(response.results);
@@ -136,7 +159,7 @@ export function useCatalogProducts(params: UseCatalogProductsParams = {}, option
     return () => {
       isMounted = false;
     };
-  }, [cacheKey, deferCachedRevalidation, effectiveParams, isEnabled, locale, paramsKey]);
+  }, [cacheKey, deferCachedRevalidation, effectiveParams, isEnabled, locale, paramsKey, useHomePopularEndpoint]);
 
   useEffect(() => {
     if (!isEnabled || typeof window === "undefined") {

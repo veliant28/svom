@@ -115,46 +115,75 @@ class CatalogAPISmokeTests(APITestCase):
             ["zzz-high-stock", "aaa-low-stock", "test-product"],
         )
 
-    def test_popular_query_uses_stock_and_price_fallback_when_featured_empty(self):
-        self.product.is_featured = False
-        self.product.available_stock_qty_cached = 12
-        self.product.save(update_fields=["is_featured", "available_stock_qty_cached", "updated_at"])
-        supplier = Supplier.objects.create(name="Supplier Popular", code="supplier-popular", is_active=True)
-        SupplierOffer.objects.create(
-            supplier=supplier,
-            product=self.product,
-            supplier_sku="POP-BASE",
-            purchase_price="100.00",
-            stock_qty=3,
-            is_available=True,
-        )
-        Product.objects.create(
-            sku="SKU-POPULAR-2",
-            article="ART-POPULAR-2",
-            name="Свічка запалювання 2",
-            name_uk="Свічка запалювання 2",
-            slug="spark-plug-2",
-            brand=self.brand,
-            category=self.category,
-            is_active=True,
-            is_featured=False,
-            available_stock_qty_cached=5,
-        )
-        second = Product.objects.get(slug="spark-plug-2")
-        ProductPrice.objects.create(product=second, final_price="123.45", currency="UAH")
-        SupplierOffer.objects.create(
-            supplier=supplier,
-            product=second,
-            supplier_sku="POP-2",
-            purchase_price="70.00",
-            stock_qty=5,
-            is_available=True,
-        )
+    def test_home_popular_endpoint_prioritizes_featured_and_limits_to_twenty(self):
+        supplier = Supplier.objects.create(name="Supplier Home Popular", code="supplier-home-popular", is_active=True)
+        featured_products = []
+        fallback_products = []
 
-        response = self.client.get(reverse("catalog_api:product-list"), {"popular": "true"})
+        for index in range(1, 7):
+            product = Product.objects.create(
+                sku=f"SKU-FEAT-{index}",
+                article=f"ART-FEAT-{index}",
+                name=f"Featured Product {index}",
+                slug=f"featured-product-{index}",
+                brand=self.brand,
+                category=self.category,
+                is_active=True,
+                is_featured=True,
+                views_count=index,
+            )
+            ProductPrice.objects.create(product=product, final_price="199.99", currency="UAH")
+            SupplierOffer.objects.create(
+                supplier=supplier,
+                product=product,
+                supplier_sku=f"FEAT-{index}",
+                purchase_price="120.00",
+                stock_qty=10,
+                is_available=True,
+            )
+            featured_products.append(product)
+
+        for index in range(1, 25):
+            product = Product.objects.create(
+                sku=f"SKU-FALL-{index}",
+                article=f"ART-FALL-{index}",
+                name=f"Fallback Product {index}",
+                slug=f"fallback-product-{index}",
+                brand=self.brand,
+                category=self.category,
+                is_active=True,
+                is_featured=False,
+                views_count=1000 - index,
+            )
+            ProductPrice.objects.create(product=product, final_price="199.99", currency="UAH")
+            SupplierOffer.objects.create(
+                supplier=supplier,
+                product=product,
+                supplier_sku=f"FALL-{index}",
+                purchase_price="120.00",
+                stock_qty=10,
+                is_available=True,
+            )
+            fallback_products.append(product)
+
+        response = self.client.get(reverse("catalog_api:home-popular-products"))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertGreater(response.data["count"], 0)
+        self.assertIsInstance(response.data, list)
+        self.assertEqual(len(response.data), 20)
+
+        returned_ids = [item["id"] for item in response.data]
+        expected_featured_ids = [str(product.id) for product in reversed(featured_products)]
+        self.assertEqual(returned_ids[: len(featured_products)], expected_featured_ids)
+
+    def test_product_detail_increments_views_count(self):
+        self.assertEqual(self.product.views_count, 0)
+
+        response = self.client.get(reverse("catalog_api:product-detail", kwargs={"slug": self.product.slug}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.views_count, 1)
 
     def test_public_stock_uses_supplier_offer_sum_when_cached_stock_is_zero(self):
         supplier = Supplier.objects.create(name="Supplier Stock", code="supplier-stock", is_active=True)

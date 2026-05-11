@@ -30,7 +30,6 @@ export async function getProducts(params: GetProductsParams = {}): Promise<Pagin
     passanger_car_id: params.passanger_car_id,
     garage_vehicle: params.garage_vehicle,
     fitment: params.fitment,
-    popular: params.popular,
   });
 
   return normalizePaginatedListResponse(data);

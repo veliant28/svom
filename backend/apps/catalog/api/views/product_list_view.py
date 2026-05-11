@@ -43,18 +43,6 @@ class ProductListAPIView(ListAPIView):
     ordering_fields = ("name", "created_at", "product_price__final_price", "available_stock_qty", "available_stock_qty_cached")
     ordering = ("-available_stock_qty", "name", "id")
 
-    @staticmethod
-    def _parse_bool(value: str) -> bool:
-        normalized = str(value or "").strip().lower()
-        return normalized in {"1", "true", "yes", "on"}
-
-    @staticmethod
-    def _with_positive_supplier_stock(queryset):
-        return queryset.filter(
-            supplier_offers__is_available=True,
-            supplier_offers__stock_qty__gt=0,
-        ).distinct()
-
     def get_queryset(self):
         queryset = get_public_products_queryset().annotate(
             available_stock_qty=F("available_stock_qty_cached")
@@ -66,14 +54,4 @@ class ProductListAPIView(ListAPIView):
             queryset=queryset,
             params=self.request.query_params,
         )
-        if self._parse_bool(self.request.query_params.get("popular", "")):
-            featured = self._with_positive_supplier_stock(queryset).filter(
-                is_featured=True,
-                product_price__final_price__gt=0,
-            )
-            if featured.exists():
-                return featured.order_by("-updated_at", "-created_at", "-available_stock_qty_cached", "name", "id")
-            return self._with_positive_supplier_stock(queryset).filter(
-                product_price__final_price__gt=0,
-            ).order_by("-updated_at", "-created_at", "-available_stock_qty_cached", "name", "id")
         return queryset

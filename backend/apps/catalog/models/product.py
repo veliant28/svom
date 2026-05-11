@@ -115,6 +115,7 @@ class Product(UUIDPrimaryKeyMixin, TimestampedMixin, PublishableMixin):
     is_featured = models.BooleanField(_("Рекомендуемый"), default=False)
     is_new = models.BooleanField(_("Новинка"), default=False)
     is_bestseller = models.BooleanField(_("Хит продаж"), default=False)
+    views_count = models.PositiveIntegerField(_("Просмотры"), default=0, db_index=True)
     available_stock_qty_cached = models.IntegerField(_("Кэш доступного остатка"), default=0, db_index=True)
 
     class Meta:

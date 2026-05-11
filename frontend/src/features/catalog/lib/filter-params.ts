@@ -1,6 +1,6 @@
 import type { CatalogFilters } from "@/features/catalog/types";
 
-const BOOLEAN_FILTER_KEYS = ["is_featured", "is_new", "is_bestseller", "popular"] as const;
+const BOOLEAN_FILTER_KEYS = ["is_featured", "is_new", "is_bestseller"] as const;
 
 function parseBoolean(value: string | null): boolean | undefined {
   if (value === "true") {
@@ -28,7 +28,6 @@ export function parseCatalogFilters(searchParams: URLSearchParams): CatalogFilte
     passanger_car_id: searchParams?.get("passanger_car_id") || undefined,
     garage_vehicle: searchParams?.get("garage_vehicle") || undefined,
     fitment: (searchParams?.get("fitment") as CatalogFilters["fitment"]) || undefined,
-    popular: parseBoolean(searchParams?.get("popular")),
   };
 }
 

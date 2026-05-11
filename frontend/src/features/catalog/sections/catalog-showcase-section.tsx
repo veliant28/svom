@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 
@@ -20,6 +21,18 @@ import type { CatalogFilters } from "@/features/catalog/types";
 import { usePathname, useRouter } from "@/i18n/navigation";
 
 const CATALOG_PAGE_SIZE = 52;
+const HOME_POPULAR_PAGE_SIZE = 20;
+const CAROUSEL_AUTO_ADVANCE_MS = 7000;
+
+function resolveCardsPerSlide(width: number): number {
+  if (width >= 1024) {
+    return 4;
+  }
+  if (width >= 640) {
+    return 2;
+  }
+  return 1;
+}
 
 function parseCatalogPage(searchParams: URLSearchParams): number {
   const value = Number(searchParams?.get("page") || "1");
@@ -45,8 +58,11 @@ export function CatalogShowcaseSection({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const syncPageWithUrl = Boolean(filters);
+  const isPopularCarouselMode = showHeading && !filters;
   const [localPage, setLocalPage] = useState(1);
   const [visibleProductIds, setVisibleProductIds] = useState<string[]>([]);
+  const [cardsPerSlide, setCardsPerSlide] = useState(4);
+  const [carouselIndex, setCarouselIndex] = useState(0);
   const [catalogReturnState, setCatalogReturnState] = useState<CatalogReturnState | null>(() =>
     readMatchingCatalogReturnState(),
   );
@@ -63,29 +79,81 @@ export function CatalogShowcaseSection({
     if (filters) {
       return filters;
     }
-    if (showHeading) {
-      return { popular: true } satisfies CatalogFilters;
-    }
     return {};
-  }, [filters, showHeading]);
+  }, [filters]);
   const queryString = searchParams?.toString() ?? "";
   const urlPage = parseCatalogPage(new URLSearchParams(queryString));
   const page = syncPageWithUrl ? urlPage : localPage;
+  const pageSize = isPopularCarouselMode ? HOME_POPULAR_PAGE_SIZE : CATALOG_PAGE_SIZE;
   const { products, totalCount, isLoading, cacheKey } = useCatalogProducts(
-    { ...normalizedFilters, page, pageSize: CATALOG_PAGE_SIZE },
+    { ...normalizedFilters, page, pageSize },
     {
       useActiveVehicle: true,
       deferCachedRevalidation,
+      useHomePopularEndpoint: isPopularCarouselMode,
     },
   );
   const productIds = useMemo(() => products.map((product) => product.id), [products]);
   const showSkeleton = isLoading && products.length === 0;
   const pagesCount = useMemo(
-    () => Math.max(1, Math.ceil(totalCount / CATALOG_PAGE_SIZE)),
-    [totalCount],
+    () => Math.max(1, Math.ceil(totalCount / pageSize)),
+    [pageSize, totalCount],
   );
+  const carouselSlides = useMemo(() => {
+    if (!isPopularCarouselMode) {
+      return [];
+    }
+    const chunkSize = Math.max(1, cardsPerSlide);
+    const chunks: typeof products[] = [];
+    for (let index = 0; index < products.length; index += chunkSize) {
+      chunks.push(products.slice(index, index + chunkSize));
+    }
+    return chunks;
+  }, [cardsPerSlide, isPopularCarouselMode, products]);
+  const canSlideCarousel = carouselSlides.length > 1;
   const sectionSpacingClass = showHeading ? "py-8" : "pb-8 pt-0";
   const contentSpacingClass = showHeading ? "mt-4" : "";
+
+  useEffect(() => {
+    if (!isPopularCarouselMode || typeof window === "undefined") {
+      return;
+    }
+
+    const updateCardsPerSlide = () => {
+      const nextValue = resolveCardsPerSlide(window.innerWidth);
+      setCardsPerSlide((previous) => (previous === nextValue ? previous : nextValue));
+    };
+
+    updateCardsPerSlide();
+    window.addEventListener("resize", updateCardsPerSlide);
+    return () => {
+      window.removeEventListener("resize", updateCardsPerSlide);
+    };
+  }, [isPopularCarouselMode]);
+
+  useEffect(() => {
+    if (!isPopularCarouselMode) {
+      return;
+    }
+    setCarouselIndex((previous) => {
+      if (carouselSlides.length <= 1) {
+        return 0;
+      }
+      return previous >= carouselSlides.length ? 0 : previous;
+    });
+  }, [carouselSlides.length, isPopularCarouselMode]);
+
+  useEffect(() => {
+    if (!isPopularCarouselMode || !canSlideCarousel) {
+      return;
+    }
+    const intervalId = window.setInterval(() => {
+      setCarouselIndex((previous) => (previous + 1) % carouselSlides.length);
+    }, CAROUSEL_AUTO_ADVANCE_MS);
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [canSlideCarousel, carouselSlides.length, isPopularCarouselMode]);
 
   useEffect(() => {
     if (!syncPageWithUrl || typeof window === "undefined" || !("scrollRestoration" in window.history)) {
@@ -267,12 +335,52 @@ export function CatalogShowcaseSection({
     router.push(nextUrl, { scroll: false });
   };
 
+  const goToPreviousCarouselSlide = useCallback(() => {
+    if (!canSlideCarousel) {
+      return;
+    }
+    setCarouselIndex((previous) => (previous - 1 + carouselSlides.length) % carouselSlides.length);
+  }, [canSlideCarousel, carouselSlides.length]);
+
+  const goToNextCarouselSlide = useCallback(() => {
+    if (!canSlideCarousel) {
+      return;
+    }
+    setCarouselIndex((previous) => (previous + 1) % carouselSlides.length);
+  }, [canSlideCarousel, carouselSlides.length]);
+
   return (
     <section ref={sectionRef} data-catalog-showcase className={`mx-auto max-w-6xl px-4 ${sectionSpacingClass}`}>
       {showHeading ? (
-        <>
+        <div className="flex items-center justify-between gap-3">
           <h2 className="text-2xl font-semibold">{tHome("featured")}</h2>
-        </>
+          {isPopularCarouselMode ? (
+            <div className="inline-flex items-center gap-2">
+              <button
+                type="button"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border disabled:opacity-50"
+                style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+                onClick={goToPreviousCarouselSlide}
+                disabled={!canSlideCarousel}
+                aria-label={tCatalog("pagination.prev")}
+                title={tCatalog("pagination.prev")}
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                type="button"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border disabled:opacity-50"
+                style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+                onClick={goToNextCarouselSlide}
+                disabled={!canSlideCarousel}
+                aria-label={tCatalog("pagination.next")}
+                title={tCatalog("pagination.next")}
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          ) : null}
+        </div>
       ) : null}
 
       <div className={contentSpacingClass}>
@@ -280,26 +388,49 @@ export function CatalogShowcaseSection({
           <CatalogGridSkeleton />
         ) : (
           <>
-            <p className="mb-3 text-sm" style={{ color: "var(--muted)" }}>
-              {tCatalog("resultCount", { count: totalCount })}
-            </p>
+            {!isPopularCarouselMode ? (
+              <p className="mb-3 text-sm" style={{ color: "var(--muted)" }}>
+                {tCatalog("resultCount", { count: totalCount })}
+              </p>
+            ) : null}
             {products.length === 0 ? (
               <div className="rounded-xl border p-6 text-sm" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>
                 {tCatalog("empty")}
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  {products.map((product) => (
-                    <div key={product.id} ref={(node) => setProductCardNode(product.id, node)}>
-                      <ProductCard product={product} preserveCatalogQuery={syncPageWithUrl} />
+                {isPopularCarouselMode ? (
+                  <div className="overflow-hidden">
+                    <div
+                      className="flex transition-transform duration-500 ease-out"
+                      style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
+                    >
+                      {carouselSlides.map((slide, slideIndex) => (
+                        <div key={`catalog-slide-${slideIndex}`} className="min-w-full">
+                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                            {slide.map((product) => (
+                              <div key={product.id} ref={(node) => setProductCardNode(product.id, node)}>
+                                <ProductCard product={product} preserveCatalogQuery={syncPageWithUrl} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-                {pagesCount > 1 ? (
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {products.map((product) => (
+                      <div key={product.id} ref={(node) => setProductCardNode(product.id, node)}>
+                        <ProductCard product={product} preserveCatalogQuery={syncPageWithUrl} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {!isPopularCarouselMode && pagesCount > 1 ? (
                   <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                     <span className="text-xs" style={{ color: "var(--muted)" }}>
-                      {tCatalog("pagination.perPage", { count: CATALOG_PAGE_SIZE })}
+                      {tCatalog("pagination.perPage", { count: pageSize })}
                     </span>
                     <div className="inline-flex items-center gap-2">
                       <button
