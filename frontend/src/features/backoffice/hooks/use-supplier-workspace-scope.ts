@@ -28,7 +28,7 @@ export function useSupplierWorkspaceScope() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const activeCode = normalizeSupplierCode(searchParams.get("supplier"));
+  const activeCode = normalizeSupplierCode(searchParams?.get("supplier") ?? null);
 
   const setActiveCode = useCallback(
     (code: SupplierCode) => {

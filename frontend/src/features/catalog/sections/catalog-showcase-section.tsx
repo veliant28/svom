@@ -22,7 +22,7 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 const CATALOG_PAGE_SIZE = 52;
 
 function parseCatalogPage(searchParams: URLSearchParams): number {
-  const value = Number(searchParams.get("page") || "1");
+  const value = Number(searchParams?.get("page") || "1");
   if (!Number.isFinite(value) || value < 1) {
     return 1;
   }
@@ -68,7 +68,7 @@ export function CatalogShowcaseSection({
     }
     return {};
   }, [filters, showHeading]);
-  const queryString = searchParams.toString();
+  const queryString = searchParams?.toString() ?? "";
   const urlPage = parseCatalogPage(new URLSearchParams(queryString));
   const page = syncPageWithUrl ? urlPage : localPage;
   const { products, totalCount, isLoading, cacheKey } = useCatalogProducts(
@@ -232,7 +232,7 @@ export function CatalogShowcaseSection({
         setLocalPage(pagesCount);
         return;
       }
-      const nextParams = new URLSearchParams(searchParams.toString());
+      const nextParams = new URLSearchParams(searchParams?.toString() ?? "");
       if (pagesCount <= 1) {
         nextParams.delete("page");
       } else {
@@ -254,7 +254,7 @@ export function CatalogShowcaseSection({
       setLocalPage(nextPage);
       return;
     }
-    const nextParams = new URLSearchParams(searchParams.toString());
+    const nextParams = new URLSearchParams(searchParams?.toString() ?? "");
     if (nextPage <= 1) {
       nextParams.delete("page");
     } else {

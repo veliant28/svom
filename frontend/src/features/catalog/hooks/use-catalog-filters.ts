@@ -11,7 +11,7 @@ export function useCatalogFilters() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const filters = parseCatalogFilters(new URLSearchParams(searchParams.toString()));
+  const filters = parseCatalogFilters(new URLSearchParams(searchParams?.toString() ?? ""));
 
   const setFilters = (patch: Partial<CatalogFilters>) => {
     const nextFilters: CatalogFilters = { ...filters, ...patch };

@@ -40,7 +40,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   const [fitmentListExpanded, setFitmentListExpanded] = useState(false);
   const fitments = remoteFitments ?? productFitments;
   const catalogParams = useMemo(() => {
-    const nextParams = new URLSearchParams(searchParams.toString());
+    const nextParams = new URLSearchParams(searchParams?.toString() ?? "");
     nextParams.delete("_cs");
     nextParams.delete("_csr");
     nextParams.delete("_cy");

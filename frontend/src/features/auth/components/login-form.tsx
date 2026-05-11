@@ -26,7 +26,7 @@ export function LoginForm() {
     }
     alreadyLoggedToastShownRef.current = true;
     showInfo(t("alreadyLoggedIn"));
-    const nextPath = searchParams.get("next");
+    const nextPath = searchParams?.get("next");
     if (nextPath && nextPath.startsWith("/")) {
       router.replace(nextPath);
       return;
@@ -47,7 +47,7 @@ export function LoginForm() {
 
         try {
           await login({ email, password });
-          const nextPath = searchParams.get("next");
+          const nextPath = searchParams?.get("next");
           if (nextPath && nextPath.startsWith("/")) {
             router.push(nextPath);
           } else {

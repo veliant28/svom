@@ -33,7 +33,7 @@ export function SecurityPage() {
   const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const view = resolveView(searchParams.get("view"));
+  const view = resolveView(searchParams?.get("view") ?? null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [searchInput, setSearchInput] = useState("");

@@ -29,7 +29,7 @@ export function ProductCard({
     if (!preserveCatalogQuery) {
       return "";
     }
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
     params.delete("_cs");
     params.delete("_csr");
     params.delete("_cy");

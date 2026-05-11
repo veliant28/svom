@@ -14,21 +14,21 @@ function parseBoolean(value: string | null): boolean | undefined {
 
 export function parseCatalogFilters(searchParams: URLSearchParams): CatalogFilters {
   return {
-    q: searchParams.get("q") || undefined,
-    brand: searchParams.get("brand") || undefined,
-    category: searchParams.get("category") || undefined,
-    category_id: searchParams.get("category_id") || undefined,
-    min_price: searchParams.get("min_price") || undefined,
-    max_price: searchParams.get("max_price") || undefined,
-    is_featured: parseBoolean(searchParams.get("is_featured")),
-    is_new: parseBoolean(searchParams.get("is_new")),
-    is_bestseller: parseBoolean(searchParams.get("is_bestseller")),
-    modification: searchParams.get("modification") || undefined,
-    vehicle_id: searchParams.get("vehicle_id") || undefined,
-    passanger_car_id: searchParams.get("passanger_car_id") || undefined,
-    garage_vehicle: searchParams.get("garage_vehicle") || undefined,
-    fitment: (searchParams.get("fitment") as CatalogFilters["fitment"]) || undefined,
-    popular: parseBoolean(searchParams.get("popular")),
+    q: searchParams?.get("q") || undefined,
+    brand: searchParams?.get("brand") || undefined,
+    category: searchParams?.get("category") || undefined,
+    category_id: searchParams?.get("category_id") || undefined,
+    min_price: searchParams?.get("min_price") || undefined,
+    max_price: searchParams?.get("max_price") || undefined,
+    is_featured: parseBoolean(searchParams?.get("is_featured")),
+    is_new: parseBoolean(searchParams?.get("is_new")),
+    is_bestseller: parseBoolean(searchParams?.get("is_bestseller")),
+    modification: searchParams?.get("modification") || undefined,
+    vehicle_id: searchParams?.get("vehicle_id") || undefined,
+    passanger_car_id: searchParams?.get("passanger_car_id") || undefined,
+    garage_vehicle: searchParams?.get("garage_vehicle") || undefined,
+    fitment: (searchParams?.get("fitment") as CatalogFilters["fitment"]) || undefined,
+    popular: parseBoolean(searchParams?.get("popular")),
   };
 }
 

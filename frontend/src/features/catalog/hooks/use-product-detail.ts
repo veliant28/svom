@@ -35,10 +35,10 @@ export function resolveVehicleParams(params: {
 export function useProductDetail(slug: string) {
   const locale = useLocale();
   const searchParams = useSearchParams();
-  const vehicleIdParam = searchParams.get("vehicle_id") || undefined;
-  const passangerCarIdParam = searchParams.get("passanger_car_id") || undefined;
-  const garageVehicleParam = searchParams.get("garage_vehicle") || undefined;
-  const modificationParam = searchParams.get("modification") || undefined;
+  const vehicleIdParam = searchParams?.get("vehicle_id") || undefined;
+  const passangerCarIdParam = searchParams?.get("passanger_car_id") || undefined;
+  const garageVehicleParam = searchParams?.get("garage_vehicle") || undefined;
+  const modificationParam = searchParams?.get("modification") || undefined;
   const {
     activeGarageVehicleId,
     activeGarageVehicle,
