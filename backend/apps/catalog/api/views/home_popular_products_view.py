@@ -59,10 +59,14 @@ class HomePopularProductsAPIView(APIView):
         if not ordered_ids:
             return Response([])
 
-        queryset = self._order_by_ids(
-            get_public_products_queryset().filter(id__in=ordered_ids),
-            ordered_ids,
+        queryset = get_public_products_queryset().filter(id__in=ordered_ids)
+        # Re-apply fitment service on the final queryset to keep compatibility
+        # annotations (has_fitment_data/fits_selected_vehicle) consistent with
+        # catalog list and product detail endpoints.
+        queryset, _ = FitmentFilteringService().apply(
+            queryset=queryset,
+            params=request.query_params,
         )
+        queryset = self._order_by_ids(queryset, ordered_ids)
         serializer = self.serializer_class(queryset, many=True, context={"request": request})
         return Response(serializer.data)
-

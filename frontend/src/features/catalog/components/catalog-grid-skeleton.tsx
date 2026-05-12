@@ -1,10 +1,29 @@
-export function CatalogGridSkeleton() {
+export function CatalogGridSkeleton({
+  count = 8,
+  carouselPreview = false,
+}: {
+  count?: number;
+  carouselPreview?: boolean;
+}) {
+  const cardVisibilityClass = (index: number): string => {
+    if (!carouselPreview) {
+      return "";
+    }
+    if (index === 0) {
+      return "";
+    }
+    if (index === 1) {
+      return "hidden sm:block";
+    }
+    return "hidden lg:block";
+  };
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {Array.from({ length: 8 }).map((_, index) => (
+      {Array.from({ length: Math.max(1, count) }).map((_, index) => (
         <article
           key={index}
-          className="animate-pulse rounded-xl border p-4"
+          className={`animate-pulse rounded-xl border p-4 ${cardVisibilityClass(index)}`}
           style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
         >
           <div className="h-28 rounded-md" style={{ backgroundColor: "var(--surface-2)" }} />

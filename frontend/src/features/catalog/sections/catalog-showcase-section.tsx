@@ -385,7 +385,10 @@ export function CatalogShowcaseSection({
 
       <div className={contentSpacingClass}>
         {showSkeleton ? (
-          <CatalogGridSkeleton />
+          <CatalogGridSkeleton
+            count={isPopularCarouselMode ? 4 : 8}
+            carouselPreview={isPopularCarouselMode}
+          />
         ) : (
           <>
             {!isPopularCarouselMode ? (

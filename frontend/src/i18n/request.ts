@@ -22,6 +22,7 @@ type LocaleModuleLoaders = {
   backofficeImportErrors: MessagesLoader;
   backofficeImportQuality: MessagesLoader;
   backofficeAutocatalog: MessagesLoader;
+  backofficeAutodbMatching: MessagesLoader;
   backofficeSuppliers: MessagesLoader;
   backofficeUtr: MessagesLoader;
   backofficeGpl: MessagesLoader;
@@ -70,6 +71,8 @@ const localeModuleLoaders: Record<AppLocale, LocaleModuleLoaders> = {
       import("../messages/en/backoffice/import-quality.json").then((module) => module.default as Messages),
     backofficeAutocatalog: () =>
       import("../messages/en/backoffice/autocatalog.json").then((module) => module.default as Messages),
+    backofficeAutodbMatching: () =>
+      import("../messages/en/backoffice/autodb-matching.json").then((module) => module.default as Messages),
     backofficeSuppliers: () =>
       import("../messages/en/backoffice/suppliers.json").then((module) => module.default as Messages),
     backofficeUtr: () => import("../messages/en/backoffice/utr.json").then((module) => module.default as Messages),
@@ -116,6 +119,8 @@ const localeModuleLoaders: Record<AppLocale, LocaleModuleLoaders> = {
       import("../messages/ru/backoffice/import-quality.json").then((module) => module.default as Messages),
     backofficeAutocatalog: () =>
       import("../messages/ru/backoffice/autocatalog.json").then((module) => module.default as Messages),
+    backofficeAutodbMatching: () =>
+      import("../messages/ru/backoffice/autodb-matching.json").then((module) => module.default as Messages),
     backofficeSuppliers: () =>
       import("../messages/ru/backoffice/suppliers.json").then((module) => module.default as Messages),
     backofficeUtr: () => import("../messages/ru/backoffice/utr.json").then((module) => module.default as Messages),
@@ -162,6 +167,8 @@ const localeModuleLoaders: Record<AppLocale, LocaleModuleLoaders> = {
       import("../messages/uk/backoffice/import-quality.json").then((module) => module.default as Messages),
     backofficeAutocatalog: () =>
       import("../messages/uk/backoffice/autocatalog.json").then((module) => module.default as Messages),
+    backofficeAutodbMatching: () =>
+      import("../messages/uk/backoffice/autodb-matching.json").then((module) => module.default as Messages),
     backofficeSuppliers: () =>
       import("../messages/uk/backoffice/suppliers.json").then((module) => module.default as Messages),
     backofficeUtr: () => import("../messages/uk/backoffice/utr.json").then((module) => module.default as Messages),
@@ -241,6 +248,7 @@ async function loadMessages(locale: AppLocale): Promise<Messages> {
       backofficeImportErrors,
       backofficeImportQuality,
       backofficeAutocatalog,
+      backofficeAutodbMatching,
       backofficeSuppliers,
       backofficeUtr,
       backofficeGpl,
@@ -266,6 +274,7 @@ async function loadMessages(locale: AppLocale): Promise<Messages> {
       loadModule(locale, "backoffice/import-errors", loaders.backofficeImportErrors),
       loadModule(locale, "backoffice/import-quality", loaders.backofficeImportQuality),
       loadModule(locale, "backoffice/autocatalog", loaders.backofficeAutocatalog),
+      loadModule(locale, "backoffice/autodb-matching", loaders.backofficeAutodbMatching),
       loadModule(locale, "backoffice/suppliers", loaders.backofficeSuppliers),
       loadModule(locale, "backoffice/utr", loaders.backofficeUtr),
       loadModule(locale, "backoffice/gpl", loaders.backofficeGpl),
@@ -290,6 +299,7 @@ async function loadMessages(locale: AppLocale): Promise<Messages> {
         getBackofficeBlock(backofficeImportErrors),
         getBackofficeBlock(backofficeImportQuality),
         getBackofficeBlock(backofficeAutocatalog),
+        getBackofficeBlock(backofficeAutodbMatching),
         getBackofficeBlock(backofficeSuppliers),
         getBackofficeBlock(backofficeUtr),
         getBackofficeBlock(backofficeGpl),

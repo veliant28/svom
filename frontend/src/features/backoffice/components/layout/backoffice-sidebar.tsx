@@ -23,6 +23,7 @@ import {
   ImageUp,
   Globe2,
   Mail,
+  Network,
   SlidersHorizontal,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -49,6 +50,7 @@ type SidebarNavItem = {
     | "categories"
     | "seo"
     | "autocatalog"
+    | "autodbMatching"
     | "orders"
     | "novaPoshtaSenders"
     | "footerSettings"
@@ -69,6 +71,7 @@ const NAV_ITEMS: SidebarNavItem[] = [
   { href: "/backoffice/orders", icon: ShoppingBag, key: "orders", requiredCapability: BACKOFFICE_CAPABILITIES.ordersView },
   { href: "/backoffice/loyalty", icon: TicketPercent, key: "loyalty", requiredCapability: BACKOFFICE_CAPABILITIES.loyaltyIssue },
   { href: "/backoffice/autocatalog", icon: Car, key: "autocatalog", requiredCapability: BACKOFFICE_CAPABILITIES.autocatalogView },
+  { href: "/backoffice/autodb-matching", icon: Network, key: "autodbMatching", requiredCapability: BACKOFFICE_CAPABILITIES.autocatalogView },
   { href: "/backoffice/import-schedules", icon: Clock3, key: "importSchedules", requiredCapability: BACKOFFICE_CAPABILITIES.schedulesView },
   { href: "/backoffice/suppliers", icon: Truck, key: "suppliers", requiredCapability: BACKOFFICE_CAPABILITIES.suppliersView },
   { href: "/backoffice/products", icon: Package, key: "products", requiredCapability: BACKOFFICE_CAPABILITIES.catalogView },

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 
 type EChartInstance = {
-  setOption: (option: object) => void;
+  setOption: (option: object, opts?: { notMerge?: boolean; lazyUpdate?: boolean }) => void;
   resize: () => void;
   dispose: () => void;
 };
@@ -20,39 +20,63 @@ export function EchartsPanel({
   className?: string;
 }) {
   const chartRef = useRef<HTMLDivElement | null>(null);
+  const chartInstanceRef = useRef<EChartInstance | null>(null);
 
   useEffect(() => {
-    if (!hasData) {
-      return;
-    }
-    let chart: EChartInstance | null = null;
-    let disposed = false;
-
-    async function mount() {
-      if (!chartRef.current) {
-        return;
-      }
-      const echarts = await import("echarts");
-      if (disposed || !chartRef.current) {
-        return;
-      }
-      chart = echarts.init(chartRef.current);
-      chart.setOption(option);
-    }
-
-    void mount();
-
     const onResize = () => {
-      chart?.resize();
+      chartInstanceRef.current?.resize();
     };
     window.addEventListener("resize", onResize);
 
     return () => {
-      disposed = true;
       window.removeEventListener("resize", onResize);
-      chart?.dispose();
+    };
+  }, []);
+
+  useEffect(() => {
+    let disposed = false;
+
+    async function renderChart() {
+      if (!hasData || !chartRef.current) {
+        chartInstanceRef.current?.dispose();
+        chartInstanceRef.current = null;
+        return;
+      }
+
+      const echarts = await import("echarts");
+      if (disposed || !chartRef.current) {
+        return;
+      }
+
+      if (!chartInstanceRef.current) {
+        chartInstanceRef.current = echarts.init(chartRef.current);
+      }
+
+      const optionWithTooltip = {
+        ...option,
+        tooltip: {
+          ...(option as { tooltip?: Record<string, unknown> }).tooltip,
+          confine: true,
+          appendToBody: true,
+        },
+      };
+      chartInstanceRef.current.setOption(optionWithTooltip, { notMerge: true, lazyUpdate: true });
+      chartInstanceRef.current.resize();
+    }
+
+    void renderChart();
+
+    return () => {
+      disposed = true;
     };
   }, [hasData, option]);
+
+  useEffect(() => {
+    return () => {
+      chartInstanceRef.current?.dispose();
+      chartInstanceRef.current = null;
+    };
+  }, []);
 
   if (!hasData) {
     return (

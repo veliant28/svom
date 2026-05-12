@@ -1,0 +1,177 @@
+{
+  "backoffice": {
+    "autodbMatching": {
+      "tabs": {
+        "dashboard": "Дашборд",
+        "products": "Товары",
+        "search": "Поиск",
+        "dashboardTitle": "Операционный дашборд",
+        "productsTitle": "Несвязанные товары",
+        "searchTitle": "Поиск в Auto_DB"
+      },
+      "common": { "yes": "Да", "no": "Нет", "prev": "Назад", "next": "Вперед" },
+      "states": { "empty": "Нет данных", "emptyProducts": "Нет несвязанных товаров", "emptySearch": "Результатов пока нет" },
+      "dashboard": {
+        "cards": {
+          "totalJobs": "Всего задач",
+          "mappedBrands": "Сопоставленные бренды",
+          "unlinkedProducts": "Несвязанные товары",
+          "safeCandidates": "Кандидаты безопасной связи",
+          "needsReview": "Требуют проверки",
+          "quotaPaused": "Квота приостановлена",
+          "linkedToday": "Связано сегодня / последний запуск",
+          "enrichment": "План обогащения",
+          "enrichmentHint": "Атрибуты / применимость"
+        },
+        "charts": {
+          "jobsByStatus": "Задачи по статусам",
+          "brandCoverage": "Покрытие брендов",
+          "funnel": "Воронка сопоставления",
+          "source": "Источники"
+        },
+        "funnelStages": {
+          "new": "Новые",
+          "local_found": "Найдено локально",
+          "remote_found": "Найдено удаленно",
+          "clone_synced": "Клон синхронизирован",
+          "safe_link_candidate": "Кандидат",
+          "linked": "Связано"
+        },
+        "latestRun": "Последний запуск",
+        "latest": {
+          "id": "run id",
+          "status": "статус",
+          "started_at": "старт",
+          "finished_at": "финиш",
+          "checked": "проверено",
+          "hits": "попадания",
+          "safe_candidates": "safe-кандидаты",
+          "errors": "ошибки",
+          "quota_status": "квота",
+          "links_applied": "связи применены",
+          "enrichment_applied": "обогащение применено"
+        }
+      },
+      "products": {
+        "search": "Поиск по SKU, названию, бренду, артикулу",
+        "columns": {
+          "sku": "SKU / SVOM SKU",
+          "name": "Название товара",
+          "brand": "Бренд каталога",
+          "autodb": "AutoDB supplier/display brand",
+          "supplier_code": "supplier_code",
+          "article_source": "article source",
+          "article_value": "article value",
+          "canonical": "canonical article",
+          "price_stock": "price/stock",
+          "price": "ProductPrice",
+          "tecdoc": "TecDoc",
+          "status": "статус сопоставления",
+          "recommended": "рекомендация",
+          "reason": "последнее evidence/reason",
+          "actions": "действия"
+        },
+        "pagination": { "total": "Всего: {count}" }
+      },
+      "filters": {
+        "all": "Все",
+        "supplier_code": "supplier_code",
+        "brand": "Бренд",
+        "autodb_supplier": "AutoDB supplier",
+        "matching_status": "matching status",
+        "article_source": "article source",
+        "tecdocOnly": "TecDoc",
+        "nonTecdocOnly": "Не TecDoc",
+        "unknownReview": "Неизвестно",
+        "only_safe_candidates": "Кандидат безопасной связи",
+        "needs_review": "Требует проверки",
+        "quota_paused": "Квота приостановлена",
+        "bad_article_source": "bad_article_source",
+        "split_needed": "split_needed",
+        "unsafe_ambiguous": "unsafe_ambiguous"
+      },
+      "quota": {
+        "title": "Лимит удаленной Auto_DB",
+        "used": "Использовано",
+        "remaining": "Осталось",
+        "resetIn": "Сброс через",
+        "status": "Статус",
+        "statusOk": "OK",
+        "statusWarning": "Осторожно",
+        "statusPaused": "Квота исчерпана",
+        "waitingReset": "Ожидание сброса",
+        "remoteDisabled": "Удаленный поиск временно недоступен из-за лимита",
+        "estimated": "Оценочно",
+        "queriesPerMinute": "Запросов в минуту",
+        "mappedBrandsTooltip": "Сопоставленные бренды: {mapped} из {total}",
+        "linkedProductsTooltip": "Связанные товары: {linked} из {total}"
+      },
+      "search": {
+        "supplier": "AutoDB supplier/brand",
+        "supplierId": "supplier_id",
+        "article": "Артикул: WA6342, 4PK813",
+        "variants": "Детерминированные варианты",
+        "sources": { "local": "Локальная", "remote": "Удаленная", "both": "Обе" },
+        "columns": {
+          "source": "source",
+          "supplier": "supplier",
+          "searched": "searched article",
+          "matched": "matched stored article",
+          "articleId": "article_id / key",
+          "prd": "prd linkage",
+          "attributes": "attributes",
+          "fitments": "fitments",
+          "images": "images",
+          "status": "status"
+        }
+      },
+      "actions": {
+        "buildJobs": "Собрать задачи dry-run",
+        "runLocal": "Локальный lookup dry-run",
+        "runRemote": "Удаленный lookup с лимитом",
+        "planClone": "План clone sync",
+        "auditLinks": "Аудит связей",
+        "planSafe": "План безопасных связей",
+        "planAttributes": "План атрибутов",
+        "planFitments": "План применимости",
+        "details": "Детали",
+        "createJob": "Создать задачу",
+        "localDryRun": "Local dry-run",
+        "manualSearch": "Поиск",
+        "audit": "Аудит связи",
+        "export": "Export",
+        "close": "Закрыть",
+        "localSearch": "Искать локально",
+        "remoteSearch": "Искать в удаленной Auto_DB",
+        "clonePlan": "План синхронизации"
+      },
+      "toasts": {
+        "dryRunCompleted": "Dry-run выполнен",
+        "remoteSearchStarted": "Удаленный поиск запущен",
+        "localSearchStarted": "Локальный поиск запущен",
+        "localResultFound": "Результат найден",
+        "localResultNotFound": "Результат не найден",
+        "clonePlanGenerated": "План синхронизации создан",
+        "jobCreated": "Задача запланирована",
+        "apiError": "Ошибка API",
+        "validationError": "Заполните supplier_id и артикул",
+        "exportDownloaded": "CSV скопирован",
+        "actionRequiresConfirmation": "Требуется подтверждение",
+        "applyBlocked": "Apply заблокирован без dry-run"
+      },
+      "safety": { "applyPlaceholder": "Apply-действия отключены: нет перезаписи названий, категорий, фото, цен и остатков." },
+      "drawer": {
+        "title": "Evidence",
+        "productInfo": "Product info",
+        "brandResolution": "Brand resolution",
+        "articleSource": "Article source",
+        "localEvidence": "Local Auto_DB lookup evidence",
+        "remoteEvidence": "Remote lookup evidence",
+        "cloneSync": "Clone sync state",
+        "linkAudit": "Link audit result",
+        "enrichment": "Enrichment availability",
+        "evidenceHistory": "Evidence history"
+      }
+    }
+  }
+}

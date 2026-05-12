@@ -1,0 +1,191 @@
+from __future__ import annotations
+
+import re
+from datetime import timedelta
+from typing import Any
+
+from django.utils import timezone
+
+from apps.autodb.models import AutoDbRemoteQuotaState
+
+DEFAULT_LIMIT_PER_HOUR = 10000
+WINDOW_MINUTES = 60
+MAX_POINTS = 180
+_BASIC_AUTH_RE = re.compile(r"(https?://)[^/\s:@]+:[^/\s@]+@", re.IGNORECASE)
+
+
+class AutoDbRemoteQuotaTracker:
+    def record_success(
+        self,
+        quota: AutoDbRemoteQuotaState,
+        *,
+        query_count: int,
+        run_id: str = "",
+        status: str = "ok",
+    ) -> AutoDbRemoteQuotaState:
+        now = timezone.now()
+        self._ensure_window(quota, now=now)
+        count = max(int(query_count or 0), 0)
+        quota.estimated_queries_used = int(quota.estimated_queries_used or 0) + count
+        quota.last_ok_at = now
+        quota.last_query_at = now
+        quota.last_error = ""
+        quota.recent_points_json = self._append_point(
+            quota.recent_points_json,
+            timestamp=now,
+            query_count=count,
+            cumulative_used=quota.estimated_queries_used,
+            run_id=run_id,
+            status=status,
+        )
+        quota.save(
+            update_fields=[
+                "estimated_limit_per_hour",
+                "window_started_at",
+                "expected_reset_at",
+                "estimated_queries_used",
+                "last_ok_at",
+                "last_query_at",
+                "last_error",
+                "recent_points_json",
+                "updated_at",
+            ]
+        )
+        return quota
+
+    def record_quota_error(
+        self,
+        quota: AutoDbRemoteQuotaState,
+        *,
+        error: str,
+        cooldown_minutes: int,
+        run_id: str = "",
+    ) -> AutoDbRemoteQuotaState:
+        now = timezone.now()
+        self._ensure_window(quota, now=now)
+        sanitized_error = self._sanitize_error(error)
+        quota.last_quota_error_at = now
+        quota.last_query_at = now
+        quota.cooldown_until = now + timedelta(minutes=int(cooldown_minutes))
+        quota.expected_reset_at = quota.cooldown_until
+        quota.last_error = sanitized_error
+        quota.recent_points_json = self._append_point(
+            quota.recent_points_json,
+            timestamp=now,
+            query_count=0,
+            cumulative_used=int(quota.estimated_queries_used or 0),
+            run_id=run_id,
+            status="quota_paused",
+            error=sanitized_error,
+        )
+        quota.save(
+            update_fields=[
+                "estimated_limit_per_hour",
+                "window_started_at",
+                "expected_reset_at",
+                "last_quota_error_at",
+                "last_query_at",
+                "cooldown_until",
+                "last_error",
+                "recent_points_json",
+                "updated_at",
+            ]
+        )
+        return quota
+
+    def serialize(self, quota: AutoDbRemoteQuotaState | None) -> dict[str, Any]:
+        now = timezone.now()
+        if quota is None:
+            limit = DEFAULT_LIMIT_PER_HOUR
+            return self._payload(status="ok", limit=limit, used=0, now=now, recent_points=[])
+
+        self._ensure_window(quota, now=now)
+        paused = bool(quota.cooldown_until and quota.cooldown_until > now)
+        status = "quota_paused" if paused else self._usage_status(quota)
+        return self._payload(
+            status=status,
+            limit=int(quota.estimated_limit_per_hour or DEFAULT_LIMIT_PER_HOUR),
+            used=int(quota.estimated_queries_used or 0),
+            now=now,
+            recent_points=self._recent_points(quota.recent_points_json, now=now),
+            quota=quota,
+        )
+
+    def _ensure_window(self, quota: AutoDbRemoteQuotaState, *, now) -> None:
+        if not quota.estimated_limit_per_hour:
+            quota.estimated_limit_per_hour = DEFAULT_LIMIT_PER_HOUR
+        if not quota.window_started_at or not quota.expected_reset_at or now >= quota.expected_reset_at:
+            started = now.replace(second=0, microsecond=0)
+            quota.window_started_at = started
+            quota.expected_reset_at = started + timedelta(minutes=WINDOW_MINUTES)
+            quota.estimated_queries_used = 0
+            quota.recent_points_json = self._recent_points(quota.recent_points_json, now=now)
+
+    def _append_point(self, points: Any, *, timestamp, query_count: int, cumulative_used: int, run_id: str, status: str, error: str = "") -> list[dict]:
+        bucket = timestamp.replace(second=0, microsecond=0).isoformat()
+        out = [item for item in points if isinstance(item, dict)] if isinstance(points, list) else []
+        for item in out:
+            if item.get("timestamp") == bucket and item.get("run_id", "") == run_id and item.get("status", "") == status:
+                item["query_count"] = int(item.get("query_count") or 0) + query_count
+                item["cumulative_used"] = cumulative_used
+                if error:
+                    item["error"] = error
+                return out[-MAX_POINTS:]
+        out.append(
+            {
+                "timestamp": bucket,
+                "query_count": query_count,
+                "cumulative_used": cumulative_used,
+                "run_id": run_id,
+                "status": status,
+                "error": error,
+            }
+        )
+        return out[-MAX_POINTS:]
+
+    def _recent_points(self, points: Any, *, now) -> list[dict]:
+        raw = [item for item in points if isinstance(item, dict)] if isinstance(points, list) else []
+        cutoff = now - timedelta(minutes=WINDOW_MINUTES)
+        return [item for item in raw if self._point_is_recent(item, cutoff=cutoff)][-MAX_POINTS:]
+
+    def _point_is_recent(self, item: dict, *, cutoff) -> bool:
+        try:
+            value = timezone.datetime.fromisoformat(str(item.get("timestamp")))
+        except (TypeError, ValueError):
+            return False
+        if timezone.is_naive(value):
+            value = timezone.make_aware(value, timezone.get_current_timezone())
+        return value >= cutoff
+
+    def _usage_status(self, quota: AutoDbRemoteQuotaState) -> str:
+        limit = max(int(quota.estimated_limit_per_hour or DEFAULT_LIMIT_PER_HOUR), 1)
+        percent = int(quota.estimated_queries_used or 0) / limit * 100
+        if percent >= 100:
+            return "quota_paused"
+        if percent >= 80:
+            return "warning"
+        return "ok"
+
+    def _payload(self, *, status: str, limit: int, used: int, now, recent_points: list[dict], quota=None) -> dict[str, Any]:
+        remaining = max(limit - used, 0)
+        reset_at = getattr(quota, "expected_reset_at", None) if quota is not None else now + timedelta(minutes=WINDOW_MINUTES)
+        seconds_until_reset = max(int((reset_at - now).total_seconds()), 0) if reset_at else 0
+        return {
+            "status": status,
+            "estimated_limit_per_hour": limit,
+            "estimated_queries_used": used,
+            "estimated_queries_remaining": remaining,
+            "usage_percent": round((used / max(limit, 1)) * 100, 2),
+            "window_started_at": getattr(quota, "window_started_at", None).isoformat() if quota and quota.window_started_at else None,
+            "expected_reset_at": reset_at.isoformat() if reset_at else None,
+            "seconds_until_reset": seconds_until_reset,
+            "last_ok_at": getattr(quota, "last_ok_at", None).isoformat() if quota and quota.last_ok_at else None,
+            "last_query_at": getattr(quota, "last_query_at", None).isoformat() if quota and quota.last_query_at else None,
+            "last_quota_error_at": getattr(quota, "last_quota_error_at", None).isoformat() if quota and quota.last_quota_error_at else None,
+            "cooldown_until": getattr(quota, "cooldown_until", None).isoformat() if quota and quota.cooldown_until else None,
+            "recent_points": recent_points,
+        }
+
+    def _sanitize_error(self, error: str) -> str:
+        text = _BASIC_AUTH_RE.sub(r"\1", str(error or ""))
+        return text[:300]

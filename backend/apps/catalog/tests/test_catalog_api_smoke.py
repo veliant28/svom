@@ -2,7 +2,8 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.catalog.models import Brand, Category, Product, ProductImage
+from apps.catalog.models import AutoDbProductLinkQuality, Brand, Category, Product, ProductImage
+from apps.compatibility.models import ProductFitment
 from apps.pricing.models import ProductPrice, Supplier, SupplierOffer
 from apps.supplier_imports.models import ImportRun, ImportSource, SupplierRawOffer
 
@@ -175,6 +176,109 @@ class CatalogAPISmokeTests(APITestCase):
         returned_ids = [item["id"] for item in response.data]
         expected_featured_ids = [str(product.id) for product in reversed(featured_products)]
         self.assertEqual(returned_ids[: len(featured_products)], expected_featured_ids)
+
+    def test_home_popular_endpoint_exposes_selected_vehicle_compatibility(self):
+        supplier = Supplier.objects.create(name="Supplier Home Popular Fitment", code="supplier-home-popular-fitment", is_active=True)
+        compatible = Product.objects.create(
+            sku="SKU-POPULAR-COMPAT",
+            article="ART-POPULAR-COMPAT",
+            name="Popular Compatible Product",
+            slug="popular-compatible-product",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+            views_count=9000,
+            autodb_article_key="494:4001",
+        )
+        incompatible = Product.objects.create(
+            sku="SKU-POPULAR-INCOMPAT",
+            article="ART-POPULAR-INCOMPAT",
+            name="Popular Incompatible Product",
+            slug="popular-incompatible-product",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+            views_count=8999,
+            autodb_article_key="494:4002",
+        )
+        ProductPrice.objects.create(product=compatible, final_price="199.99", currency="UAH")
+        ProductPrice.objects.create(product=incompatible, final_price="199.99", currency="UAH")
+        SupplierOffer.objects.create(
+            supplier=supplier,
+            product=compatible,
+            supplier_sku="POPULAR-COMPAT",
+            purchase_price="120.00",
+            stock_qty=10,
+            is_available=True,
+        )
+        SupplierOffer.objects.create(
+            supplier=supplier,
+            product=incompatible,
+            supplier_sku="POPULAR-INCOMPAT",
+            purchase_price="120.00",
+            stock_qty=10,
+            is_available=True,
+        )
+        AutoDbProductLinkQuality.objects.create(
+            product=compatible,
+            autodb_article_key=compatible.autodb_article_key,
+            autodb_supplier_id=494,
+            autodb_article_number="4001",
+            status=AutoDbProductLinkQuality.STATUS_TRUSTED,
+            reason="",
+            evidence={},
+        )
+        AutoDbProductLinkQuality.objects.create(
+            product=incompatible,
+            autodb_article_key=incompatible.autodb_article_key,
+            autodb_supplier_id=494,
+            autodb_article_number="4002",
+            status=AutoDbProductLinkQuality.STATUS_TRUSTED,
+            reason="",
+            evidence={},
+        )
+        ProductFitment.objects.create(
+            product=compatible,
+            source=ProductFitment.SOURCE_AUTODB_PRO,
+            autodb_passanger_car_id=677,
+            linkage_type="PassengerCar",
+            autodb_article_key=compatible.autodb_article_key,
+            supplier_id=494,
+            article_number="4001",
+            quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
+            excluded_from_public_filtering=False,
+            is_stale=False,
+        )
+        ProductFitment.objects.create(
+            product=incompatible,
+            source=ProductFitment.SOURCE_AUTODB_PRO,
+            autodb_passanger_car_id=901,
+            linkage_type="PassengerCar",
+            autodb_article_key=incompatible.autodb_article_key,
+            supplier_id=494,
+            article_number="4002",
+            quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
+            excluded_from_public_filtering=False,
+            is_stale=False,
+        )
+
+        response = self.client.get(
+            reverse("catalog_api:home-popular-products"),
+            {"vehicle_id": "677", "fitment": "all"},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        rows = {item["slug"]: item for item in response.data}
+        self.assertTrue(rows["popular-compatible-product"]["fits_selected_vehicle"])
+        self.assertEqual(
+            rows["popular-compatible-product"]["selected_vehicle_compatibility"],
+            {"vehicle_id": 677, "is_compatible": True},
+        )
+        self.assertFalse(rows["popular-incompatible-product"]["fits_selected_vehicle"])
+        self.assertEqual(
+            rows["popular-incompatible-product"]["selected_vehicle_compatibility"],
+            {"vehicle_id": 677, "is_compatible": False},
+        )
 
     def test_product_detail_increments_views_count(self):
         self.assertEqual(self.product.views_count, 0)

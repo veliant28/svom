@@ -101,6 +101,12 @@ services:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/api/seo/public/config/ >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
     command: bash -lc "python manage.py migrate && daphne -b 0.0.0.0 -p 8000 config.asgi:application"
 
   frontend:
@@ -121,7 +127,7 @@ services:
       - "3000:3000"
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
     command: sh -lc "npm run build && npm run start -- --hostname 0.0.0.0 --port 3000"
 
   celery_worker:

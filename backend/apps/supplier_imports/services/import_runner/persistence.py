@@ -1062,6 +1062,8 @@ def _get_or_create_bootstrap_product_for_offer(
         name_source_text=base_name[:255],
         name_translation_status=Product.NAME_TRANSLATION_PENDING,
         normalized_brand=str(getattr(brand, "name", "") or "").upper(),
+        views_count=0,
+        available_stock_qty_cached=0,
         category=mapped_category,
     )
     ensure_product_svom_sku(product)

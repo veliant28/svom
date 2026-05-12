@@ -268,7 +268,7 @@ export function ImportSchedulesPage() {
 
     try {
       setRunningBySource((prev) => ({ ...prev, [item.id]: true }));
-      const response = await runBackofficeImportSchedule(token, item.id, { dispatch_async: false });
+      const response = await runBackofficeImportSchedule(token, item.id, { dispatch_async: true });
       if (response.mode === "async") {
         showSuccess(t("importSchedules.messages.runQueued", { source: sourceLabel }));
       } else {

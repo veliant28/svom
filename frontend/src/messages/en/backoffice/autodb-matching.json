@@ -1,0 +1,177 @@
+{
+  "backoffice": {
+    "autodbMatching": {
+      "tabs": {
+        "dashboard": "Dashboard",
+        "products": "Products",
+        "search": "Search",
+        "dashboardTitle": "Operational dashboard",
+        "productsTitle": "Unlinked products",
+        "searchTitle": "Auto_DB Search"
+      },
+      "common": { "yes": "Yes", "no": "No", "prev": "Previous", "next": "Next" },
+      "states": { "empty": "No data", "emptyProducts": "No unlinked products", "emptySearch": "No results yet" },
+      "dashboard": {
+        "cards": {
+          "totalJobs": "Total jobs",
+          "mappedBrands": "Mapped brands",
+          "unlinkedProducts": "Unlinked products",
+          "safeCandidates": "Safe link candidates",
+          "needsReview": "Needs review",
+          "quotaPaused": "Quota paused",
+          "linkedToday": "Linked today / latest run",
+          "enrichment": "Enrichment plan",
+          "enrichmentHint": "Attributes / fitments"
+        },
+        "charts": {
+          "jobsByStatus": "Jobs by status",
+          "brandCoverage": "Brand coverage distribution",
+          "funnel": "Matching funnel",
+          "source": "Source breakdown"
+        },
+        "funnelStages": {
+          "new": "New",
+          "local_found": "Local found",
+          "remote_found": "Remote found",
+          "clone_synced": "Clone synced",
+          "safe_link_candidate": "Safe link candidate",
+          "linked": "Linked"
+        },
+        "latestRun": "Latest run",
+        "latest": {
+          "id": "run id",
+          "status": "status",
+          "started_at": "started",
+          "finished_at": "finished",
+          "checked": "checked",
+          "hits": "hits",
+          "safe_candidates": "safe candidates",
+          "errors": "errors",
+          "quota_status": "quota",
+          "links_applied": "links applied",
+          "enrichment_applied": "enrichment applied"
+        }
+      },
+      "products": {
+        "search": "Search by SKU, name, brand, article",
+        "columns": {
+          "sku": "SKU / SVOM SKU",
+          "name": "Product name",
+          "brand": "Local catalog brand",
+          "autodb": "AutoDB supplier/display brand",
+          "supplier_code": "supplier_code",
+          "article_source": "article source",
+          "article_value": "article value",
+          "canonical": "canonical article",
+          "price_stock": "price/stock",
+          "price": "ProductPrice",
+          "tecdoc": "TecDoc",
+          "status": "matching status",
+          "recommended": "recommended action",
+          "reason": "last evidence/reason",
+          "actions": "actions"
+        },
+        "pagination": { "total": "Total: {count}" }
+      },
+      "filters": {
+        "all": "All",
+        "supplier_code": "supplier_code",
+        "brand": "Brand",
+        "autodb_supplier": "AutoDB supplier",
+        "matching_status": "matching status",
+        "article_source": "article source",
+        "tecdocOnly": "TecDoc",
+        "nonTecdocOnly": "Non-TecDoc",
+        "unknownReview": "Unknown",
+        "only_safe_candidates": "Safe link candidate",
+        "needs_review": "Needs review",
+        "quota_paused": "Quota paused",
+        "bad_article_source": "bad_article_source",
+        "split_needed": "split_needed",
+        "unsafe_ambiguous": "unsafe_ambiguous"
+      },
+      "quota": {
+        "title": "Remote Auto_DB quota",
+        "used": "Used",
+        "remaining": "Remaining",
+        "resetIn": "Reset in",
+        "status": "Status",
+        "statusOk": "OK",
+        "statusWarning": "Warning",
+        "statusPaused": "Quota exhausted",
+        "waitingReset": "Waiting for reset",
+        "remoteDisabled": "Remote search is temporarily unavailable because of quota",
+        "estimated": "Estimated",
+        "queriesPerMinute": "Queries per minute",
+        "mappedBrandsTooltip": "Mapped brands: {mapped} of {total}",
+        "linkedProductsTooltip": "Linked products: {linked} of {total}"
+      },
+      "search": {
+        "supplier": "AutoDB supplier/brand",
+        "supplierId": "supplier_id",
+        "article": "Article: WA6342, 4PK813",
+        "variants": "Deterministic variants",
+        "sources": { "local": "Local", "remote": "Remote", "both": "Both" },
+        "columns": {
+          "source": "source",
+          "supplier": "supplier",
+          "searched": "searched article",
+          "matched": "matched stored article",
+          "articleId": "article_id / key",
+          "prd": "prd linkage",
+          "attributes": "attributes",
+          "fitments": "fitments",
+          "images": "images",
+          "status": "status"
+        }
+      },
+      "actions": {
+        "buildJobs": "Build jobs dry-run",
+        "runLocal": "Run local lookup dry-run",
+        "runRemote": "Run remote lookup with limit",
+        "planClone": "Plan clone sync",
+        "auditLinks": "Audit links",
+        "planSafe": "Plan safe links",
+        "planAttributes": "Plan attributes",
+        "planFitments": "Plan fitments",
+        "details": "Details",
+        "createJob": "Create job",
+        "localDryRun": "Local dry-run",
+        "manualSearch": "Search",
+        "audit": "Link audit",
+        "export": "Export",
+        "close": "Close",
+        "localSearch": "Search locally",
+        "remoteSearch": "Search remote Auto_DB",
+        "clonePlan": "Sync plan"
+      },
+      "toasts": {
+        "dryRunCompleted": "Dry-run completed",
+        "remoteSearchStarted": "Remote search started",
+        "localSearchStarted": "Local search started",
+        "localResultFound": "Result found",
+        "localResultNotFound": "Result not found",
+        "clonePlanGenerated": "Sync plan generated",
+        "jobCreated": "Job planned",
+        "apiError": "API error",
+        "validationError": "Fill supplier_id and article",
+        "exportDownloaded": "CSV copied",
+        "actionRequiresConfirmation": "Confirmation required",
+        "applyBlocked": "Apply is blocked without dry-run"
+      },
+      "safety": { "applyPlaceholder": "Apply actions are disabled: no name, category, photo, price or stock overwrite." },
+      "drawer": {
+        "title": "Evidence",
+        "productInfo": "Product info",
+        "brandResolution": "Brand resolution",
+        "articleSource": "Article source",
+        "localEvidence": "Local Auto_DB lookup evidence",
+        "remoteEvidence": "Remote lookup evidence",
+        "cloneSync": "Clone sync state",
+        "linkAudit": "Link audit result",
+        "enrichment": "Enrichment availability",
+        "evidenceHistory": "Evidence history"
+      }
+    }
+  }
+}

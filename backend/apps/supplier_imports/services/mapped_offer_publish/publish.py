@@ -83,6 +83,8 @@ def upsert_product(
                 category_manually_locked=is_manual_category,
                 is_active=True,
                 published_at=now,
+                views_count=0,
+                available_stock_qty_cached=0,
             )
             ensure_product_svom_sku(product)
             product_cache[product.sku] = product

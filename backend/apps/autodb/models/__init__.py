@@ -9,6 +9,7 @@ from .country_group import AutoDbCountryGroup
 from .engine import AutoDbEngine
 from .language import AutoDbLanguage
 from .manufacturer import AutoDbManufacturer
+from .matching import AutoDbMatchEvidence, AutoDbMatchJob, AutoDbMatchingRun, AutoDbRemoteQuotaState
 from .passenger_car import AutoDbPassengerCar
 from .passenger_car_engine import AutoDbPassengerCarEngine
 from .passenger_car_tree import AutoDbPassengerCarTree
@@ -46,4 +47,8 @@ __all__ = [
     "AutoDbPrd",
     "AutoDbArticleProductGroup",
     "AutoDbSyncState",
+    "AutoDbMatchingRun",
+    "AutoDbMatchJob",
+    "AutoDbMatchEvidence",
+    "AutoDbRemoteQuotaState",
 ]
