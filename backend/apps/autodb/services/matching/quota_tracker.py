@@ -4,6 +4,7 @@ import re
 from datetime import timedelta
 from typing import Any
 
+from django.conf import settings
 from django.utils import timezone
 
 from apps.autodb.models import AutoDbRemoteQuotaState
@@ -12,6 +13,7 @@ DEFAULT_LIMIT_PER_HOUR = 10000
 WINDOW_MINUTES = 60
 MAX_POINTS = 180
 _BASIC_AUTH_RE = re.compile(r"(https?://)[^/\s:@]+:[^/\s@]+@", re.IGNORECASE)
+_MYSQL_USER_RE = re.compile(r"User\s+'[^']+'", re.IGNORECASE)
 
 
 class AutoDbRemoteQuotaTracker:
@@ -27,16 +29,25 @@ class AutoDbRemoteQuotaTracker:
         self._ensure_window(quota, now=now)
         count = max(int(query_count or 0), 0)
         quota.estimated_queries_used = int(quota.estimated_queries_used or 0) + count
+        limit = max(int(quota.estimated_limit_per_hour or DEFAULT_LIMIT_PER_HOUR), 1)
+        auto_paused = False
+        if int(quota.estimated_queries_used or 0) >= limit:
+            quota.cooldown_until = quota.expected_reset_at
+            quota.last_quota_error_at = now
+            if not quota.last_error:
+                quota.last_error = "local quota gate reached estimated hourly limit"
+            auto_paused = True
         quota.last_ok_at = now
         quota.last_query_at = now
-        quota.last_error = ""
+        if not auto_paused:
+            quota.last_error = ""
         quota.recent_points_json = self._append_point(
             quota.recent_points_json,
             timestamp=now,
             query_count=count,
             cumulative_used=quota.estimated_queries_used,
             run_id=run_id,
-            status=status,
+            status="quota_paused" if auto_paused else status,
         )
         quota.save(
             update_fields=[
@@ -46,6 +57,8 @@ class AutoDbRemoteQuotaTracker:
                 "estimated_queries_used",
                 "last_ok_at",
                 "last_query_at",
+                "last_quota_error_at",
+                "cooldown_until",
                 "last_error",
                 "recent_points_json",
                 "updated_at",
@@ -112,13 +125,15 @@ class AutoDbRemoteQuotaTracker:
         )
 
     def _ensure_window(self, quota: AutoDbRemoteQuotaState, *, now) -> None:
-        if not quota.estimated_limit_per_hour:
-            quota.estimated_limit_per_hour = DEFAULT_LIMIT_PER_HOUR
+        configured_limit = max(int(getattr(settings, "AUTODB_PRO_REMOTE_LIMIT_PER_HOUR", DEFAULT_LIMIT_PER_HOUR) or DEFAULT_LIMIT_PER_HOUR), 1)
+        quota.estimated_limit_per_hour = configured_limit
         if not quota.window_started_at or not quota.expected_reset_at or now >= quota.expected_reset_at:
             started = now.replace(second=0, microsecond=0)
             quota.window_started_at = started
             quota.expected_reset_at = started + timedelta(minutes=WINDOW_MINUTES)
             quota.estimated_queries_used = 0
+            quota.cooldown_until = None
+            quota.last_error = ""
             quota.recent_points_json = self._recent_points(quota.recent_points_json, now=now)
 
     def _append_point(self, points: Any, *, timestamp, query_count: int, cumulative_used: int, run_id: str, status: str, error: str = "") -> list[dict]:
@@ -186,6 +201,11 @@ class AutoDbRemoteQuotaTracker:
             "recent_points": recent_points,
         }
 
+    def is_paused(self, quota: AutoDbRemoteQuotaState | None) -> bool:
+        payload = self.serialize(quota)
+        return str(payload.get("status") or "") == "quota_paused"
+
     def _sanitize_error(self, error: str) -> str:
         text = _BASIC_AUTH_RE.sub(r"\1", str(error or ""))
+        text = _MYSQL_USER_RE.sub("User '[redacted]'", text)
         return text[:300]

@@ -18,6 +18,9 @@ class GplArticleResolution:
 
 class GplArticleResolver:
     MANUFACTURER_FIELDS_HIGH = (
+        "tecdoc_article",
+        "TecdocArticle",
+        "tecdocArticle",
         "Артикул ТД",
         "manufacturer_article",
         "producer_article",
@@ -102,6 +105,9 @@ class GplArticleResolver:
             "manufacturer_article": self._first(
                 data,
                 (
+                    "tecdoc_article",
+                    "TecdocArticle",
+                    "tecdocArticle",
                     "Артикул ТД",
                     "manufacturer_article",
                     "producer_article",

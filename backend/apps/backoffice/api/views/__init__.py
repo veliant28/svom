@@ -95,10 +95,6 @@ from .pricing_control_views import (
     PricingGlobalMarkupAPIView,
     PricingRecalculateAPIView,
 )
-from .product_fitments_views import (
-    BackofficeProductFitmentListCreateAPIView,
-    BackofficeProductFitmentRetrieveUpdateDestroyAPIView,
-)
 from .product_prices_list_view import ProductPriceOperationalListAPIView
 from .procurement_suggestions_view import ProcurementItemRecommendationAPIView, ProcurementSuggestionsListAPIView
 from .supplier_offers_list_view import SupplierOfferOperationalListAPIView
@@ -189,18 +185,6 @@ from .promo_banner_views import (
     BackofficePromoBannerListCreateAPIView,
     BackofficePromoBannerRetrieveUpdateDestroyAPIView,
     BackofficePromoBannerSettingsAPIView,
-)
-from .vehicle_taxonomy_views import (
-    BackofficeVehicleEngineListCreateAPIView,
-    BackofficeVehicleEngineRetrieveUpdateDestroyAPIView,
-    BackofficeVehicleGenerationListCreateAPIView,
-    BackofficeVehicleGenerationRetrieveUpdateDestroyAPIView,
-    BackofficeVehicleMakeListCreateAPIView,
-    BackofficeVehicleMakeRetrieveUpdateDestroyAPIView,
-    BackofficeVehicleModelListCreateAPIView,
-    BackofficeVehicleModelRetrieveUpdateDestroyAPIView,
-    BackofficeVehicleModificationListCreateAPIView,
-    BackofficeVehicleModificationRetrieveUpdateDestroyAPIView,
 )
 from .email_settings_view import BackofficeEmailSettingsAPIView, BackofficeEmailSettingsTestAPIView
 
@@ -317,18 +301,6 @@ __all__ = [
     "PricingGlobalMarkupAPIView",
     "PricingCategoryMarkupAPIView",
     "PricingRecalculateAPIView",
-    "BackofficeVehicleMakeListCreateAPIView",
-    "BackofficeVehicleMakeRetrieveUpdateDestroyAPIView",
-    "BackofficeVehicleModelListCreateAPIView",
-    "BackofficeVehicleModelRetrieveUpdateDestroyAPIView",
-    "BackofficeVehicleGenerationListCreateAPIView",
-    "BackofficeVehicleGenerationRetrieveUpdateDestroyAPIView",
-    "BackofficeVehicleEngineListCreateAPIView",
-    "BackofficeVehicleEngineRetrieveUpdateDestroyAPIView",
-    "BackofficeVehicleModificationListCreateAPIView",
-    "BackofficeVehicleModificationRetrieveUpdateDestroyAPIView",
-    "BackofficeProductFitmentListCreateAPIView",
-    "BackofficeProductFitmentRetrieveUpdateDestroyAPIView",
     "BackofficeRbacMetaAPIView",
     "BackofficeUserListCreateAPIView",
     "BackofficeUserRetrieveUpdateAPIView",

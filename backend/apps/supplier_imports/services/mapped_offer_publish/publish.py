@@ -52,6 +52,7 @@ def upsert_product(
     supplier_offer_cache: dict[str, SupplierOffer],
 ) -> tuple[Product, bool, bool]:
     now = timezone.now()
+    source_code = str(getattr(getattr(raw_offer, "source", None), "code", "") or "").strip().lower()
     resolved_sku = selection.build_product_sku(supplier_sku=supplier_sku)
     existing_offer = supplier_offer_cache.get(supplier_sku)
     product = raw_offer.matched_product or (existing_offer.product if existing_offer is not None else None)
@@ -136,7 +137,10 @@ def upsert_product(
             changed_fields.add("name_en")
 
         resolved_article = (raw_offer.article or raw_offer.external_sku or supplier_sku)[:128]
-        if resolved_article and not product.article:
+        if resolved_article and (
+            not str(product.article or "").strip()
+            or (source_code == "gpl" and str(product.article or "").strip() != resolved_article)
+        ):
             product.article = resolved_article
             changed_fields.add("article")
 

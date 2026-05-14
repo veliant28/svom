@@ -51,6 +51,7 @@ class AutoDbProductLinkService:
         normalized_article = normalize_article(article)
 
         lookup = self.lookup_service.lookup(brand_name=brand_name, article=article, allow_remote=allow_remote)
+
         if not lookup.found:
             mapping = self._resolve_manual_mapping(
                 normalized_brand=normalized_brand,
@@ -234,8 +235,10 @@ class AutoDbProductLinkService:
         if raw_offer.matched_product is None:
             raise ValueError("Raw offer is not linked to a Product.")
 
-        brand_name = raw_offer.brand_name or raw_offer.normalized_brand or getattr(raw_offer.matched_product.brand, "name", "")
-        article = raw_offer.article or raw_offer.normalized_article or raw_offer.external_sku
+        brand_name = getattr(raw_offer.matched_product.brand, "name", "") or raw_offer.brand_name or raw_offer.normalized_brand
+        article = str(getattr(raw_offer.matched_product, "article", "") or "").strip()
+        if not article:
+            raise ValueError("Matched product has empty article in DB.")
         return self.link_product(
             product=raw_offer.matched_product,
             brand_name=brand_name,

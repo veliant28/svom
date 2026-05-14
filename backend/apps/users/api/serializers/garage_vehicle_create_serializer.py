@@ -60,11 +60,6 @@ class GarageVehicleCreateSerializer(serializers.ModelSerializer):
         if autodb_passanger_car_id is None:
             raise serializers.ValidationError("autodb_passanger_car_id is required.")
 
-        attrs["make"] = None
-        attrs["model"] = None
-        attrs["generation"] = None
-        attrs["engine"] = None
-        attrs["modification"] = None
         attrs["nickname"] = ""
         attrs["vin"] = ""
 

@@ -32,6 +32,25 @@ class AutoDbArticleSourceResolver:
         "manufacturer_article_number",
         "manufacturerArticleNumber",
     )
+    GPL_FAST_TRUSTED_KEYS = (
+        "Артикул ТД",
+        "payload_manufacturer_article",
+        "article",
+        "Артикул",
+    )
+    UTR_FAST_TRUSTED_KEYS = (
+        "Артикул",
+        "article",
+    )
+    GENERIC_FAST_PAYLOAD_KEYS = (
+        "manufacturer_article",
+        "manufacturerArticle",
+        "manufacturer_article_number",
+        "manufacturerArticleNumber",
+        "oem",
+        "oe",
+        "OENbr",
+    )
 
     def __init__(self, *, normalizer: ArticleNumberNormalizer | None = None):
         self.normalizer = normalizer or ArticleNumberNormalizer()
@@ -48,12 +67,22 @@ class AutoDbArticleSourceResolver:
         product_article: str = "",
         supplier_sku: str = "",
         supplier_sku_is_manufacturer_article: bool = False,
+        forbid_raw_offer_fallback: bool = False,
+        enforce_product_article: bool = False,
     ) -> AutoDbArticleSourceResolution:
         payload = raw_payload or {}
         parser = str(parser_type or "").strip().lower()
         source = str(source_code or supplier_code or "").strip().lower()
         brand_key = normalize_brand(raw_brand)
         is_wix = brand_key in {"WIX", "WIXFILTER", "WIXFILTERS"}
+        is_gpl = parser == "gpl" or source.startswith("gpl")
+        is_utr = parser == "utr" or source.startswith("utr")
+        product_article_value = str(product_article or "").strip()
+
+        if enforce_product_article:
+            if product_article_value:
+                return self._ok(product_article_value, "product_article", 1.0, "forced Product.article source")
+            return self._bad("missing_product_article", "Product.article is empty")
 
         if parser == "utr" and is_wix:
             return self._bad("utr_wix_paused", "UTR-WIX paused until manufacturer article source is confirmed")
@@ -64,7 +93,23 @@ class AutoDbArticleSourceResolver:
                 return self._ok(value, "payload_manufacturer_article", 1.0, "GPL-WIX requires payload_manufacturer_article")
             return self._bad("gpl_wix_missing_payload_manufacturer_article", "GPL-WIX cannot use product_article fallback")
 
-        if parser == "gpl" or source.startswith("gpl"):
+        if forbid_raw_offer_fallback:
+            if product_article_value:
+                return self._ok(product_article_value, "product_article", 1.0, "FAST trusted canonical product article")
+            if is_gpl:
+                value, key = self._first_payload_value_with_key(payload, self.GPL_FAST_TRUSTED_KEYS)
+                if value:
+                    return self._ok(value, key, 0.96, "FAST trusted GPL article source")
+            if is_utr:
+                value, key = self._first_payload_value_with_key(payload, self.UTR_FAST_TRUSTED_KEYS)
+                if value:
+                    return self._ok(value, key, 0.94, "FAST trusted UTR article source")
+            value, key = self._first_payload_value_with_key(payload, self.GENERIC_FAST_PAYLOAD_KEYS)
+            if value:
+                return self._ok(value, key, 0.9, "FAST generic manufacturer/OE payload source")
+            return self._bad("no_trusted_article", "FAST mode requires trusted product/payload article source")
+
+        if is_gpl:
             value, key = self._first_payload_value_with_key(payload, self.GPL_MANUFACTURER_KEYS)
             if value:
                 return self._ok(value, key, 0.98, "GPL manufacturer payload source")
@@ -79,8 +124,8 @@ class AutoDbArticleSourceResolver:
         if value:
             return self._ok(value, key, 0.9, "generic manufacturer payload source")
 
-        if product_article:
-            return self._ok(product_article, "product_article", 0.6, "product article fallback")
+        if product_article_value:
+            return self._ok(product_article_value, "product_article", 0.6, "product article fallback")
 
         if supplier_sku:
             return self._bad("supplier_sku_not_allowed", "supplier_sku is not used without supplier-specific proof")

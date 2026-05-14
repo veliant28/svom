@@ -232,3 +232,98 @@ class AutoDbProductLinkServiceTests(SimpleTestCase):
 
         self.assertTrue(result.linked)
         enrichment_service.enrich_article.assert_called_once()
+
+    def test_remote_lookup_returns_linked_result(self):
+        lookup_service = Mock()
+        lookup_service.lookup.return_value = ArticleLookupResult(
+            found=True,
+            normalized_brand="BOSCH",
+            normalized_article="W71295",
+            supplier_id=15,
+            article_key="15:W71295",
+            article_id=88,
+            canonical_article_number="W71295",
+            canonical_brand="BOSCH",
+            supplier_source="remote",
+            article_source="remote",
+            remote_supplier_called=True,
+            remote_article_called=True,
+        )
+        service = AutoDbProductLinkService(
+            lookup_service=lookup_service,
+            enrichment_service=Mock(),
+        )
+        product = SimpleNamespace(
+            id="p-usage",
+            normalized_brand="",
+            normalized_article="",
+            autodb_supplier_id=None,
+            autodb_article_id=None,
+            autodb_article_number="",
+            autodb_article_key="",
+            catalog_source="",
+            save=Mock(),
+        )
+
+        result = service.link_product(product=product, brand_name="Bosch", article="W712/95", dry_run=True, allow_remote=True)
+
+        self.assertTrue(result.linked)
+        self.assertEqual(result.link_status, "linked")
+
+    def test_quota_error_is_reraised(self):
+        lookup_service = Mock()
+        lookup_service.lookup.side_effect = RuntimeError("ERROR 1226 (42000): max_questions exceeded")
+        service = AutoDbProductLinkService(lookup_service=lookup_service)
+        product = SimpleNamespace(
+            id="p-quota",
+            normalized_brand="",
+            normalized_article="",
+            autodb_supplier_id=None,
+            autodb_article_id=None,
+            autodb_article_number="",
+            autodb_article_key="",
+            catalog_source="",
+            save=Mock(),
+        )
+
+        with self.assertRaises(RuntimeError):
+            service.link_product(product=product, brand_name="Bosch", article="W712/95", dry_run=False, allow_remote=True)
+
+    @patch("apps.autodb.services.product_linker.SupplierRawOffer.objects.select_related")
+    def test_link_from_raw_offer_uses_product_article_from_db(self, select_related_mock):
+        service = AutoDbProductLinkService(lookup_service=Mock())
+        matched_product = SimpleNamespace(article="214082", brand=SimpleNamespace(name="OPTIBELT"))
+        raw_offer = SimpleNamespace(
+            matched_product=matched_product,
+            brand_name="",
+            normalized_brand="",
+            article="OP0617",
+            normalized_article="OP0617",
+            external_sku="0000001",
+        )
+        select_related_mock.return_value.get.return_value = raw_offer
+        service.link_product = Mock(return_value=SimpleNamespace(linked=True))
+
+        service.link_from_raw_offer(raw_offer_id="row-1")
+
+        service.link_product.assert_called_once()
+        kwargs = service.link_product.call_args.kwargs
+        self.assertEqual(kwargs["article"], "214082")
+        self.assertEqual(kwargs["brand_name"], "OPTIBELT")
+
+    @patch("apps.autodb.services.product_linker.SupplierRawOffer.objects.select_related")
+    def test_link_from_raw_offer_requires_product_article_in_db(self, select_related_mock):
+        service = AutoDbProductLinkService(lookup_service=Mock())
+        matched_product = SimpleNamespace(article="", brand=SimpleNamespace(name="OPTIBELT"))
+        raw_offer = SimpleNamespace(
+            matched_product=matched_product,
+            brand_name="OPTIBELT",
+            normalized_brand="OPTIBELT",
+            article="OP0617",
+            normalized_article="OP0617",
+            external_sku="0000001",
+        )
+        select_related_mock.return_value.get.return_value = raw_offer
+
+        with self.assertRaisesMessage(ValueError, "Matched product has empty article in DB."):
+            service.link_from_raw_offer(raw_offer_id="row-2")

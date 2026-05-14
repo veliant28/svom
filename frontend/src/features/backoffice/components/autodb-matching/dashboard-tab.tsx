@@ -1,14 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslations } from "next-intl";
 
 import { getAutoDbMatchingDashboard } from "@/features/backoffice/api/backoffice-api";
 import { AutoDbQuotaCard } from "@/features/backoffice/components/autodb-matching/quota-card";
 import { EchartsPanel } from "@/features/backoffice/components/widgets/echarts-panel";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
+import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
 import { useBackofficeQuery } from "@/features/backoffice/hooks/use-backoffice-query";
-import type { AutoDbDashboard } from "@/features/backoffice/types/backoffice";
+import type { AutoDbDashboard, AutoDbRemoteQuota } from "@/features/backoffice/types/backoffice";
 
 function toCount(value: number | string | undefined): number {
   const parsed = Number(value ?? 0);
@@ -17,8 +18,10 @@ function toCount(value: number | string | undefined): number {
 
 export function AutoDbMatchingDashboardTab({ refreshNonce = 0 }: { refreshNonce?: number }) {
   const t = useTranslations("backoffice.autodbMatching");
+  const { showWarning } = useBackofficeFeedback();
   const queryFn = useCallback((token: string) => getAutoDbMatchingDashboard(token), []);
   const { data, isLoading, error, refetch } = useBackofficeQuery<AutoDbDashboard>(queryFn);
+  const quotaPausedNotifiedRef = useRef(false);
   const charts = useDashboardCharts(data, t);
   const cards = data?.cards ?? {};
   const quotaMeta = {
@@ -35,11 +38,22 @@ export function AutoDbMatchingDashboardTab({ refreshNonce = 0 }: { refreshNonce?
     void refetch();
   }, [refreshNonce, refetch]);
 
+  const handleQuotaChange = useCallback(
+    (quota: AutoDbRemoteQuota | null) => {
+      const paused = quota?.status === "quota_paused";
+      if (paused && !quotaPausedNotifiedRef.current) {
+        showWarning(t("quota.remoteDisabled"));
+      }
+      quotaPausedNotifiedRef.current = paused;
+    },
+    [showWarning, t],
+  );
+
   return (
     <AsyncState isLoading={isLoading} error={error} empty={!data} emptyLabel={t("states.empty")}>
       {data ? (
         <div className="grid h-[calc(100vh-11rem)] min-h-[560px] grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
-          <AutoDbQuotaCard refreshNonce={refreshNonce} quotaMeta={quotaMeta} />
+          <AutoDbQuotaCard refreshNonce={refreshNonce} quotaMeta={quotaMeta} onQuotaChange={handleQuotaChange} />
 
           <section className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-2 rounded-2xl border p-3" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
             <h2 className="text-sm font-semibold">{t("tabs.dashboardTitle")}</h2>
@@ -93,11 +107,28 @@ function useDashboardCharts(data: AutoDbDashboard | null, t: ReturnType<typeof u
       brandHasData: brands.length > 0,
       brandOption: {
         animationDuration: 320,
-        grid: { left: 20, right: 20, top: 10, bottom: 24, containLabel: true },
+        grid: { left: 20, right: 20, top: 10, bottom: 28, containLabel: true },
         xAxis: {
           type: "category",
           data: brandLabels,
-          axisLabel: { color: "#475569", fontSize: 10, rotate: 0 },
+          axisLabel: {
+            color: "#475569",
+            fontSize: 10,
+            interval: 0,
+            hideOverlap: false,
+            rotate: 0,
+            margin: 6,
+            lineHeight: 11,
+            formatter: (value: string) => {
+              const normalized = String(value ?? "");
+              if (normalized.length <= 14) {
+                return normalized;
+              }
+              const firstLine = normalized.slice(0, 14);
+              const secondLine = normalized.slice(14, 28);
+              return secondLine ? `${firstLine}\n${secondLine}` : firstLine;
+            },
+          },
         },
         yAxis: {
           type: "value",

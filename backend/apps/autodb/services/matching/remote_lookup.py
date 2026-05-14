@@ -95,12 +95,6 @@ class AutoDbRemoteLookupService:
             return self._quota_paused(job=job, run=run, quota=quota, error=str(getattr(result, "error", "")))
 
         remote_queries = int(getattr(result, "remote_queries", 0) or 0)
-        self.quota_tracker.record_success(
-            quota,
-            query_count=remote_queries + 1,
-            run_id=str(run.id) if run else "",
-            status="ok",
-        )
 
         status = AutoDbMatchJob.STATUS_REMOTE_FOUND if bool(getattr(result, "found", False)) else AutoDbMatchJob.STATUS_REMOTE_NOT_FOUND
         reason = "remote deterministic lookup found article" if status == AutoDbMatchJob.STATUS_REMOTE_FOUND else "remote deterministic lookup missed"

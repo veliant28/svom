@@ -2,11 +2,14 @@ from __future__ import annotations
 
 from dataclasses import asdict
 
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.response import Response
 
-from apps.autodb.models import AutoDbRemoteQuotaState
+from apps.autodb.models import AutoDbMatchJob
 from apps.autodb.services.lookup_v3_readonly import AutoDbLookupV3ReadOnlyService
+from apps.autodb.tasks import manual_bind_product_to_autodb_task
+from apps.catalog.models import Product
 from apps.autodb.services.matching import (
     AutoDbCloneSyncPlanner,
     AutoDbEnrichmentPlanner,
@@ -14,14 +17,13 @@ from apps.autodb.services.matching import (
     AutoDbMatchJobBuilder,
     AutoDbSafeLinkPlanner,
 )
-from apps.autodb.services.matching.constants import REMOTE_QUOTA_KEY
-from apps.autodb.services.matching.quota_tracker import AutoDbRemoteQuotaTracker
 
 from .._base import BackofficeAPIView
 from .search import ManualAutoDbSearch, remote_result_payload
 from .utils import (
     PROTECTED_FIELDS,
     jobs_for_action,
+    parse_bool,
     parse_positive_int,
     parse_supplier_id,
     quota_payload,
@@ -88,13 +90,62 @@ class BackofficeAutoDbMatchingManualSearchLocalAPIView(BackofficeAPIView):
     required_capability = "autocatalog.view"
 
     def post(self, request):
-        supplier_id = parse_supplier_id(request.data.get("supplier_id") or request.data.get("autodb_supplier_id"))
         article = safe_str(request.data.get("article"))
-        if supplier_id is None or not article:
-            return Response({"detail": "supplier_id and article are required"}, status=status.HTTP_400_BAD_REQUEST)
+        if not article:
+            return Response({"detail": "article is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        supplier_id = parse_supplier_id(request.data.get("supplier_id") or request.data.get("autodb_supplier_id"))
+        if supplier_id is None:
+            helper = ManualAutoDbSearch()
+            candidates = helper.local_candidates(article=article)
+            if not candidates:
+                candidates = self._history_candidates(article=article, variants=helper.variants(article))
+            return Response({"dry_run": True, "source": "local", "quota": quota_payload(), "candidates": candidates, "results": []})
+
         supplier_name = safe_str(request.data.get("supplier_name")) or supplier_display_name(supplier_id)
         result = ManualAutoDbSearch().local(supplier_id=supplier_id, supplier_name=supplier_name, article=article)
         return Response({"dry_run": True, "source": "local", "quota": quota_payload(), "results": [result]})
+
+    def _history_candidates(self, *, article: str, variants: list[str], limit: int = 80) -> list[dict]:
+        normalized_values = {safe_str(article).upper()}
+        normalized_values.update({safe_str(item).upper() for item in variants if safe_str(item)})
+        normalized_values.discard("")
+        if not normalized_values:
+            return []
+
+        jobs = (
+            AutoDbMatchJob.objects.exclude(resolved_supplier_id__isnull=True)
+            .filter(
+                Q(canonical_article__in=normalized_values)
+                | Q(article_value__in=normalized_values)
+            )
+            .order_by("-updated_at")[:300]
+        )
+
+        buckets: dict[tuple[int, str], dict] = {}
+        for job in jobs:
+            supplier_id = int(job.resolved_supplier_id or 0)
+            if supplier_id <= 0:
+                continue
+            matched_article = safe_str(job.canonical_article or job.article_value).upper()
+            if not matched_article:
+                continue
+            key = (supplier_id, matched_article)
+            if key not in buckets:
+                buckets[key] = {
+                    "supplier_id": supplier_id,
+                    "supplier_name": supplier_display_name(supplier_id, job.raw_brand),
+                    "matched_stored_article": matched_article,
+                    "hits": 0,
+                    "matched_table": "jobs_history",
+                }
+            buckets[key]["hits"] = int(buckets[key]["hits"]) + 1
+
+        ordered = sorted(
+            buckets.values(),
+            key=lambda item: (-int(item["hits"]), safe_str(item["supplier_name"]), int(item["supplier_id"])),
+        )
+        return ordered[: max(int(limit), 1)]
 
 
 class BackofficeAutoDbMatchingManualSearchRemoteAPIView(BackofficeAPIView):
@@ -110,32 +161,32 @@ class BackofficeAutoDbMatchingManualSearchRemoteAPIView(BackofficeAPIView):
         if not article or not brand:
             return Response({"detail": "brand/supplier and article are required"}, status=status.HTTP_400_BAD_REQUEST)
 
+        article_lookup = self._extract_article_from_brand_prefixed_input(article=article, brand=brand)
         helper = ManualAutoDbSearch()
-        variants = helper.variants(article)
+        variants = helper.variants(article_lookup)
         if quota["paused"]:
-            return Response({"dry_run": True, "source": "remote", "quota": quota, "results": [self._quota_row(supplier_id, brand, article, variants)]})
+            return Response({"dry_run": True, "source": "remote", "quota": quota, "results": [self._quota_row(supplier_id, brand, article_lookup, variants)]})
         try:
-            result = AutoDbLookupV3ReadOnlyService().lookup(brand=brand, article=article)
+            result = AutoDbLookupV3ReadOnlyService().lookup(brand=brand, article=article_lookup)
         except Exception as exc:  # noqa: BLE001
-            if self._is_quota_error(exc):
-                AutoDbRemoteQuotaTracker().record_quota_error(
-                    self._quota_state(),
-                    error=str(exc),
-                    cooldown_minutes=60,
-                    run_id="manual-search",
+            return Response({"dry_run": True, "source": "remote", "quota": quota, "results": [self._error_row(supplier_id, brand, article_lookup, variants, exc)]})
+        previews: dict | None = None
+        try:
+            supplier_id_value = getattr(result, "supplier_id", None)
+            article_value = safe_str(getattr(result, "remote_stored_article", "")) or safe_str(getattr(result, "canonical_article", ""))
+            if bool(getattr(result, "found", False)) and supplier_id_value and article_value:
+                previews = helper.build_remote_previews(
+                    supplier_id=int(supplier_id_value),
+                    article_number=article_value,
                 )
-            return Response({"dry_run": True, "source": "remote", "quota": quota, "results": [self._error_row(supplier_id, brand, article, variants, exc)]})
-        AutoDbRemoteQuotaTracker().record_success(
-            self._quota_state(),
-            query_count=int(getattr(result, "remote_queries", 0) or 0) + 1,
-            run_id="manual-search",
-        )
+        except Exception:  # noqa: BLE001
+            previews = None
         return Response(
             {
                 "dry_run": True,
                 "source": "remote",
                 "quota": quota_payload(),
-                "results": [remote_result_payload(result, article=article, variants=variants)],
+                "results": [remote_result_payload(result, article=article_lookup, variants=variants, previews=previews)],
             }
         )
 
@@ -163,33 +214,127 @@ class BackofficeAutoDbMatchingManualSearchRemoteAPIView(BackofficeAPIView):
             "image_thumbnails": [],
         }
 
-    def _quota_state(self):
-        quota, _created = AutoDbRemoteQuotaState.objects.get_or_create(remote_key=REMOTE_QUOTA_KEY)
-        return quota
+    def _extract_article_from_brand_prefixed_input(self, *, article: str, brand: str) -> str:
+        raw = " ".join(safe_str(article).split())
+        if not raw:
+            return ""
+        brand_norm = safe_str(brand).upper()
+        tokens = raw.split(" ")
+        if len(tokens) <= 1 or not brand_norm:
+            return raw
+        first = safe_str(tokens[0]).upper()
+        last = safe_str(tokens[-1]).upper()
+        if first == brand_norm and len(tokens) > 1:
+            return " ".join(tokens[1:]).strip()
+        if last == brand_norm and len(tokens) > 1:
+            return " ".join(tokens[:-1]).strip()
+        return raw
 
-    def _is_quota_error(self, value: object) -> bool:
-        text = str(value or "").lower()
-        return "error 1226" in text or "max_questions" in text or "quota" in text
+class BackofficeAutoDbMatchingProductLookupAPIView(BackofficeAPIView):
+    required_capability = "autocatalog.view"
+
+    def get(self, request):
+        query = safe_str(request.query_params.get("q"))
+        limit = parse_positive_int(request.query_params.get("limit"), default=8, maximum=20)
+        if len(query) < 2:
+            return Response({"count": 0, "results": []})
+
+        qs = (
+            Product.objects.select_related("brand")
+            .filter(
+                Q(svom_sku__icontains=query)
+                | Q(sku__icontains=query)
+                | Q(name__icontains=query)
+                | Q(brand__name__icontains=query)
+            )
+            .order_by("-updated_at")[:limit]
+        )
+        rows = [
+            {
+                "id": str(item.id),
+                "sku": safe_str(item.sku),
+                "svom_sku": safe_str(item.svom_sku),
+                "name": safe_str(item.name),
+                "brand_name": safe_str(getattr(item.brand, "name", "")),
+            }
+            for item in qs
+        ]
+        return Response({"count": len(rows), "results": rows})
 
 
 class BackofficeAutoDbMatchingManualSearchCreateJobAPIView(BackofficeAPIView):
     required_capability = "autocatalog.view"
 
     def post(self, request):
+        product_id = safe_str(request.data.get("product_id"))
+        supplier_id = parse_supplier_id(request.data.get("supplier_id") or request.data.get("autodb_supplier_id"))
+        article = safe_str(request.data.get("article"))
+        supplier_name = safe_str(request.data.get("supplier_name"))
+        dispatch_async_raw = request.data.get("dispatch_async")
+        if isinstance(dispatch_async_raw, bool):
+            parsed_async = dispatch_async_raw
+        else:
+            parsed_async = parse_bool(dispatch_async_raw)
+        dispatch_async = True if parsed_async is None else bool(parsed_async)
+
+        if not product_id:
+            return Response({"detail": "product_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        if supplier_id is None:
+            return Response({"detail": "supplier_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        if not article:
+            return Response({"detail": "article is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        product = Product.objects.select_related("brand").filter(pk=product_id).first()
+        if product is None:
+            return Response({"detail": "product not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if dispatch_async:
+            task = manual_bind_product_to_autodb_task.delay(
+                product_id=str(product.id),
+                supplier_id=int(supplier_id),
+                article_number=article,
+                supplier_name=supplier_name,
+                article_id=None,
+                actor_id=str(getattr(request.user, "id", "") or ""),
+            )
+            return Response(
+                {
+                    "dry_run": False,
+                    "created": True,
+                    "status": "queued",
+                    "mode": "async",
+                    "task_id": str(task.id),
+                    "message": "Manual bind queued.",
+                    "result": {
+                        "product_id": str(product.id),
+                        "supplier_id": int(supplier_id),
+                        "article_number": article,
+                    },
+                },
+                status=status.HTTP_202_ACCEPTED,
+            )
+
+        result = manual_bind_product_to_autodb_task(
+            product_id=str(product.id),
+            supplier_id=int(supplier_id),
+            article_number=article,
+            supplier_name=supplier_name,
+            article_id=None,
+            actor_id=str(getattr(request.user, "id", "") or ""),
+        )
+        status_value = safe_str(result.get("status")) if isinstance(result, dict) else ""
+        response_status = status.HTTP_200_OK if status_value == "bound" else status.HTTP_422_UNPROCESSABLE_ENTITY
         return Response(
             {
-                "dry_run": True,
-                "created": False,
-                "status": "planned",
+                "dry_run": False,
+                "created": bool(status_value == "bound"),
+                "status": status_value or "error",
+                "mode": "sync",
                 "protected_fields": PROTECTED_FIELDS,
-                "message": "Matching job creation is a dry-run placeholder in this UI task.",
-                "payload": {
-                    "product_id": safe_str(request.data.get("product_id")),
-                    "supplier_id": parse_supplier_id(request.data.get("supplier_id")),
-                    "article": safe_str(request.data.get("article")),
-                    "source_result": request.data.get("result") if isinstance(request.data.get("result"), dict) else {},
-                },
-            }
+                "message": "Manual bind completed." if status_value == "bound" else "Manual bind failed.",
+                "result": result if isinstance(result, dict) else {},
+            },
+            status=response_status,
         )
 
 

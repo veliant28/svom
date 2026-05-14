@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Activity, Package, Tags, Timer } from "lucide-react";
+import { Activity, Clock3, Package, Tags } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { getAutoDbMatchingRemoteQuota } from "@/features/backoffice/api/backoffice-api";
@@ -65,6 +65,7 @@ export function AutoDbQuotaCard({
   };
 }) {
   const t = useTranslations("backoffice.autodbMatching");
+  const tDashboard = useTranslations("backoffice.dashboard");
   const queryFn = useCallback((token: string) => getAutoDbMatchingRemoteQuota(token), []);
   const { data, isLoading, error, refetch } = useBackofficeQuery<AutoDbRemoteQuota>(queryFn);
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -212,7 +213,9 @@ export function AutoDbQuotaCard({
     };
   }, [limit, rangeEndMs, rangeStartMs, recentPoints, t, tone, usagePercent, used]);
 
-  const timerLabel = secondsLeft === null ? t("quota.waitingReset") : formatCountdown(secondsLeft);
+  const timerValue = secondsLeft === null ? tDashboard("cards.unprocessedOrdersTimerIdle") : formatCountdown(secondsLeft);
+  const timerLabel = tDashboard("cards.unprocessedOrdersTimer", { value: timerValue });
+  const timerTone = secondsLeft === null ? "success" : tone;
   const mappedBrands = Math.max(0, Number(quotaMeta?.mappedBrands ?? 0));
   const totalBrands = Math.max(0, Number(quotaMeta?.totalBrands ?? 0));
   const linkedProducts = Math.max(0, Number(quotaMeta?.linkedProducts ?? 0));
@@ -257,7 +260,12 @@ export function AutoDbQuotaCard({
       </div>
 
       <div className="flex items-center justify-between gap-2">
-        <BackofficeStatusChip tone={secondsLeft === null ? "info" : tone} icon={Timer} palette="countdown">
+        <BackofficeStatusChip
+          tone={timerTone}
+          icon={Clock3}
+          palette="countdown"
+          className={timerTone === "warning" || timerTone === "error" ? "animate-pulse" : ""}
+        >
           {timerLabel}
         </BackofficeStatusChip>
         <BackofficeStatusChip tone="info" icon={Activity}>

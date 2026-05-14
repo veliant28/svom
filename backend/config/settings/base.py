@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     "apps.core.apps.CoreConfig",
     "apps.users.apps.UsersConfig",
     "apps.catalog.apps.CatalogConfig",
+    # Kept for historical migration graph compatibility. Runtime API/routes are disabled.
     "apps.vehicles.apps.VehiclesConfig",
     "apps.autocatalog.apps.AutocatalogConfig",
     "apps.autodb.apps.AutoDbConfig",
@@ -299,6 +300,10 @@ AUTODB_PRO_REMOTE_PASSWORD = os.getenv("AUTODB_PRO_REMOTE_PASSWORD", _legacy_rem
 AUTODB_PRO_REMOTE_CONNECT_TIMEOUT = max(env_int("AUTODB_PRO_REMOTE_CONNECT_TIMEOUT", 10), 1)
 AUTODB_PRO_REMOTE_READ_TIMEOUT = max(env_int("AUTODB_PRO_REMOTE_READ_TIMEOUT", 30), 1)
 AUTODB_PRO_REMOTE_BATCH_SIZE = max(env_int("AUTODB_PRO_REMOTE_BATCH_SIZE", 100), 1)
+AUTODB_PRO_REMOTE_LIMIT_PER_HOUR = max(env_int("AUTODB_PRO_REMOTE_LIMIT_PER_HOUR", 10000), 1)
+AUTODB_PRO_REMOTE_COOLDOWN_MINUTES = max(env_int("AUTODB_PRO_REMOTE_COOLDOWN_MINUTES", 60), 1)
+AUTODB_PRO_REMOTE_STRICT_QUOTA_GATE_ENABLED = env_bool("AUTODB_PRO_REMOTE_STRICT_QUOTA_GATE_ENABLED", True)
+AUTODB_PRO_REMOTE_ENFORCE_GATEWAY_ONLY = env_bool("AUTODB_PRO_REMOTE_ENFORCE_GATEWAY_ONLY", True)
 AUTODB_PRO_VEHICLE_CATALOG_API_ENABLED = env_bool("AUTODB_PRO_VEHICLE_CATALOG_API_ENABLED", False)
 
 # Backward-compatible aliases (legacy variable names).

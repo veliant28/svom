@@ -80,6 +80,7 @@ SBL 407533;407533;Стійка [1,2,3];STABILUS;UAH;13343.22;1
 
         self.assertEqual(len(result.offers), 1)
         self.assertEqual(result.offers[0].external_sku, "SBL 407533")
+        self.assertEqual(result.offers[0].article, "407533")
         self.assertEqual(result.offers[0].stock_qty, 1)
 
     def test_parse_rows_ignores_technical_numeric_columns_for_stock(self):
@@ -256,6 +257,32 @@ class GPLParserTests(SimpleTestCase):
         self.assertEqual(len(result.offers), 1)
         self.assertEqual(result.offers[0].external_sku, "000000001")
         self.assertEqual(result.offers[0].article, "WP6873")
+
+    def test_parse_rows_prefers_tecdoc_article_over_other_article_fields(self):
+        rows = [
+            (
+                2,
+                {
+                    "Код": "000000001",
+                    "Артикул": "324966",
+                    "Артикул ТД": "WP6873",
+                    "tecdoc_article": "214082",
+                    "Категорія": "WIX FILTERS",
+                    "Найменування": "Oil filter",
+                    "РРЦ грн.": "100.00",
+                    "Склад ПЛТВ": "5",
+                },
+            )
+        ]
+        result = GPLParser().parse_rows(
+            rows,
+            file_name="gpl.xlsx",
+            context=ParserContext(source_code="gpl"),
+        )
+
+        self.assertEqual(len(result.offers), 1)
+        self.assertEqual(result.offers[0].external_sku, "000000001")
+        self.assertEqual(result.offers[0].article, "214082")
 
     def test_parse_gpl_json_prefers_rrc_price_type_10_as_primary_price(self):
         content = json.dumps(

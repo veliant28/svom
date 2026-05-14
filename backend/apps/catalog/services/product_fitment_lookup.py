@@ -328,19 +328,19 @@ def get_autodb_fitment_queryset(*, product: Product, selected_vehicle: SelectedA
 def get_public_autodb_fitment_ids(*, product: Product) -> list[int]:
     if not _can_use_autodb_fitments_for_public(product=product):
         return []
-    rows = (
-        ProductFitment.objects.filter(
-            product=product,
-            source=ProductFitment.SOURCE_AUTODB_PRO,
-            is_stale=False,
-            excluded_from_public_filtering=False,
-            quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
-        )
-        .exclude(autodb_passanger_car_id__isnull=True)
-        .values_list("autodb_passanger_car_id", flat=True)
-        .distinct()
-    )
-    return [int(value) for value in rows if value]
+    fitment_ids: set[int] = set()
+
+    for value in _public_autodb_fitments_qs(product=product).values_list("autodb_passanger_car_id", flat=True).distinct():
+        parsed = parse_positive_int(value)
+        if parsed:
+            fitment_ids.add(parsed)
+
+    for value in _public_manual_fitments_qs(product=product).values_list("autodb_passanger_car_id", flat=True).distinct():
+        parsed = parse_positive_int(value)
+        if parsed:
+            fitment_ids.add(parsed)
+
+    return sorted(fitment_ids)
 
 
 def resolve_public_autodb_vehicle_map(*, passanger_car_ids: list[int]) -> dict[int, dict[str, object]]:
@@ -350,6 +350,9 @@ def resolve_public_autodb_vehicle_map(*, passanger_car_ids: list[int]) -> dict[i
 
 
 def _can_use_autodb_fitments_for_public(*, product: Product) -> bool:
+    if _public_manual_fitments_qs(product=product).exists():
+        return True
+
     article_key = str(getattr(product, "autodb_article_key", "") or "").strip()
     if not article_key:
         return False
@@ -360,15 +363,31 @@ def _can_use_autodb_fitments_for_public(*, product: Product) -> bool:
     ).exists()
     if not has_trusted_quality:
         return False
+    return _public_autodb_fitments_qs(product=product).filter(autodb_article_key=article_key).exists()
+
+
+def _public_autodb_fitments_qs(*, product: Product):
     return ProductFitment.objects.filter(
         product=product,
         source=ProductFitment.SOURCE_AUTODB_PRO,
-        autodb_article_key=article_key,
+        linkage_type__iexact="PassengerCar",
         is_stale=False,
         excluded_from_public_filtering=False,
         quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
         autodb_passanger_car_id__isnull=False,
-    ).exists()
+    )
+
+
+def _public_manual_fitments_qs(*, product: Product):
+    return ProductFitment.objects.filter(
+        product=product,
+        source=ProductFitment.SOURCE_MANUAL,
+        manual_locked=True,
+        is_stale=False,
+        excluded_from_public_filtering=False,
+        quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
+        autodb_passanger_car_id__isnull=False,
+    )
 
 
 def resolve_autodb_matched_product_ids_for_selected_vehicle(

@@ -16,7 +16,6 @@ from apps.autodb.services.supplier_brand_matcher import SupplierBrandCandidate, 
 from apps.catalog.models import Product
 from apps.supplier_imports.models import SupplierRawOffer
 from apps.supplier_imports.parsers.utils import normalize_article, normalize_brand
-from apps.supplier_imports.gpl_article_resolver import GplArticleResolver
 
 
 @dataclass
@@ -100,7 +99,6 @@ class AutoDbRawOfferEnrichmentService:
         self.product_linker = product_linker or AutoDbProductLinkService()
         self.article_normalizer = article_normalizer or ArticleNumberNormalizer()
         self.brand_matcher = brand_matcher or SupplierBrandMatcher(storage=self.storage)
-        self.gpl_article_resolver = GplArticleResolver()
 
     def build_pair_buckets(self, *, offers: Iterable[SupplierRawOffer]) -> tuple[list[PairBucket], int, int]:
         buckets: dict[tuple[str, str], PairBucket] = {}
@@ -109,19 +107,19 @@ class AutoDbRawOfferEnrichmentService:
 
         for offer in offers:
             total_raw_offers += 1
-            normalized_brand = str(offer.normalized_brand or "").strip() or normalize_brand(offer.brand_name)
-            article_raw = str(offer.article or "").strip() or str(offer.external_sku or "").strip()
-            source_code = str(getattr(getattr(offer, "source", None), "code", "") or "").strip().lower()
-            supplier_code = str(getattr(getattr(offer, "supplier", None), "code", "") or "").strip().lower()
-            if source_code == "gpl" or supplier_code == "gpl":
-                resolved = self.gpl_article_resolver.resolve(
-                    raw_payload=offer.raw_payload if isinstance(offer.raw_payload, dict) else {},
-                    article=str(offer.article or ""),
-                    external_sku=str(offer.external_sku or ""),
-                )
-                if resolved.manufacturer_article:
-                    article_raw = resolved.manufacturer_article
-            normalized_article = str(offer.normalized_article or "").strip() or normalize_article(article_raw)
+            matched_product = getattr(offer, "matched_product", None)
+            if matched_product is None:
+                failed += 1
+                continue
+
+            article_raw = str(getattr(matched_product, "article", "") or "").strip()
+            if not article_raw:
+                failed += 1
+                continue
+
+            brand_name = str(getattr(getattr(matched_product, "brand", None), "name", "") or "").strip() or str(offer.brand_name or "").strip()
+            normalized_brand = str(getattr(matched_product, "normalized_brand", "") or "").strip() or normalize_brand(brand_name)
+            normalized_article = normalize_article(article_raw)
             article_normalized = self.article_normalizer.normalize(article_raw or normalized_article)
             if not normalized_brand or not normalized_article:
                 failed += 1
@@ -133,7 +131,7 @@ class AutoDbRawOfferEnrichmentService:
                 bucket = PairBucket(
                     normalized_brand=normalized_brand,
                     normalized_article=normalized_article,
-                    sample_brand=str(offer.brand_name or "").strip() or normalized_brand,
+                    sample_brand=brand_name or normalized_brand,
                     sample_article=article_raw or normalized_article,
                     article_variants=article_normalized.search_variants or (normalized_article,),
                     source_id=str(offer.source_id) if getattr(offer, "source_id", None) else None,

@@ -87,6 +87,7 @@ class FitmentFilteringService:
         fitments_subquery = ProductFitment.objects.filter(
             product_id=OuterRef("pk"),
             source=ProductFitment.SOURCE_AUTODB_PRO,
+            linkage_type__iexact="PassengerCar",
             autodb_passanger_car_id__isnull=False,
             is_stale=False,
             excluded_from_public_filtering=False,

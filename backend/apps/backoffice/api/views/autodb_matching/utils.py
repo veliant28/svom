@@ -4,11 +4,11 @@ from typing import Any
 
 from django.db import DatabaseError
 from django.db.models import Count, OuterRef
-from django.utils import timezone
 
 from apps.autodb.models import AutoDbMatchEvidence, AutoDbMatchJob, AutoDbRemoteQuotaState
 from apps.autodb.selectors.admin_supplier_brands import get_admin_supplier_brand_name_by_id
 from apps.autodb.services.matching.constants import REMOTE_QUOTA_KEY
+from apps.autodb.services.matching.quota_tracker import AutoDbRemoteQuotaTracker
 from apps.catalog.models import AutoDbProductLinkQuality
 
 PROTECTED_FIELDS = {
@@ -143,11 +143,11 @@ def tecdoc_status(job: AutoDbMatchJob) -> str:
 
 def quota_payload() -> dict[str, Any]:
     quota = AutoDbRemoteQuotaState.objects.filter(remote_key=REMOTE_QUOTA_KEY).first()
-    now = timezone.now()
+    payload = AutoDbRemoteQuotaTracker().serialize(quota)
     if quota is None:
         return {
             "remote_key": REMOTE_QUOTA_KEY,
-            "paused": False,
+            "paused": bool(str(payload.get("status") or "") == "quota_paused"),
             "estimated_queries_used": 0,
             "cooldown_until": None,
             "last_ok_at": None,
@@ -156,11 +156,11 @@ def quota_payload() -> dict[str, Any]:
         }
     return {
         "remote_key": quota.remote_key,
-        "paused": bool(quota.cooldown_until and quota.cooldown_until > now),
-        "estimated_queries_used": int(quota.estimated_queries_used or 0),
-        "cooldown_until": iso_or_none(quota.cooldown_until),
-        "last_ok_at": iso_or_none(quota.last_ok_at),
-        "last_quota_error_at": iso_or_none(quota.last_quota_error_at),
+        "paused": bool(str(payload.get("status") or "") == "quota_paused"),
+        "estimated_queries_used": int(payload.get("estimated_queries_used") or 0),
+        "cooldown_until": safe_str(payload.get("cooldown_until")) or None,
+        "last_ok_at": safe_str(payload.get("last_ok_at")) or None,
+        "last_quota_error_at": safe_str(payload.get("last_quota_error_at")) or None,
         "last_error": safe_str(quota.last_error),
     }
 

@@ -28,11 +28,12 @@ test("Auto_DB matching quota widget is line/area chart, not gauge", () => {
   assert.doesNotMatch(quotaCard, /type:\s*"gauge"|Gauge|progress ring|circular/i);
 });
 
-test("Auto_DB matching remote search is disabled when quota is paused", () => {
+test("Auto_DB matching remote search is disabled and dashboard shows quota toast when paused", () => {
   const searchTab = readProjectFile("src/features/backoffice/components/autodb-matching/search-tab.tsx");
   const dashboardTab = readProjectFile("src/features/backoffice/components/autodb-matching/dashboard-tab.tsx");
 
   assert.match(searchTab, /quotaPaused/);
   assert.match(searchTab, /remoteDisabled/);
   assert.match(dashboardTab, /quota\?\.status === "quota_paused"/);
+  assert.match(dashboardTab, /showWarning\(t\("quota\.remoteDisabled"\)\)/);
 });

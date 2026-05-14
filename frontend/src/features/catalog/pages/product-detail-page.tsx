@@ -324,7 +324,10 @@ export function ProductDetailPage({ slug }: { slug: string }) {
             <ul className="mt-2 space-y-1 text-sm" style={{ color: "var(--muted)" }}>
               {attributes.map((attribute) => (
                 <li key={attribute.id}>
-                  {attribute.attribute_name}: {attribute.value}
+                  <span className="font-semibold" style={{ color: "var(--text)" }}>
+                    {attribute.attribute_name}:
+                  </span>{" "}
+                  <span>{attribute.value}</span>
                 </li>
               ))}
             </ul>

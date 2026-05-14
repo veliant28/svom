@@ -28,6 +28,19 @@ NON_TECDOC_BRAND_KEYS = {
     "ОРИГИНАЛ",
 }
 
+INVALID_BRAND_VALUE_KEYS = {
+    "",
+    "-",
+    "--",
+    "N/A",
+    "NA",
+    "NONE",
+    "NULL",
+    "UNKNOWN",
+    "УГОРЩИНА",
+    "УДАЛЕННЫЕ",
+}
+
 UNSAFE_BRAND_KEYS = {
     # CTR exists in several real-world catalog/vendor forms; require a manual mapping.
     "CTR",

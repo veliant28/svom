@@ -378,9 +378,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         cached = getattr(obj, "_resolved_public_fitments", None)
         if cached is not None:
             return cached
-        if not self._is_autodb_linked(obj):
-            return []
-        if self._get_link_quality_status(obj) != AutoDbProductLinkQuality.STATUS_TRUSTED:
+        fitment_ids = get_public_autodb_fitment_ids(product=obj)
+        if not fitment_ids:
             return []
 
         rows: list[dict] = []
@@ -405,7 +404,6 @@ class ProductDetailSerializer(serializers.ModelSerializer):
                 break
 
         if not rows:
-            fitment_ids = get_public_autodb_fitment_ids(product=obj)
             vehicle_map = resolve_public_autodb_vehicle_map(passanger_car_ids=fitment_ids)
             for car_id in sorted(set(fitment_ids)):
                 vehicle = vehicle_map.get(car_id)
@@ -441,43 +439,23 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return get_vehicle_filter_policy(getattr(obj, "category", None))
 
     def get_fitment_count(self, obj: Product) -> int:
-        if self._get_link_quality_status(obj) != AutoDbProductLinkQuality.STATUS_TRUSTED:
-            return 0
-        return (
-            ProductFitment.objects.filter(
-                product=obj,
-                source=ProductFitment.SOURCE_AUTODB_PRO,
-                is_stale=False,
-                excluded_from_public_filtering=False,
-                quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
-            )
-            .exclude(autodb_passanger_car_id__isnull=True)
-            .values("autodb_passanger_car_id")
-            .distinct()
-            .count()
-        )
+        return len(set(get_public_autodb_fitment_ids(product=obj)))
 
     def get_is_autodb_compatible_data_available(self, obj: Product) -> bool:
+        if self.get_fitment_count(obj) > 0:
+            return True
         if not self._is_autodb_linked(obj):
             return False
         if self._get_link_quality_status(obj) != AutoDbProductLinkQuality.STATUS_TRUSTED:
             return False
-        if self.get_fitment_count(obj) > 0:
-            return True
         return ProductAttribute.objects.filter(
             product=obj,
             source=ProductAttribute.SOURCE_AUTODB_PRO,
         ).exists()
 
     def get_compatibility_summary(self, obj: Product) -> dict:
-        if not self._is_autodb_linked(obj):
-            return {
-                "available": False,
-                "fitment_count": 0,
-                "selected_vehicle": None,
-                "sample_vehicles": [],
-            }
-        if self._get_link_quality_status(obj) != AutoDbProductLinkQuality.STATUS_TRUSTED:
+        fitment_ids = set(get_public_autodb_fitment_ids(product=obj))
+        if not fitment_ids:
             return {
                 "available": False,
                 "fitment_count": 0,
@@ -485,7 +463,6 @@ class ProductDetailSerializer(serializers.ModelSerializer):
                 "sample_vehicles": [],
             }
 
-        fitment_ids = set(get_public_autodb_fitment_ids(product=obj))
         selected_vehicle = resolve_selected_autodb_vehicle_display(self.context.get("request"))
         selected_vehicle_payload = None
         if selected_vehicle is not None:

@@ -29,14 +29,6 @@ class ProductFitment(UUIDPrimaryKeyMixin, TimestampedMixin):
         related_name="fitments",
         verbose_name=_("Товар"),
     )
-    modification = models.ForeignKey(
-        "vehicles.VehicleModification",
-        on_delete=models.CASCADE,
-        related_name="fitments",
-        blank=True,
-        null=True,
-        verbose_name=_("Модификация"),
-    )
     note = models.CharField(_("Примечание"), max_length=255, blank=True)
     is_exact = models.BooleanField(_("Точное соответствие"), default=True)
     source = models.CharField(_("Источник"), max_length=24, choices=SOURCE_CHOICES, blank=True, default=SOURCE_LEGACY, db_index=True)
@@ -71,11 +63,6 @@ class ProductFitment(UUIDPrimaryKeyMixin, TimestampedMixin):
         verbose_name_plural = _("Применимость товаров")
         constraints = [
             models.UniqueConstraint(
-                fields=("product", "modification"),
-                condition=Q(modification__isnull=False),
-                name="compatibility_fitment_unique_product_modification",
-            ),
-            models.UniqueConstraint(
                 fields=("product", "source", "linkage_type", "autodb_passanger_car_id"),
                 condition=Q(autodb_passanger_car_id__isnull=False),
                 name="compatibility_fitment_unique_autodb_linkage",
@@ -88,8 +75,6 @@ class ProductFitment(UUIDPrimaryKeyMixin, TimestampedMixin):
         ]
 
     def __str__(self) -> str:
-        if self.modification_id:
-            return f"{self.product} -> {self.modification}"
         if self.autodb_passanger_car_id:
             return f"{self.product} -> {self.linkage_type}:{self.autodb_passanger_car_id}"
         return f"{self.product} -> fitment"

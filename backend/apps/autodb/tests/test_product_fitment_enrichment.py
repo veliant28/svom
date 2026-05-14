@@ -7,7 +7,6 @@ from django.test import TestCase
 from apps.autodb.services.product_fitment_enrichment import AutoDbProductFitmentEnrichmentService
 from apps.catalog.models import Brand, Category, Product
 from apps.compatibility.models import ProductFitment
-from apps.vehicles.models import VehicleEngine, VehicleGeneration, VehicleMake, VehicleModel, VehicleModification
 
 
 class AutoDbProductFitmentEnrichmentServiceTests(TestCase):
@@ -32,31 +31,15 @@ class AutoDbProductFitmentEnrichmentServiceTests(TestCase):
         return AutoDbProductFitmentEnrichmentService()
 
     def _create_manual_fitment(self) -> ProductFitment:
-        make = VehicleMake.objects.create(name="Toyota", slug="toyota-fit", is_active=True)
-        model = VehicleModel.objects.create(make=make, name="Camry", slug="camry-fit", is_active=True)
-        generation = VehicleGeneration.objects.create(model=model, name="XV70", year_start=2018, is_active=True)
-        engine = VehicleEngine.objects.create(
-            generation=generation,
-            name="2.5",
-            code="A25A",
-            fuel_type=VehicleEngine.FUEL_PETROL,
-            is_active=True,
-        )
-        modification = VehicleModification.objects.create(
-            engine=engine,
-            name="Sedan",
-            body_type="sedan",
-            transmission="auto",
-            drivetrain="fwd",
-            year_start=2018,
-            is_active=True,
-        )
         return ProductFitment.objects.create(
             product=self.product,
-            modification=modification,
             source=ProductFitment.SOURCE_MANUAL,
             note="Manual fitment",
             is_exact=True,
+            autodb_passanger_car_id=501,
+            linkage_type="PassengerCar",
+            quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
+            manual_locked=True,
         )
 
     def test_fitments_created_from_passenger_car_linkage(self):
@@ -79,9 +62,8 @@ class AutoDbProductFitmentEnrichmentServiceTests(TestCase):
         fitment = ProductFitment.objects.get(product=self.product, source=ProductFitment.SOURCE_AUTODB_PRO)
         self.assertEqual(fitment.autodb_passanger_car_id, 101)
         self.assertEqual(fitment.linkage_type, "PassengerCar")
-        self.assertIsNone(fitment.modification_id)
 
-    def test_only_passenger_car_linkage_used(self):
+    def test_commercial_vehicle_linkage_is_saved(self):
         service = self._service()
         with patch.object(
             service,
@@ -92,8 +74,10 @@ class AutoDbProductFitmentEnrichmentServiceTests(TestCase):
         ):
             result = service.enrich_product(product=self.product, dry_run=False)
 
-        self.assertTrue(result.skipped_non_passenger_car)
-        self.assertFalse(ProductFitment.objects.filter(product=self.product, source=ProductFitment.SOURCE_AUTODB_PRO).exists())
+        self.assertEqual(result.fitments_created, 1)
+        fitment = ProductFitment.objects.get(product=self.product, source=ProductFitment.SOURCE_AUTODB_PRO)
+        self.assertEqual(fitment.autodb_passanger_car_id, 900)
+        self.assertEqual(fitment.linkage_type, "CommercialVehicle")
 
     def test_missing_passanger_car_skipped(self):
         service = self._service()
@@ -111,6 +95,26 @@ class AutoDbProductFitmentEnrichmentServiceTests(TestCase):
 
         self.assertTrue(result.skipped_missing_passanger_car)
         self.assertEqual(ProductFitment.objects.filter(product=self.product, source=ProductFitment.SOURCE_AUTODB_PRO).count(), 0)
+
+    def test_missing_passenger_car_does_not_block_other_linkage_types(self):
+        service = self._service()
+        with (
+            patch.object(
+                service,
+                "_find_article_li_rows",
+                return_value=[
+                    {"supplierId": 324, "DataSupplierArticleNumber": "92131E", "linkageTypeId": "PassengerCar", "linkageId": 777},
+                    {"supplierId": 324, "DataSupplierArticleNumber": "92131E", "linkageTypeId": "CommercialVehicle", "linkageId": 900},
+                ],
+            ),
+            patch.object(service, "_find_existing_passanger_car_ids", return_value=set()),
+        ):
+            result = service.enrich_product(product=self.product, dry_run=False)
+
+        self.assertEqual(result.fitments_created, 1)
+        fitment = ProductFitment.objects.get(product=self.product, source=ProductFitment.SOURCE_AUTODB_PRO)
+        self.assertEqual(fitment.autodb_passanger_car_id, 900)
+        self.assertEqual(fitment.linkage_type, "CommercialVehicle")
 
     def test_repeated_run_no_duplicates(self):
         service = self._service()

@@ -6,7 +6,9 @@ from dataclasses import dataclass
 from typing import Any, Iterable
 
 import mysql.connector
+from django.conf import settings
 
+from apps.autodb.models import AutoDbRemoteQuotaState
 from apps.autodb.services.remote_config import AutoDbRemoteConfigValidator
 
 
@@ -52,6 +54,7 @@ ARTICLE_CATALOG_TABLE_WHITELIST = {
 }
 
 REMOTE_TABLE_WHITELIST = VEHICLE_CATALOG_TABLE_WHITELIST | ARTICLE_CATALOG_TABLE_WHITELIST
+REMOTE_QUOTA_KEY = "autodb_pro_mysql"
 
 
 @dataclass(frozen=True)
@@ -69,6 +72,10 @@ class AutoDbProRemoteClientConfig:
 class AutoDbProRemoteClient:
     def __init__(self, config: AutoDbProRemoteClientConfig | None = None):
         self.config = config or self.from_settings()
+        # Import lazily to avoid cycles with matching package bootstrap.
+        from apps.autodb.services.matching.quota_tracker import AutoDbRemoteQuotaTracker
+
+        self.quota_tracker = AutoDbRemoteQuotaTracker()
 
     @classmethod
     def from_settings(cls) -> "AutoDbProRemoteClient":
@@ -109,7 +116,7 @@ class AutoDbProRemoteClient:
         return bool(remote_user and local_user and remote_user.lower() == local_user.lower())
 
     def check_connection(self) -> bool:
-        rows = self.select("SELECT 1 AS ok")
+        rows = self.select("SELECT 1 AS ok", run_id="remote-select1")
         if not rows:
             return False
         first = rows[0]
@@ -117,17 +124,50 @@ class AutoDbProRemoteClient:
             return int(first.get("ok", 0) or 0) == 1
         return True
 
-    def select(self, query: str, params: tuple[Any, ...] | None = None) -> list[dict[str, Any]]:
+    def select(
+        self,
+        query: str,
+        params: tuple[Any, ...] | None = None,
+        *,
+        run_id: str = "",
+        track_quota: bool = True,
+    ) -> list[dict[str, Any]]:
         self._ensure_select_only(query)
         conn = None
+        quota = self._quota_state() if track_quota else None
+        if quota is not None:
+            self._enforce_quota_gate(quota)
         try:
             conn = self._connect()
             with conn.cursor(dictionary=True) as cursor:
                 cursor.execute(query, params or ())
                 rows = cursor.fetchall() or []
+            if quota is not None:
+                self.quota_tracker.record_success(
+                    quota,
+                    query_count=1,
+                    run_id=run_id,
+                    status="ok",
+                )
             return [dict(item) for item in rows if isinstance(item, dict)]
         except Exception as exc:  # noqa: BLE001
-            raise AutoDbProRemoteClientError(self._sanitize_error(exc)) from exc
+            sanitized = self._sanitize_error(exc)
+            if quota is not None:
+                if self._is_quota_error_message(sanitized):
+                    self.quota_tracker.record_quota_error(
+                        quota,
+                        error=sanitized,
+                        cooldown_minutes=self._cooldown_minutes(),
+                        run_id=run_id,
+                    )
+                else:
+                    self.quota_tracker.record_success(
+                        quota,
+                        query_count=1,
+                        run_id=run_id,
+                        status="error",
+                    )
+            raise AutoDbProRemoteClientError(sanitized) from exc
         finally:
             self._close(conn)
 
@@ -399,4 +439,26 @@ class AutoDbProRemoteClient:
         password = str(self.config.password or "")
         if password:
             message = message.replace(password, "***")
+        message = re.sub(r"User\s+'[^']+'", "User '[redacted]'", message, flags=re.IGNORECASE)
         return f"Auto_DB_Pro remote query failed: {message}"
+
+    def _quota_state(self) -> AutoDbRemoteQuotaState:
+        quota, _created = AutoDbRemoteQuotaState.objects.get_or_create(remote_key=REMOTE_QUOTA_KEY)
+        return quota
+
+    def _enforce_quota_gate(self, quota: AutoDbRemoteQuotaState) -> None:
+        if not bool(getattr(settings, "AUTODB_PRO_REMOTE_STRICT_QUOTA_GATE_ENABLED", True)):
+            return
+        payload = self.quota_tracker.serialize(quota)
+        if str(payload.get("status") or "") != "quota_paused":
+            return
+        reason = str(payload.get("last_error") or payload.get("status") or "quota_paused")
+        raise AutoDbProRemoteClientError(f"Auto_DB_Pro remote query blocked by quota gate: {reason}")
+
+    def _cooldown_minutes(self) -> int:
+        minutes = int(getattr(settings, "AUTODB_PRO_REMOTE_COOLDOWN_MINUTES", 60) or 60)
+        return max(minutes, 1)
+
+    def _is_quota_error_message(self, value: str) -> bool:
+        text = str(value or "").lower()
+        return "error 1226" in text or "max_questions" in text or "quota" in text

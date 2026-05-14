@@ -66,6 +66,7 @@ export type AutoDbProductJob = {
     autodb_supplier_name: string;
     autodb_article_number: string;
     autodb_article_key: string;
+    supplier_codes: string[];
   };
   supplier_code: string;
   raw_brand: string;
@@ -81,6 +82,11 @@ export type AutoDbProductJob = {
   has_product_price: boolean;
   tecdoc_status: "tecdoc" | "non_tecdoc" | "unknown" | string;
   matching_status: string;
+  matching_status_view?: string;
+  lookup_origin?: "local" | "remote" | string;
+  lookup_method?: string;
+  lookup_bucket?: "remote_brand_exact" | "remote_article_only" | "local_clone_hit" | "remote_other" | string;
+  manual_remote_equivalent?: boolean;
   recommended_action: string;
   last_evidence: {
     stage: string;
@@ -164,6 +170,13 @@ export type AutoDbSearchResponse = {
   dry_run: boolean;
   source: string;
   quota: AutoDbRemoteQuota;
+  candidates?: Array<{
+    supplier_id: number;
+    supplier_name: string;
+    matched_stored_article: string;
+    hits: number;
+    matched_table: string;
+  }>;
   results: AutoDbSearchResult[];
 };
 
@@ -171,8 +184,25 @@ export type AutoDbActionResponse = {
   dry_run: boolean;
   created?: boolean;
   status?: string;
+  mode?: "async" | "sync" | string;
+  task_id?: string;
   count?: number;
   message?: string;
   protected_fields?: Record<string, boolean>;
   results?: Array<Record<string, unknown>>;
+  payload?: Record<string, unknown>;
+  result?: Record<string, unknown>;
+};
+
+export type AutoDbSkuLookupRow = {
+  id: string;
+  sku: string;
+  svom_sku: string;
+  name: string;
+  brand_name: string;
+};
+
+export type AutoDbSkuLookupResponse = {
+  count: number;
+  results: AutoDbSkuLookupRow[];
 };

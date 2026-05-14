@@ -96,7 +96,6 @@ from .procurement_suggestion_serializer import (
     ProcurementSuggestionsSerializer,
     ProcurementSupplierGroupSerializer,
 )
-from .product_fitment_serializer import BackofficeProductFitmentSerializer
 from .supplier_brand_alias_serializer import SupplierBrandAliasSerializer
 from .supplier_raw_offer_serializer import SupplierRawOfferSerializer
 from .supplier_category_mapping_serializer import (
@@ -132,11 +131,6 @@ from .security_serializer import (
     SecurityExtendBlockSerializer,
     SecurityReasonSerializer,
 )
-from .vehicle_engine_serializer import BackofficeVehicleEngineSerializer
-from .vehicle_generation_serializer import BackofficeVehicleGenerationSerializer
-from .vehicle_make_serializer import BackofficeVehicleMakeSerializer
-from .vehicle_model_serializer import BackofficeVehicleModelSerializer
-from .vehicle_modification_serializer import BackofficeVehicleModificationSerializer
 from .email_settings_serializer import (
     EmailDeliverySettingsSerializer,
     EmailDeliveryTestResponseSerializer,
@@ -220,18 +214,12 @@ __all__ = [
     "ProcurementSupplierGroupSerializer",
     "ProcurementSuggestionsSerializer",
     "ProductPriceOperationalSerializer",
-    "BackofficeProductFitmentSerializer",
     "SupplierBrandAliasSerializer",
     "SupplierRawOfferSerializer",
     "CategoryMappingCategoryOptionSerializer",
     "SupplierRawOfferCategoryMappingDetailSerializer",
     "SupplierRawOfferCategoryMappingUpdateSerializer",
     "SupplierOfferOperationalSerializer",
-    "BackofficeVehicleMakeSerializer",
-    "BackofficeVehicleModelSerializer",
-    "BackofficeVehicleGenerationSerializer",
-    "BackofficeVehicleEngineSerializer",
-    "BackofficeVehicleModificationSerializer",
     "SupplierWorkspaceListItemSerializer",
     "SupplierWorkspaceSupplierSerializer",
     "SupplierWorkspaceConnectionSerializer",

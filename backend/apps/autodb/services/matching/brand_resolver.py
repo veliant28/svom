@@ -6,7 +6,12 @@ from django.db.models import Q
 
 from apps.autodb.models import AutoDbSupplierBrandAlias
 from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
-from apps.autodb.services.matching.constants import BUILTIN_SAFE_ALIASES, NON_TECDOC_BRAND_KEYS, UNSAFE_BRAND_KEYS
+from apps.autodb.services.matching.constants import (
+    BUILTIN_SAFE_ALIASES,
+    INVALID_BRAND_VALUE_KEYS,
+    NON_TECDOC_BRAND_KEYS,
+    UNSAFE_BRAND_KEYS,
+)
 from apps.supplier_imports.models import SupplierBrandAlias
 from apps.supplier_imports.parsers.utils import normalize_brand
 
@@ -63,7 +68,24 @@ class AutoDbBrandResolver:
         normalized = normalize_brand(raw)
         supplier_code_clean = str(supplier_code or "").strip().lower()
         if not normalized:
-            return self._result(raw, normalized, supplier_code_clean, "skipped_brand_unresolved", "needs_alias", "empty raw_brand")
+            return self._result(
+                raw,
+                normalized,
+                supplier_code_clean,
+                "skipped_brand_unresolved",
+                "invalid_brand_value",
+                "empty or non-normalizable raw_brand",
+            )
+
+        if normalized in {normalize_brand(item) for item in INVALID_BRAND_VALUE_KEYS}:
+            return self._result(
+                raw,
+                normalized,
+                supplier_code_clean,
+                "skipped_brand_unresolved",
+                "invalid_brand_value",
+                "brand value is placeholder/invalid for TecDoc matching",
+            )
 
         if normalized in {normalize_brand(item) for item in NON_TECDOC_BRAND_KEYS}:
             return self._result(raw, normalized, supplier_code_clean, "skipped_non_tecdoc", "non_tecdoc", "brand is outside TecDoc scope")

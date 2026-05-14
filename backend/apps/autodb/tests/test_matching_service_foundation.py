@@ -21,6 +21,8 @@ from apps.autodb.services.matching import (
     AutoDbRemoteLookupService,
     AutoDbSafeLinkPlanner,
 )
+from apps.autodb.services.matching.job_builder import AutoDbMatchJobBuildRow
+from apps.autodb.services.matching.pipeline import AutoDbMatchingPipelineService
 from apps.autodb.services.remote_client import AutoDbProRemoteClientError
 from apps.catalog.models import AutoDbProductLinkQuality, Brand, Category, Product, ProductImage
 from apps.pricing.models import Supplier, SupplierOffer
@@ -75,6 +77,27 @@ class AutoDbBrandResolverFoundationTests(SimpleTestCase):
 
         self.assertEqual(result.status, AutoDbMatchJob.STATUS_SKIPPED_NON_TECDOC)
         self.assertEqual(result.decision, "non_tecdoc")
+
+    def test_empty_brand_is_invalid_brand_value(self):
+        resolver = self._resolver()
+
+        result = resolver.resolve(raw_brand="", supplier_code="gpl")
+
+        self.assertEqual(result.decision, "invalid_brand_value")
+
+    def test_ugorshchina_is_invalid_brand_value(self):
+        resolver = self._resolver()
+
+        result = resolver.resolve(raw_brand="Угорщина", supplier_code="gpl")
+
+        self.assertEqual(result.decision, "invalid_brand_value")
+
+    def test_udalennye_is_invalid_brand_value(self):
+        resolver = self._resolver()
+
+        result = resolver.resolve(raw_brand="Удаленные", supplier_code="gpl")
+
+        self.assertEqual(result.decision, "invalid_brand_value")
 
 
 class AutoDbBrandResolverSupplierSourceTests(TestCase):
@@ -215,6 +238,74 @@ class AutoDbArticleSourceResolverFoundationTests(SimpleTestCase):
 
         self.assertFalse(result.is_usable)
         self.assertEqual(result.source_type, "supplier_sku_not_allowed")
+
+    def test_fast_mode_forbids_raw_offer_fallback(self):
+        result = self.resolver.resolve(
+            supplier_code="gpl",
+            parser_type="gpl",
+            raw_brand="NGK",
+            raw_payload={},
+            raw_offer_article="ABC-123",
+            forbid_raw_offer_fallback=True,
+        )
+
+        self.assertFalse(result.is_usable)
+        self.assertEqual(result.source_type, "no_trusted_article")
+
+    def test_fast_mode_prefers_product_article_before_raw_offer_article(self):
+        result = self.resolver.resolve(
+            supplier_code="gpl",
+            parser_type="gpl",
+            raw_brand="NGK",
+            raw_payload={},
+            raw_offer_article="RAW-123",
+            product_article="PRD-777",
+            forbid_raw_offer_fallback=True,
+        )
+
+        self.assertTrue(result.is_usable)
+        self.assertEqual(result.source_type, "product_article")
+        self.assertEqual(result.article_value, "PRD-777")
+
+    def test_gpl_arktikul_td_maps_to_source_type(self):
+        result = self.resolver.resolve(
+            supplier_code="gpl",
+            parser_type="gpl",
+            raw_brand="FENOX",
+            raw_payload={"Артикул ТД": "WB45210"},
+        )
+
+        self.assertTrue(result.is_usable)
+        self.assertEqual(result.source_type, "Артикул ТД")
+        self.assertEqual(result.canonical_article, "WB45210")
+
+    def test_enforce_product_article_prefers_product_article(self):
+        result = self.resolver.resolve(
+            supplier_code="gpl",
+            parser_type="gpl",
+            raw_brand="WIX",
+            raw_payload={"payload_manufacturer_article": "WL 7470"},
+            raw_offer_article="RAW-123",
+            product_article="PRD-777",
+            enforce_product_article=True,
+        )
+
+        self.assertTrue(result.is_usable)
+        self.assertEqual(result.source_type, "product_article")
+        self.assertEqual(result.article_value, "PRD-777")
+
+    def test_enforce_product_article_requires_non_empty_product_article(self):
+        result = self.resolver.resolve(
+            supplier_code="gpl",
+            parser_type="gpl",
+            raw_brand="NGK",
+            raw_offer_article="RAW-123",
+            product_article="",
+            enforce_product_article=True,
+        )
+
+        self.assertFalse(result.is_usable)
+        self.assertEqual(result.source_type, "missing_product_article")
 
 
 class FakeLocalStorage:
@@ -369,6 +460,307 @@ class AutoDbMatchJobBuilderSupplierBindingTests(TestCase):
         self.assertEqual(row.status, AutoDbMatchJob.STATUS_LINKED)
         self.assertEqual(row.resolver_source, "trusted_link")
         self.assertEqual(row.resolved_supplier_id, 101)
+
+
+class AutoDbMatchJobBuilderFastModeSourceGateTests(TestCase):
+    databases = {"default", "auto_db_pro"}
+
+    def setUp(self):
+        brand = Brand.objects.create(name="FENOX", slug="fenox-fast-mode", is_active=True)
+        category = Category.objects.create(name="Suspension", slug="susp-fast-mode", is_active=True)
+        self.supplier = Supplier.objects.create(name="GPL", code="gpl", is_active=True)
+        self.product = Product.objects.create(
+            sku="FAST-SKU-1",
+            article="WB45210",
+            name="Fast Product",
+            slug="fast-product-1",
+            brand=brand,
+            category=category,
+            is_active=True,
+        )
+        self.offer = SupplierOffer.objects.create(
+            supplier=self.supplier,
+            product=self.product,
+            supplier_sku="FAST-SUP-1",
+            currency="UAH",
+            purchase_price="100.00",
+            price_levels=[],
+            logistics_cost="0.00",
+            extra_cost="0.00",
+            stock_qty=5,
+            lead_time_days=0,
+            is_available=True,
+            last_seen_at=timezone.now(),
+        )
+
+    def _builder(self, article_resolution):
+        article_resolver = Mock()
+        article_resolver.resolve.return_value = article_resolution
+        brand_resolver = Mock()
+        brand_resolver.resolve.return_value = SimpleNamespace(
+            is_mapped=True,
+            supplier_id=4512,
+            supplier_name="FENOX",
+            normalized_brand="FENOX",
+            decision="mapped",
+            reason="ok",
+            resolver_source="exact_supplier",
+            candidates=[],
+        )
+        return AutoDbMatchJobBuilder(
+            article_resolver=article_resolver,
+            brand_resolver=brand_resolver,
+            fast_mode=True,
+        )
+
+    def test_fast_mode_blocks_raw_offer_article(self):
+        builder = self._builder(
+            SimpleNamespace(
+                is_usable=True,
+                source_type="raw_offer_article",
+                article_value="RAW123",
+                canonical_article="RAW123",
+                reason="raw fallback",
+                confidence=0.75,
+            )
+        )
+
+        rows = builder.build_jobs(supplier_code="gpl", limit=10, dry_run=True)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].status, AutoDbMatchJob.STATUS_SKIPPED_BAD_ARTICLE_SOURCE)
+        self.assertEqual(rows[0].reason, "blocked_raw_offer_article")
+
+    def test_fast_mode_allows_arktikul_td_source_type(self):
+        builder = self._builder(
+            SimpleNamespace(
+                is_usable=True,
+                source_type="Артикул ТД",
+                article_value="WB45210",
+                canonical_article="WB45210",
+                reason="payload manufacturer",
+                confidence=0.98,
+            )
+        )
+
+        rows = builder.build_jobs(supplier_code="gpl", limit=10, dry_run=True)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].status, AutoDbMatchJob.STATUS_NEW)
+        self.assertEqual(rows[0].article_source_type, "Артикул ТД")
+
+    def test_fast_mode_marks_no_trusted_article_reason(self):
+        builder = self._builder(
+            SimpleNamespace(
+                is_usable=False,
+                source_type="no_trusted_article",
+                article_value="",
+                canonical_article="",
+                reason="FAST mode requires trusted product/payload article source",
+                confidence=0.0,
+            )
+        )
+
+        rows = builder.build_jobs(supplier_code="gpl", limit=10, dry_run=True)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].status, AutoDbMatchJob.STATUS_SKIPPED_BAD_ARTICLE_SOURCE)
+        self.assertEqual(rows[0].reason, "no_trusted_article")
+
+    def test_fast_mode_gpl_missing_supplier_id_is_pregated(self):
+        article_resolver = Mock()
+        article_resolver.resolve.return_value = SimpleNamespace(
+            is_usable=True,
+            source_type="product_article",
+            article_value="WB45210",
+            canonical_article="WB45210",
+            reason="trusted product article",
+            confidence=1.0,
+        )
+        brand_resolver = Mock()
+        brand_resolver.resolve.return_value = SimpleNamespace(
+            is_mapped=False,
+            supplier_id=None,
+            supplier_name="",
+            normalized_brand="FENOX",
+            decision="keep_unmapped_missing_supplier",
+            reason="no local Auto_DB supplier or approved alias",
+            resolver_source="exact_supplier",
+            candidates=[],
+        )
+        builder = AutoDbMatchJobBuilder(
+            article_resolver=article_resolver,
+            brand_resolver=brand_resolver,
+            fast_mode=True,
+        )
+
+        rows = builder.build_jobs(supplier_code="gpl", limit=10, dry_run=True)
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].status, AutoDbMatchJob.STATUS_SKIPPED_BRAND_UNRESOLVED)
+        self.assertEqual(rows[0].reason, "missing_supplier_id")
+        article_resolver.resolve.assert_called_once_with(product_article="WB45210", enforce_product_article=True)
+
+
+class AutoDbMatchingPipelinePreGateTests(SimpleTestCase):
+    def _build_row(self, suffix: str, article: str = "ABC123") -> AutoDbMatchJobBuildRow:
+        return AutoDbMatchJobBuildRow(
+            product_id=f"product-{suffix}",
+            supplier_offer_id=f"offer-{suffix}",
+            supplier_code="gpl",
+            raw_brand="NGK",
+            normalized_brand="NGK",
+            resolved_supplier_id=10,
+            article_source_type="Артикул ТД",
+            article_value=article,
+            canonical_article=article,
+            status=AutoDbMatchJob.STATUS_NEW,
+            reason="ok",
+            resolver_source="exact_supplier",
+        )
+
+    def test_pre_gate_stops_when_candidates_zero(self):
+        builder = Mock()
+        builder.build_jobs.return_value = []
+        lookup = Mock()
+        pipeline = AutoDbMatchingPipelineService(
+            job_builder=builder,
+            lookup_v3=lookup,
+            local_lookup=Mock(),
+            remote_lookup=Mock(),
+            clone_planner=Mock(),
+            link_audit=Mock(),
+            safe_link_planner=Mock(),
+            enrichment_planner=Mock(),
+        )
+
+        result = pipeline.pre_gate_build_candidates(supplier_code="gpl", build_limit=100, sample_size=10)
+
+        self.assertTrue(result.would_stop)
+        self.assertEqual(result.reason, "candidates_zero")
+        self.assertFalse(result.can_continue)
+        self.assertEqual(result.hits, 0)
+        builder.build_jobs.assert_called_once()
+        lookup.lookup.assert_not_called()
+        self.assertEqual(pipeline.local_lookup.mock_calls, [])
+        self.assertEqual(pipeline.remote_lookup.mock_calls, [])
+        self.assertEqual(pipeline.clone_planner.mock_calls, [])
+        self.assertEqual(pipeline.safe_link_planner.mock_calls, [])
+
+    def test_pre_gate_stops_when_insufficient_probe_n(self):
+        builder = Mock()
+        builder.build_jobs.return_value = [self._build_row("1"), self._build_row("2")]
+        lookup = Mock()
+        lookup.lookup.return_value = SimpleNamespace(
+            found=False,
+            matched_source="",
+            local_hits=0,
+            remote_hits=0,
+            error="",
+        )
+        pipeline = AutoDbMatchingPipelineService(
+            job_builder=builder,
+            lookup_v3=lookup,
+            local_lookup=Mock(),
+            remote_lookup=Mock(),
+            clone_planner=Mock(),
+            link_audit=Mock(),
+            safe_link_planner=Mock(),
+            enrichment_planner=Mock(),
+        )
+
+        result = pipeline.pre_gate_build_candidates(supplier_code="gpl", build_limit=100, sample_size=10)
+
+        self.assertTrue(result.would_stop)
+        self.assertEqual(result.reason, "insufficient_probe_n")
+        self.assertEqual(result.checked, 2)
+        self.assertEqual(result.hits, 0)
+
+    def test_pre_gate_stops_when_hit_rate_below_threshold(self):
+        builder = Mock()
+        builder.build_jobs.return_value = [self._build_row("1"), self._build_row("2")]
+        lookup = Mock()
+        lookup.lookup.return_value = SimpleNamespace(
+            found=False,
+            matched_source="",
+            local_hits=0,
+            remote_hits=0,
+            error="",
+        )
+        pipeline = AutoDbMatchingPipelineService(
+            job_builder=builder,
+            lookup_v3=lookup,
+            local_lookup=Mock(),
+            remote_lookup=Mock(),
+            clone_planner=Mock(),
+            link_audit=Mock(),
+            safe_link_planner=Mock(),
+            enrichment_planner=Mock(),
+        )
+
+        result = pipeline.pre_gate_build_candidates(
+            supplier_code="gpl",
+            build_limit=100,
+            sample_size=10,
+            min_probe_n=2,
+            min_hit_rate_pct=20.0,
+        )
+
+        self.assertTrue(result.would_stop)
+        self.assertEqual(result.reason, "hit_rate_too_low")
+        self.assertEqual(result.checked, 2)
+        self.assertEqual(result.hits, 0)
+
+    def test_pre_gate_allows_continue_when_hits_positive(self):
+        builder = Mock()
+        builder.build_jobs.return_value = [self._build_row("1"), self._build_row("2")]
+        lookup = Mock()
+        lookup.lookup.side_effect = [
+            SimpleNamespace(found=True, matched_source="remote", local_hits=0, remote_hits=1, error=""),
+            SimpleNamespace(found=False, matched_source="", local_hits=0, remote_hits=0, error=""),
+        ]
+        pipeline = AutoDbMatchingPipelineService(
+            job_builder=builder,
+            lookup_v3=lookup,
+            local_lookup=Mock(),
+            remote_lookup=Mock(),
+            clone_planner=Mock(),
+            link_audit=Mock(),
+            safe_link_planner=Mock(),
+            enrichment_planner=Mock(),
+        )
+
+        result = pipeline.pre_gate_build_candidates(
+            supplier_code="gpl",
+            build_limit=100,
+            sample_size=10,
+            min_probe_n=2,
+            min_hit_rate_pct=20.0,
+        )
+
+        self.assertFalse(result.would_stop)
+        self.assertTrue(result.can_continue)
+        self.assertEqual(result.reason, "ok")
+        self.assertEqual(result.hits, 1)
+
+    def test_pilot_eligibility_gate_thresholds(self):
+        pipeline = AutoDbMatchingPipelineService(
+            job_builder=Mock(),
+            lookup_v3=Mock(),
+            local_lookup=Mock(),
+            remote_lookup=Mock(),
+            clone_planner=Mock(),
+            link_audit=Mock(),
+            safe_link_planner=Mock(),
+            enrichment_planner=Mock(),
+        )
+        zero = pipeline.evaluate_pilot_eligibility(candidate_count=0, probe_n=0, hits=0, min_probe_n=20, min_hit_rate_pct=20.0)
+        insufficient = pipeline.evaluate_pilot_eligibility(candidate_count=10, probe_n=5, hits=5, min_probe_n=20, min_hit_rate_pct=20.0)
+        low_rate = pipeline.evaluate_pilot_eligibility(candidate_count=10, probe_n=20, hits=1, min_probe_n=20, min_hit_rate_pct=20.0)
+        ok = pipeline.evaluate_pilot_eligibility(candidate_count=10, probe_n=20, hits=5, min_probe_n=20, min_hit_rate_pct=20.0)
+
+        self.assertEqual(zero.reason, "candidates_zero")
+        self.assertEqual(insufficient.reason, "insufficient_probe_n")
+        self.assertEqual(low_rate.reason, "hit_rate_too_low")
+        self.assertEqual(ok.reason, "ok")
+        self.assertTrue(ok.can_continue)
 
 class AutoDbLocalLookupFoundationTests(AutoDbMatchingDbTestCase):
     def test_local_clone_hit_returns_local_found(self):

@@ -4,6 +4,22 @@ from apps.supplier_imports.gpl_article_resolver import GplArticleResolver
 
 
 class GplArticleResolverTests(SimpleTestCase):
+    def test_prefers_tecdoc_article_field(self):
+        resolver = GplArticleResolver()
+        result = resolver.resolve(
+            raw_payload={
+                "tecdoc_article": "214082",
+                "Артикул ТД": "WP6873",
+                "Артикул": "324966",
+                "Код": "0000001",
+            },
+            article="324966",
+            external_sku="0000001",
+        )
+        self.assertEqual(result.manufacturer_article, "214082")
+        self.assertEqual(result.article_confidence, "high")
+        self.assertEqual(result.article_resolution_status, "resolved")
+
     def test_prefers_manufacturer_article_field(self):
         resolver = GplArticleResolver()
         result = resolver.resolve(

@@ -31,19 +31,17 @@ export function AutoDbMatchingPage() {
     <section>
       <PageHeader
         title={title}
-        actions={
-          tab === "dashboard" ? (
-            <button
-              type="button"
-              className="inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold transition-colors"
-              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
-              onClick={() => setRefreshNonce((prev) => prev + 1)}
-            >
-              <RefreshCw size={16} className="animate-spin" style={{ animationDuration: "2.2s" }} />
-              {tDashboard("actions.refreshOperationalContour")}
-            </button>
-          ) : null
-        }
+        actions={(
+          <button
+            type="button"
+            className="inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold transition-colors"
+            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+            onClick={() => setRefreshNonce((prev) => prev + 1)}
+          >
+            <RefreshCw size={16} className="animate-spin" style={{ animationDuration: "2.2s" }} />
+            {tDashboard("actions.refreshOperationalContour")}
+          </button>
+        )}
         switcher={(
           <div
             className="inline-flex items-center gap-2 rounded-xl border p-1"
@@ -83,13 +81,14 @@ export function AutoDbMatchingPage() {
       {tab === "dashboard" ? <AutoDbMatchingDashboardTab refreshNonce={refreshNonce} /> : null}
       {tab === "products" ? (
         <AutoDbMatchingProductsTab
+          refreshNonce={refreshNonce}
           onSearchProduct={(job) => {
             setSeedJob(job);
             setTab("search");
           }}
         />
       ) : null}
-      {tab === "search" ? <AutoDbMatchingSearchTab seedJob={seedJob} /> : null}
+      {tab === "search" ? <AutoDbMatchingSearchTab seedJob={seedJob} refreshNonce={refreshNonce} /> : null}
     </section>
   );
 }

@@ -256,7 +256,8 @@ class AutoDbArticleLookupService:
             )
             if alias is None:
                 return None
-            if (not alias.manual_confirmed) and (float(alias.confidence or 0.0) < self.HIGH_CONFIDENCE_ALIAS):
+            # Safety rule: only manually confirmed aliases can affect supplier resolution.
+            if not bool(alias.manual_confirmed):
                 return None
             self.storage.ensure_table(SUPPLIER_TABLE)
             rows = self.storage.fetch_local_rows(table=SUPPLIER_TABLE, filters={"id": int(alias.autodb_supplier_id)}, limit=1)

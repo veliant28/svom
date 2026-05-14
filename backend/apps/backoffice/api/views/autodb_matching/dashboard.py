@@ -67,7 +67,14 @@ class BackofficeAutoDbMatchingDashboardAPIView(BackofficeAPIView):
     def _cards(self, *, jobs, unlinked_products: int, latest_run, today, quota: dict) -> dict:
         total_brands_in_products = Product.objects.exclude(normalized_brand="").values("normalized_brand").distinct().count()
         mapped_brands_in_products = Product.objects.exclude(autodb_supplier_id__isnull=True).values("autodb_supplier_id").distinct().count()
-        linked_products_count = Product.objects.exclude(autodb_supplier_id__isnull=True).count()
+        linked_products_count = (
+            Product.objects.exclude(autodb_supplier_id__isnull=True)
+            .exclude(autodb_article_number__isnull=True)
+            .exclude(autodb_article_number="")
+            .exclude(autodb_article_key__isnull=True)
+            .exclude(autodb_article_key="")
+            .count()
+        )
         return {
             "total_jobs": jobs.count(),
             "mapped_brands": mapped_brands_in_products,

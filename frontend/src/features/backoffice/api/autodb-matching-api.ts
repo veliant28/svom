@@ -7,6 +7,7 @@ import type {
   AutoDbJobsResponse,
   AutoDbRemoteQuota,
   AutoDbSearchResponse,
+  AutoDbSkuLookupResponse,
 } from "@/features/backoffice/types/backoffice";
 
 const BASE = "/backoffice/autodb-matching";
@@ -40,15 +41,29 @@ export function runAutoDbRemote(token: string, body: Record<string, unknown>) {
 }
 
 export function manualAutoDbSearchLocal(token: string, body: Record<string, unknown>) {
-  return postJson<AutoDbSearchResponse, Record<string, unknown>>(`${BASE}/manual-search/local/`, body, undefined, { token });
+  return postJson<AutoDbSearchResponse, Record<string, unknown>>(
+    `${BASE}/manual-search/local/`,
+    body,
+    undefined,
+    { token, timeoutMs: 45000 },
+  );
 }
 
 export function manualAutoDbSearchRemote(token: string, body: Record<string, unknown>) {
-  return postJson<AutoDbSearchResponse, Record<string, unknown>>(`${BASE}/manual-search/remote/`, body, undefined, { token });
+  return postJson<AutoDbSearchResponse, Record<string, unknown>>(
+    `${BASE}/manual-search/remote/`,
+    body,
+    undefined,
+    { token, timeoutMs: 120000 },
+  );
 }
 
 export function createAutoDbMatchingJobDryRun(token: string, body: Record<string, unknown>) {
   return postJson<AutoDbActionResponse, Record<string, unknown>>(`${BASE}/manual-search/create-job/`, body, undefined, { token });
+}
+
+export function lookupAutoDbMatchingProducts(token: string, params: { q: string; limit?: number }) {
+  return getJson<AutoDbSkuLookupResponse>(`${BASE}/manual-search/product-lookup/`, params, { token });
 }
 
 export function planAutoDbCloneSync(token: string, body: Record<string, unknown>) {

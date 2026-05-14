@@ -338,6 +338,7 @@ def persist_current_offer_rows(
     valid_rows: dict[tuple[str, str], dict] = {}
     seen_supplier_skus: set[str] = set()
     utr_detail_updates: dict[str, str] = {}
+    gpl_product_article_updates: dict[str, str] = {}
     match_loop_started = time.perf_counter()
     for row_index, offer in enumerate(parse_result.offers, start=1):
         if offer.price is not None:
@@ -505,6 +506,11 @@ def persist_current_offer_rows(
         if product is not None and mapped_category is not None and not dry_run and product.category_id is None:
             product.category = mapped_category
             product.save(update_fields=("category", "updated_at"))
+
+        if is_gpl_source and product is not None:
+            resolved_article = str(offer.article or "").strip()[:128]
+            if resolved_article:
+                gpl_product_article_updates[str(product.id)] = resolved_article
 
         seen_supplier_skus.add(supplier_sku)
         product_id = str(product.id) if product is not None else f"bootstrap:{supplier_sku}"
@@ -728,6 +734,15 @@ def persist_current_offer_rows(
             timings["utr_detail_attach_sec"] = 0.0
             timings["utr_detail_candidates"] = 0
 
+        if gpl_product_article_updates:
+            article_sync_started = time.perf_counter()
+            updated_article_count = _bulk_sync_gpl_product_articles(updates=gpl_product_article_updates)
+            timings["gpl_product_article_sync_sec"] = _elapsed_seconds(article_sync_started)
+            timings["gpl_product_article_updated"] = int(updated_article_count)
+        else:
+            timings["gpl_product_article_sync_sec"] = 0.0
+            timings["gpl_product_article_updated"] = 0
+
         timings["product_i18n_bulk_update_sec"] = 0.0
         timings["product_i18n_updated_candidates"] = 0
 
@@ -791,6 +806,7 @@ def persist_current_offer_rows(
         "rows_with_suspicious_stock": int(rows_with_suspicious_stock),
         "stock_values_ignored": int(stock_values_ignored),
         "max_stock_total_after_normalization": int(max_stock_total_after_normalization),
+        "product_article_sync_candidates": int(len(gpl_product_article_updates)),
     }
     summary["gpl_category_assignment"] = {
         "assigned_by_group_mapping": int(gpl_mapping_status_counts.get(MAPPING_STATUS_ASSIGNED_GROUP, 0)),
@@ -859,6 +875,29 @@ def _bulk_attach_utr_detail_ids(*, updates: dict[str, str]) -> None:
         to_update.append(product)
     if to_update:
         Product.objects.bulk_update(to_update, fields=("utr_detail_id", "updated_at"), batch_size=1000)
+
+
+def _bulk_sync_gpl_product_articles(*, updates: dict[str, str]) -> int:
+    if not updates:
+        return 0
+    products = list(Product.objects.filter(id__in=list(updates.keys())).only("id", "article", "updated_at"))
+    if not products:
+        return 0
+    now = timezone.now()
+    to_update: list[Product] = []
+    for product in products:
+        next_article = str(updates.get(str(product.id), "") or "").strip()[:128]
+        if not next_article:
+            continue
+        if str(product.article or "").strip() == next_article:
+            continue
+        product.article = next_article
+        product.updated_at = now
+        to_update.append(product)
+    if not to_update:
+        return 0
+    Product.objects.bulk_update(to_update, fields=("article", "updated_at"), batch_size=1000)
+    return len(to_update)
 
 
 def create_row_error(
@@ -1153,20 +1192,9 @@ def _resolve_category_mapping_confidence(*, gpl_row_decision, fallback: Decimal 
 
 
 def _build_bootstrap_product_sku(*, source: ImportSource, supplier_sku: str) -> str:
-    code = str(getattr(source, "code", "") or "").strip().upper() or "SRC"
-    compact = "".join(ch for ch in str(supplier_sku or "").upper() if ch.isalnum())
-    compact = compact[:54] if compact else "ITEM"
-    candidate = f"{code}-{compact}"[:64]
-    if not Product.objects.filter(sku=candidate).exists():
-        return candidate
-
-    suffix = 2
-    while True:
-        reserved = f"-{suffix}"
-        sku = f"{candidate[: max(1, 64 - len(reserved))]}{reserved}"
-        if not Product.objects.filter(sku=sku).exists():
-            return sku
-        suffix += 1
+    del source
+    candidate = str(supplier_sku or "").strip()[:64]
+    return candidate or "ITEM"
 
 
 def _get_or_create_bootstrap_brand(*, brand_name: str) -> Brand:

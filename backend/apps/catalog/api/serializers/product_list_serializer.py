@@ -7,9 +7,11 @@ from apps.catalog.services.product_management import get_product_display_name
 from apps.catalog.services.product_branding import get_product_display_brand_payload
 from apps.catalog.services.product_sku import get_product_display_sku, get_product_manufacturer_article
 from apps.catalog.services.product_stock import resolve_display_stock_qty
-from apps.catalog.services.product_fitment_lookup import resolve_selected_passanger_car_id
+from apps.catalog.services.product_fitment_lookup import (
+    get_public_autodb_fitment_ids,
+    resolve_selected_passanger_car_id,
+)
 from apps.catalog.services.category_vehicle_filter_policy import get_vehicle_filter_policy
-from apps.compatibility.models import ProductFitment
 from apps.pricing.models import SupplierOffer
 from apps.pricing.services import ProductSellableSnapshotService
 from apps.supplier_imports.models import SupplierRawOffer
@@ -304,21 +306,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         return get_vehicle_filter_policy(getattr(obj, "category", None))
 
     def get_fitment_count(self, obj: Product) -> int:
-        if self._get_link_quality_status(obj) != AutoDbProductLinkQuality.STATUS_TRUSTED:
-            return 0
-        return (
-            ProductFitment.objects.filter(
-                product=obj,
-                source=ProductFitment.SOURCE_AUTODB_PRO,
-                is_stale=False,
-                excluded_from_public_filtering=False,
-                quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
-            )
-            .exclude(autodb_passanger_car_id__isnull=True)
-            .values("autodb_passanger_car_id")
-            .distinct()
-            .count()
-        )
+        return len(set(get_public_autodb_fitment_ids(product=obj)))
 
     def get_is_autodb_compatible_data_available(self, obj: Product) -> bool:
         return self.get_fitment_count(obj) > 0

@@ -179,7 +179,8 @@ class SupplierBrandMatcher:
                     continue
                 confidence = float(item.confidence or 0.0)
                 manual = bool(item.manual_confirmed)
-                if not manual and confidence < self.HIGH_CONFIDENCE_ALIAS:
+                # Safety rule: only manually confirmed AutoDB aliases are eligible.
+                if not manual:
                     continue
                 if normalized in alias_map:
                     continue

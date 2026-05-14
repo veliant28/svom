@@ -3,6 +3,7 @@ services:
     image: postgres:18.3
     container_name: svom_postgres
     restart: unless-stopped
+    shm_size: 512m
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-svom}
       POSTGRES_USER: ${POSTGRES_USER:-svom}
@@ -22,6 +23,7 @@ services:
     image: postgres:18.3
     container_name: svom_auto_db_pro_postgres
     restart: unless-stopped
+    shm_size: 512m
     environment:
       POSTGRES_DB: ${AUTODB_PRO_LOCAL_DATABASE_NAME:-Auto_DB_Pro}
       POSTGRES_USER: ${AUTODB_PRO_LOCAL_DATABASE_USER:-svom}

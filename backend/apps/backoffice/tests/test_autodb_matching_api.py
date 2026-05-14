@@ -89,6 +89,49 @@ class BackofficeAutoDbMatchingApiTests(APITestCase):
         self.assertEqual(self.client.get(dashboard, **self._auth(self.regular_token)).status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(self.client.get(jobs, **self._auth(self.regular_token)).status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_jobs_endpoint_classifies_remote_found_lookup_mode(self):
+        self.job.status = AutoDbMatchJob.STATUS_REMOTE_FOUND
+        self.job.save(update_fields=["status", "updated_at"])
+        self.job.evidence.create(
+            stage="remote_lookup",
+            source="lookup_v3_readonly",
+            result="exact_remote_found",
+            payload_json={"matched_source": "B_norm_article_only:local:article_numbers.DataSupplierArticleNumber"},
+        )
+        response = self.client.get(reverse("backoffice_api:autodb-matching-jobs"), **self._auth(self.staff_token))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        row = response.data["results"][0]
+        self.assertEqual(row["matching_status"], AutoDbMatchJob.STATUS_REMOTE_FOUND)
+        self.assertEqual(row["matching_status_view"], "remote_found_local_clone")
+        self.assertEqual(row["lookup_origin"], "local")
+        self.assertEqual(row["lookup_method"], "b_norm_article_only")
+        self.assertEqual(row["lookup_bucket"], "local_clone_hit")
+        self.assertFalse(row["manual_remote_equivalent"])
+
+    def test_dashboard_linked_products_counts_only_full_links(self):
+        self.product.autodb_supplier_id = 10
+        self.product.autodb_article_number = "WA 6342"
+        self.product.autodb_article_key = "10:WA6342"
+        self.product.save(update_fields=["autodb_supplier_id", "autodb_article_number", "autodb_article_key", "updated_at"])
+
+        Product.objects.create(
+            sku="WIX-002",
+            article="WA9999",
+            name="WIX Filter 2",
+            slug="wix-filter-2",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+            autodb_supplier_id=10,
+            autodb_article_number="",
+            autodb_article_key="",
+        )
+
+        response = self.client.get(reverse("backoffice_api:autodb-matching-dashboard"), **self._auth(self.staff_token))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["cards"]["linked_products"], 1)
+
     def test_manual_local_search_uses_deterministic_variants(self):
         response = self.client.post(
             reverse("backoffice_api:autodb-matching-manual-local"),
@@ -108,7 +151,7 @@ class BackofficeAutoDbMatchingApiTests(APITestCase):
         quota = AutoDbRemoteQuotaState.objects.create(remote_key=REMOTE_QUOTA_KEY)
         AutoDbRemoteQuotaTracker().record_quota_error(
             quota,
-            error="ERROR 1226 max_questions for https://user:password@example.test",
+            error="ERROR 1226 max_questions for https://user:password@example.test User 'user_059a3da6c1' exceeded",
             cooldown_minutes=60,
             run_id="run-1",
         )
@@ -120,6 +163,7 @@ class BackofficeAutoDbMatchingApiTests(APITestCase):
         payload_text = str(response.data)
         self.assertNotIn("password@", payload_text)
         self.assertNotIn("user:password", payload_text)
+        self.assertNotIn("user_059a3da6c1", payload_text)
 
     def test_query_counters_aggregate_by_time_bucket(self):
         quota = AutoDbRemoteQuotaState.objects.create(remote_key=REMOTE_QUOTA_KEY)
@@ -181,9 +225,6 @@ class BackofficeAutoDbMatchingApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["results"][0]["status"], "exact_remote_found")
         self.assertEqual(self._write_counts(), before)
-        quota = AutoDbRemoteQuotaState.objects.get(remote_key=REMOTE_QUOTA_KEY)
-        self.assertEqual(quota.recent_points_json[-1]["run_id"], "manual-search")
-        self.assertGreaterEqual(quota.recent_points_json[-1]["query_count"], 1)
         storage = getattr(lookup, "storage", None)
         self.assertFalse(getattr(getattr(storage, "upsert_rows", None), "called", False))
 
@@ -202,6 +243,43 @@ class BackofficeAutoDbMatchingApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["results"][0]["status"], "quota_paused")
         self.assertEqual(self._write_counts(), before)
+
+    @patch("apps.backoffice.api.views.autodb_matching.actions.manual_bind_product_to_autodb_task")
+    def test_manual_create_job_queues_async_bind(self, bind_task):
+        bind_task.delay.return_value = SimpleNamespace(id="task-123")
+        response = self.client.post(
+            reverse("backoffice_api:autodb-matching-manual-create-job"),
+            {"product_id": str(self.product.id), "supplier_id": 10, "supplier_name": "WIX", "article": "WA6342", "dispatch_async": True},
+            format="json",
+            **self._auth(self.staff_token),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertEqual(response.data["status"], "queued")
+        self.assertEqual(response.data["mode"], "async")
+        self.assertTrue(response.data["created"])
+        self.assertEqual(response.data["task_id"], "task-123")
+        bind_task.delay.assert_called_once()
+        kwargs = bind_task.delay.call_args.kwargs
+        self.assertEqual(kwargs["product_id"], str(self.product.id))
+        self.assertEqual(kwargs["supplier_id"], 10)
+        self.assertEqual(kwargs["article_number"], "WA6342")
+        self.assertEqual(kwargs["supplier_name"], "WIX")
+
+    @patch("apps.backoffice.api.views.autodb_matching.actions.manual_bind_product_to_autodb_task")
+    def test_manual_create_job_can_run_sync(self, bind_task):
+        bind_task.return_value = {"status": "bound", "autodb_article_key": "10:WA6342"}
+        response = self.client.post(
+            reverse("backoffice_api:autodb-matching-manual-create-job"),
+            {"product_id": str(self.product.id), "supplier_id": 10, "supplier_name": "WIX", "article": "WA6342", "dispatch_async": False},
+            format="json",
+            **self._auth(self.staff_token),
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], "bound")
+        self.assertEqual(response.data["mode"], "sync")
+        self.assertTrue(response.data["created"])
+        bind_task.assert_called_once()
 
     def _write_counts(self) -> tuple[int, int, int, int]:
         return (

@@ -36,7 +36,7 @@ class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
                 "supplier_offer",
                 "supplier_offer__supplier",
             )
-            .prefetch_related("evidence")
+            .prefetch_related("evidence", "product__supplier_offers__supplier")
             .annotate(_trusted=Exists(job_trusted_link_exists_queryset()))
             .filter(_trusted=False)
         )
@@ -146,7 +146,7 @@ class BackofficeAutoDbMatchingJobDetailAPIView(BackofficeAPIView):
                 "supplier_offer",
                 "supplier_offer__supplier",
             )
-            .prefetch_related("evidence")
+            .prefetch_related("evidence", "product__supplier_offers__supplier")
             .get(id=id)
         )
         return Response(serialize_job_detail(job))

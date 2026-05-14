@@ -21,11 +21,17 @@ class AutoDbRawOfferEnrichmentServiceTests(SimpleTestCase):
         normalized_brand: str,
         normalized_article: str,
         matched_product_id: str | None = None,
+        product_article: str | None = None,
         external_sku: str | None = None,
         raw_payload: dict | None = None,
         source_code: str = "",
         supplier_code: str = "",
     ):
+        matched_product = SimpleNamespace(
+            article=product_article if product_article is not None else article,
+            normalized_brand=normalized_brand,
+            brand=SimpleNamespace(name=brand),
+        )
         return SimpleNamespace(
             brand_name=brand,
             article=article,
@@ -33,6 +39,7 @@ class AutoDbRawOfferEnrichmentServiceTests(SimpleTestCase):
             normalized_brand=normalized_brand,
             normalized_article=normalized_article,
             matched_product_id=matched_product_id,
+            matched_product=matched_product,
             raw_payload=raw_payload or {},
             source=SimpleNamespace(code=source_code),
             supplier=SimpleNamespace(code=supplier_code),
@@ -52,23 +59,24 @@ class AutoDbRawOfferEnrichmentServiceTests(SimpleTestCase):
         self.assertEqual(failed, 0)
         self.assertEqual(len(buckets), 2)
 
-    def test_build_pair_buckets_uses_gpl_resolved_manufacturer_article(self):
+    def test_build_pair_buckets_uses_product_article_from_db(self):
         service = AutoDbRawOfferEnrichmentService(storage=Mock(), enrichment_service=Mock(), product_linker=Mock())
         offers = [
             self._offer(
                 brand="WIX FILTERS",
                 article="324966",
+                product_article="214082",
                 external_sku="0000001",
                 normalized_brand="WIXFILTERS",
                 normalized_article="324966",
                 source_code="gpl",
-                raw_payload={"Артикул": "324966", "Артикул ТД": "WP6873", "Код": "0000001"},
+                raw_payload={"Артикул": "324966", "Артикул ТД": "WP6873", "tecdoc_article": "214082", "Код": "0000001"},
             )
         ]
         buckets, total, failed = service.build_pair_buckets(offers=offers)
         self.assertEqual(total, 1)
         self.assertEqual(failed, 0)
-        self.assertEqual(buckets[0].sample_article, "WP6873")
+        self.assertEqual(buckets[0].sample_article, "214082")
 
     @patch("apps.autodb.services.raw_offer_enrichment.Product.objects.in_bulk", return_value={})
     def test_dry_run_local_only_does_not_call_remote(self, _in_bulk):

@@ -177,6 +177,31 @@ class AutoDbProductNameEnrichmentService:
         name_uk = translation.uk or clean_title
         name_ru = translation.ru or clean_title
         name_en = translation.en or clean_title
+        translation_status = translation.status
+        translation_error = translation.error
+
+        article_description = sanitize_product_name(
+            str(find_value(diagnostics.article_row, ["Description", "description"]) or "")
+        )
+        if translation_status != "translated" and article_description:
+            base_part = sanitize_product_name(self._strip_trailing_exact_candidate(clean_title, article_description))
+            if base_part and base_part != clean_title:
+                base_translation = self.translator.translate_product_name(source_text=base_part)
+                if base_translation.status == "translated":
+                    name_uk = self._combine_base_and_description(
+                        base=(base_translation.uk or base_part),
+                        description=article_description,
+                    )
+                    name_ru = self._combine_base_and_description(
+                        base=(base_translation.ru or base_part),
+                        description=article_description,
+                    )
+                    name_en = self._combine_base_and_description(
+                        base=(base_translation.en or base_part),
+                        description=article_description,
+                    )
+                    translation_status = "translated"
+                    translation_error = ""
 
         if not dry_run:
             product.name = name_uk or clean_title
@@ -187,8 +212,8 @@ class AutoDbProductNameEnrichmentService:
             # Keep original source text before cleanup for traceability.
             product.name_source_text = source_title
             product.name_source_hash = source_hash
-            product.name_translation_status = translation.status
-            product.name_translation_error = translation.error
+            product.name_translation_status = translation_status
+            product.name_translation_error = translation_error
             product.save(
                 update_fields=(
                     "name",
@@ -215,8 +240,8 @@ class AutoDbProductNameEnrichmentService:
             new_name_en=name_en,
             name_source=source_kind,
             name_source_hash=source_hash,
-            translation_status=translation.status,
-            translation_error=translation.error,
+            translation_status=translation_status,
+            translation_error=translation_error,
             source_title_before_cleanup=source_title,
             source_title_after_cleanup=clean_title,
             source_reason=diagnostics.source_reason,
@@ -242,19 +267,25 @@ class AutoDbProductNameEnrichmentService:
         )
 
         source_candidates: list[tuple[str, str, str]] = []
+        article_description_for_name = sanitize_product_name(str(find_value(article_row, ["Description", "description"]) or ""))
         for row in prd_rows:
             normalized = sanitize_product_name(str(find_value(row, ["normalizeddescription", "NormalizedDescription", "description"]) or ""))
+            description = sanitize_product_name(str(find_value(row, ["description", "Description"]) or ""))
+            combined = self._combine_base_and_description(base=normalized, description=description)
+            if combined:
+                source_candidates.append((Product.NAME_SOURCE_AUTODB_PRO, combined, "prd.normalized_plus_description"))
             if normalized:
                 source_candidates.append((Product.NAME_SOURCE_AUTODB_PRO, normalized, "prd.normalizeddescription"))
-            description = sanitize_product_name(str(find_value(row, ["description", "Description"]) or ""))
             if description and description != normalized:
                 source_candidates.append((Product.NAME_SOURCE_AUTODB_PRO, description, "prd.description"))
 
         normalized_description = sanitize_product_name(str(find_value(article_row, ["NormalizedDescription", "normalizeddescription"]) or ""))
+        description = sanitize_product_name(str(find_value(article_row, ["Description", "description"]) or ""))
+        combined = self._combine_base_and_description(base=normalized_description, description=description)
+        if combined:
+            source_candidates.append((Product.NAME_SOURCE_AUTODB_PRO, combined, "articles.normalized_plus_description"))
         if normalized_description:
             source_candidates.append((Product.NAME_SOURCE_AUTODB_PRO, normalized_description, "articles.normalized_description"))
-
-        description = sanitize_product_name(str(find_value(article_row, ["Description", "description"]) or ""))
         if description:
             source_candidates.append((Product.NAME_SOURCE_AUTODB_PRO, description, "articles.description"))
 
@@ -277,6 +308,11 @@ class AutoDbProductNameEnrichmentService:
                 suffix_candidates=suffix_candidates,
                 is_fallback=(kind == Product.NAME_SOURCE_SUPPLIER_FALLBACK),
             )
+            if kind == Product.NAME_SOURCE_AUTODB_PRO and article_description_for_name:
+                cleaned = self._combine_base_and_description(
+                    base=cleaned,
+                    description=article_description_for_name,
+                )
             if not self._is_usable_title(cleaned):
                 continue
             chosen_kind = kind
@@ -544,6 +580,24 @@ class AutoDbProductNameEnrichmentService:
         if not self._letter_re.search(text):
             return False
         return True
+
+    def _combine_base_and_description(self, *, base: str, description: str) -> str:
+        base_clean = sanitize_product_name(base)
+        description_clean = sanitize_product_name(description)
+        if not base_clean and not description_clean:
+            return ""
+        if not base_clean:
+            return description_clean
+        if not description_clean:
+            return base_clean
+
+        base_lower = base_clean.lower()
+        description_lower = description_clean.lower()
+        if description_lower in base_lower:
+            return base_clean
+        if base_lower in description_lower:
+            return description_clean
+        return sanitize_product_name(f"{base_clean} {description_clean}")[:255]
 
     def build_queryset(
         self,

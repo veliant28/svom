@@ -87,7 +87,7 @@ class AutoDbProductFitmentEnrichmentService:
         if not article_rows:
             stale_marked = self._mark_missing_as_stale(
                 product=product,
-                active_linkage_ids=set(),
+                active_linkage_keys=set(),
                 dry_run=dry_run,
             )
             return ProductFitmentEnrichmentResult(
@@ -104,16 +104,21 @@ class AutoDbProductFitmentEnrichmentService:
                 skipped_manual_locked=False,
             )
 
-        passenger_rows = [
-            row
-            for row in article_rows
-            if str(find_value(row, ["linkageTypeId", "linkagetypeid", "LinkageTypeId"]) or "").strip().lower()
-            == self.LINKAGE_TYPE_PASSENGER_CAR.lower()
-        ]
-        if not passenger_rows:
+        linkage_rows: list[tuple[str, int, dict[str, Any]]] = []
+        passenger_linkage_ids: set[int] = set()
+        for row in article_rows:
+            linkage_id = self._safe_int(find_value(row, ["linkageId", "linkageid", "LinkageId"]))
+            if linkage_id is None or linkage_id <= 0:
+                continue
+            linkage_type = self._normalize_linkage_type(find_value(row, ["linkageTypeId", "linkagetypeid", "LinkageTypeId"]))
+            if self._is_passenger_linkage(linkage_type):
+                passenger_linkage_ids.add(linkage_id)
+            linkage_rows.append((linkage_type, linkage_id, row))
+
+        if not linkage_rows:
             stale_marked = self._mark_missing_as_stale(
                 product=product,
-                active_linkage_ids=set(),
+                active_linkage_keys=set(),
                 dry_run=dry_run,
             )
             return ProductFitmentEnrichmentResult(
@@ -130,41 +135,16 @@ class AutoDbProductFitmentEnrichmentService:
                 skipped_manual_locked=False,
             )
 
-        requested_ids: set[int] = set()
-        linkage_rows: list[tuple[int, dict[str, Any]]] = []
-        for row in passenger_rows:
-            linkage_id = self._safe_int(find_value(row, ["linkageId", "linkageid", "LinkageId"]))
-            if linkage_id is None or linkage_id <= 0:
+        existing_car_ids = self._find_existing_passanger_car_ids(linkage_ids=passenger_linkage_ids)
+        valid_linkage_rows: list[tuple[str, int, dict[str, Any]]] = []
+        for linkage_type, linkage_id, row in linkage_rows:
+            if self._is_passenger_linkage(linkage_type) and linkage_id not in existing_car_ids:
                 continue
-            requested_ids.add(linkage_id)
-            linkage_rows.append((linkage_id, row))
-
-        if not linkage_rows:
-            stale_marked = self._mark_missing_as_stale(
-                product=product,
-                active_linkage_ids=set(),
-                dry_run=dry_run,
-            )
-            return ProductFitmentEnrichmentResult(
-                product_id=str(product.id),
-                status="skipped_missing_passanger_car",
-                has_fitments=False,
-                fitments_created=0,
-                fitments_updated=0,
-                stale_marked=stale_marked,
-                skipped_no_autodb_link=False,
-                skipped_no_article_li=False,
-                skipped_non_passenger_car=False,
-                skipped_missing_passanger_car=True,
-                skipped_manual_locked=False,
-            )
-
-        existing_car_ids = self._find_existing_passanger_car_ids(linkage_ids=requested_ids)
-        valid_linkage_rows = [(linkage_id, row) for linkage_id, row in linkage_rows if linkage_id in existing_car_ids]
+            valid_linkage_rows.append((linkage_type, linkage_id, row))
         if not valid_linkage_rows:
             stale_marked = self._mark_missing_as_stale(
                 product=product,
-                active_linkage_ids=set(),
+                active_linkage_keys=set(),
                 dry_run=dry_run,
             )
             return ProductFitmentEnrichmentResult(
@@ -185,11 +165,10 @@ class AutoDbProductFitmentEnrichmentService:
             ProductFitment.objects.filter(
                 product=product,
                 source=ProductFitment.SOURCE_AUTODB_PRO,
-                linkage_type=self.LINKAGE_TYPE_PASSENGER_CAR,
             ).order_by("id")
         )
-        by_linkage_id = {
-            int(item.autodb_passanger_car_id): item
+        by_linkage_key = {
+            (self._linkage_type_key(item.linkage_type), int(item.autodb_passanger_car_id)): item
             for item in existing_fitments
             if item.autodb_passanger_car_id is not None
         }
@@ -198,11 +177,15 @@ class AutoDbProductFitmentEnrichmentService:
         updated = 0
         skipped_manual_locked = False
 
-        active_linkage_ids = {linkage_id for linkage_id, _ in valid_linkage_rows}
-        for linkage_id, row in valid_linkage_rows:
+        active_linkage_keys = {
+            (self._linkage_type_key(linkage_type), linkage_id)
+            for linkage_type, linkage_id, _ in valid_linkage_rows
+        }
+        for linkage_type, linkage_id, row in valid_linkage_rows:
+            linkage_type_value = linkage_type or self.LINKAGE_TYPE_PASSENGER_CAR
             source_payload = {
                 "source": ProductFitment.SOURCE_AUTODB_PRO,
-                "linkage_type": self.LINKAGE_TYPE_PASSENGER_CAR,
+                "linkage_type": linkage_type_value,
                 "linkage_id": linkage_id,
                 "supplier_id": supplier_id,
                 "article_number": article_number,
@@ -210,18 +193,17 @@ class AutoDbProductFitmentEnrichmentService:
                 "raw": self._trim_article_li_row(row),
             }
             source_hash = self._payload_hash(source_payload)
-            existing = by_linkage_id.get(linkage_id)
+            existing = by_linkage_key.get((self._linkage_type_key(linkage_type_value), linkage_id))
             if existing is None:
                 created += 1
                 if not dry_run:
                     ProductFitment.objects.create(
                         product=product,
-                        modification=None,
-                        note="Auto_DB_Pro article_li PassengerCar",
+                        note=f"Auto_DB_Pro article_li {linkage_type_value}",
                         is_exact=False,
                         source=ProductFitment.SOURCE_AUTODB_PRO,
                         autodb_passanger_car_id=linkage_id,
-                        linkage_type=self.LINKAGE_TYPE_PASSENGER_CAR,
+                        linkage_type=linkage_type_value,
                         autodb_article_key=article_key,
                         supplier_id=supplier_id,
                         article_number=article_number,
@@ -247,8 +229,8 @@ class AutoDbProductFitmentEnrichmentService:
             if existing.stale_reason:
                 existing.stale_reason = ""
                 changed = True
-            if existing.linkage_type != self.LINKAGE_TYPE_PASSENGER_CAR:
-                existing.linkage_type = self.LINKAGE_TYPE_PASSENGER_CAR
+            if str(existing.linkage_type or "") != linkage_type_value:
+                existing.linkage_type = linkage_type_value
                 changed = True
             if str(existing.autodb_article_key or "") != article_key:
                 existing.autodb_article_key = article_key
@@ -301,7 +283,7 @@ class AutoDbProductFitmentEnrichmentService:
 
         stale_marked = self._mark_missing_as_stale(
             product=product,
-            active_linkage_ids=active_linkage_ids,
+            active_linkage_keys=active_linkage_keys,
             dry_run=dry_run,
         )
 
@@ -312,7 +294,7 @@ class AutoDbProductFitmentEnrichmentService:
         return ProductFitmentEnrichmentResult(
             product_id=str(product.id),
             status=status,
-            has_fitments=bool(active_linkage_ids),
+            has_fitments=bool(active_linkage_keys),
             fitments_created=created,
             fitments_updated=updated,
             stale_marked=stale_marked,
@@ -344,47 +326,52 @@ class AutoDbProductFitmentEnrichmentService:
             if not article_rows:
                 skipped_reason = "skipped_no_article_li"
             else:
-                passenger_rows = [
-                    row
-                    for row in article_rows
-                    if str(find_value(row, ["linkageTypeId", "linkagetypeid", "LinkageTypeId"]) or "").strip().lower()
-                    == self.LINKAGE_TYPE_PASSENGER_CAR.lower()
-                ]
-                if not passenger_rows:
+                linkage_rows: list[tuple[str, int]] = []
+                for row in article_rows:
+                    linkage_id = self._safe_int(find_value(row, ["linkageId", "linkageid", "LinkageId"]))
+                    if linkage_id is None or linkage_id <= 0:
+                        continue
+                    linkage_type = self._normalize_linkage_type(find_value(row, ["linkageTypeId", "linkagetypeid", "LinkageTypeId"]))
+                    linkage_rows.append((linkage_type, linkage_id))
+                    if self._is_passenger_linkage(linkage_type):
+                        passenger_rows.append(row)
+                        passenger_ids.add(linkage_id)
+
+                if not linkage_rows:
                     skipped_reason = "skipped_non_passenger_car"
                 else:
-                    for row in passenger_rows:
-                        linkage_id = self._safe_int(find_value(row, ["linkageId", "linkageid", "LinkageId"]))
-                        if linkage_id is not None and linkage_id > 0:
-                            passenger_ids.add(linkage_id)
-
                     passanger_car_rows = self._find_passanger_car_rows(linkage_ids=passenger_ids)
-                    existing_ids = {self._safe_int(row.get("id")) for row in passanger_car_rows}
-                    existing_ids.discard(None)
+                    existing_passenger_ids = {self._safe_int(row.get("id")) for row in passanger_car_rows}
+                    existing_passenger_ids.discard(None)
 
-                    if not existing_ids:
+                    active_linkage_keys: set[tuple[str, int]] = set()
+                    for linkage_type, linkage_id in linkage_rows:
+                        if self._is_passenger_linkage(linkage_type) and linkage_id not in existing_passenger_ids:
+                            continue
+                        active_linkage_keys.add((self._linkage_type_key(linkage_type), linkage_id))
+
+                    if not active_linkage_keys:
                         skipped_reason = "skipped_missing_passanger_car"
 
                     existing_fitments = list(
                         ProductFitment.objects.filter(
                             product=product,
                             source=ProductFitment.SOURCE_AUTODB_PRO,
-                            linkage_type=self.LINKAGE_TYPE_PASSENGER_CAR,
                         ).order_by("id")
                     )
-                    by_linkage_id = {
-                        int(item.autodb_passanger_car_id): item
+                    by_linkage_key = {
+                        (self._linkage_type_key(item.linkage_type), int(item.autodb_passanger_car_id)): item
                         for item in existing_fitments
                         if item.autodb_passanger_car_id is not None
                     }
 
-                    for linkage_id in sorted(int(item) for item in existing_ids):
-                        current = by_linkage_id.get(linkage_id)
+                    for linkage_type_key, linkage_id in sorted(active_linkage_keys, key=lambda item: (item[0], item[1])):
+                        current = by_linkage_key.get((linkage_type_key, linkage_id))
                         if current is None:
                             proposed_creates.append(
                                 {
                                     "source": ProductFitment.SOURCE_AUTODB_PRO,
-                                    "linkage_type": self.LINKAGE_TYPE_PASSENGER_CAR,
+                                    "linkage_type": linkage_type_key or self.LINKAGE_TYPE_PASSENGER_CAR,
                                     "autodb_passanger_car_id": linkage_id,
                                 }
                             )
@@ -399,7 +386,10 @@ class AutoDbProductFitmentEnrichmentService:
 
                     for row in existing_fitments:
                         linkage_id = self._safe_int(row.autodb_passanger_car_id)
-                        if linkage_id is None or linkage_id in existing_ids:
+                        if linkage_id is None:
+                            continue
+                        linkage_key = (self._linkage_type_key(row.linkage_type), linkage_id)
+                        if linkage_key in active_linkage_keys:
                             continue
                         proposed_stale.append(
                             {
@@ -411,13 +401,6 @@ class AutoDbProductFitmentEnrichmentService:
 
         current_fitments = list(
             ProductFitment.objects.filter(product=product)
-            .select_related(
-                "modification",
-                "modification__engine",
-                "modification__engine__generation",
-                "modification__engine__generation__model",
-                "modification__engine__generation__model__make",
-            )
             .order_by("created_at", "id")
         )
 
@@ -514,16 +497,16 @@ class AutoDbProductFitmentEnrichmentService:
             columns=columns,
         )
 
-    def _mark_missing_as_stale(self, *, product: Product, active_linkage_ids: set[int], dry_run: bool) -> int:
+    def _mark_missing_as_stale(self, *, product: Product, active_linkage_keys: set[tuple[str, int]], dry_run: bool) -> int:
         stale_marked = 0
         fitments = ProductFitment.objects.filter(
             product=product,
             source=ProductFitment.SOURCE_AUTODB_PRO,
-            linkage_type=self.LINKAGE_TYPE_PASSENGER_CAR,
         )
         for fitment in fitments.iterator(chunk_size=200):
             linkage_id = self._safe_int(fitment.autodb_passanger_car_id)
-            if linkage_id is not None and linkage_id in active_linkage_ids:
+            linkage_key = (self._linkage_type_key(fitment.linkage_type), linkage_id) if linkage_id is not None else None
+            if linkage_key is not None and linkage_key in active_linkage_keys:
                 continue
             if fitment.manual_locked:
                 continue
@@ -534,31 +517,20 @@ class AutoDbProductFitmentEnrichmentService:
                 fitment.save(update_fields=("is_stale", "stale_reason", "updated_at"))
         return stale_marked
 
-    def _serialize_fitment_row(self, fitment: ProductFitment) -> dict[str, Any]:
-        make_name = ""
-        model_name = ""
-        generation_name = ""
-        engine_name = ""
-        modification_name = ""
-        if fitment.modification_id and fitment.modification is not None:
-            modification_name = str(fitment.modification.name or "")
-            engine = fitment.modification.engine
-            if engine is not None:
-                engine_name = str(engine.name or "")
-                generation = engine.generation
-                if generation is not None:
-                    generation_name = str(generation.name or "")
-                    model = generation.model
-                    if model is not None:
-                        model_name = str(model.name or "")
-                        make = model.make
-                        if make is not None:
-                            make_name = str(make.name or "")
+    def _normalize_linkage_type(self, value: Any) -> str:
+        return str(value or "").strip() or self.LINKAGE_TYPE_PASSENGER_CAR
 
+    def _linkage_type_key(self, value: Any) -> str:
+        return str(value or "").strip().casefold()
+
+    def _is_passenger_linkage(self, linkage_type: str) -> bool:
+        return self._linkage_type_key(linkage_type) == self._linkage_type_key(self.LINKAGE_TYPE_PASSENGER_CAR)
+
+    def _serialize_fitment_row(self, fitment: ProductFitment) -> dict[str, Any]:
         return {
             "id": str(fitment.id),
             "source": str(fitment.source or ""),
-            "modification_id": str(fitment.modification_id or ""),
+            "modification_id": "",
             "autodb_passanger_car_id": self._safe_int(fitment.autodb_passanger_car_id),
             "linkage_type": str(fitment.linkage_type or ""),
             "autodb_article_key": str(fitment.autodb_article_key or ""),
@@ -569,11 +541,11 @@ class AutoDbProductFitmentEnrichmentService:
             "stale_reason": str(fitment.stale_reason or ""),
             "note": str(fitment.note or ""),
             "is_exact": bool(fitment.is_exact),
-            "make": make_name,
-            "model": model_name,
-            "generation": generation_name,
-            "engine": engine_name,
-            "modification": modification_name,
+            "make": "",
+            "model": "",
+            "generation": "",
+            "engine": "",
+            "modification": "",
         }
 
     def _trim_article_li_row(self, row: dict[str, Any]) -> dict[str, Any]:

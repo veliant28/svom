@@ -24,6 +24,7 @@ def serialize_job(job: AutoDbMatchJob) -> dict[str, Any]:
     latest = latest_evidence(job)
     price = getattr(product, "product_price", None)
     stock_qty = int(getattr(offer, "stock_qty", 0) or getattr(product, "available_stock_qty_cached", 0) or 0)
+    lookup_context = _lookup_context(job)
     return {
         "id": str(job.id),
         "product": {
@@ -38,6 +39,7 @@ def serialize_job(job: AutoDbMatchJob) -> dict[str, Any]:
             "autodb_supplier_name": product.autodb_supplier_name,
             "autodb_article_number": product.autodb_article_number,
             "autodb_article_key": product.autodb_article_key,
+            "supplier_codes": _product_supplier_codes(job),
         },
         "supplier_code": job.supplier_code,
         "raw_brand": job.raw_brand,
@@ -53,6 +55,11 @@ def serialize_job(job: AutoDbMatchJob) -> dict[str, Any]:
         "has_product_price": price is not None,
         "tecdoc_status": tecdoc_status(job),
         "matching_status": job.status,
+        "matching_status_view": _matching_status_view(job.status, lookup_context.get("lookup_bucket")),
+        "lookup_origin": lookup_context.get("lookup_origin", ""),
+        "lookup_method": lookup_context.get("lookup_method", ""),
+        "lookup_bucket": lookup_context.get("lookup_bucket", ""),
+        "manual_remote_equivalent": bool(lookup_context.get("manual_remote_equivalent", False)),
         "recommended_action": recommended_action(job.status),
         "last_evidence": {
             "stage": latest.stage if latest else "",
@@ -131,3 +138,77 @@ def evidence_payload(evidence: AutoDbMatchEvidence | None) -> dict[str, Any]:
 
 def _supplier_display(job: AutoDbMatchJob) -> str:
     return supplier_display_name(job.resolved_supplier_id)
+
+
+def _product_supplier_codes(job: AutoDbMatchJob) -> list[str]:
+    codes: list[str] = []
+    try:
+        offers = list(job.product.supplier_offers.all())
+    except Exception:  # noqa: BLE001
+        offers = []
+    for offer in offers:
+        code = safe_str(getattr(getattr(offer, "supplier", None), "code", "")).lower()
+        if code and code not in codes:
+            codes.append(code)
+    if not codes:
+        fallback = safe_str(job.supplier_code).lower()
+        if fallback:
+            codes.append(fallback)
+    return codes
+
+
+def _lookup_context(job: AutoDbMatchJob) -> dict[str, Any]:
+    evidence = latest_evidence_for_stage(job, "remote_lookup")
+    if evidence is None:
+        return {
+            "lookup_origin": "",
+            "lookup_method": "",
+            "lookup_bucket": "",
+            "manual_remote_equivalent": False,
+        }
+    payload = evidence.payload_json if isinstance(evidence.payload_json, dict) else {}
+    raw_source = safe_str(payload.get("matched_source"))
+    if not raw_source:
+        return {
+            "lookup_origin": "",
+            "lookup_method": "",
+            "lookup_bucket": "",
+            "manual_remote_equivalent": False,
+        }
+    chunks = raw_source.split(":", 2)
+    method = safe_str(chunks[0]).lower() if chunks else ""
+    origin = safe_str(chunks[1]).lower() if len(chunks) > 1 else ""
+    bucket = _lookup_bucket(method=method, origin=origin)
+    return {
+        "lookup_origin": origin,
+        "lookup_method": method,
+        "lookup_bucket": bucket,
+        "manual_remote_equivalent": origin == "remote" and bucket == "remote_brand_exact",
+    }
+
+
+def _lookup_bucket(*, method: str, origin: str) -> str:
+    if origin == "local":
+        return "local_clone_hit"
+    if origin != "remote":
+        return ""
+    if method.startswith("a_supplier_norm") or method.endswith("_supplier_exact"):
+        return "remote_brand_exact"
+    if method.endswith("_article_only"):
+        return "remote_article_only"
+    return "remote_other"
+
+
+def _matching_status_view(status: str, lookup_bucket: str | None) -> str:
+    if status != AutoDbMatchJob.STATUS_REMOTE_FOUND:
+        return status
+    bucket = safe_str(lookup_bucket).lower()
+    if bucket == "local_clone_hit":
+        return "remote_found_local_clone"
+    if bucket == "remote_brand_exact":
+        return "remote_found_exact"
+    if bucket == "remote_article_only":
+        return "remote_found_article_only"
+    if bucket == "remote_other":
+        return "remote_found_other"
+    return status
