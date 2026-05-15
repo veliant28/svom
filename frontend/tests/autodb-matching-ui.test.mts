@@ -17,7 +17,7 @@ test("Auto_DB matching tabs and titles use exact Russian labels", () => {
   assert.deepEqual([tabs.dashboard, tabs.products, tabs.search], ["Дашборд", "Товары", "Поиск"]);
   assert.equal(tabs.dashboardTitle, "Операционный дашборд");
   assert.equal(tabs.productsTitle, "Несвязанные товары");
-  assert.equal(tabs.searchTitle, "Поиск в Auto_DB");
+  assert.equal(tabs.searchTitle, "Поиск в Auto-DB");
 });
 
 test("Auto_DB matching quota widget is line/area chart, not gauge", () => {

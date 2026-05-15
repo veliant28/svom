@@ -7,7 +7,7 @@
         "search": "Поиск",
         "dashboardTitle": "Операционный дашборд",
         "productsTitle": "Несвязанные товары",
-        "searchTitle": "Поиск в Auto_DB"
+        "searchTitle": "Поиск в Auto-DB"
       },
       "common": { "yes": "Да", "no": "Нет", "prev": "Назад", "next": "Вперед" },
       "states": { "empty": "Нет данных", "emptyProducts": "Нет несвязанных товаров", "emptySearch": "Результатов пока нет" },
