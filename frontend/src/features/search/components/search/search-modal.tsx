@@ -9,6 +9,7 @@ import { useRouter } from "@/i18n/navigation";
 import { useSearchSuggestions } from "@/features/search/hooks/use-search-suggestions";
 import { SearchSuggestionsList } from "@/features/search/components/search/search-suggestions-list";
 import type { CatalogProduct } from "@/features/catalog/types";
+import { useModalBodyLock } from "@/shared/hooks/use-modal-overlay-state";
 
 type SearchModalProps = {
   isOpen: boolean;
@@ -18,6 +19,7 @@ type SearchModalProps = {
 export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const t = useTranslations("common.header.searchModal");
   const router = useRouter();
+  useModalBodyLock(isOpen);
   const [query, setQuery] = useState("");
   const [isMounted, setIsMounted] = useState(false);
   const dialogRef = useRef<HTMLDivElement | null>(null);

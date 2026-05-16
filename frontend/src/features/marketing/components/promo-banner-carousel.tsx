@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import type { PromoBanner, PromoBannerSettings } from "@/features/marketing/types";
+import { useGlobalModalOpen } from "@/shared/hooks/use-modal-overlay-state";
 
 type PromoBannerCarouselProps = {
   banners: PromoBanner[];
@@ -14,6 +15,7 @@ const BLINDS_COUNT = 12;
 
 export function PromoBannerCarousel({ banners, settings }: PromoBannerCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const isGlobalModalOpen = useGlobalModalOpen();
   const autoplayEnabled = settings?.autoplay_enabled ?? true;
   const intervalMs = Math.max(1000, Number(settings?.transition_interval_ms || 4500));
   const speedMs = Math.max(150, Number(settings?.transition_speed_ms || 700));
@@ -27,7 +29,7 @@ export function PromoBannerCarousel({ banners, settings }: PromoBannerCarouselPr
   }, [activeIndex, banners.length]);
 
   useEffect(() => {
-    if (!autoplayEnabled || banners.length <= 1) {
+    if (isGlobalModalOpen || !autoplayEnabled || banners.length <= 1) {
       return;
     }
 
@@ -36,7 +38,7 @@ export function PromoBannerCarousel({ banners, settings }: PromoBannerCarouselPr
     }, intervalMs);
 
     return () => window.clearInterval(timer);
-  }, [autoplayEnabled, banners.length, intervalMs]);
+  }, [autoplayEnabled, banners.length, intervalMs, isGlobalModalOpen]);
 
   if (banners.length === 0) {
     return null;

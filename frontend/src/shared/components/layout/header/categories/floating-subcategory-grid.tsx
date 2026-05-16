@@ -11,7 +11,7 @@ type FloatingSubcategoryGridProps = {
 
 export function FloatingSubcategoryGrid({ sections, activeCategoryKey, onNavigate }: FloatingSubcategoryGridProps) {
   return (
-    <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
       {sections.map((section) => (
         <SubcategorySection
           key={section.id}
@@ -19,6 +19,7 @@ export function FloatingSubcategoryGrid({ sections, activeCategoryKey, onNavigat
           items={section.items}
           activeCategoryKey={activeCategoryKey}
           onNavigate={onNavigate}
+          performanceMode="fast"
         />
       ))}
     </div>

@@ -9,6 +9,7 @@ import { CategoryParentIcon } from "@/shared/components/layout/header/categories
 import { FloatingSubcategoryGrid } from "@/shared/components/layout/header/categories/floating-subcategory-grid";
 import type { HeaderCategoryParent } from "@/shared/components/layout/header/categories/header-category.types";
 import { useActiveCatalogCategoryKey } from "@/shared/components/layout/header/categories/category-navigation";
+import { useModalBodyLock } from "@/shared/hooks/use-modal-overlay-state";
 
 type CategoryModalProps = {
   parent: HeaderCategoryParent | null;
@@ -21,6 +22,7 @@ export function CategoryModal({ parent, isOpen, onClose }: CategoryModalProps) {
   const activeCategoryKey = useActiveCatalogCategoryKey();
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  useModalBodyLock(isOpen);
 
   useEffect(() => {
     setIsMounted(true);
@@ -51,7 +53,7 @@ export function CategoryModal({ parent, isOpen, onClose }: CategoryModalProps) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[95] flex items-start justify-center bg-black/35 px-3 pb-6 pt-[10vh] backdrop-blur-[1px]"
+      className="fixed inset-0 z-[95] flex items-start justify-center bg-black/35 px-3 pb-6 pt-[10vh]"
       onMouseDown={(event) => {
         if (!dialogRef.current?.contains(event.target as Node)) {
           onClose();
@@ -96,7 +98,7 @@ export function CategoryModal({ parent, isOpen, onClose }: CategoryModalProps) {
           </button>
         </div>
 
-        <div className="mt-5 max-h-[70vh] overflow-y-auto pr-1">
+        <div className="mt-5 max-h-[70vh] overflow-y-auto overscroll-contain pr-1 [scrollbar-gutter:stable]">
           {sections.length > 0 ? (
             <FloatingSubcategoryGrid
               sections={sections}

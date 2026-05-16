@@ -714,6 +714,18 @@ label:has(select:disabled) {
   animation: footerHeroShift 36s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
+.modal-open .hero-performance-tagline,
+.modal-open .footer-hero-surface,
+.modal-open .hero-slide-image-active,
+.modal-open .hero-copy-enter,
+.modal-open .promo-banner-enter-fade,
+.modal-open .promo-banner-enter-slide-left,
+.modal-open .promo-banner-enter-slide-up,
+.modal-open .promo-banner-enter-zoom,
+.modal-open .promo-banner-blind-strip {
+  animation-play-state: paused !important;
+}
+
 .header-dropdown {
   position: absolute;
   right: 0;

@@ -10,6 +10,7 @@ import { NewVehicleSelectionForm } from "@/features/garage/components/modal/new-
 import { useActiveVehicle } from "@/features/garage/hooks/use-active-vehicle";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { Link } from "@/i18n/navigation";
+import { useModalBodyLock } from "@/shared/hooks/use-modal-overlay-state";
 import { useStorefrontFeedback } from "@/shared/hooks/use-storefront-feedback";
 
 type VehicleSelectorModalProps = {
@@ -22,6 +23,7 @@ type VehicleModalTab = "saved" | "new";
 export function VehicleSelectorModal({ isOpen, onClose }: VehicleSelectorModalProps) {
   const t = useTranslations("common.header.vehicleModal");
   const { showError, showInfo, showSuccess } = useStorefrontFeedback();
+  useModalBodyLock(isOpen);
   const { isAuthenticated } = useAuth();
   const {
     garageVehicles,

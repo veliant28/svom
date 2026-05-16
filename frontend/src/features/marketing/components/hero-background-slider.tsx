@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import type { HeroSlide, HeroSlideEffect, HeroSlideSettings } from "@/features/marketing/types";
+import { useGlobalModalOpen } from "@/shared/hooks/use-modal-overlay-state";
 
 type HeroBackgroundSliderProps = {
   slides: HeroSlide[];
@@ -16,6 +17,7 @@ const DEFAULT_EFFECT: HeroSlideEffect = "crossfade";
 
 export function HeroBackgroundSlider({ slides, settings }: HeroBackgroundSliderProps) {
   const t = useTranslations("common.home");
+  const isGlobalModalOpen = useGlobalModalOpen();
   const [activeIndex, setActiveIndex] = useState(0);
   const [activeFallbackPhraseIndex, setActiveFallbackPhraseIndex] = useState(0);
   const autoplayEnabled = settings?.autoplay_enabled ?? true;
@@ -29,7 +31,7 @@ export function HeroBackgroundSlider({ slides, settings }: HeroBackgroundSliderP
   ];
 
   useEffect(() => {
-    if (!autoplayEnabled || slides.length <= 1) {
+    if (isGlobalModalOpen || !autoplayEnabled || slides.length <= 1) {
       return;
     }
 
@@ -38,7 +40,7 @@ export function HeroBackgroundSlider({ slides, settings }: HeroBackgroundSliderP
     }, intervalMs);
 
     return () => window.clearInterval(timer);
-  }, [autoplayEnabled, intervalMs, slides.length]);
+  }, [autoplayEnabled, intervalMs, isGlobalModalOpen, slides.length]);
 
   useEffect(() => {
     if (activeIndex <= slides.length - 1) {
@@ -48,7 +50,7 @@ export function HeroBackgroundSlider({ slides, settings }: HeroBackgroundSliderP
   }, [activeIndex, slides.length]);
 
   useEffect(() => {
-    if (slides.length > 0 || fallbackPhrases.length <= 1) {
+    if (isGlobalModalOpen || slides.length > 0 || fallbackPhrases.length <= 1) {
       return;
     }
 
@@ -57,7 +59,7 @@ export function HeroBackgroundSlider({ slides, settings }: HeroBackgroundSliderP
     }, 10000);
 
     return () => window.clearInterval(timer);
-  }, [fallbackPhrases.length, slides.length]);
+  }, [fallbackPhrases.length, isGlobalModalOpen, slides.length]);
 
   if (slides.length === 0) {
     return (

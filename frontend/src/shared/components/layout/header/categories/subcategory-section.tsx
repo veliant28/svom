@@ -8,9 +8,10 @@ type SubcategorySectionProps = {
   items: CategorySummary[];
   activeCategoryKey: string | null;
   onNavigate: () => void;
+  performanceMode?: "default" | "fast";
 };
 
-export function SubcategorySection({ title, items, activeCategoryKey, onNavigate }: SubcategorySectionProps) {
+export function SubcategorySection({ title, items, activeCategoryKey, onNavigate, performanceMode = "default" }: SubcategorySectionProps) {
   const normalize = (value: string) => value.trim().replace(/\s+/g, " ").toLocaleLowerCase();
   const normalizedTitle = title ? normalize(title) : "";
   const seenItemLabels = new Set<string>();
@@ -30,7 +31,10 @@ export function SubcategorySection({ title, items, activeCategoryKey, onNavigate
   });
 
   return (
-    <section className="min-w-0">
+    <section
+      className="min-w-0"
+      style={performanceMode === "fast" ? { contentVisibility: "auto", containIntrinsicSize: "1px 520px" } : undefined}
+    >
       {title ? (
         <p
           className="mb-2 text-xs font-semibold uppercase tracking-[0.06em]"
@@ -48,6 +52,7 @@ export function SubcategorySection({ title, items, activeCategoryKey, onNavigate
               name={category.name}
               isActive={activeCategoryKey === category.id || activeCategoryKey === category.slug}
               onNavigate={onNavigate}
+              performanceMode={performanceMode}
             />
           </div>
         ))}

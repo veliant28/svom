@@ -19,6 +19,7 @@ import {
 } from "@/features/catalog/lib/catalog-navigation-state";
 import type { CatalogFilters } from "@/features/catalog/types";
 import { usePathname, useRouter } from "@/i18n/navigation";
+import { useGlobalModalOpen } from "@/shared/hooks/use-modal-overlay-state";
 
 const CATALOG_PAGE_SIZE = 52;
 const HOME_POPULAR_PAGE_SIZE = 20;
@@ -54,6 +55,7 @@ export function CatalogShowcaseSection({
   const tHome = useTranslations("common.home");
   const tCatalog = useTranslations("catalog");
   const router = useRouter();
+  const isGlobalModalOpen = useGlobalModalOpen();
   const { updateCatalogWarmupScope } = useCatalogWarmup();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -144,7 +146,7 @@ export function CatalogShowcaseSection({
   }, [carouselSlides.length, isPopularCarouselMode]);
 
   useEffect(() => {
-    if (!isPopularCarouselMode || !canSlideCarousel) {
+    if (!isPopularCarouselMode || !canSlideCarousel || isGlobalModalOpen) {
       return;
     }
     const intervalId = window.setInterval(() => {
@@ -153,7 +155,7 @@ export function CatalogShowcaseSection({
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [canSlideCarousel, carouselSlides.length, isPopularCarouselMode]);
+  }, [canSlideCarousel, carouselSlides.length, isGlobalModalOpen, isPopularCarouselMode]);
 
   useEffect(() => {
     if (!syncPageWithUrl || typeof window === "undefined" || !("scrollRestoration" in window.history)) {
