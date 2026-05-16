@@ -92,6 +92,7 @@ export function AutoDbMatchingProductsFilters({
   onRunBulkBatch: () => void;
 }) {
   const isBatchDisabled = isTecdocBatchRunning || isBatchSubmitting || isQuotaCooldownActive;
+  const isBatchBusy = isTecdocBatchRunning || isBatchSubmitting;
   const isStopDisabled = !isTecdocBatchRunning || isBatchSubmitting;
   const isBulkDisabled = selectedCount <= 0 || isBulkRunning || isTecdocBatchRunning || isQuotaCooldownActive;
   return (
@@ -219,7 +220,7 @@ export function AutoDbMatchingProductsFilters({
             disabled={isBatchDisabled}
             onClick={onRunTecdocBatch}
           >
-            {isBatchDisabled ? <LoaderCircle size={16} className="animate-spin" /> : <Play size={16} />}
+            {isBatchBusy ? <LoaderCircle size={16} className="animate-spin" /> : <Play size={16} />}
           </button>
         </BackofficeTooltip>
 
