@@ -344,7 +344,12 @@
         "batchSizeMinus": "Зменшити розмір батча",
         "batchSizePlus": "Збільшити розмір батча",
         "batchSizeInput": "Розмір батча",
-        "runTecdocBatch": "Запустити TecDoc batch"
+        "runTecdocBatch": "Запустити TecDoc batch",
+        "stopTecdocBatch": "Зупинити TecDoc batch",
+        "bulkActions": "Масові дії",
+        "bulkRunBatch": "Запустити batch",
+        "selectAll": "Обрати всі на сторінці",
+        "selectOne": "Обрати товар"
       },
       "toasts": {
         "dryRunCompleted": "Dry-run выполнен",
@@ -363,6 +368,9 @@
         "manualBindDone": "Ручну звʼязку виконано",
         "batchQueued": "TecDoc batch поставлено в чергу",
         "batchAlreadyRunning": "TecDoc batch уже виконується",
+        "batchStopped": "TecDoc batch зупинено",
+        "batchNoActiveRun": "Активний TecDoc batch не знайдено",
+        "bulkNothingSelected": "Оберіть товари для масового запуску",
         "candidatesFound": "Знайдено збігів: {count}",
         "exportDownloaded": "CSV скопійовано",
         "actionRequiresConfirmation": "Потрібне підтвердження",

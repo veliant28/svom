@@ -82,7 +82,7 @@
           },
           "actions": {
             "useForFiltering": "Використати для фільтрації",
-            "clearActive": "Скинути активне авто"
+            "clearActive": "Сбросить"
           },
           "messages": {
             "usedForFiltering": "Авто вибрано для фільтрації.",

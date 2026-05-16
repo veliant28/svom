@@ -344,7 +344,12 @@
         "batchSizeMinus": "Decrease batch size",
         "batchSizePlus": "Increase batch size",
         "batchSizeInput": "Batch size",
-        "runTecdocBatch": "Run TecDoc batch"
+        "runTecdocBatch": "Run TecDoc batch",
+        "stopTecdocBatch": "Stop TecDoc batch",
+        "bulkActions": "Bulk actions",
+        "bulkRunBatch": "Run batch",
+        "selectAll": "Select all on page",
+        "selectOne": "Select product"
       },
       "toasts": {
         "dryRunCompleted": "Dry-run completed",
@@ -363,6 +368,9 @@
         "manualBindDone": "Manual binding completed",
         "batchQueued": "TecDoc batch queued",
         "batchAlreadyRunning": "TecDoc batch is already running",
+        "batchStopped": "TecDoc batch stopped",
+        "batchNoActiveRun": "No active TecDoc batch run",
+        "bulkNothingSelected": "Select products for bulk batch run",
         "candidatesFound": "Matches found: {count}",
         "exportDownloaded": "CSV copied",
         "actionRequiresConfirmation": "Confirmation required",

@@ -5,6 +5,7 @@ from typing import Any
 
 from apps.autodb.services.column_helpers import find_column_name
 from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
+from apps.supplier_imports.parsers.utils import normalize_article
 
 
 @dataclass(frozen=True)
@@ -49,6 +50,7 @@ class AutoDbArticleEnrichmentService:
         article_number: str = "",
         tables: list[str] | None = None,
         dry_run: bool = False,
+        replace_local: bool = False,
     ) -> ArticleEnrichmentResult:
         target_tables = tuple(tables or self.RELATED_TABLES)
         populated: dict[str, int] = {}
@@ -71,8 +73,19 @@ class AutoDbArticleEnrichmentService:
                 warnings.append(f"{table}: relation columns are not resolved")
                 continue
 
-            remote_queries += 1
-            rows = self.storage.fetch_remote_rows_exact(table=table, filters=filters, limit=20000)
+            rows: list[dict[str, Any]] = []
+            matched_filter: dict[str, Any] = {}
+            filter_variants = self._filters_with_article_variants(
+                table=table,
+                filters=filters,
+                article_number=article_number,
+            )
+            for filter_variant in filter_variants:
+                remote_queries += 1
+                rows = self.storage.fetch_remote_rows_exact(table=table, filters=filter_variant, limit=20000)
+                if rows:
+                    matched_filter = dict(filter_variant)
+                    break
             if not rows:
                 populated[table] = 0
                 continue
@@ -81,6 +94,29 @@ class AutoDbArticleEnrichmentService:
             if dry_run:
                 populated[table] = len(rows)
             else:
+                if replace_local:
+                    supplier_key = ""
+                    article_key = ""
+                    for key in matched_filter.keys():
+                        key_lower = str(key).lower()
+                        if key_lower in {"supplierid", "supplier_id", "supplier"}:
+                            supplier_key = str(key)
+                        if key_lower in {
+                            "datasupplierarticlenumber",
+                            "partsdatasupplierarticlenumber",
+                            "articlenumber",
+                            "article",
+                            "number",
+                        }:
+                            article_key = str(key)
+                    if supplier_key and article_key:
+                        self.storage.delete_local_rows(
+                            table=table,
+                            filters={
+                                supplier_key: matched_filter.get(supplier_key),
+                                article_key: self._article_variants(article_number),
+                            },
+                        )
                 failed = self.storage.upsert_rows(table=table, rows=rows)
                 populated[table] = max(len(rows) - failed, 0)
 
@@ -169,9 +205,12 @@ class AutoDbArticleEnrichmentService:
         if not supplier_column or not article_column or not product_column:
             return set()
 
-        rows = self.storage.fetch_local_rows(
+        variants = self._article_variants(article_number)
+        rows = self.storage.fetch_local_rows_in(
             table=table,
-            filters={supplier_column: supplier_id, article_column: article_number},
+            column=article_column,
+            values=variants,
+            extra_filters={supplier_column: supplier_id},
             limit=1000,
             columns=columns,
         )
@@ -182,6 +221,58 @@ class AutoDbArticleEnrichmentService:
                 out.add(int(value))
             except (TypeError, ValueError):
                 continue
+        return out
+
+    def _article_variants(self, article_number: str) -> list[str]:
+        raw = str(article_number or "").strip()
+        if not raw:
+            return []
+        values = [raw, raw.replace(" ", ""), normalize_article(raw)]
+        out: list[str] = []
+        seen: set[str] = set()
+        for item in values:
+            candidate = str(item or "").strip()
+            if not candidate:
+                continue
+            key = candidate.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(candidate)
+        return out
+
+    def _filters_with_article_variants(
+        self,
+        *,
+        table: str,
+        filters: dict[str, Any],
+        article_number: str,
+    ) -> list[dict[str, Any]]:
+        if not filters or not article_number:
+            return [filters]
+        columns = self.storage.get_remote_columns(table)
+        article_column = find_column_name(
+            columns,
+            [
+                "DataSupplierArticleNumber",
+                "datasupplierarticlenumber",
+                "PartsDataSupplierArticleNumber",
+                "articleNumber",
+                "articlenumber",
+                "article",
+                "number",
+            ],
+        )
+        if not article_column or article_column not in filters:
+            return [filters]
+
+        variants = self._article_variants(article_number)
+        if not variants:
+            return [filters]
+
+        out: list[dict[str, Any]] = []
+        for variant in variants:
+            out.append({**filters, article_column: variant})
         return out
 
     def _build_filters(

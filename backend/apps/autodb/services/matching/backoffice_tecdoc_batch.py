@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 
 from apps.autodb.services.matching.constants import NON_TECDOC_BRAND_KEYS
 from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
 from apps.autodb.services.supplier_brand_matcher import normalize_brand_lookup_key
-from apps.catalog.models import Product
+from apps.catalog.models import AutoDbProductLinkQuality, Product
 
 
 def _safe_str(value: object) -> str:
@@ -31,18 +31,25 @@ class BackofficeTecdocBatchSelector:
             if str(item).strip()
         }
 
-    def select_candidates(self, *, limit: int) -> list[TecdocBatchCandidate]:
+    def select_candidates(self, *, limit: int, product_ids: list[str] | None = None) -> list[TecdocBatchCandidate]:
         target_limit = max(1, min(int(limit or 0), 1000))
         selected: list[TecdocBatchCandidate] = []
-        queryset = self._base_queryset()
+        requested_product_ids = [str(item).strip() for item in (product_ids or []) if str(item).strip()]
+        if requested_product_ids:
+            queryset = (
+                Product.objects.filter(id__in=requested_product_ids)
+                .order_by("-updated_at", "id")
+            )
+        else:
+            queryset = self._base_queryset()
         for product in queryset.iterator(chunk_size=250):
+            if requested_product_ids and self._has_trusted_link_quality(product):
+                continue
             supplier_id = int(getattr(product, "autodb_supplier_id", 0) or 0)
             article = _safe_str(getattr(product, "autodb_article_number", "")) or _safe_str(getattr(product, "article", ""))
             if supplier_id <= 0 or not article:
                 continue
             if self._is_non_tecdoc(product):
-                continue
-            if self._is_clone_linked(supplier_id=supplier_id, article=article):
                 continue
             supplier_name = _safe_str(getattr(product, "autodb_supplier_name", "")) or _safe_str(getattr(product, "display_brand_name", ""))
             selected.append(
@@ -58,8 +65,15 @@ class BackofficeTecdocBatchSelector:
         return selected
 
     def _base_queryset(self):
-        return (
-            Product.objects.filter(autodb_supplier_id__isnull=False)
+        trusted_exists = AutoDbProductLinkQuality.objects.filter(
+            product_id=OuterRef("pk"),
+            autodb_article_key=OuterRef("autodb_article_key"),
+            status=AutoDbProductLinkQuality.STATUS_TRUSTED,
+        )
+        queryset = (
+            Product.objects.annotate(_trusted=Exists(trusted_exists))
+            .filter(_trusted=False)
+            .filter(autodb_supplier_id__isnull=False)
             .filter(
                 (
                     Q(autodb_article_number__isnull=False)
@@ -72,6 +86,17 @@ class BackofficeTecdocBatchSelector:
             )
             .order_by("-updated_at", "id")
         )
+        return queryset
+
+    def _has_trusted_link_quality(self, product: Product) -> bool:
+        article_key = _safe_str(getattr(product, "autodb_article_key", ""))
+        if not article_key:
+            return False
+        return AutoDbProductLinkQuality.objects.filter(
+            product_id=product.id,
+            autodb_article_key=article_key,
+            status=AutoDbProductLinkQuality.STATUS_TRUSTED,
+        ).exists()
 
     def _is_non_tecdoc(self, product: Product) -> bool:
         brand = _safe_str(getattr(product, "display_brand_name", "")) or _safe_str(getattr(product, "autodb_supplier_name", ""))

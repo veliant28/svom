@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from apps.backoffice.api.serializers import BackofficeCatalogProductSerializer
 from apps.backoffice.permissions import IsStaffOrSuperuser
 from apps.catalog.models import AutoDbProductLinkQuality
-from apps.catalog.models import Product, ProductAttribute
+from apps.catalog.models import Product
 from apps.compatibility.models import ProductFitment
 from apps.pricing.models import SupplierOffer
 from apps.supplier_imports.models import SupplierRawOffer
@@ -78,16 +78,6 @@ class BackofficeCatalogProductListCreateAPIView(ListCreateAPIView):
             .order_by("-checked_at", "-updated_at")
             .values("status")[:1]
         )
-        autodb_attributes_count_subquery = (
-            ProductAttribute.objects.filter(
-                product_id=OuterRef("pk"),
-                source=ProductAttribute.SOURCE_AUTODB_PRO,
-            )
-            .order_by()
-            .values("product_id")
-            .annotate(total=Count("id"))
-            .values("total")[:1]
-        )
         autodb_fitments_count_subquery = (
             ProductFitment.objects.filter(
                 product_id=OuterRef("pk"),
@@ -105,10 +95,6 @@ class BackofficeCatalogProductListCreateAPIView(ListCreateAPIView):
             _autodb_link_quality_status=Coalesce(
                 Subquery(link_quality_status_subquery, output_field=CharField()),
                 Value("", output_field=CharField()),
-            ),
-            _autodb_attributes_count=Coalesce(
-                Subquery(autodb_attributes_count_subquery, output_field=IntegerField()),
-                Value(0, output_field=IntegerField()),
             ),
             _autodb_fitments_count=Coalesce(
                 Subquery(autodb_fitments_count_subquery, output_field=IntegerField()),

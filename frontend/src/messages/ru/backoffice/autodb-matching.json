@@ -344,7 +344,12 @@
         "batchSizeMinus": "Уменьшить размер батча",
         "batchSizePlus": "Увеличить размер батча",
         "batchSizeInput": "Размер батча",
-        "runTecdocBatch": "Запустить TecDoc batch"
+        "runTecdocBatch": "Запустить TecDoc batch",
+        "stopTecdocBatch": "Остановить TecDoc batch",
+        "bulkActions": "Массовые действия",
+        "bulkRunBatch": "Запустить batch",
+        "selectAll": "Выбрать все на странице",
+        "selectOne": "Выбрать товар"
       },
       "toasts": {
         "dryRunCompleted": "Dry-run выполнен",
@@ -363,6 +368,9 @@
         "manualBindDone": "Ручная связка выполнена",
         "batchQueued": "TecDoc batch поставлен в очередь",
         "batchAlreadyRunning": "TecDoc batch уже выполняется",
+        "batchStopped": "TecDoc batch остановлен",
+        "batchNoActiveRun": "Активный TecDoc batch не найден",
+        "bulkNothingSelected": "Выберите товары для массового запуска",
         "candidatesFound": "Найдено совпадений: {count}",
         "exportDownloaded": "CSV скопирован",
         "actionRequiresConfirmation": "Требуется подтверждение",

@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import contextlib
+import signal
+
 from celery import shared_task
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
@@ -10,7 +14,6 @@ from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
 from apps.autodb.services.remote_client import AutoDbProRemoteClientError
 from apps.autodb.services.supplier_brand_matcher import SupplierBrandMatcher, normalize_brand_lookup_key
 from apps.autodb.services.article_enrichment import AutoDbArticleEnrichmentService
-from apps.autodb.services.product_attribute_enrichment import AutoDbProductAttributeEnrichmentService
 from apps.autodb.services.product_fitment_enrichment import AutoDbProductFitmentEnrichmentService
 from apps.autodb.services.product_image_enrichment import AutoDbProductImageEnrichmentService
 from apps.autodb.services.product_name_enrichment import AutoDbProductNameEnrichmentService
@@ -30,6 +33,8 @@ def manual_bind_product_to_autodb_task(
     supplier_name: str = "",
     article_id: int | None = None,
     actor_id: str = "",
+    skip_clone_enrichment: bool = False,
+    clone_replace_local: bool = False,
 ) -> dict[str, object]:
     article_value = str(article_number or "").strip().upper()
     if not product_id or not supplier_id or not article_value:
@@ -225,18 +230,21 @@ def manual_bind_product_to_autodb_task(
                 ]
             )
 
-        clone_result = AutoDbArticleEnrichmentService().enrich_article(
-            supplier_id=int(supplier_id),
-            article_number=article_value,
-            dry_run=False,
-        )
+        if skip_clone_enrichment:
+            clone_result = None
+        else:
+            clone_result = AutoDbArticleEnrichmentService().enrich_article(
+                supplier_id=int(supplier_id),
+                article_number=article_value,
+                dry_run=False,
+                replace_local=clone_replace_local,
+            )
         name_result = AutoDbProductNameEnrichmentService().enrich_product(
             product=product,
             dry_run=False,
             only_missing_translations=False,
         )
         fitment_result = AutoDbProductFitmentEnrichmentService().enrich_product(product=product, dry_run=False)
-        attribute_result = AutoDbProductAttributeEnrichmentService().enrich_product(product=product, dry_run=False)
         image_result = AutoDbProductImageEnrichmentService().sync_product_images(
             product=product,
             dry_run=False,
@@ -249,9 +257,9 @@ def manual_bind_product_to_autodb_task(
         "autodb_article_key": article_key,
         "quality_created": bool(created),
         "clone": {
-            "remote_queries": int(clone_result.remote_queries),
-            "remote_hits": int(clone_result.remote_hits),
-            "populated_tables": clone_result.populated_tables,
+            "remote_queries": int(clone_result.remote_queries) if clone_result is not None else 0,
+            "remote_hits": int(clone_result.remote_hits) if clone_result is not None else 0,
+            "populated_tables": clone_result.populated_tables if clone_result is not None else {},
         },
         "name": {
             "status": name_result.status,
@@ -269,9 +277,9 @@ def manual_bind_product_to_autodb_task(
             "stale_marked": int(fitment_result.stale_marked),
         },
         "attributes": {
-            "status": attribute_result.status,
-            "created": int(attribute_result.product_attributes_created),
-            "updated": int(attribute_result.product_attributes_updated),
+            "status": "clone_only_source",
+            "created": 0,
+            "updated": 0,
         },
         "images": {
             "created": int(image_result.created),
@@ -282,6 +290,33 @@ def manual_bind_product_to_autodb_task(
 
 
 BACKOFFICE_TECDOC_BATCH_RUN_TYPE = "backoffice_tecdoc_batch_bind"
+BACKOFFICE_TECDOC_BATCH_ITEM_TIMEOUT_SECONDS = max(
+    10,
+    int(getattr(settings, "AUTODB_BACKOFFICE_BATCH_ITEM_TIMEOUT_SECONDS", 90) or 90),
+)
+
+
+class _BatchItemTimeoutError(RuntimeError):
+    pass
+
+
+@contextlib.contextmanager
+def _batch_item_timeout(seconds: int):
+    if seconds <= 0 or not hasattr(signal, "setitimer"):
+        yield
+        return
+
+    def _handler(_signum, _frame):
+        raise _BatchItemTimeoutError(f"batch_item_timeout_after_{seconds}s")
+
+    previous = signal.getsignal(signal.SIGALRM)
+    signal.signal(signal.SIGALRM, _handler)
+    signal.setitimer(signal.ITIMER_REAL, float(seconds))
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0.0)
+        signal.signal(signal.SIGALRM, previous)
 
 
 @shared_task(name="autodb.backoffice_tecdoc_batch_bind")
@@ -290,6 +325,7 @@ def run_backoffice_tecdoc_batch_bind_task(
     run_id: str,
     limit: int = 200,
     actor_id: str = "",
+    product_ids: list[str] | None = None,
 ) -> dict[str, object]:
     run = AutoDbMatchingRun.objects.filter(id=run_id).first()
     if run is None:
@@ -303,6 +339,7 @@ def run_backoffice_tecdoc_batch_bind_task(
         **(run.summary_json or {}),
         "running": True,
         "requested_limit": max(1, min(int(limit or 0), 1000)),
+        "requested_product_ids_count": len(product_ids or []),
         "processed": 0,
         "bound": 0,
         "failed": 0,
@@ -316,7 +353,10 @@ def run_backoffice_tecdoc_batch_bind_task(
     selector = BackofficeTecdocBatchSelector()
     brand_matcher = SupplierBrandMatcher()
     clone_storage = AutoDbRawCloneStorage()
-    candidates = selector.select_candidates(limit=max(1, min(int(limit or 0), 1000)))
+    candidates = selector.select_candidates(
+        limit=max(1, min(int(limit or 0), 1000)),
+        product_ids=product_ids,
+    )
     results: list[dict[str, object]] = []
     processed = 0
     bound = 0
@@ -330,27 +370,52 @@ def run_backoffice_tecdoc_batch_bind_task(
             bind_article = str(item.article or "")
             bind_supplier_name = str(item.supplier_name or "")
             relinked_by_brand_guard = False
+            raw_offer_brand = ""
 
-            raw_offer_brand = _latest_raw_offer_brand_for_product(product_id=item.product_id)
-            if raw_offer_brand:
-                raw_brand_norm = normalize_brand(raw_offer_brand)
-                supplier_brand_norm = normalize_brand(bind_supplier_name or str(bind_supplier_id))
-                if raw_brand_norm and supplier_brand_norm and raw_brand_norm != supplier_brand_norm:
-                    matched_supplier_id, matched_supplier_name, matched_reason = _resolve_supplier_by_brand(
-                        matcher=brand_matcher,
-                        raw_brand=raw_offer_brand,
-                    )
-                    if matched_supplier_id and "relaxed_match" not in matched_reason:
-                        canonical_article = _resolve_article_for_supplier(
-                            storage=clone_storage,
-                            supplier_id=matched_supplier_id,
-                            article_input=bind_article,
+            with _batch_item_timeout(BACKOFFICE_TECDOC_BATCH_ITEM_TIMEOUT_SECONDS):
+                raw_offer_brand = _latest_raw_offer_brand_for_product(product_id=item.product_id)
+                if raw_offer_brand:
+                    raw_brand_norm = normalize_brand(raw_offer_brand)
+                    supplier_brand_norm = normalize_brand(bind_supplier_name or str(bind_supplier_id))
+                    if raw_brand_norm and supplier_brand_norm and raw_brand_norm != supplier_brand_norm:
+                        matched_supplier_id, matched_supplier_name, matched_reason = _resolve_supplier_by_brand(
+                            matcher=brand_matcher,
+                            raw_brand=raw_offer_brand,
                         )
-                        if canonical_article:
-                            bind_supplier_id = int(matched_supplier_id)
-                            bind_article = str(canonical_article)
-                            bind_supplier_name = str(matched_supplier_name or raw_offer_brand or bind_supplier_name)
-                            relinked_by_brand_guard = True
+                        if matched_supplier_id and "relaxed_match" not in matched_reason:
+                            canonical_article = _resolve_article_for_supplier(
+                                storage=clone_storage,
+                                supplier_id=matched_supplier_id,
+                                article_input=bind_article,
+                            )
+                            if canonical_article:
+                                bind_supplier_id = int(matched_supplier_id)
+                                bind_article = str(canonical_article)
+                                bind_supplier_name = str(matched_supplier_name or raw_offer_brand or bind_supplier_name)
+                                relinked_by_brand_guard = True
+                            else:
+                                _mark_link_brand_mismatch_needs_review(
+                                    product_id=item.product_id,
+                                    supplier_id=bind_supplier_id,
+                                    article_number=bind_article,
+                                    raw_brand=raw_offer_brand,
+                                    supplier_brand=bind_supplier_name,
+                                    reason="batch_brand_match_ok_article_not_found_for_brand",
+                                )
+                                processed += 1
+                                failed += 1
+                                results.append(
+                                    {
+                                        "product_id": item.product_id,
+                                        "supplier_id": int(item.supplier_id),
+                                        "article": item.article,
+                                        "status": "skipped_brand_mismatch",
+                                        "reason": "brand_matched_article_missing",
+                                        "raw_offer_brand": raw_offer_brand,
+                                        "supplier_brand": bind_supplier_name,
+                                    }
+                                )
+                                continue
                         else:
                             _mark_link_brand_mismatch_needs_review(
                                 product_id=item.product_id,
@@ -358,7 +423,7 @@ def run_backoffice_tecdoc_batch_bind_task(
                                 article_number=bind_article,
                                 raw_brand=raw_offer_brand,
                                 supplier_brand=bind_supplier_name,
-                                reason="batch_brand_match_ok_article_not_found_for_brand",
+                                reason="batch_brand_mismatch_raw_offer_vs_supplier",
                             )
                             processed += 1
                             failed += 1
@@ -368,45 +433,55 @@ def run_backoffice_tecdoc_batch_bind_task(
                                     "supplier_id": int(item.supplier_id),
                                     "article": item.article,
                                     "status": "skipped_brand_mismatch",
-                                    "reason": "brand_matched_article_missing",
+                                    "reason": "brand_mismatch_needs_manual_review",
                                     "raw_offer_brand": raw_offer_brand,
                                     "supplier_brand": bind_supplier_name,
                                 }
                             )
                             continue
-                    else:
-                        _mark_link_brand_mismatch_needs_review(
-                            product_id=item.product_id,
-                            supplier_id=bind_supplier_id,
-                            article_number=bind_article,
-                            raw_brand=raw_offer_brand,
-                            supplier_brand=bind_supplier_name,
-                            reason="batch_brand_mismatch_raw_offer_vs_supplier",
-                        )
-                        processed += 1
-                        failed += 1
-                        results.append(
-                            {
-                                "product_id": item.product_id,
-                                "supplier_id": int(item.supplier_id),
-                                "article": item.article,
-                                "status": "skipped_brand_mismatch",
-                                "reason": "brand_mismatch_needs_manual_review",
-                                "raw_offer_brand": raw_offer_brand,
-                                "supplier_brand": bind_supplier_name,
-                            }
-                        )
-                        continue
 
-            bind_result = manual_bind_product_to_autodb_task(
-                product_id=item.product_id,
-                supplier_id=bind_supplier_id,
-                article_number=bind_article,
-                supplier_name=bind_supplier_name,
-                article_id=None,
-                actor_id=str(actor_id or ""),
-            )
-            status_value = str(bind_result.get("status") or "")
+                # Remote-first: fetch current article rows from remote and replace local clone rows before bind.
+                pre_clone = AutoDbArticleEnrichmentService().enrich_article(
+                    supplier_id=bind_supplier_id,
+                    article_number=bind_article,
+                    dry_run=False,
+                    replace_local=True,
+                )
+                pre_clone_remote_hits = int(pre_clone.remote_hits or 0)
+                pre_clone_rows_total = sum(int(value or 0) for value in (pre_clone.populated_tables or {}).values())
+                pre_clone_has_data = pre_clone_remote_hits > 0 or pre_clone_rows_total > 0
+                if not pre_clone_has_data:
+                    _mark_link_clone_data_missing_needs_review(
+                        product_id=item.product_id,
+                        supplier_id=bind_supplier_id,
+                        article_number=bind_article,
+                        reason="batch_clone_data_missing_before_bind",
+                    )
+                    processed += 1
+                    failed += 1
+                    results.append(
+                        {
+                            "product_id": item.product_id,
+                            "supplier_id": bind_supplier_id,
+                            "article": bind_article,
+                            "status": "clone_data_missing",
+                            "reason": "remote_or_clone_rows_not_found_for_article",
+                            "relinked_by_brand_guard": relinked_by_brand_guard,
+                        }
+                    )
+                    continue
+
+                bind_result = manual_bind_product_to_autodb_task(
+                    product_id=item.product_id,
+                    supplier_id=bind_supplier_id,
+                    article_number=bind_article,
+                    supplier_name=bind_supplier_name,
+                    article_id=None,
+                    actor_id=str(actor_id or ""),
+                    skip_clone_enrichment=True,
+                )
+                status_value = str(bind_result.get("status") or "")
+
             processed += 1
             if status_value == "bound":
                 bound += 1
@@ -426,6 +501,13 @@ def run_backoffice_tecdoc_batch_bind_task(
             processed += 1
             failed += 1
             error_text = str(exc)
+            if isinstance(exc, _BatchItemTimeoutError):
+                _mark_link_clone_data_missing_needs_review(
+                    product_id=item.product_id,
+                    supplier_id=int(item.supplier_id),
+                    article_number=item.article,
+                    reason="batch_item_timeout",
+                )
             results.append(
                 {
                     "product_id": item.product_id,
@@ -444,6 +526,7 @@ def run_backoffice_tecdoc_batch_bind_task(
             **(run.summary_json or {}),
             "running": True,
             "requested_limit": max(1, min(int(limit or 0), 1000)),
+            "requested_product_ids_count": len(product_ids or []),
             "selected": len(candidates),
             "processed": processed,
             "bound": bound,
@@ -464,6 +547,7 @@ def run_backoffice_tecdoc_batch_bind_task(
         **(run.summary_json or {}),
         "running": False,
         "requested_limit": max(1, min(int(limit or 0), 1000)),
+        "requested_product_ids_count": len(product_ids or []),
         "selected": len(candidates),
         "processed": processed,
         "bound": bound,
@@ -538,6 +622,64 @@ def _mark_link_brand_mismatch_needs_review(
             "source": "autodb.backoffice_tecdoc_batch_bind",
             "raw_offer_brand": str(raw_brand or ""),
             "supplier_brand": str(supplier_brand or ""),
+            "product_id": str(product_id),
+        },
+        "checked_at": now,
+    }
+    quality, created = AutoDbProductLinkQuality.objects.get_or_create(
+        product=product,
+        autodb_article_key=article_key,
+        defaults=defaults,
+    )
+    if created:
+        return
+    quality.autodb_supplier_id = int(supplier_id)
+    quality.autodb_article_number = article_value
+    quality.status = AutoDbProductLinkQuality.STATUS_NEEDS_MANUAL_REVIEW
+    quality.reason = reason
+    quality.evidence = defaults["evidence"]
+    quality.checked_at = now
+    quality.save(
+        update_fields=[
+            "autodb_supplier_id",
+            "autodb_article_number",
+            "status",
+            "reason",
+            "evidence",
+            "checked_at",
+            "updated_at",
+        ]
+    )
+
+
+def _mark_link_clone_data_missing_needs_review(
+    *,
+    product_id: str,
+    supplier_id: int,
+    article_number: str,
+    reason: str,
+) -> None:
+    product = Product.objects.filter(pk=product_id).first()
+    if product is None:
+        return
+    article_value = str(article_number or "").strip()
+    if not article_value:
+        article_value = str(getattr(product, "autodb_article_number", "") or "").strip()
+    article_key = f"{int(supplier_id)}:{article_value}" if supplier_id and article_value else str(
+        getattr(product, "autodb_article_key", "") or ""
+    ).strip()
+    if not article_key:
+        return
+
+    now = timezone.now()
+    defaults = {
+        "autodb_supplier_id": int(supplier_id),
+        "autodb_article_number": article_value,
+        "status": AutoDbProductLinkQuality.STATUS_NEEDS_MANUAL_REVIEW,
+        "reason": reason,
+        "evidence": {
+            "source": "autodb.backoffice_tecdoc_batch_bind",
+            "reason": "clone_data_missing",
             "product_id": str(product_id),
         },
         "checked_at": now,

@@ -83,7 +83,9 @@ export function VehicleSelectorModal({ isOpen, onClose }: VehicleSelectorModalPr
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[90] flex items-start justify-center bg-black/35 px-3 pb-6 pt-[8vh] backdrop-blur-[1px]"
+      data-modal-root="vehicle-selector"
+      className="fixed inset-0 z-[90] flex items-start justify-center bg-black/35 px-3 pb-6 pt-[8vh]"
+      style={{ isolation: "isolate", transform: "translateZ(0)" }}
       onMouseDown={(event) => {
         if (!dialogRef.current?.contains(event.target as Node)) {
           onClose();
@@ -93,7 +95,7 @@ export function VehicleSelectorModal({ isOpen, onClose }: VehicleSelectorModalPr
       <div
         ref={dialogRef}
         className="w-full max-w-3xl rounded-2xl border p-4 shadow-2xl"
-        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", contain: "layout paint style" }}
         role="dialog"
         aria-modal="true"
         aria-label={t("title")}

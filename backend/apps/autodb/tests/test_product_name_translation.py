@@ -1,4 +1,6 @@
 from django.test import SimpleTestCase
+from django.test.utils import override_settings
+from unittest.mock import patch
 
 from apps.autodb.services.product_name_translation import ProductNameTranslationService
 
@@ -20,9 +22,50 @@ class ProductNameTranslationServiceTests(SimpleTestCase):
         self.assertEqual(result.en, "Shock absorber")
         self.assertEqual(result.status, "translated")
 
+    @override_settings(AUTODB_OFFLINE_TRANSLATE_ENABLED=False)
     def test_unknown_phrase_is_pending(self):
         service = ProductNameTranslationService()
         result = service.translate_product_name(source_text="Невідомий товар", source_lang="uk")
         self.assertEqual(result.status, "pending")
         self.assertEqual(result.uk, "Невідомий товар")
         self.assertEqual(result.error, "translation_not_found_in_dictionary")
+
+    def test_detects_russian_without_specific_letters(self):
+        service = ProductNameTranslationService()
+        result = service.translate_product_name(source_text="Свеча зажигания")
+        self.assertEqual(result.source_lang, "ru")
+
+    @override_settings(
+        AUTODB_OFFLINE_TRANSLATE_ENABLED=True,
+        AUTODB_OFFLINE_TRANSLATE_URL="http://libretranslate:5000",
+        AUTODB_OFFLINE_TRANSLATE_TIMEOUT_MS=1000,
+    )
+    @patch("apps.autodb.services.product_name_translation.urllib_request.urlopen")
+    def test_unknown_phrase_uses_offline_translator_when_enabled(self, mocked_urlopen):
+        class _FakeResponse:
+            def __init__(self, payload: str):
+                self._payload = payload.encode("utf-8")
+
+            def read(self):
+                return self._payload
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                return False
+
+        responses = iter(
+            [
+                _FakeResponse('{"translatedText":"Неизвестный товар"}'),
+                _FakeResponse('{"translatedText":"Unknown product"}'),
+            ]
+        )
+        mocked_urlopen.side_effect = lambda request, timeout: next(responses)
+
+        service = ProductNameTranslationService()
+        result = service.translate_product_name(source_text="Невідомий товар", source_lang="uk")
+        self.assertEqual(result.status, "translated")
+        self.assertEqual(result.uk, "Невідомий товар")
+        self.assertEqual(result.ru, "Неизвестный товар")
+        self.assertEqual(result.en, "Unknown product")

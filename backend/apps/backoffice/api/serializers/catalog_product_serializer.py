@@ -8,7 +8,7 @@ from rest_framework import serializers
 
 from apps.autodb.selectors.admin_supplier_brands import get_admin_supplier_brand_name_by_id
 from apps.backoffice.services import ProductOperationsService
-from apps.catalog.models import AutoDbProductLinkQuality, Category, Product, ProductAttribute
+from apps.catalog.models import AutoDbProductLinkQuality, Category, Product
 from apps.catalog.services import (
     ensure_product_svom_sku,
     generate_unique_product_slug,
@@ -97,7 +97,6 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
     raw_supplier_name = serializers.SerializerMethodField()
     raw_supplier_brand = serializers.SerializerMethodField()
     autodb_link_quality_status = serializers.SerializerMethodField(read_only=True)
-    autodb_attributes_count = serializers.SerializerMethodField(read_only=True)
     autodb_fitments_count = serializers.SerializerMethodField(read_only=True)
     is_autodb_compatible_data_available = serializers.SerializerMethodField(read_only=True)
     product_display_sku = serializers.SerializerMethodField(read_only=True)
@@ -136,7 +135,6 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
             "raw_supplier_name",
             "raw_supplier_brand",
             "autodb_link_quality_status",
-            "autodb_attributes_count",
             "autodb_fitments_count",
             "is_autodb_compatible_data_available",
             "final_price",
@@ -420,15 +418,6 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
     def get_autodb_link_quality_status(self, obj: Product) -> str:
         return self._get_link_quality_status(obj)
 
-    def get_autodb_attributes_count(self, obj: Product) -> int:
-        annotated_count = getattr(obj, "_autodb_attributes_count", None)
-        if annotated_count is not None:
-            return int(annotated_count or 0)
-        return ProductAttribute.objects.filter(
-            product=obj,
-            source=ProductAttribute.SOURCE_AUTODB_PRO,
-        ).count()
-
     def get_autodb_fitments_count(self, obj: Product) -> int:
         annotated_count = getattr(obj, "_autodb_fitments_count", None)
         if annotated_count is not None:
@@ -444,7 +433,7 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
     def get_is_autodb_compatible_data_available(self, obj: Product) -> bool:
         if self._get_link_quality_status(obj) != AutoDbProductLinkQuality.STATUS_TRUSTED:
             return False
-        return self.get_autodb_fitments_count(obj) > 0 or self.get_autodb_attributes_count(obj) > 0
+        return self.get_autodb_fitments_count(obj) > 0
 
     @staticmethod
     def _resolve_product_price(obj: Product):

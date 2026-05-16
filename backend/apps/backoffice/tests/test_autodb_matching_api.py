@@ -287,6 +287,105 @@ class BackofficeAutoDbMatchingApiTests(APITestCase):
         self.assertEqual(response.data["results"][0]["status"], "quota_paused")
         self.assertEqual(self._write_counts(), before)
 
+    def test_fallback_local_found_filter_keeps_local_found_status_label(self):
+        fallback_product = Product.objects.create(
+            sku="WIX-FALLBACK-LOCAL-1",
+            article="WA6342",
+            name="Fallback local product",
+            slug="wix-fallback-local-1",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+            autodb_supplier_id=10,
+            autodb_supplier_name="WIX",
+            autodb_article_number="WA 6342",
+            autodb_article_key="",
+        )
+        SupplierOffer.objects.create(
+            supplier=self.supplier,
+            product=fallback_product,
+            supplier_sku="WA6342",
+            purchase_price="95.00",
+            stock_qty=3,
+            is_available=True,
+        )
+
+        response = self.client.get(
+            reverse("backoffice_api:autodb-matching-jobs"),
+            {"matching_status": "local_found", "q": fallback_product.sku},
+            **self._auth(self.staff_token),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["product"]["sku"], fallback_product.sku)
+        self.assertEqual(response.data["results"][0]["matching_status"], AutoDbMatchJob.STATUS_LOCAL_FOUND)
+        self.assertEqual(response.data["results"][0]["matching_status_view"], AutoDbMatchJob.STATUS_LOCAL_FOUND)
+
+    def test_fallback_unresolved_status_filters_do_not_return_new_rows(self):
+        fallback_product = Product.objects.create(
+            sku="WIX-FALLBACK-UNRES-1",
+            article="WA6342",
+            name="Fallback unresolved product",
+            slug="wix-fallback-unres-1",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+            autodb_supplier_id=10,
+            autodb_supplier_name="WIX",
+            autodb_article_number="WA 6342",
+            autodb_article_key="",
+        )
+        SupplierOffer.objects.create(
+            supplier=self.supplier,
+            product=fallback_product,
+            supplier_sku="WA6342",
+            purchase_price="95.00",
+            stock_qty=3,
+            is_available=True,
+        )
+
+        response = self.client.get(
+            reverse("backoffice_api:autodb-matching-jobs"),
+            {"matching_status": AutoDbMatchJob.STATUS_NEEDS_REVIEW, "q": fallback_product.sku},
+            **self._auth(self.staff_token),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 0)
+        self.assertEqual(response.data["results"], [])
+
+    def test_fallback_new_and_tecdoc_filters_serialize_rows_as_new(self):
+        linked_product = Product.objects.create(
+            sku="WIX-FALLBACK-LINKED-1",
+            article="WA6342",
+            name="Fallback linked product",
+            slug="wix-fallback-linked-1",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+            autodb_supplier_id=10,
+            autodb_supplier_name="WIX",
+            autodb_article_number="WA 6342",
+            autodb_article_key="10:WA6342",
+        )
+
+        response = self.client.get(
+            reverse("backoffice_api:autodb-matching-jobs"),
+            {
+                "matching_status": AutoDbMatchJob.STATUS_NEW,
+                "tecdoc_status": "tecdoc",
+                "q": linked_product.sku,
+            },
+            **self._auth(self.staff_token),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["product"]["sku"], linked_product.sku)
+        self.assertEqual(response.data["results"][0]["matching_status"], AutoDbMatchJob.STATUS_NEW)
+        self.assertEqual(response.data["results"][0]["matching_status_view"], AutoDbMatchJob.STATUS_NEW)
+
     @patch("apps.backoffice.api.views.autodb_matching.actions.manual_bind_product_to_autodb_task")
     def test_manual_create_job_queues_async_bind(self, bind_task):
         bind_task.delay.return_value = SimpleNamespace(id="task-123")

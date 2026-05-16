@@ -726,6 +726,17 @@ label:has(select:disabled) {
   animation-play-state: paused !important;
 }
 
+body.modal-open > :not([data-modal-root]),
+body.modal-open > :not([data-modal-root]) * {
+  animation-play-state: paused !important;
+  transition-property: none !important;
+}
+
+body.modal-open > :not([data-modal-root]) {
+  pointer-events: none;
+  user-select: none;
+}
+
 .header-dropdown {
   position: absolute;
   right: 0;

@@ -14,6 +14,7 @@ from apps.autodb.models import (
     AutoDbProductGroup,
     AutoDbSupplier,
 )
+from apps.autodb.services.remote_client import AutoDbProRemoteClient, AutoDbProRemoteClientError
 from apps.autodb.services.column_helpers import find_column_name, find_value
 from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
 from apps.catalog.models import Product
@@ -95,7 +96,17 @@ def get_autodb_primary_image_url(*, product: Product) -> str:
 
 
 def build_autodb_characteristic_attributes(*, product: Product) -> list[dict[str, str]]:
-    content = get_autodb_product_content(product=product, prefer_live=True)
+    pairs = _resolve_article_brand_pairs(product=product)
+    if not pairs:
+        return []
+    supplier_ids = _resolve_supplier_ids(pairs=pairs)
+    direct_supplier_id = int(getattr(product, "autodb_supplier_id", 0) or 0)
+    if direct_supplier_id > 0:
+        supplier_ids.add(direct_supplier_id)
+    if not supplier_ids:
+        return []
+    articles = {article for article, _brand in pairs}
+    content = _build_content_from_local_clone(supplier_ids=supplier_ids, articles=articles)
     rows: list[dict[str, str]] = []
     for index, item in enumerate(content.attributes):
         name = str(item.get("attribute_name") or "").strip()
@@ -136,7 +147,7 @@ def resolve_autodb_article_name(
 
     if prefer_live and bool(getattr(settings, "AUTODB_LIVE_CONTENT_ENABLED", True)):
         try:
-            name = _load_article_name_from_live(
+            name = _load_article_name_from_remote_gateway(
                 article_candidates=_build_article_candidates(article_raw=article_raw, normalized_article=article),
                 normalized_brand=brand,
             )
@@ -260,10 +271,11 @@ def _build_attributes_from_local_clone(
         columns,
         ["DataSupplierArticleNumber", "datasupplierarticlenumber", "articleNumber", "articlenumber", "article", "number"],
     )
+    description_col = find_column_name(columns, ["description", "Description"])
     name_col = find_column_name(columns, ["attributeName", "name", "title", "criterionName", "criteriaName", "displaytitle"])
     value_col = find_column_name(columns, ["attributeValue", "value", "criterionValue", "criteriaValue", "displayvalue", "description"])
     unit_col = find_column_name(columns, ["unit", "measureUnit", "uom"])
-    if not supplier_col or not article_col or not name_col:
+    if not supplier_col or not article_col:
         return []
 
     rows = _fetch_clone_rows(
@@ -276,19 +288,15 @@ def _build_attributes_from_local_clone(
         columns=columns,
     )
     out: list[dict[str, str]] = []
-    seen: set[tuple[str, str]] = set()
     for row in rows:
-        clean_name = str(find_value(row, [name_col]) or "").strip()
+        name_candidates = [item for item in (description_col, name_col) if item]
+        clean_name = str(find_value(row, name_candidates) or "").strip()
         clean_value = str(find_value(row, [value_col]) or "").strip() if value_col else ""
         clean_unit = str(find_value(row, [unit_col]) or "").strip() if unit_col else ""
         if not clean_name or not clean_value:
             continue
         if clean_unit:
             clean_value = f"{clean_value} {clean_unit}".strip()
-        dedupe_key = (clean_name.lower(), clean_value.lower())
-        if dedupe_key in seen:
-            continue
-        seen.add(dedupe_key)
         out.append({"attribute_name": clean_name[:255], "value": clean_value[:255]})
         if len(out) >= 120:
             break
@@ -490,6 +498,36 @@ def _load_article_name_from_live(*, article_candidates: set[str], normalized_bra
         return _pick_best_article_name(rows)
     finally:
         source.close()
+
+
+def _load_article_name_from_remote_gateway(*, article_candidates: set[str], normalized_brand: str) -> str:
+    if not article_candidates or not normalized_brand:
+        return ""
+    try:
+        client = AutoDbProRemoteClient.from_settings()
+    except AutoDbProRemoteClientError:
+        return ""
+
+    supplier_ids = _fetch_supplier_ids_from_remote_gateway(client=client, normalized_brand=normalized_brand)
+    if not supplier_ids:
+        return ""
+
+    supplier_placeholders = ", ".join(["%s"] * len(supplier_ids))
+    article_placeholders = ", ".join(["%s"] * len(article_candidates))
+    sql = (
+        "SELECT InformationType AS info_type, InformationText AS info_text "
+        "FROM article_inf "
+        f"WHERE supplierId IN ({supplier_placeholders}) "
+        f"AND DataSupplierArticleNumber IN ({article_placeholders})"
+    )
+    params = (*sorted(supplier_ids), *sorted(article_candidates))
+    rows = client.select(sql, tuple(params), run_id="catalog-article-name")
+    normalized_rows = [
+        (item.get("info_type"), item.get("info_text"))
+        for item in rows
+        if isinstance(item, dict)
+    ]
+    return _pick_best_article_name(normalized_rows)
 
 
 def _refresh_images_from_live(*, source, supplier_ids: set[int], articles: set[str], columns: list[str]) -> None:
@@ -712,6 +750,28 @@ def _fetch_supplier_ids_from_live(*, source, normalized_brand: str) -> set[int]:
     return {int(row[0]) for row in rows if row and row[0] is not None}
 
 
+def _fetch_supplier_ids_from_remote_gateway(*, client: AutoDbProRemoteClient, normalized_brand: str) -> set[int]:
+    if not normalized_brand:
+        return set()
+    brand_value = normalized_brand.strip().upper()
+    rows = client.select(
+        (
+            "SELECT id FROM suppliers "
+            "WHERE UPPER(TRIM(matchcode)) = %s OR UPPER(TRIM(description)) = %s"
+        ),
+        (brand_value, brand_value),
+        run_id="catalog-supplier-ids",
+    )
+    supplier_ids: set[int] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        value = _to_int(row.get("id"))
+        if value:
+            supplier_ids.add(value)
+    return supplier_ids
+
+
 def _fetch_rows(
     *,
     source,
@@ -768,24 +828,43 @@ def _resolve_article_brand_pairs(*, product: Product) -> set[tuple[str, str]]:
         or str(getattr(product, "normalized_brand", "") or "").strip()
     )
 
-    product_article = normalize_article(product.article)
-    if product_article and fallback_brand:
-        pairs.add((product_article, fallback_brand))
+    def _add_article_candidates(*, raw_article: str, normalized_article: str, brand: str) -> None:
+        if not brand:
+            return
+        for candidate in _build_article_candidates(article_raw=raw_article, normalized_article=normalized_article):
+            clean_candidate = str(candidate or "").strip()
+            if clean_candidate:
+                pairs.add((clean_candidate, brand))
+
+    product_article_raw = str(getattr(product, "article", "") or "").strip()
+    product_article_normalized = normalize_article(product_article_raw)
+    if fallback_brand:
+        _add_article_candidates(
+            raw_article=product_article_raw,
+            normalized_article=product_article_normalized,
+            brand=fallback_brand,
+        )
+        autodb_article_raw = str(getattr(product, "autodb_article_number", "") or "").strip()
+        _add_article_candidates(
+            raw_article=autodb_article_raw,
+            normalized_article=normalize_article(autodb_article_raw),
+            brand=fallback_brand,
+        )
 
     raw_offers = (
         SupplierRawOffer.objects.filter(matched_product_id=product.id)
-        .exclude(normalized_article="")
-        .values_list("normalized_article", "normalized_brand")
+        .values_list("article", "normalized_article", "brand_name", "normalized_brand")
         .distinct()
     )
-    for article, brand in raw_offers:
-        normalized_article = str(article or "").strip()
-        if not normalized_article:
+    for raw_article, normalized_article, raw_brand, normalized_brand in raw_offers:
+        clean_brand = str(normalized_brand or "").strip() or normalize_brand(str(raw_brand or "").strip()) or fallback_brand
+        if not clean_brand:
             continue
-        normalized_brand = str(brand or "").strip() or fallback_brand
-        if not normalized_brand:
-            continue
-        pairs.add((normalized_article, normalized_brand))
+        _add_article_candidates(
+            raw_article=str(raw_article or ""),
+            normalized_article=str(normalized_article or ""),
+            brand=clean_brand,
+        )
     return pairs
 
 

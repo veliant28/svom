@@ -1,7 +1,7 @@
 from django.db.models import Q
 from rest_framework import serializers
 
-from apps.catalog.models import AutoDbProductLinkQuality, Product, ProductAttribute, ProductImage
+from apps.catalog.models import AutoDbProductLinkQuality, Product, ProductImage
 from apps.catalog.services.product_management import get_product_display_name
 from apps.catalog.services.product_branding import get_product_display_brand_payload
 from apps.catalog.services.product_sku import (
@@ -48,20 +48,6 @@ class ProductImageSerializer(serializers.ModelSerializer):
             except Exception:  # noqa: BLE001
                 pass
         return str(getattr(obj, "remote_url", "") or "")
-
-
-class ProductAttributeSerializer(serializers.ModelSerializer):
-    attribute_name = serializers.CharField(source="attribute.name", read_only=True)
-    value = serializers.SerializerMethodField()
-
-    class Meta:
-        model = ProductAttribute
-        fields = ("id", "attribute_name", "value")
-
-    def get_value(self, obj: ProductAttribute) -> str:
-        if obj.attribute_value is not None:
-            return obj.attribute_value.value
-        return obj.raw_value
 
 
 class ProductFitmentSerializer(serializers.Serializer):
@@ -368,16 +354,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return rows
 
     def get_attributes(self, obj: Product) -> list[dict]:
-        local_rows = ProductAttributeSerializer(obj.product_attributes.all(), many=True, context=self.context).data
         if not self._is_autodb_linked(obj):
-            return local_rows
-        existing_names = {str(row.get("attribute_name") or "").strip().lower() for row in local_rows}
-        autodb_rows = [
-            row
-            for row in build_autodb_characteristic_attributes(product=obj)
-            if str(row.get("attribute_name") or "").strip().lower() not in existing_names
-        ]
-        return [*local_rows, *autodb_rows]
+            return []
+        return build_autodb_characteristic_attributes(product=obj)
 
     def get_fitments(self, obj: Product) -> list[dict]:
         cached = getattr(obj, "_resolved_public_fitments", None)
@@ -464,10 +443,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             return False
         if self._get_link_quality_status(obj) != AutoDbProductLinkQuality.STATUS_TRUSTED:
             return False
-        return ProductAttribute.objects.filter(
-            product=obj,
-            source=ProductAttribute.SOURCE_AUTODB_PRO,
-        ).exists()
+        return bool(build_autodb_characteristic_attributes(product=obj))
 
     def get_compatibility_summary(self, obj: Product) -> dict:
         fitment_ids = set(get_public_autodb_fitment_ids(product=obj, include_commercial=True))

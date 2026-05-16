@@ -113,6 +113,14 @@ class AutoDbProductNameEnrichmentServiceTests(SimpleTestCase):
         )
         self.assertEqual(cleaned, "Свічка запалювання")
 
+    def test_combine_base_and_description_deduplicates_typo_near_match(self):
+        service = AutoDbProductNameEnrichmentService()
+        combined = service._combine_base_and_description(
+            base="Комплект пыльника",
+            description="Комплект пылника, приводной вал",
+        )
+        self.assertEqual(combined, "Комплект пылника, приводной вал")
+
     def test_cleaned_title_translates_to_uk_ru_en(self):
         service = AutoDbProductNameEnrichmentService()
         service._resolve_supplier_raw_name = Mock(return_value="")

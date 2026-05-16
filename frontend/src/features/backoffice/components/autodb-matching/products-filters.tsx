@@ -1,4 +1,5 @@
-import { LoaderCircle, Play } from "lucide-react";
+import { ListChecks, LoaderCircle, Play, Square } from "lucide-react";
+import type { RefObject } from "react";
 
 import { PercentStepper } from "@/features/backoffice/components/pricing/percent-stepper";
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
@@ -59,8 +60,16 @@ export function AutoDbMatchingProductsFilters({
   batchSize,
   onBatchSizeChange,
   onRunTecdocBatch,
+  onStopTecdocBatch,
   isTecdocBatchRunning,
+  isQuotaCooldownActive,
   isBatchSubmitting,
+  bulkActionsRef,
+  bulkActionsOpen,
+  selectedCount,
+  isBulkRunning,
+  onToggleBulkActions,
+  onRunBulkBatch,
 }: {
   t: Translator;
   filters: AutoDbMatchingProductsFilterState;
@@ -71,13 +80,57 @@ export function AutoDbMatchingProductsFilters({
   batchSize: number;
   onBatchSizeChange: (value: number) => void;
   onRunTecdocBatch: () => void;
+  onStopTecdocBatch: () => void;
   isTecdocBatchRunning: boolean;
+  isQuotaCooldownActive: boolean;
   isBatchSubmitting: boolean;
+  bulkActionsRef: RefObject<HTMLDivElement | null>;
+  bulkActionsOpen: boolean;
+  selectedCount: number;
+  isBulkRunning: boolean;
+  onToggleBulkActions: () => void;
+  onRunBulkBatch: () => void;
 }) {
-  const isBatchDisabled = isTecdocBatchRunning || isBatchSubmitting;
+  const isBatchDisabled = isTecdocBatchRunning || isBatchSubmitting || isQuotaCooldownActive;
+  const isStopDisabled = !isTecdocBatchRunning || isBatchSubmitting;
+  const isBulkDisabled = selectedCount <= 0 || isBulkRunning || isTecdocBatchRunning || isQuotaCooldownActive;
   return (
     <section className="mb-3 flex items-center gap-2">
+      <div ref={bulkActionsRef} className="relative shrink-0">
+        <BackofficeTooltip content={t("actions.bulkActions")} placement="top" tooltipClassName="whitespace-nowrap">
+          <button
+            type="button"
+            aria-label={t("actions.bulkActions")}
+            aria-haspopup="menu"
+            aria-expanded={bulkActionsOpen}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md border"
+            style={surfaceStyle}
+            onClick={onToggleBulkActions}
+          >
+            <ListChecks size={16} />
+          </button>
+        </BackofficeTooltip>
+        {bulkActionsOpen ? (
+          <div
+            role="menu"
+            className="absolute left-0 top-full z-30 mt-1 min-w-[220px] rounded-lg border p-1.5 shadow-xl"
+            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+          >
+            <button
+              type="button"
+              role="menuitem"
+              disabled={isBulkDisabled}
+              className="flex h-10 w-full items-center rounded-md px-3 text-left text-sm font-normal leading-5 text-slate-900 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-700/40 disabled:opacity-50"
+              onClick={onRunBulkBatch}
+            >
+              {t("actions.bulkRunBatch")}
+            </button>
+          </div>
+        ) : null}
+      </div>
+
       <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-1">
+
         <input
           value={filters.q}
           onChange={(event) => onFilterChange("q", event.target.value)}
@@ -167,6 +220,19 @@ export function AutoDbMatchingProductsFilters({
             onClick={onRunTecdocBatch}
           >
             {isBatchDisabled ? <LoaderCircle size={16} className="animate-spin" /> : <Play size={16} />}
+          </button>
+        </BackofficeTooltip>
+
+        <BackofficeTooltip content={t("actions.stopTecdocBatch")} placement="top" align="center" wrapperClassName="inline-flex">
+          <button
+            type="button"
+            aria-label={t("actions.stopTecdocBatch")}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md border shrink-0 disabled:cursor-not-allowed disabled:opacity-60"
+            style={{ ...surfaceStyle, borderColor: "#ef4444", color: "#dc2626" }}
+            disabled={isStopDisabled}
+            onClick={onStopTecdocBatch}
+          >
+            {isStopDisabled ? <Square size={16} /> : <Square size={16} fill="currentColor" />}
           </button>
         </BackofficeTooltip>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Filter, Loader2, Save, Star } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import {
@@ -81,6 +81,8 @@ function AutoDbSelectionForm({
 
   const [isPrimary, setIsPrimary] = useState(false);
   const [activeSaveMode, setActiveSaveMode] = useState<SaveMode>(null);
+  const optionsRequestSeq = useRef(0);
+  const rowsRequestSeq = useRef(0);
 
   useEffect(() => {
     if (!loadError) {
@@ -118,15 +120,19 @@ function AutoDbSelectionForm({
 
   useEffect(() => {
     if (!selectedYear) {
+      optionsRequestSeq.current += 1;
       setManufacturers([]);
       setModels([]);
       setModifications([]);
       setCapacities([]);
       setEngines([]);
+      setIsLoadingOptions(false);
       return;
     }
 
     let isMounted = true;
+    const requestSeq = optionsRequestSeq.current + 1;
+    optionsRequestSeq.current = requestSeq;
     async function loadOptions() {
       setIsLoadingOptions(true);
       setLoadError(null);
@@ -138,7 +144,7 @@ function AutoDbSelectionForm({
           modification: selectedModification || undefined,
           volume: selectedCapacity || undefined,
         });
-        if (isMounted) {
+        if (isMounted && requestSeq === optionsRequestSeq.current) {
           setManufacturers(payload.manufacturers);
           setModels(payload.models);
           setModifications(payload.modifications);
@@ -157,12 +163,10 @@ function AutoDbSelectionForm({
           if (selectedCapacity && !payload.volumes.includes(selectedCapacity)) {
             setSelectedCapacity("");
           }
-          if (selectedEngine && !payload.engines.includes(selectedEngine)) {
-            setSelectedEngine("");
-          }
+          setSelectedEngine((current) => (current && !payload.engines.includes(current) ? "" : current));
         }
       } catch {
-        if (isMounted) {
+        if (isMounted && requestSeq === optionsRequestSeq.current) {
           setManufacturers([]);
           setModels([]);
           setModifications([]);
@@ -171,7 +175,7 @@ function AutoDbSelectionForm({
           setLoadError("catalog_unavailable");
         }
       } finally {
-        if (isMounted) {
+        if (isMounted && requestSeq === optionsRequestSeq.current) {
           setIsLoadingOptions(false);
         }
       }
@@ -180,15 +184,19 @@ function AutoDbSelectionForm({
     return () => {
       isMounted = false;
     };
-  }, [selectedYear, selectedManufacturerId, selectedModelId, selectedModification, selectedCapacity, selectedEngine]);
+  }, [selectedYear, selectedManufacturerId, selectedModelId, selectedModification, selectedCapacity]);
 
   useEffect(() => {
     if (!selectedManufacturerId || !selectedModelId || !selectedModification || !selectedCapacity) {
+      rowsRequestSeq.current += 1;
       setMatchingRows([]);
+      setIsLoadingRows(false);
       return;
     }
 
     let isMounted = true;
+    const requestSeq = rowsRequestSeq.current + 1;
+    rowsRequestSeq.current = requestSeq;
     async function loadRows() {
       setIsLoadingRows(true);
       setLoadError(null);
@@ -202,19 +210,19 @@ function AutoDbSelectionForm({
           page: 1,
           page_size: 500,
         });
-        if (isMounted) {
+        if (isMounted && requestSeq === rowsRequestSeq.current) {
           setMatchingRows(payload.results);
-          if (selectedEngine && !payload.results.some((row) => row.engine === selectedEngine)) {
-            setSelectedEngine("");
-          }
+          setSelectedEngine((current) =>
+            current && !payload.results.some((row) => row.engine === current) ? "" : current,
+          );
         }
       } catch {
-        if (isMounted) {
+        if (isMounted && requestSeq === rowsRequestSeq.current) {
           setMatchingRows([]);
           setLoadError("catalog_unavailable");
         }
       } finally {
-        if (isMounted) {
+        if (isMounted && requestSeq === rowsRequestSeq.current) {
           setIsLoadingRows(false);
         }
       }
@@ -224,7 +232,12 @@ function AutoDbSelectionForm({
     return () => {
       isMounted = false;
     };
-  }, [selectedYear, selectedManufacturerId, selectedModelId, selectedModification, selectedCapacity, selectedEngine]);
+  }, [selectedYear, selectedManufacturerId, selectedModelId, selectedModification, selectedCapacity]);
+
+  const engineOptions = useMemo(
+    () => (engines.length ? engines : Array.from(new Set(matchingRows.map((row) => row.engine).filter(Boolean)))),
+    [engines, matchingRows],
+  );
 
   const selectedRow = useMemo(
     () => matchingRows.find((row) => row.engine === selectedEngine) ?? null,
@@ -386,7 +399,7 @@ function AutoDbSelectionForm({
             <option value="">
               {isLoadingOptions || isLoadingRows ? tGarage("fields.engine.loadingPlaceholder") : tGarage("fields.engine.placeholder")}
             </option>
-            {(engines.length ? engines : Array.from(new Set(matchingRows.map((row) => row.engine)))).map((row) => (
+            {engineOptions.map((row) => (
               <option key={row} value={row}>
                 {normalizeDisplayText(row)}
               </option>

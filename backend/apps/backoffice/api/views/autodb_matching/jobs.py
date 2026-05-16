@@ -64,7 +64,7 @@ class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
         results = [
             serialize_fallback_product(
                 item,
-                matching_status=self._fallback_serialized_status(item=item, requested_status=matching_status),
+                matching_status=self._fallback_status_for_response(item=item, requested_status=matching_status),
                 tecdoc_state=self._fallback_tecdoc_status(item),
             )
             for item in page_obj.object_list
@@ -236,8 +236,10 @@ class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
                 queryset = self._only_explicit_non_tecdoc_brands(queryset)
             elif matching_status == AutoDbMatchJob.STATUS_SKIPPED_BAD_ARTICLE_SOURCE:
                 queryset = queryset.filter(Q(article__isnull=True) | Q(article=""))
-            elif matching_status in self.FALLBACK_UNRESOLVED_STATUS_ALIASES:
+            elif matching_status == AutoDbMatchJob.STATUS_NEW:
                 queryset = self._exclude_explicit_non_tecdoc_brands(queryset)
+            elif matching_status in self.FALLBACK_UNRESOLVED_STATUS_ALIASES:
+                return queryset.none()
             else:
                 return queryset.none()
         if article_source and article_source not in {"product_article", "product"}:
@@ -384,6 +386,21 @@ class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
         if not str(getattr(item, "article", "") or "").strip():
             return AutoDbMatchJob.STATUS_SKIPPED_BAD_ARTICLE_SOURCE
         return AutoDbMatchJob.STATUS_NEW
+
+    def _fallback_status_for_response(self, *, item: Product, requested_status: str) -> str:
+        if requested_status == AutoDbMatchJob.STATUS_NEW:
+            return AutoDbMatchJob.STATUS_NEW
+        if requested_status in self.FALLBACK_LINKED_STATUS_ALIASES:
+            return AutoDbMatchJob.STATUS_LINKED
+        if requested_status in self.FALLBACK_LOCAL_FOUND_STATUS_ALIASES:
+            return AutoDbMatchJob.STATUS_LOCAL_FOUND
+        if requested_status in self.FALLBACK_REMOTE_FOUND_STATUS_ALIASES:
+            return AutoDbMatchJob.STATUS_REMOTE_FOUND
+        if requested_status == AutoDbMatchJob.STATUS_SKIPPED_NON_TECDOC:
+            return AutoDbMatchJob.STATUS_SKIPPED_NON_TECDOC
+        if requested_status == AutoDbMatchJob.STATUS_SKIPPED_BAD_ARTICLE_SOURCE:
+            return AutoDbMatchJob.STATUS_SKIPPED_BAD_ARTICLE_SOURCE
+        return self._fallback_serialized_status(item=item, requested_status=requested_status)
 
     def _filter_fallback_linked_queryset(self, queryset):
         candidate = queryset.filter(autodb_supplier_id__isnull=False).exclude(autodb_article_key__isnull=True).exclude(autodb_article_key="")

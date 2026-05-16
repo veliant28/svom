@@ -70,6 +70,27 @@ services:
       timeout: 5s
       retries: 10
 
+  libretranslate:
+    image: libretranslate/libretranslate:latest
+    container_name: svom_libretranslate
+    restart: unless-stopped
+    environment:
+      LT_LOAD_ONLY: en,ru,uk
+      LT_DISABLE_WEB_UI: "true"
+      LT_UPDATE_MODELS: "false"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:5000/languages', timeout=5)",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
   backend:
     build:
       context: .
@@ -89,6 +110,10 @@ services:
       REDIS_CELERY_URL: redis://redis:6379/2
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
       SEARCH_BACKEND: ${SEARCH_BACKEND:-elasticsearch}
+      AUTODB_OFFLINE_TRANSLATE_ENABLED: ${AUTODB_OFFLINE_TRANSLATE_ENABLED:-1}
+      AUTODB_OFFLINE_TRANSLATE_URL: ${AUTODB_OFFLINE_TRANSLATE_URL:-http://libretranslate:5000}
+      AUTODB_OFFLINE_TRANSLATE_API_KEY: ${AUTODB_OFFLINE_TRANSLATE_API_KEY:-}
+      AUTODB_OFFLINE_TRANSLATE_TIMEOUT_MS: ${AUTODB_OFFLINE_TRANSLATE_TIMEOUT_MS:-4000}
     volumes:
       - ./backend:/app
       - ./Backup:/Backup
@@ -102,6 +127,8 @@ services:
       redis:
         condition: service_healthy
       elasticsearch:
+        condition: service_healthy
+      libretranslate:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8000/api/seo/public/config/ >/dev/null || exit 1"]
@@ -150,6 +177,10 @@ services:
       REDIS_CELERY_URL: redis://redis:6379/2
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
       SEARCH_BACKEND: ${SEARCH_BACKEND:-elasticsearch}
+      AUTODB_OFFLINE_TRANSLATE_ENABLED: ${AUTODB_OFFLINE_TRANSLATE_ENABLED:-1}
+      AUTODB_OFFLINE_TRANSLATE_URL: ${AUTODB_OFFLINE_TRANSLATE_URL:-http://libretranslate:5000}
+      AUTODB_OFFLINE_TRANSLATE_API_KEY: ${AUTODB_OFFLINE_TRANSLATE_API_KEY:-}
+      AUTODB_OFFLINE_TRANSLATE_TIMEOUT_MS: ${AUTODB_OFFLINE_TRANSLATE_TIMEOUT_MS:-4000}
     volumes:
       - ./backend:/app
       - ./Backup:/Backup
@@ -161,6 +192,8 @@ services:
       redis:
         condition: service_healthy
       elasticsearch:
+        condition: service_healthy
+      libretranslate:
         condition: service_healthy
     command: bash -lc "celery -A config worker -l info -Q ${CELERY_FAST_QUEUES:-celery} -O fair --prefetch-multiplier=1 --concurrency=${CELERY_FAST_WORKER_CONCURRENCY:-6}"
 
@@ -182,6 +215,10 @@ services:
       REDIS_CELERY_URL: redis://redis:6379/2
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
       SEARCH_BACKEND: ${SEARCH_BACKEND:-elasticsearch}
+      AUTODB_OFFLINE_TRANSLATE_ENABLED: ${AUTODB_OFFLINE_TRANSLATE_ENABLED:-1}
+      AUTODB_OFFLINE_TRANSLATE_URL: ${AUTODB_OFFLINE_TRANSLATE_URL:-http://libretranslate:5000}
+      AUTODB_OFFLINE_TRANSLATE_API_KEY: ${AUTODB_OFFLINE_TRANSLATE_API_KEY:-}
+      AUTODB_OFFLINE_TRANSLATE_TIMEOUT_MS: ${AUTODB_OFFLINE_TRANSLATE_TIMEOUT_MS:-4000}
     volumes:
       - ./backend:/app
       - ./Backup:/Backup
@@ -193,6 +230,8 @@ services:
       redis:
         condition: service_healthy
       elasticsearch:
+        condition: service_healthy
+      libretranslate:
         condition: service_healthy
     command: bash -lc "celery -A config beat -l info"
 

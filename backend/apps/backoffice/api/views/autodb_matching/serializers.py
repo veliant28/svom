@@ -3,8 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 from apps.autodb.models import AutoDbMatchEvidence, AutoDbMatchJob
-from apps.catalog.models import ProductAttribute, ProductImage
+from apps.catalog.models import ProductImage
 from apps.catalog.models import Product
+from apps.catalog.services.autodb_content import build_autodb_characteristic_attributes
 from apps.compatibility.models import ProductFitment
 from apps.supplier_imports.parsers.utils import normalize_brand
 
@@ -199,7 +200,7 @@ def serialize_fallback_product_detail(
         "clone_sync_state": {},
         "link_audit_result": {},
         "enrichment_availability": {
-            "attributes_count": ProductAttribute.objects.filter(product=product).count(),
+            "attributes_count": _attributes_count_from_clone(product),
             "fitments_count": ProductFitment.objects.filter(product=product).count(),
             "images_count_preview_only": ProductImage.objects.filter(product=product).count(),
         },
@@ -243,7 +244,7 @@ def serialize_job_detail(job: AutoDbMatchJob) -> dict[str, Any]:
         "clone_sync_state": evidence_payload(latest_evidence_for_stage(job, "clone_sync_plan")),
         "link_audit_result": evidence_payload(latest_evidence_for_stage(job, "link_audit")),
         "enrichment_availability": {
-            "attributes_count": ProductAttribute.objects.filter(product=product).count(),
+            "attributes_count": _attributes_count_from_clone(product),
             "fitments_count": ProductFitment.objects.filter(product=product).count(),
             "images_count_preview_only": ProductImage.objects.filter(product=product).count(),
         },
@@ -317,6 +318,13 @@ def _product_stock_qty(product: Product) -> int:
         if qty > supplier_max:
             supplier_max = qty
     return max(int(getattr(product, "available_stock_qty_cached", 0) or 0), supplier_max)
+
+
+def _attributes_count_from_clone(product: Product) -> int:
+    try:
+        return len(build_autodb_characteristic_attributes(product=product))
+    except Exception:  # noqa: BLE001
+        return 0
 
 
 def _lookup_context(job: AutoDbMatchJob) -> dict[str, Any]:

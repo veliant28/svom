@@ -82,7 +82,7 @@
           },
           "actions": {
             "useForFiltering": "Use for filtering",
-            "clearActive": "Clear active vehicle"
+            "clearActive": "Сбросить"
           },
           "messages": {
             "usedForFiltering": "Vehicle selected for filtering.",

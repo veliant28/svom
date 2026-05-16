@@ -425,6 +425,38 @@ class AutoDbRawCloneStorage:
                         failed += 1
         return failed
 
+    def delete_local_rows(self, *, table: str, filters: dict[str, Any] | None = None) -> int:
+        self._validate_identifier(table)
+        table_columns = self.get_local_columns(table)
+        if not table_columns:
+            return 0
+
+        by_lower = {name.lower(): name for name in table_columns}
+        where_parts: list[str] = []
+        params: list[Any] = []
+        for key, value in (filters or {}).items():
+            resolved = by_lower.get(str(key).lower())
+            if not resolved:
+                continue
+            if isinstance(value, (list, tuple, set)):
+                items = [item for item in value if item is not None and str(item).strip() != ""]
+                if not items:
+                    continue
+                placeholders = ", ".join(["%s"] * len(items))
+                where_parts.append(f"{self._q(resolved)} IN ({placeholders})")
+                params.extend(items)
+            else:
+                where_parts.append(f"{self._q(resolved)} = %s")
+                params.append(value)
+
+        if not where_parts:
+            return 0
+
+        sql = f"DELETE FROM {self._q(table)} WHERE {' AND '.join(where_parts)}"
+        with connections[self.db_alias].cursor() as cursor:
+            cursor.execute(sql, params)
+            return int(cursor.rowcount or 0)
+
     def column_exists(self, *, table: str, column: str) -> bool:
         if not column:
             return False

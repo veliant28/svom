@@ -5,7 +5,7 @@ from django.utils import timezone
 from rest_framework.response import Response
 
 from apps.autodb.models import AutoDbMatchEvidence, AutoDbMatchJob, AutoDbMatchingRun
-from apps.catalog.models import Product, ProductAttribute
+from apps.catalog.models import Product
 from apps.compatibility.models import ProductFitment
 
 from .._base import BackofficeAPIView
@@ -88,7 +88,8 @@ class BackofficeAutoDbMatchingDashboardAPIView(BackofficeAPIView):
             "linked_today": jobs.filter(status=AutoDbMatchJob.STATUS_LINKED, updated_at__date=today).count(),
             "latest_run": latest_run.run_type if latest_run else "",
             "product_attribute_planned": AutoDbMatchEvidence.objects.filter(stage="enrichment_plan").count(),
-            "product_attribute_applied": ProductAttribute.objects.filter(source=ProductAttribute.SOURCE_AUTODB_PRO).count(),
+            # catalog_productattribute table is removed; attribute source is Auto_DB clone only.
+            "product_attribute_applied": 0,
             "product_fitment_planned": AutoDbMatchEvidence.objects.filter(stage="enrichment_plan").count(),
             "product_fitment_applied": ProductFitment.objects.filter(source=ProductFitment.SOURCE_AUTODB_PRO).count(),
         }

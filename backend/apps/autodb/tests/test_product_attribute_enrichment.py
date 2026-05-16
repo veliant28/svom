@@ -110,6 +110,50 @@ class AutoDbProductAttributeEnrichmentServiceTests(TestCase):
         self.assertEqual(AttributeValue.objects.count(), 1)
         self.assertEqual(ProductAttribute.objects.filter(product=self.product).count(), 1)
 
+    def test_reuses_attribute_by_autodb_id_even_if_name_changes_language(self):
+        attr = Attribute.objects.create(
+            name="висота",
+            slug="vysota-uk-only",
+            name_uk="висота",
+            name_ru="",
+            name_en="",
+            source=Attribute.SOURCE_AUTODB_PRO,
+            autodb_attribute_id=5001,
+        )
+        value = AttributeValue.objects.create(
+            attribute=attr,
+            value="82.15 мм",
+            source=AttributeValue.SOURCE_AUTODB_PRO,
+            autodb_attribute_id=5001,
+        )
+        ProductAttribute.objects.create(
+            product=self.product,
+            attribute=attr,
+            attribute_value=value,
+            source=ProductAttribute.SOURCE_AUTODB_PRO,
+            autodb_attribute_id=5001,
+        )
+
+        service = self._service()
+        rows = [
+            {
+                "supplierid": 300,
+                "datasupplierarticlenumber": "820099",
+                "id": 5001,
+                "displaytitle": "высота",
+                "displayvalue": "82.15 мм",
+            }
+        ]
+        with patch.object(service, "_find_article_attribute_rows", return_value=rows):
+            result = service.enrich_product(product=self.product, dry_run=False)
+
+        self.assertIn(result.status, {"updated", "skipped_hash_unchanged"})
+        self.assertEqual(Attribute.objects.count(), 1)
+        attr.refresh_from_db()
+        self.assertEqual(attr.autodb_attribute_id, 5001)
+        self.assertEqual(attr.name, "высота")
+        self.assertEqual(ProductAttribute.objects.filter(product=self.product).count(), 1)
+
     def test_product_without_autodb_link_skipped(self):
         service = self._service()
         self.product.autodb_supplier_id = None

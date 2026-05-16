@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from difflib import SequenceMatcher
 from hashlib import sha1
 import re
 from typing import Any
@@ -597,7 +598,34 @@ class AutoDbProductNameEnrichmentService:
             return base_clean
         if base_lower in description_lower:
             return description_clean
+        if self._looks_like_duplicate_prefix(base_clean=base_clean, description_clean=description_clean):
+            return description_clean
         return sanitize_product_name(f"{base_clean} {description_clean}")[:255]
+
+    def _looks_like_duplicate_prefix(self, *, base_clean: str, description_clean: str) -> bool:
+        head = description_clean
+        for separator in (",", ";", ":", "(", ")", "-", "–", "—"):
+            if separator in head:
+                head = head.split(separator, 1)[0]
+        head = sanitize_product_name(head)
+        if not head:
+            return False
+        normalized_base = self._normalize_compare_text(base_clean)
+        normalized_head = self._normalize_compare_text(head)
+        if not normalized_base or not normalized_head:
+            return False
+        if normalized_base == normalized_head:
+            return True
+        ratio = SequenceMatcher(None, normalized_base, normalized_head).ratio()
+        return ratio >= 0.84
+
+    def _normalize_compare_text(self, value: str) -> str:
+        normalized = sanitize_product_name(value).lower()
+        normalized = normalized.replace("ё", "е").replace("ъ", "")
+        normalized = normalized.replace("ь", "")
+        normalized = re.sub(r"[^a-zа-я0-9 ]+", " ", normalized)
+        normalized = sanitize_product_name(normalized)
+        return normalized
 
     def build_queryset(
         self,

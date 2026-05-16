@@ -19,6 +19,7 @@ from apps.backoffice.api.views.autodb_matching import (
     BackofficeAutoDbMatchingRunLocalDryRunAPIView,
     BackofficeAutoDbMatchingRunRemoteAPIView,
     BackofficeAutoDbMatchingTecdocBatchRunAPIView,
+    BackofficeAutoDbMatchingTecdocBatchStopAPIView,
     BackofficeAutoDbMatchingTecdocBatchStateAPIView,
 )
 from apps.backoffice.api.views import (
@@ -260,6 +261,7 @@ urlpatterns = [
     path("autodb-matching/plan-safe-link/", BackofficeAutoDbMatchingPlanSafeLinkAPIView.as_view(), name="autodb-matching-plan-safe-link"),
     path("autodb-matching/plan-enrichment/", BackofficeAutoDbMatchingPlanEnrichmentAPIView.as_view(), name="autodb-matching-plan-enrichment"),
     path("autodb-matching/tecdoc-batch/run/", BackofficeAutoDbMatchingTecdocBatchRunAPIView.as_view(), name="autodb-matching-tecdoc-batch-run"),
+    path("autodb-matching/tecdoc-batch/stop/", BackofficeAutoDbMatchingTecdocBatchStopAPIView.as_view(), name="autodb-matching-tecdoc-batch-stop"),
     path("autodb-matching/tecdoc-batch/state/", BackofficeAutoDbMatchingTecdocBatchStateAPIView.as_view(), name="autodb-matching-tecdoc-batch-state"),
     path("article-rules/", ArticleRuleListCreateAPIView.as_view(), name="article-rule-list-create"),
     path("article-rules/<uuid:id>/", ArticleRuleRetrieveUpdateAPIView.as_view(), name="article-rule-update"),

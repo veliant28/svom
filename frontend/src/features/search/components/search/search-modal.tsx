@@ -86,7 +86,9 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
   return createPortal(
     <div
+      data-modal-root="search"
       className="fixed inset-0 z-[90] flex items-start justify-center bg-black/35 px-3 pb-6 pt-[12vh] backdrop-blur-[1px]"
+      style={{ isolation: "isolate", transform: "translateZ(0)" }}
       onMouseDown={(event) => {
         if (!dialogRef.current?.contains(event.target as Node)) {
           onClose();
@@ -96,7 +98,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
       <div
         ref={dialogRef}
         className="w-full max-w-2xl rounded-2xl border p-4 shadow-2xl"
-        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", contain: "layout paint style" }}
         role="dialog"
         aria-modal="true"
         aria-label={t("title")}

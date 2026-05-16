@@ -361,6 +361,7 @@ class AutoDbProductAttributeEnrichmentService:
         name_uk = translation.uk or clean_name
         name_ru = translation.ru or clean_name
         name_en = translation.en or clean_name
+        canonical_name = name_ru or clean_name
         translation_pending = translation.status != Product.NAME_TRANSLATION_TRANSLATED
 
         source_payload = {
@@ -371,19 +372,21 @@ class AutoDbProductAttributeEnrichmentService:
         }
         source_hash = sha1(json.dumps(source_payload, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()  # noqa: S324
 
-        cache_key = clean_name.lower()
+        cache_key = f"{autodb_attribute_id}:{canonical_name.lower()}"
         attribute = self._dry_run_attribute_cache.get(cache_key) if dry_run else None
+        if attribute is None and autodb_attribute_id is not None:
+            attribute = Attribute.objects.filter(autodb_attribute_id=autodb_attribute_id).order_by("id").first()
         if attribute is None:
-            attribute = Attribute.objects.filter(name=clean_name).order_by("id").first()
+            attribute = Attribute.objects.filter(name=canonical_name).order_by("id").first()
         if attribute is None:
-            attribute = Attribute.objects.filter(name__iexact=clean_name).order_by("id").first()
+            attribute = Attribute.objects.filter(name__iexact=canonical_name).order_by("id").first()
 
         created = False
         reused = attribute is not None
         if attribute is None:
-            slug = self._generate_unique_slug(clean_name)
+            slug = self._generate_unique_slug(canonical_name)
             attribute = Attribute(
-                name=clean_name,
+                name=canonical_name,
                 name_uk=name_uk,
                 name_ru=name_ru,
                 name_en=name_en,
@@ -408,10 +411,12 @@ class AutoDbProductAttributeEnrichmentService:
         if not created and not dry_run:
             updates: list[str] = []
             if str(attribute.source or "") != Attribute.SOURCE_MANUAL:
+                if sanitize_product_name(str(attribute.name or "")) != canonical_name and canonical_name:
+                    attribute.name = canonical_name
+                    updates.append("name")
                 if sanitize_product_name(str(attribute.name_uk or attribute.name)) != name_uk and name_uk:
-                    attribute.name = name_uk
                     attribute.name_uk = name_uk
-                    updates.extend(["name", "name_uk"])
+                    updates.append("name_uk")
                 if str(attribute.name_ru or "") != name_ru and name_ru:
                     attribute.name_ru = name_ru
                     updates.append("name_ru")

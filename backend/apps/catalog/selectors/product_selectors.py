@@ -45,8 +45,6 @@ def get_product_detail_queryset() -> QuerySet[Product]:
         .select_related("category", "category__parent", "category__parent__parent", "product_price")
         .prefetch_related(
             "images",
-            "product_attributes__attribute",
-            "product_attributes__attribute_value",
             Prefetch("supplier_offers", queryset=supplier_offers),
         )
     )

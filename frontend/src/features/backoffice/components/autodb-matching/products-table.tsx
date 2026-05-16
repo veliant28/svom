@@ -1,5 +1,5 @@
 import { AlertTriangle, CheckCircle2, CircleHelp, Clock3, LoaderCircle, MinusCircle, Search, SearchCode, XCircle, type LucideIcon } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import { BackofficeTable, type BackofficeColumn } from "@/features/backoffice/components/table/backoffice-table";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
@@ -87,7 +87,12 @@ export function AutoDbMatchingProductsTable({
   page,
   pagesCount,
   totalCount,
+  selectedSet,
+  allPageSelected,
+  somePageSelected,
   onPageChange,
+  onToggleSelectAllPage,
+  onToggleSelected,
   onOpenDetails,
   onSearchProduct,
 }: {
@@ -98,10 +103,21 @@ export function AutoDbMatchingProductsTable({
   page: number;
   pagesCount: number;
   totalCount: number;
+  selectedSet: Set<string>;
+  allPageSelected: boolean;
+  somePageSelected: boolean;
   onPageChange: (next: number) => void;
+  onToggleSelectAllPage: () => void;
+  onToggleSelected: (id: string) => void;
   onOpenDetails: (job: AutoDbProductJob) => void;
   onSearchProduct: (job: AutoDbProductJob) => void;
 }) {
+  const selectAllRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (!selectAllRef.current) return;
+    selectAllRef.current.indeterminate = somePageSelected && !allPageSelected;
+  }, [somePageSelected, allPageSelected]);
+
   const supplierBadges = (row: AutoDbProductJob): string[] => {
     const fromProduct = Array.isArray(row.product.supplier_codes) ? row.product.supplier_codes : [];
     const normalized = fromProduct
@@ -115,6 +131,27 @@ export function AutoDbMatchingProductsTable({
   };
 
   const columns = useMemo<Array<BackofficeColumn<AutoDbProductJob>>>(() => [
+    {
+      key: "select",
+      label: (
+        <input
+          ref={selectAllRef}
+          type="checkbox"
+          checked={allPageSelected}
+          onChange={onToggleSelectAllPage}
+          aria-label={t("actions.selectAll")}
+        />
+      ),
+      className: "w-[34px]",
+      render: (row) => (
+        <input
+          type="checkbox"
+          checked={selectedSet.has(row.id)}
+          onChange={() => onToggleSelected(row.id)}
+          aria-label={t("actions.selectOne")}
+        />
+      ),
+    },
     {
       key: "sku",
       label: t("products.columns.sku"),
@@ -287,7 +324,7 @@ export function AutoDbMatchingProductsTable({
         </div>
       ),
     },
-  ], [onOpenDetails, onSearchProduct, t]);
+  ], [allPageSelected, onOpenDetails, onSearchProduct, onToggleSelectAllPage, onToggleSelected, selectedSet, t]);
 
   return (
     <AsyncState isLoading={isLoading} error={error} empty={!rows.length} emptyLabel={t("states.emptyProducts")}>

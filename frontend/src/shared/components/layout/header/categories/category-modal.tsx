@@ -53,7 +53,9 @@ export function CategoryModal({ parent, isOpen, onClose }: CategoryModalProps) {
 
   return createPortal(
     <div
+      data-modal-root="category"
       className="fixed inset-0 z-[95] flex items-start justify-center bg-black/35 px-3 pb-6 pt-[10vh]"
+      style={{ isolation: "isolate", transform: "translateZ(0)" }}
       onMouseDown={(event) => {
         if (!dialogRef.current?.contains(event.target as Node)) {
           onClose();
@@ -63,7 +65,7 @@ export function CategoryModal({ parent, isOpen, onClose }: CategoryModalProps) {
       <div
         ref={dialogRef}
         className="w-full max-w-7xl rounded-2xl border p-6 shadow-2xl"
-        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", contain: "layout paint style" }}
         role="dialog"
         aria-modal="true"
         aria-label={parent.name}
