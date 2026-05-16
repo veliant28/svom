@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from django.utils import timezone
+from django.db.models import Value, CharField
+from django.db.models.functions import Coalesce
 
-from apps.catalog.models import Brand, Category, Product
+from apps.catalog.models import Category, Product
 from apps.seo.models import SeoSiteSettings
 from apps.seo.selectors import get_seo_site_settings
 
@@ -36,6 +38,21 @@ def rebuild_sitemap() -> dict[str, object]:
     base_url = str(settings.canonical_base_url or "").strip().rstrip("/")
     sitemap_url = f"{base_url}/sitemap.xml" if base_url else ""
 
+    brand_count = (
+        Product.objects.annotate(
+            catalog_brand_name=Coalesce(
+                "display_brand_name",
+                "autodb_supplier_name",
+                "normalized_brand",
+                Value("", output_field=CharField()),
+            )
+        )
+        .exclude(catalog_brand_name="")
+        .values("catalog_brand_name")
+        .distinct()
+        .count()
+    )
+
     return {
         "rebuild_started": True,
         "sitemap_url": sitemap_url,
@@ -45,6 +62,6 @@ def rebuild_sitemap() -> dict[str, object]:
         "brand_sitemap_enabled": bool(settings.brand_sitemap_enabled),
         "products_count": Product.objects.count(),
         "categories_count": Category.objects.count(),
-        "brands_count": Brand.objects.count(),
+        "brands_count": brand_count,
         "rebuilt_at": settings.sitemap_last_rebuild_at,
     }

@@ -1,17 +1,10 @@
 from __future__ import annotations
 
+from django.db import OperationalError, ProgrammingError
 from django.utils.text import slugify
 
 from apps.catalog.models import Brand
-from apps.supplier_imports.parsers.utils import normalize_brand
-
-
-def sanitize_brand_name(value: str) -> str:
-    return " ".join((value or "").strip().split())
-
-
-def normalized_brand_name(value: str) -> str:
-    return normalize_brand(sanitize_brand_name(value))
+from apps.catalog.services.brand_utils import normalized_brand_name, sanitize_brand_name
 
 
 def find_brand_by_normalized_name(*, name: str, exclude_brand_id: str | None = None) -> Brand | None:
@@ -19,7 +12,10 @@ def find_brand_by_normalized_name(*, name: str, exclude_brand_id: str | None = N
     if not target:
         return None
 
-    queryset = Brand.objects.all()
+    try:
+        queryset = Brand.objects.all()
+    except (OperationalError, ProgrammingError):
+        return None
     if exclude_brand_id:
         queryset = queryset.exclude(id=exclude_brand_id)
 
@@ -56,7 +52,10 @@ def generate_unique_brand_slug(
     def is_taken(value: str) -> bool:
         if reserved_slugs is not None and value in reserved_slugs:
             return True
-        queryset = Brand.objects.filter(slug=value)
+        try:
+            queryset = Brand.objects.filter(slug=value)
+        except (OperationalError, ProgrammingError):
+            return False
         if exclude_brand_id:
             queryset = queryset.exclude(id=exclude_brand_id)
         return queryset.exists()

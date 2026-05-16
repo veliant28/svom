@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from django.db import OperationalError, ProgrammingError
+
 from apps.autodb.models import AutoDbMatchJob
 from apps.catalog.models import Brand, Product
 from apps.catalog.services.product_sku import get_product_display_sku
@@ -312,10 +314,13 @@ class AutoDbProductSplitV2Planner:
     def _resolve_catalog_brand(self, normalized_brand: str) -> Brand | None:
         if not normalized_brand:
             return None
-        candidates = [
-            item for item in Brand.objects.all().only("id", "name")
-            if normalize_brand(str(item.name or "")) == normalized_brand
-        ]
+        try:
+            candidates = [
+                item for item in Brand.objects.all().only("id", "name")
+                if normalize_brand(str(item.name or "")) == normalized_brand
+            ]
+        except (OperationalError, ProgrammingError):
+            return None
         if len(candidates) == 1:
             return candidates[0]
         return None

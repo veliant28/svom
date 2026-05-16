@@ -7,7 +7,6 @@ from .autodb_vehicle_catalog_views import (
 )
 from .autodb_supplier_brands_views import BackofficeAutoDbSupplierBrandListAPIView
 from .brand_aliases_views import BrandAliasListCreateAPIView, BrandAliasRetrieveUpdateAPIView
-from .catalog_brands_views import BackofficeCatalogBrandListCreateAPIView, BackofficeCatalogBrandRetrieveUpdateDestroyAPIView
 from .catalog_categories_views import BackofficeCatalogCategoryListCreateAPIView, BackofficeCatalogCategoryRetrieveUpdateDestroyAPIView
 from .catalog_products_views import BackofficeCatalogProductListCreateAPIView, BackofficeCatalogProductRetrieveUpdateDestroyAPIView
 from .database_backup_views import DatabaseBackupRunAPIView, DatabaseBackupSettingsAPIView
@@ -198,8 +197,6 @@ __all__ = [
     "BackofficeAutoDbSupplierBrandListAPIView",
     "BrandAliasListCreateAPIView",
     "BrandAliasRetrieveUpdateAPIView",
-    "BackofficeCatalogBrandListCreateAPIView",
-    "BackofficeCatalogBrandRetrieveUpdateDestroyAPIView",
     "BackofficeCatalogCategoryListCreateAPIView",
     "BackofficeCatalogCategoryRetrieveUpdateDestroyAPIView",
     "BackofficeCatalogProductListCreateAPIView",

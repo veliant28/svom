@@ -9,7 +9,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from django.db import connections, transaction
+from django.db import OperationalError, ProgrammingError, connections, transaction
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 
@@ -462,15 +462,18 @@ class AutoDbDeterministicBrandBindingService:
         return out
 
     def _load_brand_stats(self) -> dict[int, dict[str, Any]]:
-        brand_rows = (
-            Brand.objects.annotate(
-                product_count=Count("products"),
-                products_missing_autodb_supplier_id=Count("products", filter=Q(products__autodb_supplier_id__isnull=True)),
-                manually_locked_count=Count("products", filter=Q(products__brand_manually_locked=True)),
+        try:
+            brand_rows = (
+                Brand.objects.annotate(
+                    product_count=Count("products"),
+                    products_missing_autodb_supplier_id=Count("products", filter=Q(products__autodb_supplier_id__isnull=True)),
+                    manually_locked_count=Count("products", filter=Q(products__brand_manually_locked=True)),
+                )
+                .filter(product_count__gt=0)
+                .values("id", "name", "product_count", "products_missing_autodb_supplier_id", "manually_locked_count")
             )
-            .filter(product_count__gt=0)
-            .values("id", "name", "product_count", "products_missing_autodb_supplier_id", "manually_locked_count")
-        )
+        except (OperationalError, ProgrammingError):
+            return {}
 
         supplier_rows = (
             Product.objects.filter(brand_id__in=[item["id"] for item in brand_rows], autodb_supplier_id__isnull=False)
@@ -891,9 +894,12 @@ class AutoDbDeterministicBrandBindingService:
 
         for label, names in groups:
             normalized_set = {normalize_brand(item) for item in names}
-            brand_ids = list(
-                Brand.objects.filter(name__in=names).values_list("id", flat=True)
-            )
+            try:
+                brand_ids = list(
+                    Brand.objects.filter(name__in=names).values_list("id", flat=True)
+                )
+            except (OperationalError, ProgrammingError):
+                brand_ids = []
             products = Product.objects.filter(brand_id__in=brand_ids)
             product_count = products.count()
             supplier_counts = Counter(int(item or 0) for item in products.values_list("autodb_supplier_id", flat=True))

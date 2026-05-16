@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import hashlib
 from typing import Any
 
+from django.db import OperationalError, ProgrammingError
 from django.db import transaction
 from django.utils.text import slugify
 
@@ -182,7 +183,9 @@ class AutoDbProductSplitPilotService:
         if len(moved_offers) != len(plan.moved_offer_ids):
             raise RuntimeError("moved offers changed after dry-run")
 
-        new_brand = Brand.objects.get(id=plan.proposed_new_brand_id)
+        new_brand_id = str(plan.proposed_new_brand_id or "").strip() or str(source.brand_id or "").strip()
+        if not new_brand_id:
+            raise RuntimeError("brand_not_resolved_for_split_pilot")
         rollback_fields = (
             "source_product_id",
             "new_product_id",
@@ -198,7 +201,7 @@ class AutoDbProductSplitPilotService:
                 article=plan.proposed_new_article,
                 name=plan.proposed_new_name,
                 slug=plan.proposed_new_slug,
-                brand=new_brand,
+                brand_id=new_brand_id,
                 category=source.category,
                 short_description=source.short_description,
                 description=source.description,
@@ -286,7 +289,10 @@ class AutoDbProductSplitPilotService:
     def _resolve_catalog_brand(self, brand_norm: str) -> Brand | None:
         if not brand_norm:
             return None
-        candidates = [item for item in Brand.objects.all().only("id", "name") if normalize_brand(str(item.name or "")) == brand_norm]
+        try:
+            candidates = [item for item in Brand.objects.all().only("id", "name") if normalize_brand(str(item.name or "")) == brand_norm]
+        except (OperationalError, ProgrammingError):
+            return None
         if len(candidates) == 1:
             return candidates[0]
         return None

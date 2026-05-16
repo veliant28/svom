@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from django.db import connections
+from django.db import OperationalError, ProgrammingError
 from django.db.models import Count, Q, Sum
 from openpyxl import Workbook
 
@@ -775,7 +776,11 @@ class AutoDbProductSplitV2BlockerDiagnosisService:
 
     def _brand_name_by_norm(self) -> dict[str, str]:
         out: dict[str, str] = {}
-        for row in Brand.objects.all().only("name"):
+        try:
+            rows = Brand.objects.all().only("name")
+        except (OperationalError, ProgrammingError):
+            return out
+        for row in rows:
             norm = normalize_brand(str(row.name or ""))
             if norm and norm not in out:
                 out[norm] = str(row.name or "")

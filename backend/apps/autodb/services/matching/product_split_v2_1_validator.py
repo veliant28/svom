@@ -8,6 +8,8 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
+from django.db import OperationalError, ProgrammingError
+
 from apps.catalog.models import Brand, Product
 from apps.pricing.models import ProductPrice, SupplierOffer
 from apps.supplier_imports.models import SupplierRawOffer
@@ -435,7 +437,10 @@ class AutoDbProductSplitV21Validator:
     def _brand_candidates(self, normalized: str) -> list[Brand]:
         if not normalized:
             return []
-        return [item for item in Brand.objects.only("id", "name").all() if normalize_brand(str(item.name or "")) == normalized]
+        try:
+            return [item for item in Brand.objects.only("id", "name").all() if normalize_brand(str(item.name or "")) == normalized]
+        except (OperationalError, ProgrammingError):
+            return []
 
     def _resolve_new_autodb_after(self, *, source: Product, move_brand_norm: str) -> tuple[int | None, str]:
         current_name = str(source.autodb_supplier_name or "")

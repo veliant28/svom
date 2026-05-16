@@ -197,7 +197,7 @@ class AutoDbBrandResolver:
             alias = queryset.order_by("-priority", "created_at").first()
             if alias is None:
                 return ""
-            return (alias.canonical_brand_name or (alias.canonical_brand.name if alias.canonical_brand_id else "")).strip()
+            return str(alias.canonical_brand_name or "").strip()
         except (ProgrammingError, OperationalError):
             return ""
 

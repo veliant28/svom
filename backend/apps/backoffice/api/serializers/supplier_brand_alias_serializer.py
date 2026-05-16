@@ -7,6 +7,7 @@ class SupplierBrandAliasSerializer(serializers.ModelSerializer):
     source_code = serializers.CharField(source="source.code", read_only=True)
     supplier_code = serializers.CharField(source="supplier.code", read_only=True)
     supplier_name = serializers.CharField(source="supplier.name", read_only=True)
+    canonical_brand = serializers.UUIDField(source="canonical_brand_id", required=False, allow_null=True)
     canonical_brand_label = serializers.SerializerMethodField()
 
     class Meta:
@@ -32,6 +33,4 @@ class SupplierBrandAliasSerializer(serializers.ModelSerializer):
         read_only_fields = ("normalized_alias", "created_at", "updated_at")
 
     def get_canonical_brand_label(self, obj: SupplierBrandAlias) -> str:
-        if obj.canonical_brand:
-            return obj.canonical_brand.name
-        return obj.canonical_brand_name
+        return str(obj.canonical_brand_name or "")

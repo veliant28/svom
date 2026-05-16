@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from apps.catalog.models import Product
-from apps.catalog.services.brand_management import sanitize_brand_name
+from apps.catalog.services.brand_utils import sanitize_brand_name
 
 
 @dataclass(frozen=True)

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 
+from django.db import OperationalError, ProgrammingError
+
 from apps.catalog.models import Brand
 from apps.catalog.services import (
     find_brand_by_normalized_name,
@@ -41,7 +43,10 @@ class UtrBrandImportService:
         source = get_import_source_by_code(source_code)
         supplier = source.supplier
 
-        existing_brands = list(Brand.objects.only("id", "name", "slug", "is_active"))
+        try:
+            existing_brands = list(Brand.objects.only("id", "name", "slug", "is_active"))
+        except (OperationalError, ProgrammingError):
+            existing_brands = []
         brands_by_normalized_name: dict[str, Brand] = {}
         used_slugs = {brand.slug for brand in existing_brands if brand.slug}
 
@@ -52,7 +57,6 @@ class UtrBrandImportService:
 
         existing_aliases = list(
             SupplierBrandAlias.objects.filter(source=source)
-            .select_related("canonical_brand")
             .only(
                 "id",
                 "source_id",
@@ -114,6 +118,9 @@ class UtrBrandImportService:
                     row_created = True
                     brands_by_normalized_name[normalized] = canonical_brand
                     created += 1
+                except (OperationalError, ProgrammingError):
+                    canonical_brand = None
+                    row_updated = True
                 except Exception:
                     fallback = find_brand_by_normalized_name(name=incoming_name)
                     if fallback is not None:

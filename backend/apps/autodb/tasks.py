@@ -180,7 +180,10 @@ def manual_bind_product_to_autodb_task(
                 manual_mapping_defaults["autodb_article_id"] = parsed_article_id
 
         AutoDbArticleManualMapping.objects.update_or_create(
-            normalized_brand=normalized_supplier or normalize_brand(getattr(product.brand, "name", "")),
+            normalized_brand=normalized_supplier
+            or normalize_brand(str(getattr(product, "display_brand_name", "") or ""))
+            or normalize_brand(str(getattr(product, "autodb_supplier_name", "") or ""))
+            or str(getattr(product, "normalized_brand", "") or ""),
             normalized_article=normalized_article,
             autodb_article_key=article_key,
             defaults=manual_mapping_defaults,

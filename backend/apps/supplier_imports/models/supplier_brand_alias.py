@@ -49,10 +49,8 @@ class SupplierBrandAlias(UUIDPrimaryKeyMixin, TimestampedMixin):
 
     def save(self, *args, **kwargs):
         self.normalized_alias = normalize_brand(self.supplier_brand_alias)[:180]
-        if self.canonical_brand and not self.canonical_brand_name:
-            self.canonical_brand_name = self.canonical_brand.name
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:
-        canonical = self.canonical_brand_name or (self.canonical_brand.name if self.canonical_brand else "")
+        canonical = self.canonical_brand_name
         return f"{self.supplier_brand_alias} -> {canonical or '-'}"

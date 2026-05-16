@@ -10,7 +10,7 @@ def get_import_schedule_sources_queryset() -> QuerySet[ImportSource]:
 
 
 def get_supplier_brand_aliases_queryset() -> QuerySet[SupplierBrandAlias]:
-    return SupplierBrandAlias.objects.select_related("source", "supplier", "canonical_brand").order_by(
+    return SupplierBrandAlias.objects.select_related("source", "supplier").order_by(
         "supplier__code",
         "source__code",
         "-priority",

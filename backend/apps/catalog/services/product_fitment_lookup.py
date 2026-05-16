@@ -265,7 +265,11 @@ def serialize_autodb_fitment_fallback_row(
 
 def _resolve_product_autodb_article_brand_pairs(*, product: Product) -> set[tuple[str, str]]:
     pairs: set[tuple[str, str]] = set()
-    fallback_brand = normalize_brand(getattr(product.brand, "name", ""))
+    fallback_brand = (
+        normalize_brand(str(getattr(product, "display_brand_name", "") or ""))
+        or normalize_brand(str(getattr(product, "autodb_supplier_name", "") or ""))
+        or str(getattr(product, "normalized_brand", "") or "").strip()
+    )
 
     product_article = normalize_article(product.article)
     if product_article and fallback_brand:

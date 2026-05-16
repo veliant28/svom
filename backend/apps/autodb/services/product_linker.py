@@ -171,7 +171,11 @@ class AutoDbProductLinkService:
 
     def link_product_by_id(self, *, product_id: str, dry_run: bool = False, allow_remote: bool = True) -> ProductLinkResult:
         product = Product.objects.get(pk=product_id)
-        brand_name = getattr(product.brand, "name", "")
+        brand_name = (
+            str(getattr(product, "display_brand_name", "") or "").strip()
+            or str(getattr(product, "autodb_supplier_name", "") or "").strip()
+            or str(getattr(product, "normalized_brand", "") or "").strip()
+        )
         article = product.article or product.sku
         return self.link_product(
             product=product,
@@ -235,7 +239,12 @@ class AutoDbProductLinkService:
         if raw_offer.matched_product is None:
             raise ValueError("Raw offer is not linked to a Product.")
 
-        brand_name = getattr(raw_offer.matched_product.brand, "name", "") or raw_offer.brand_name or raw_offer.normalized_brand
+        brand_name = (
+            str(getattr(raw_offer.matched_product, "display_brand_name", "") or "").strip()
+            or str(getattr(raw_offer.matched_product, "autodb_supplier_name", "") or "").strip()
+            or str(raw_offer.brand_name or "").strip()
+            or str(raw_offer.normalized_brand or "").strip()
+        )
         article = str(getattr(raw_offer.matched_product, "article", "") or "").strip()
         if not article:
             raise ValueError("Matched product has empty article in DB.")

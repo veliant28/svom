@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
+from django.db import OperationalError, ProgrammingError
 from django.db import transaction
 
 from apps.autodb.models import AutoDbMatchEvidence, AutoDbMatchJob
@@ -245,7 +246,10 @@ class AutoDbProductSplitV2Service:
         clean = str(name or "").strip()
         if not clean:
             return None
-        candidates = list(Brand.objects.filter(name__iexact=clean)[:2])
+        try:
+            candidates = list(Brand.objects.filter(name__iexact=clean)[:2])
+        except (OperationalError, ProgrammingError):
+            return None
         if len(candidates) == 1:
             return candidates[0]
         return None

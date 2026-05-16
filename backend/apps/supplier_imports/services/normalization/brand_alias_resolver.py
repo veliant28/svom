@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass
 
+from django.db import OperationalError, ProgrammingError
 from django.db.models import Q
 
 from apps.pricing.models import Supplier
@@ -61,7 +62,7 @@ class BrandAliasResolverService:
                 trace=trace,
             )
 
-        canonical = (alias.canonical_brand.name if alias.canonical_brand else alias.canonical_brand_name or original).strip()
+        canonical = str(alias.canonical_brand_name or original).strip()
         canonical_normalized = normalize_brand(canonical)
         trace.append(
             {
@@ -120,7 +121,7 @@ class BrandAliasResolverService:
             queryset = queryset.filter(source__isnull=True, supplier__isnull=True)
 
         try:
-            aliases = list(queryset.select_related("canonical_brand", "supplier", "source"))
+            aliases = list(queryset.select_related("supplier", "source"))
         except (ProgrammingError, OperationalError):
             # Brand alias table may be intentionally removed in default DB.
             self._alias_cache[cache_key] = None

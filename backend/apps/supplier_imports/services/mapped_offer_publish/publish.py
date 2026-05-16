@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from django.db import OperationalError, ProgrammingError
 from django.utils import timezone
 from django.utils.text import slugify
 
@@ -18,7 +19,11 @@ from . import selection
 
 def build_brand_cache() -> dict[str, Brand]:
     mapping: dict[str, Brand] = {}
-    for brand in Brand.objects.all().order_by("name").iterator(chunk_size=500):
+    try:
+        iterator = Brand.objects.all().order_by("name").iterator(chunk_size=500)
+    except (OperationalError, ProgrammingError):
+        return mapping
+    for brand in iterator:
         normalized = normalize_brand(brand.name)
         if normalized and normalized not in mapping:
             mapping[normalized] = brand
@@ -227,13 +232,16 @@ def resolve_brand(*, raw_offer: SupplierRawOffer, brand_cache: dict[str, Brand])
     if normalized in brand_cache:
         return brand_cache[normalized]
 
-    slug = generate_unique_brand_slug(source_name)
-    brand = Brand.objects.create(
-        name=source_name[:120],
-        slug=slug,
-        is_active=True,
-        published_at=timezone.now(),
-    )
+    try:
+        slug = generate_unique_brand_slug(source_name)
+        brand = Brand.objects.create(
+            name=source_name[:120],
+            slug=slug,
+            is_active=True,
+            published_at=timezone.now(),
+        )
+    except (OperationalError, ProgrammingError) as exc:
+        raise RuntimeError("catalog_brand_unavailable") from exc
     brand_cache[normalized] = brand
     return brand
 
@@ -267,8 +275,11 @@ def generate_unique_brand_slug(base_name: str) -> str:
     base = slugify(base_name).strip("-")[:130] or "brand"
     candidate = base
     index = 2
-    while Brand.objects.filter(slug=candidate).exists():
-        suffix = f"-{index}"
-        candidate = f"{base[: max(1, 140 - len(suffix))]}{suffix}"
-        index += 1
+    try:
+        while Brand.objects.filter(slug=candidate).exists():
+            suffix = f"-{index}"
+            candidate = f"{base[: max(1, 140 - len(suffix))]}{suffix}"
+            index += 1
+    except (OperationalError, ProgrammingError):
+        return candidate
     return candidate

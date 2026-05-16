@@ -175,7 +175,7 @@ class SupplierBrandMatcher:
         try:
             for item in scoped.order_by("-priority")[:5000]:
                 alias = normalize_brand_lookup_key(item.normalized_alias)
-                canonical = normalize_brand_lookup_key(item.canonical_brand_name or (item.canonical_brand.name if item.canonical_brand else ""))
+                canonical = normalize_brand_lookup_key(item.canonical_brand_name)
                 if alias and canonical and alias not in alias_map:
                     alias_map[alias] = canonical
         except (ProgrammingError, OperationalError):

@@ -3,21 +3,11 @@ import { normalizePaginatedListResponse } from "@/shared/api/normalize-list-resp
 
 import type {
   BackofficeAutoDbSupplierBrand,
-  BackofficeCatalogBrand,
   BackofficeCatalogCategory,
   BackofficeCatalogProduct,
 } from "@/features/backoffice/types/backoffice";
 
 import type { BackofficeListQuery } from "./backoffice-api.types";
-
-export async function getBackofficeCatalogBrands(token: string, params?: BackofficeListQuery) {
-  const data = await getJson<BackofficeCatalogBrand[] | { results: BackofficeCatalogBrand[]; count: number }>(
-    "/backoffice/brands/",
-    params,
-    { token },
-  );
-  return normalizePaginatedListResponse(data);
-}
 
 export async function getBackofficeAutoDbSupplierBrands(token: string, params?: BackofficeListQuery) {
   const data = await getJson<BackofficeAutoDbSupplierBrand[] | { results: BackofficeAutoDbSupplierBrand[]; count: number }>(
@@ -26,28 +16,6 @@ export async function getBackofficeAutoDbSupplierBrands(token: string, params?: 
     { token },
   );
   return normalizePaginatedListResponse(data);
-}
-
-export async function createBackofficeCatalogBrand(
-  token: string,
-  payload: Partial<BackofficeCatalogBrand>,
-): Promise<BackofficeCatalogBrand> {
-  return postJson<BackofficeCatalogBrand, typeof payload>("/backoffice/brands/", payload, undefined, { token });
-}
-
-export async function updateBackofficeCatalogBrand(
-  token: string,
-  brandId: string,
-  payload: Partial<BackofficeCatalogBrand>,
-): Promise<BackofficeCatalogBrand> {
-  return patchJson<BackofficeCatalogBrand, typeof payload>(`/backoffice/brands/${brandId}/`, payload, undefined, { token });
-}
-
-export async function deleteBackofficeCatalogBrand(
-  token: string,
-  brandId: string,
-): Promise<void> {
-  return deleteJson<void>(`/backoffice/brands/${brandId}/`, undefined, { token });
 }
 
 export async function getBackofficeCatalogCategories(token: string, params?: BackofficeListQuery) {

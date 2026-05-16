@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from django.db.models import Count
+from django.db.models.functions import Coalesce
+from django.db.models import Value, CharField
 
-from apps.catalog.models import Brand, Category, Product
+from apps.catalog.models import Category, Product
 from apps.seo.models import SeoMetaOverride, SeoMetaTemplate
 from apps.seo.selectors.settings_selectors import (
     get_google_integration_settings,
@@ -18,7 +20,20 @@ def get_seo_dashboard_payload() -> dict:
 
     product_count = Product.objects.count()
     category_count = Category.objects.count()
-    brand_count = Brand.objects.count()
+    brand_count = (
+        Product.objects.annotate(
+            catalog_brand_name=Coalesce(
+                "display_brand_name",
+                "autodb_supplier_name",
+                "normalized_brand",
+                Value("", output_field=CharField()),
+            )
+        )
+        .exclude(catalog_brand_name="")
+        .values("catalog_brand_name")
+        .distinct()
+        .count()
+    )
     active_overrides = SeoMetaOverride.objects.filter(is_active=True).count()
     active_templates = SeoMetaTemplate.objects.filter(is_active=True).count()
 
