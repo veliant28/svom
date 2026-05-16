@@ -11,7 +11,7 @@ def recalculate_product_prices_task(
     source: str = PriceHistory.SOURCE_AUTO,
     trigger_note: str = "task:recalculate_product_prices",
 ) -> dict[str, int]:
-    queryset = Product.objects.filter(is_active=True).select_related("brand", "category")
+    queryset = Product.objects.filter(is_active=True).select_related("category")
     if product_ids:
         queryset = queryset.filter(id__in=product_ids)
 

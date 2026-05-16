@@ -21,14 +21,14 @@
         },
         "placeholders": {
           "workingHours": "ПН, ВТ, СР, ЧТ, ПТ, СБ 10:00-17:00",
-          "phone": "38(0XX)XXX-XX-XX"
+          "phone": "38 (0XX) XXX-XX-XX"
         },
         "hints": {
-          "phoneMask": "Формат: 38(0XX)XXX-XX-XX. Якщо ввести 066..., автоматично підставиться 38."
+          "phoneMask": "Формат: 38 (0XX) XXX-XX-XX. Якщо ввести 066..., автоматично підставиться 38."
         },
         "validation": {
           "daysRequired": "Оберіть хоча б один день тижня.",
-          "phoneIncomplete": "Введіть повний номер телефону у форматі 38(0XX)XXX-XX-XX."
+          "phoneIncomplete": "Введіть повний номер телефону у форматі 38 (0XX) XXX-XX-XX."
         },
         "actions": {
           "save": "Зберегти",

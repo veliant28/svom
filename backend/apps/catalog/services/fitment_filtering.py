@@ -84,18 +84,18 @@ class FitmentFilteringService:
             autodb_article_key=OuterRef("autodb_article_key"),
             status=AutoDbProductLinkQuality.STATUS_TRUSTED,
         )
-        fitments_subquery = ProductFitment.objects.filter(
+        fitments_any_subquery = ProductFitment.objects.filter(
             product_id=OuterRef("pk"),
             source=ProductFitment.SOURCE_AUTODB_PRO,
-            linkage_type__iexact="PassengerCar",
             autodb_passanger_car_id__isnull=False,
             is_stale=False,
             excluded_from_public_filtering=False,
             quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
         )
+        passenger_fitments_subquery = fitments_any_subquery.filter(linkage_type__iexact="PassengerCar")
         queryset = queryset.annotate(
             _has_trusted_link_quality=Exists(trusted_link_subquery),
-            _has_fitment_relations=Exists(fitments_subquery),
+            _has_fitment_relations=Exists(fitments_any_subquery),
         )
         queryset = queryset.annotate(
             has_fitment_data=Case(
@@ -105,7 +105,7 @@ class FitmentFilteringService:
             )
         )
         if selected_passanger_car_id:
-            selected_fitments = fitments_subquery.filter(autodb_passanger_car_id=selected_passanger_car_id)
+            selected_fitments = passenger_fitments_subquery.filter(autodb_passanger_car_id=selected_passanger_car_id)
             queryset = queryset.annotate(_fits_selected_vehicle_rel=Exists(selected_fitments))
             return queryset.annotate(
                 fits_selected_vehicle=Case(

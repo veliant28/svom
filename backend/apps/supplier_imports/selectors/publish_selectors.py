@@ -16,7 +16,6 @@ def get_supplier_raw_offers_publish_queryset(
             "supplier",
             "mapped_category",
             "matched_product",
-            "matched_product__brand",
             "matched_product__category",
         )
         .filter(supplier__code=supplier_code)

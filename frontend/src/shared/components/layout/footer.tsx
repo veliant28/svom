@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useFooterSettings } from "@/features/marketing/hooks/use-footer-settings";
 import { Link } from "@/i18n/navigation";
+import { formatFooterPhoneDisplay } from "@/shared/lib/footer-phone";
 
 export function Footer() {
   const t = useTranslations("common");
@@ -12,7 +13,7 @@ export function Footer() {
   const { settings } = useFooterSettings();
   const canAccessBackoffice = Boolean(user?.has_backoffice_access);
   const workingHoursValue = (settings?.working_hours || "").trim() || t("footer.workingHoursValue");
-  const phoneValue = (settings?.phone || "").trim() || t("footer.phoneValue");
+  const phoneValue = formatFooterPhoneDisplay(settings?.phone || "") || t("footer.phoneValue");
   const phoneHref = `tel:${phoneValue.replace(/[^\d+]/g, "")}`;
 
   return (

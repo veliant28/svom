@@ -170,6 +170,13 @@ def get_product_internal_import_key(product: Product) -> str:
     return _clean(getattr(product, "sku", ""))
 
 
+def get_product_catalog_article(product: Product) -> str:
+    article = _clean(getattr(product, "article", ""))
+    if article:
+        return article
+    return _clean(getattr(product, "autodb_article_number", ""))
+
+
 def get_product_manufacturer_article(product: Product) -> str:
     display_sku = get_product_display_sku(product)
 

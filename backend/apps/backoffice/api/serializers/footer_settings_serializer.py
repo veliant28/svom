@@ -3,6 +3,7 @@ from __future__ import annotations
 from rest_framework import serializers
 
 from apps.marketing.models import FooterSettings
+from apps.marketing.services.footer_phone import format_footer_phone, normalize_footer_phone
 
 
 class BackofficeFooterSettingsSerializer(serializers.ModelSerializer):
@@ -23,4 +24,12 @@ class BackofficeFooterSettingsSerializer(serializers.ModelSerializer):
         normalized = str(value or "").strip()
         if not normalized:
             raise serializers.ValidationError("Phone is required.")
-        return normalized
+        try:
+            return normalize_footer_phone(normalized)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc))
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["phone"] = format_footer_phone(str(data.get("phone") or ""))
+        return data

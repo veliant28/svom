@@ -240,12 +240,11 @@ class BackofficeAutoDbMatchingProductLookupAPIView(BackofficeAPIView):
             return Response({"count": 0, "results": []})
 
         qs = (
-            Product.objects.select_related("brand")
-            .filter(
+            Product.objects.filter(
                 Q(svom_sku__icontains=query)
                 | Q(sku__icontains=query)
                 | Q(name__icontains=query)
-                | Q(brand__name__icontains=query)
+                | Q(display_brand_name__icontains=query)
             )
             .order_by("-updated_at")[:limit]
         )
@@ -255,7 +254,7 @@ class BackofficeAutoDbMatchingProductLookupAPIView(BackofficeAPIView):
                 "sku": safe_str(item.sku),
                 "svom_sku": safe_str(item.svom_sku),
                 "name": safe_str(item.name),
-                "brand_name": safe_str(getattr(item.brand, "name", "")),
+                "brand_name": safe_str(item.display_brand_name or item.autodb_supplier_name or ""),
             }
             for item in qs
         ]
@@ -284,7 +283,7 @@ class BackofficeAutoDbMatchingManualSearchCreateJobAPIView(BackofficeAPIView):
         if not article:
             return Response({"detail": "article is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        product = Product.objects.select_related("brand").filter(pk=product_id).first()
+        product = Product.objects.filter(pk=product_id).first()
         if product is None:
             return Response({"detail": "product not found"}, status=status.HTTP_404_NOT_FOUND)
 

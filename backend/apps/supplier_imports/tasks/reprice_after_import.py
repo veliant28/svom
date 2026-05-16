@@ -20,7 +20,7 @@ def reprice_after_import_task(
     if not product_ids:
         return {"repriced": 0, "skipped": 0, "errors": 0}
 
-    queryset = Product.objects.filter(id__in=product_ids).select_related("brand", "category")
+    queryset = Product.objects.filter(id__in=product_ids).select_related("category")
     stats = ProductRepricer().recalculate_products(
         queryset,
         source=PriceHistory.SOURCE_IMPORT,

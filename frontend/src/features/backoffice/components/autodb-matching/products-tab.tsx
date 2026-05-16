@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
-import { getAutoDbMatchingJobs } from "@/features/backoffice/api/backoffice-api";
+import { getAutoDbMatchingJobs, getAutoDbTecdocBatchState, runAutoDbTecdocBatch } from "@/features/backoffice/api/backoffice-api";
+import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
 import { useBackofficeQuery } from "@/features/backoffice/hooks/use-backoffice-query";
 import type { AutoDbJobsResponse, AutoDbProductJob } from "@/features/backoffice/types/backoffice";
 
@@ -22,19 +23,6 @@ const DEFAULT_FILTERS: AutoDbMatchingProductsFilterState = {
   supplier_code: "",
   matching_status: "",
   tecdoc_status: "",
-  flag: "",
-};
-
-const FLAG_PARAM_MAP: Record<
-  Exclude<AutoDbMatchingProductsFilterState["flag"], "">,
-  "only_safe_candidates" | "needs_review" | "quota_paused" | "bad_article_source" | "split_needed" | "unsafe_ambiguous"
-> = {
-  only_safe_candidates: "only_safe_candidates",
-  needs_review: "needs_review",
-  quota_paused: "quota_paused",
-  bad_article_source: "bad_article_source",
-  split_needed: "split_needed",
-  unsafe_ambiguous: "unsafe_ambiguous",
 };
 
 export function AutoDbMatchingProductsTab({
@@ -45,9 +33,12 @@ export function AutoDbMatchingProductsTab({
   refreshNonce: number;
 }) {
   const t = useTranslations("backoffice.autodbMatching");
+  const { showApiError, showSuccess, showWarning } = useBackofficeFeedback();
   const [filters, setFilters] = useState<AutoDbMatchingProductsFilterState>(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<AutoDbMatchingProductsPageSize>(25);
+  const [batchSize, setBatchSize] = useState(200);
+  const [isBatchSubmitting, setIsBatchSubmitting] = useState(false);
   const [drawerJobId, setDrawerJobId] = useState<string | null>(null);
 
   const params = useMemo(() => {
@@ -68,21 +59,46 @@ export function AutoDbMatchingProductsTab({
         payload[key] = value;
       }
     }
-    if (filters.flag) {
-      payload[FLAG_PARAM_MAP[filters.flag]] = true;
-    }
     return payload;
   }, [filters, page, pageSize]);
 
-  const queryFn = useCallback((token: string) => getAutoDbMatchingJobs(token, params), [params]);
-  const { data, isLoading, error, refetch } = useBackofficeQuery<AutoDbJobsResponse>(queryFn, [params]);
+  const jobsQueryFn = useCallback((token: string) => getAutoDbMatchingJobs(token, params), [params]);
+  const { token, data, isLoading, error, refetch } = useBackofficeQuery<AutoDbJobsResponse>(jobsQueryFn, [params]);
+  const batchStateQueryFn = useCallback((apiToken: string) => getAutoDbTecdocBatchState(apiToken), []);
+  const { data: batchState, refetch: refetchBatchState } = useBackofficeQuery(batchStateQueryFn, [refreshNonce]);
 
   useEffect(() => {
     if (refreshNonce <= 0) {
       return;
     }
     void refetch();
-  }, [refreshNonce, refetch]);
+    void refetchBatchState();
+  }, [refreshNonce, refetch, refetchBatchState]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      void refetchBatchState();
+    }, 5000);
+    return () => window.clearInterval(intervalId);
+  }, [refetchBatchState]);
+
+  const runTecdocBatch = useCallback(async () => {
+    if (!token) return;
+    setIsBatchSubmitting(true);
+    try {
+      const response = await runAutoDbTecdocBatch(token, { batch_size: batchSize });
+      if (response.status === "already_running") {
+        showWarning(t("toasts.batchAlreadyRunning"));
+      } else {
+        showSuccess(t("toasts.batchQueued"));
+      }
+      await Promise.all([refetchBatchState(), refetch()]);
+    } catch (err) {
+      showApiError(err, t("toasts.apiError"));
+    } finally {
+      setIsBatchSubmitting(false);
+    }
+  }, [batchSize, refetch, refetchBatchState, showApiError, showSuccess, showWarning, t, token]);
 
   const rows = data?.results ?? [];
   const totalCount = data?.count ?? 0;
@@ -98,6 +114,8 @@ export function AutoDbMatchingProductsTab({
     setPage(1);
   }, []);
 
+  const isTecdocBatchRunning = Boolean(batchState?.running);
+
   return (
     <>
       <AutoDbMatchingProductsFilters
@@ -107,6 +125,11 @@ export function AutoDbMatchingProductsTab({
         pageSizeOptions={PAGE_SIZE_OPTIONS}
         onFilterChange={onFilterChange}
         onPageSizeChange={onPageSizeChange}
+        batchSize={batchSize}
+        onBatchSizeChange={setBatchSize}
+        onRunTecdocBatch={() => void runTecdocBatch()}
+        isTecdocBatchRunning={isTecdocBatchRunning}
+        isBatchSubmitting={isBatchSubmitting}
       />
 
       <AutoDbMatchingProductsTable

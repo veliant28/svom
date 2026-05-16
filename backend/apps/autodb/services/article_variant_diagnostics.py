@@ -145,7 +145,7 @@ class AutoDbArticleVariantDiagnosticsService:
         batch_size: int = 1000,
     ) -> ArticleVariantDiagnosticsReport:
         offers = list(self._build_queryset(supplier_code=supplier_code, limit=limit, brand_filter=brand_filter))
-        buckets, _, failed_build = self.enrichment_service.build_pair_buckets(offers=offers)
+        buckets, _, failed_build, _skipped_non_tecdoc = self.enrichment_service.build_pair_buckets(offers=offers, tecdoc_only=False)
 
         resolutions: list[PairResolution] = []
         unresolved_by_chunk: list[int] = []

@@ -149,8 +149,8 @@ class AutoDbProductSplitV2PostPilotsQueueService:
     def _pilots_state_rows(self, pilots: list[dict[str, Any]]) -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = []
         for idx, pilot in enumerate(pilots, start=1):
-            source = Product.objects.select_related("brand").get(id=pilot["source_product_id"])
-            new = Product.objects.select_related("brand").get(id=pilot["new_product_id"])
+            source = Product.objects.get(id=pilot["source_product_id"])
+            new = Product.objects.get(id=pilot["new_product_id"])
 
             source_offers = list(SupplierOffer.objects.filter(product=source).select_related("supplier").order_by("id"))
             new_offers = list(SupplierOffer.objects.filter(product=new).select_related("supplier").order_by("id"))
@@ -170,7 +170,7 @@ class AutoDbProductSplitV2PostPilotsQueueService:
                     "internal_sku": str(source.sku or ""),
                     "public_sku": str(source.svom_sku or ""),
                     "display_sku_runtime": get_product_display_sku(source),
-                    "brand": str(source.brand.name or ""),
+                    "brand": str(source.display_brand_name or source.autodb_supplier_name or "" or ""),
                     "display_brand_name": str(source.display_brand_name or ""),
                     "autodb_supplier_id": int(source.autodb_supplier_id or 0),
                     "supplier_offer_ids": ",".join(str(item.id) for item in source_offers),
@@ -198,7 +198,7 @@ class AutoDbProductSplitV2PostPilotsQueueService:
                     "internal_sku": str(new.sku or ""),
                     "public_sku": str(new.svom_sku or ""),
                     "display_sku_runtime": get_product_display_sku(new),
-                    "brand": str(new.brand.name or ""),
+                    "brand": str(new.display_brand_name or new.autodb_supplier_name or "" or ""),
                     "display_brand_name": str(new.display_brand_name or ""),
                     "autodb_supplier_id": int(new.autodb_supplier_id or 0),
                     "supplier_offer_ids": ",".join(str(item.id) for item in new_offers),
@@ -535,7 +535,7 @@ class AutoDbProductSplitV2PostPilotsQueueService:
         return "\n".join(lines)
 
     def _simulate_without_quarantine(self, *, product_id: str) -> list[dict[str, Any]]:
-        offers = list(SupplierOffer.objects.select_related("supplier", "product", "product__brand").filter(product_id=product_id).order_by("-updated_at"))
+        offers = list(SupplierOffer.objects.select_related("supplier", "product").filter(product_id=product_id).order_by("-updated_at"))
         if not offers:
             return []
         raw_map = self.builder._latest_raw_offer_map(offers=offers)  # noqa: SLF001

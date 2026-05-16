@@ -77,7 +77,7 @@ class AutoDbProductSplitV22DisplayOnlyPlanner:
             keep_group=candidate.keep_group,
             move_group=candidate.move_group,
         )
-        source = Product.objects.select_related("brand").filter(id=candidate.product_id).first()
+        source = Product.objects.filter(id=candidate.product_id).first()
 
         blockers = set(strict.blockers)
 

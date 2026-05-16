@@ -27,7 +27,7 @@ def build_brand_cache() -> dict[str, Brand]:
 
 def build_product_cache() -> dict[str, Product]:
     mapping: dict[str, Product] = {}
-    queryset = Product.objects.select_related("brand", "category").order_by("sku")
+    queryset = Product.objects.select_related("category").order_by("sku")
     for product in queryset.iterator(chunk_size=500):
         mapping[product.sku] = product
     return mapping

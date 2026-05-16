@@ -1,3 +1,8 @@
+import { LoaderCircle, Play } from "lucide-react";
+
+import { PercentStepper } from "@/features/backoffice/components/pricing/percent-stepper";
+import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
+
 import { surfaceStyle } from "./ui";
 
 export type AutoDbMatchingProductsPageSize = 25 | 50 | 100;
@@ -7,17 +12,19 @@ export type AutoDbMatchingProductsFilterState = {
   supplier_code: "" | "gpl" | "utr";
   matching_status: string;
   tecdoc_status: "" | "tecdoc" | "non_tecdoc" | "unknown";
-  flag: "" | "only_safe_candidates" | "needs_review" | "quota_paused" | "bad_article_source" | "split_needed" | "unsafe_ambiguous";
 };
 
 type Translator = (key: string, values?: Record<string, string | number>) => string;
+
+function clampBatchSize(value: number): number {
+  const numeric = Number.isFinite(value) ? Math.round(value) : 200;
+  return Math.max(10, Math.min(1000, numeric));
+}
 
 const STATUS_OPTIONS = [
   "new",
   "local_found",
   "remote_found",
-  "clone_synced",
-  "safe_link_candidate",
   "needs_review",
   "quota_paused",
   "skipped_bad_article_source",
@@ -49,6 +56,11 @@ export function AutoDbMatchingProductsFilters({
   pageSizeOptions,
   onFilterChange,
   onPageSizeChange,
+  batchSize,
+  onBatchSizeChange,
+  onRunTecdocBatch,
+  isTecdocBatchRunning,
+  isBatchSubmitting,
 }: {
   t: Translator;
   filters: AutoDbMatchingProductsFilterState;
@@ -56,7 +68,13 @@ export function AutoDbMatchingProductsFilters({
   pageSizeOptions: readonly AutoDbMatchingProductsPageSize[];
   onFilterChange: <K extends keyof AutoDbMatchingProductsFilterState>(key: K, value: AutoDbMatchingProductsFilterState[K]) => void;
   onPageSizeChange: (value: AutoDbMatchingProductsPageSize) => void;
+  batchSize: number;
+  onBatchSizeChange: (value: number) => void;
+  onRunTecdocBatch: () => void;
+  isTecdocBatchRunning: boolean;
+  isBatchSubmitting: boolean;
 }) {
+  const isBatchDisabled = isTecdocBatchRunning || isBatchSubmitting;
   return (
     <section className="mb-3 flex items-center gap-2">
       <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-1">
@@ -122,20 +140,35 @@ export function AutoDbMatchingProductsFilters({
           <option value="unknown">{t("filters.unknownReview")}</option>
         </select>
 
-        <select
-          value={filters.flag}
-          onChange={(event) => onFilterChange("flag", event.target.value as AutoDbMatchingProductsFilterState["flag"])}
-          className="h-10 w-[180px] rounded-md border px-2 text-sm shrink-0"
-          style={surfaceStyle}
-        >
-          <option value="">{t("filters.all")}</option>
-          <option value="only_safe_candidates">{t("filters.only_safe_candidates")}</option>
-          <option value="needs_review">{t("filters.needs_review")}</option>
-          <option value="quota_paused">{t("filters.quota_paused")}</option>
-          <option value="bad_article_source">{t("filters.bad_article_source")}</option>
-          <option value="split_needed">{t("filters.split_needed")}</option>
-          <option value="unsafe_ambiguous">{t("filters.unsafe_ambiguous")}</option>
-        </select>
+        <PercentStepper
+          value={clampBatchSize(batchSize)}
+          onChange={(next) => onBatchSizeChange(clampBatchSize(next))}
+          min={10}
+          max={1000}
+          step={10}
+          minusLabel={t("actions.batchSizeMinus")}
+          plusLabel={t("actions.batchSizePlus")}
+          inputLabel={t("actions.batchSizeInput")}
+          suffix=""
+          inputMode="numeric"
+          integerOnly
+          inputWidthClassName="w-14"
+          containerClassName="shrink-0"
+          disabled={isBatchDisabled}
+        />
+
+        <BackofficeTooltip content={t("actions.runTecdocBatch")} placement="top" align="center" wrapperClassName="inline-flex">
+          <button
+            type="button"
+            aria-label={t("actions.runTecdocBatch")}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md border shrink-0 disabled:cursor-not-allowed disabled:opacity-60"
+            style={surfaceStyle}
+            disabled={isBatchDisabled}
+            onClick={onRunTecdocBatch}
+          >
+            {isBatchDisabled ? <LoaderCircle size={16} className="animate-spin" /> : <Play size={16} />}
+          </button>
+        </BackofficeTooltip>
 
       </div>
 

@@ -109,12 +109,26 @@ export function AutoDbMatchingSearchTab({
         article,
       };
       const details: AutoDbSearchResult[] = [];
+      let hasLocalRows = false;
       if (source === "local" || source === "both") {
-        details.push(...(await manualAutoDbSearchLocal(quotaQuery.token, body)).results);
+        const localResponse = await manualAutoDbSearchLocal(quotaQuery.token, body);
+        const localRows = localResponse.results ?? [];
+        if (localRows.length > 0) {
+          hasLocalRows = true;
+          details.push(...localRows);
+        }
       }
       if (source === "remote" || source === "both") {
-        details.push(...(await manualAutoDbSearchRemote(quotaQuery.token, body)).results);
-        await quotaQuery.refetch();
+        try {
+          const remoteResponse = await manualAutoDbSearchRemote(quotaQuery.token, body);
+          details.push(...(remoteResponse.results ?? []));
+          await quotaQuery.refetch();
+        } catch (err) {
+          if (!hasLocalRows) {
+            throw err;
+          }
+          showWarning(t("toasts.apiError"));
+        }
       }
       const first = details
         .slice()
@@ -477,6 +491,7 @@ function ResultDetails({
     if (selectedModel && model !== selectedModel) return false;
     return true;
   });
+  const totalFitmentsCount = Math.max(Number(result.fitments_available_count || 0), compatibility.length);
 
   return (
     <div className="grid min-h-0 auto-rows-min content-start gap-2 overflow-auto">
@@ -668,7 +683,7 @@ function ResultDetails({
         </div>
 
         <p className="mt-2 text-xs" style={{ color: "var(--muted)" }}>
-          {t("search.fitmentRows", { count: visibleFitments.length })}
+          {t("search.fitmentRows", { count: totalFitmentsCount })}
         </p>
 
         {visibleFitments.length ? (

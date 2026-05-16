@@ -157,7 +157,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   }, [fitmentOptions, selectedVehicleApplied]);
 
   useEffect(() => {
-    if (!product || (!selectedMake && !selectedModel)) {
+    if (!product) {
       setRemoteFitments(null);
       setRemoteFitmentCount(null);
       return;
@@ -272,7 +272,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   const identityParts = buildProductIdentityParts({
     sku: product.sku,
     brandName: product.brand?.name,
-    manufacturerArticle: product.manufacturer_article || product.article,
+    manufacturerArticle: product.article || product.manufacturer_article,
   });
   const compatibilitySummary = product.compatibility_summary;
   const selectedVehicle = compatibilitySummary?.selected_vehicle || null;

@@ -177,7 +177,7 @@ class AutoDbProductSplitPilotService:
         if not plan.clean:
             raise RuntimeError(f"split pilot dry-run not clean: {list(plan.safety_blockers)}")
 
-        source = Product.objects.select_related("brand", "category").get(id=plan.source_product_id)
+        source = Product.objects.select_related("category").get(id=plan.source_product_id)
         moved_offers = list(SupplierOffer.objects.select_related("supplier").filter(id__in=list(plan.moved_offer_ids), product=source))
         if len(moved_offers) != len(plan.moved_offer_ids):
             raise RuntimeError("moved offers changed after dry-run")

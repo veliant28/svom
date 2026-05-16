@@ -35,9 +35,9 @@
   --hero-fallback-text: #f8fafc;
   --hero-slide-text: #f8fafc;
   --hero-subtitle-text: rgba(226, 232, 240, 0.88);
-  --page-bg-layer-1: radial-gradient(120% 140% at 8% 4%, rgba(255, 166, 77, 0.26) 0%, rgba(255, 166, 77, 0) 54%);
-  --page-bg-layer-2: radial-gradient(120% 140% at 94% 12%, rgba(56, 189, 248, 0.2) 0%, rgba(56, 189, 248, 0) 58%);
-  --page-bg-layer-3: linear-gradient(135deg, #f4f6f7 0%, #e6edf3 48%, #dbe4ed 100%);
+  --page-bg-layer-1: radial-gradient(135% 165% at 8% 4%, rgba(255, 166, 77, 0.34) 0%, rgba(255, 166, 77, 0.12) 28%, rgba(255, 166, 77, 0) 58%);
+  --page-bg-layer-2: radial-gradient(140% 165% at 94% 12%, rgba(56, 189, 248, 0.3) 0%, rgba(56, 189, 248, 0.12) 30%, rgba(56, 189, 248, 0) 62%);
+  --page-bg-layer-3: linear-gradient(132deg, #f7fafc 0%, #eaf2f8 38%, #dce7f1 64%, #f3f7fb 100%);
   --footer-bg-layer-1: radial-gradient(130% 180% at 0% 0%, rgba(72, 118, 162, 0.3) 0%, rgba(72, 118, 162, 0) 62%);
   --footer-bg-layer-2: radial-gradient(130% 180% at 100% 100%, rgba(197, 118, 86, 0.28) 0%, rgba(197, 118, 86, 0) 62%);
   --footer-bg-layer-3: linear-gradient(120deg, #223240 0%, #32485a 46%, #3e5a70 100%);
@@ -79,9 +79,9 @@
   --hero-fallback-text: #f8fafc;
   --hero-slide-text: #f8fafc;
   --hero-subtitle-text: rgba(226, 232, 240, 0.9);
-  --page-bg-layer-1: radial-gradient(125% 145% at 10% 0%, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0) 56%);
-  --page-bg-layer-2: radial-gradient(120% 145% at 90% 10%, rgba(56, 189, 248, 0.18) 0%, rgba(56, 189, 248, 0) 58%);
-  --page-bg-layer-3: linear-gradient(135deg, #101619 0%, #18242b 45%, #121d23 100%);
+  --page-bg-layer-1: radial-gradient(140% 170% at 8% 2%, rgba(245, 158, 11, 0.28) 0%, rgba(245, 158, 11, 0.08) 24%, rgba(245, 158, 11, 0) 58%);
+  --page-bg-layer-2: radial-gradient(145% 170% at 92% 8%, rgba(56, 189, 248, 0.3) 0%, rgba(56, 189, 248, 0.1) 26%, rgba(56, 189, 248, 0) 60%);
+  --page-bg-layer-3: linear-gradient(132deg, #0c1216 0%, #152129 38%, #1a2b34 62%, #111a21 100%);
   --footer-bg-layer-1: radial-gradient(130% 180% at 0% 0%, rgba(77, 121, 166, 0.32) 0%, rgba(77, 121, 166, 0) 62%);
   --footer-bg-layer-2: radial-gradient(130% 180% at 100% 100%, rgba(196, 116, 84, 0.28) 0%, rgba(196, 116, 84, 0) 62%);
   --footer-bg-layer-3: linear-gradient(120deg, #1b252d 0%, #2e3d48 45%, #3a4d59 100%);
@@ -104,7 +104,6 @@ body {
   font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   background-image: var(--page-bg-layer-1), var(--page-bg-layer-2), var(--page-bg-layer-3);
   background-size: 220% 220%, 210% 210%, 170% 170%;
-  animation: pageCanvasShift 26s cubic-bezier(0.42, 0, 0.2, 1) infinite;
   color: var(--text);
 }
 
@@ -356,7 +355,6 @@ label:has(select:disabled) {
   margin-top: 4.8rem;
   transform-origin: top center;
   transform: perspective(900px) rotateX(2deg) rotateZ(-4deg);
-  animation: headerStickerRustle 4s ease-in-out infinite;
   color: #101013;
   transition: transform 150ms ease, box-shadow 150ms ease;
   pointer-events: auto;
@@ -666,7 +664,6 @@ label:has(select:disabled) {
     radial-gradient(135% 180% at 100% 100%, rgba(14, 165, 233, 0.14) 0%, rgba(14, 165, 233, 0) 58%),
     linear-gradient(120deg, #d8e3ee 0%, #b8c9d9 48%, #8ea4ba 100%);
   background-size: 220% 220%, 220% 220%, 180% 180%;
-  animation: heroFallbackShift 13s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .theme-dark .hero-fallback-surface {
@@ -714,7 +711,7 @@ label:has(select:disabled) {
     var(--footer-bg-layer-2),
     var(--footer-bg-layer-3);
   background-size: 210% 210%, 210% 210%, 170% 170%;
-  animation: footerHeroShift 20s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: footerHeroShift 36s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .header-dropdown {

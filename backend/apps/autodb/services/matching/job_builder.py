@@ -108,7 +108,7 @@ class AutoDbMatchJobBuilder:
         return rows
 
     def _latest_offers(self, *, supplier_code: str, limit: int) -> Iterable[SupplierOffer]:
-        queryset: QuerySet[SupplierOffer] = SupplierOffer.objects.select_related("supplier", "product", "product__brand").order_by(
+        queryset: QuerySet[SupplierOffer] = SupplierOffer.objects.select_related("supplier", "product").order_by(
             "-last_seen_at", "-updated_at"
         )
         if supplier_code:
@@ -423,7 +423,7 @@ class AutoDbMatchJobBuilder:
     def _raw_brand(self, *, product: Product, raw_offer: SupplierRawOffer | None) -> str:
         if raw_offer is not None and raw_offer.brand_name:
             return raw_offer.brand_name
-        return product.display_brand_name or product.normalized_brand or product.brand.name
+        return product.display_brand_name or product.normalized_brand or product.display_brand_name or product.autodb_supplier_name or ""
 
     def _trusted_link_map(self, *, offers: list[SupplierOffer]) -> dict[str, bool]:
         if not offers:

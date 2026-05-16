@@ -58,60 +58,28 @@ class OfferMatcherServiceTests(TestCase):
         self.assertIsNone(decision.matched_product)
         self.assertGreaterEqual(len(decision.candidate_products), 2)
 
-    def test_specific_external_sku_resolves_duplicate_article(self):
-        duplicate = Product.objects.create(
-            sku="AR-20488-X",
-            article="AR-20488",
-            name="Another ARAL",
-            slug="another-aral",
-            brand=self.product.brand,
-            category=self.product.category,
-            is_active=True,
-        )
+    def test_missing_brand_returns_unmatched(self):
+        decision = OfferMatcher().evaluate(article="AR-20488", external_sku="", brand_name="")
 
-        decision = OfferMatcher().evaluate(article="AR-20488", external_sku="AR-20488-X", brand_name="ARAL")
+        self.assertEqual(decision.status, SupplierRawOffer.MATCH_STATUS_UNMATCHED)
+        self.assertEqual(decision.reason, SupplierRawOffer.MATCH_REASON_MISSING_BRAND)
+        self.assertIsNone(decision.matched_product)
 
-        self.assertEqual(decision.status, SupplierRawOffer.MATCH_STATUS_AUTO_MATCHED)
-        self.assertEqual(decision.reason, "")
-        self.assertIsNotNone(decision.matched_product)
-        self.assertEqual(decision.matched_product.id, duplicate.id)
+    def test_missing_article_returns_unmatched(self):
+        decision = OfferMatcher().evaluate(article="", external_sku="", brand_name="ARAL")
 
-    def test_equivalent_duplicate_article_formatting_auto_matches_canonical(self):
-        brand = Brand.objects.create(name="CONTINENTAL", slug="continental", is_active=True)
-        category = Category.objects.create(name="Belts", slug="belts", is_active=True)
-        Product.objects.create(
-            sku="6PK1502 EXTRA",
-            article="6PK1502 EXTRA",
-            name="Drive belt spaced",
-            slug="drive-belt-spaced",
-            brand=brand,
-            category=category,
-            is_active=False,
-        )
-        compact = Product.objects.create(
-            sku="6PK1502EXTRA",
-            article="6PK1502EXTRA",
-            name="Drive belt compact",
-            slug="drive-belt-compact",
-            brand=brand,
-            category=category,
-            is_active=False,
-        )
+        self.assertEqual(decision.status, SupplierRawOffer.MATCH_STATUS_UNMATCHED)
+        self.assertEqual(decision.reason, SupplierRawOffer.MATCH_REASON_MISSING_ARTICLE)
+        self.assertIsNone(decision.matched_product)
 
-        for article, external_sku in (
-            ("6PK1502 EXTRA", "6PK1502 EXTRA"),
-            ("6PK1502EXTRA", "6PK1502EXTRA"),
-        ):
-            decision = OfferMatcher().evaluate(
-                article=article,
-                external_sku=external_sku,
-                brand_name="CONTINENTAL",
-            )
+    def test_article_only_match_is_not_auto_matched(self):
+        decision = OfferMatcher().evaluate(article="AR-20488", external_sku="", brand_name="TOTAL")
 
-            self.assertEqual(decision.status, SupplierRawOffer.MATCH_STATUS_AUTO_MATCHED)
-            self.assertEqual(decision.reason, "")
-            self.assertIsNotNone(decision.matched_product)
-            self.assertEqual(decision.matched_product.id, compact.id)
+        self.assertEqual(decision.status, SupplierRawOffer.MATCH_STATUS_MANUAL_REQUIRED)
+        self.assertEqual(decision.reason, SupplierRawOffer.MATCH_REASON_BRAND_CONFLICT)
+        self.assertIsNone(decision.matched_product)
+        self.assertEqual(len(decision.candidate_products), 1)
+        self.assertEqual(decision.candidate_products[0].id, self.product.id)
 
     def test_injected_normalizers_keep_cache_across_evaluations(self):
         article_normalizer = ArticleNormalizerService()

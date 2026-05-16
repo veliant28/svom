@@ -4,7 +4,11 @@ from celery import shared_task
 from django.db import transaction
 from django.utils import timezone
 
-from apps.autodb.models import AutoDbSupplier
+from apps.autodb.models import AutoDbMatchingRun, AutoDbSupplier
+from apps.autodb.services.matching.backoffice_tecdoc_batch import BackofficeTecdocBatchSelector
+from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
+from apps.autodb.services.remote_client import AutoDbProRemoteClientError
+from apps.autodb.services.supplier_brand_matcher import SupplierBrandMatcher, normalize_brand_lookup_key
 from apps.autodb.services.article_enrichment import AutoDbArticleEnrichmentService
 from apps.autodb.services.product_attribute_enrichment import AutoDbProductAttributeEnrichmentService
 from apps.autodb.services.product_fitment_enrichment import AutoDbProductFitmentEnrichmentService
@@ -13,6 +17,7 @@ from apps.autodb.services.product_name_enrichment import AutoDbProductNameEnrich
 from apps.autodb.services.product_name_translation import ProductNameTranslationService
 from apps.catalog.models import AutoDbArticleManualMapping, AutoDbProductLinkQuality, Product
 from apps.catalog.services import resolve_autodb_article_name
+from apps.supplier_imports.models import SupplierRawOffer
 from apps.supplier_imports.parsers.utils import normalize_article, normalize_brand
 
 
@@ -46,7 +51,7 @@ def manual_bind_product_to_autodb_task(
     normalized_supplier = normalize_brand(supplier_display)
 
     with transaction.atomic():
-        product = Product.objects.select_related("brand").filter(pk=product_id).first()
+        product = Product.objects.filter(pk=product_id).first()
         if product is None:
             return {"status": "not_found", "detail": "product not found", "product_id": str(product_id)}
 
@@ -232,7 +237,11 @@ def manual_bind_product_to_autodb_task(
         )
         fitment_result = AutoDbProductFitmentEnrichmentService().enrich_product(product=product, dry_run=False)
         attribute_result = AutoDbProductAttributeEnrichmentService().enrich_product(product=product, dry_run=False)
-        image_result = AutoDbProductImageEnrichmentService().sync_product_images(product=product, dry_run=False)
+        image_result = AutoDbProductImageEnrichmentService().sync_product_images(
+            product=product,
+            dry_run=False,
+            prefer_gpl=True,
+        )
 
     return {
         "status": "bound",
@@ -270,3 +279,352 @@ def manual_bind_product_to_autodb_task(
             "stale_marked": int(image_result.stale_marked),
         },
     }
+
+
+BACKOFFICE_TECDOC_BATCH_RUN_TYPE = "backoffice_tecdoc_batch_bind"
+
+
+@shared_task(name="autodb.backoffice_tecdoc_batch_bind")
+def run_backoffice_tecdoc_batch_bind_task(
+    *,
+    run_id: str,
+    limit: int = 200,
+    actor_id: str = "",
+) -> dict[str, object]:
+    run = AutoDbMatchingRun.objects.filter(id=run_id).first()
+    if run is None:
+        return {"status": "not_found", "detail": "run not found", "run_id": str(run_id)}
+
+    started_at = timezone.now()
+    run.started_at = run.started_at or started_at
+    run.status = AutoDbMatchingRun.STATUS_RUNNING
+    run.error = ""
+    run.summary_json = {
+        **(run.summary_json or {}),
+        "running": True,
+        "requested_limit": max(1, min(int(limit or 0), 1000)),
+        "processed": 0,
+        "bound": 0,
+        "failed": 0,
+        "stopped_reason": "",
+        "last_error": "",
+        "actor_id": str(actor_id or ""),
+        "started_at": run.started_at.isoformat() if run.started_at else started_at.isoformat(),
+    }
+    run.save(update_fields=["started_at", "status", "error", "summary_json", "updated_at"])
+
+    selector = BackofficeTecdocBatchSelector()
+    brand_matcher = SupplierBrandMatcher()
+    clone_storage = AutoDbRawCloneStorage()
+    candidates = selector.select_candidates(limit=max(1, min(int(limit or 0), 1000)))
+    results: list[dict[str, object]] = []
+    processed = 0
+    bound = 0
+    failed = 0
+    stop_reason = ""
+    last_error = ""
+
+    for item in candidates:
+        try:
+            bind_supplier_id = int(item.supplier_id)
+            bind_article = str(item.article or "")
+            bind_supplier_name = str(item.supplier_name or "")
+            relinked_by_brand_guard = False
+
+            raw_offer_brand = _latest_raw_offer_brand_for_product(product_id=item.product_id)
+            if raw_offer_brand:
+                raw_brand_norm = normalize_brand(raw_offer_brand)
+                supplier_brand_norm = normalize_brand(bind_supplier_name or str(bind_supplier_id))
+                if raw_brand_norm and supplier_brand_norm and raw_brand_norm != supplier_brand_norm:
+                    matched_supplier_id, matched_supplier_name, matched_reason = _resolve_supplier_by_brand(
+                        matcher=brand_matcher,
+                        raw_brand=raw_offer_brand,
+                    )
+                    if matched_supplier_id and "relaxed_match" not in matched_reason:
+                        canonical_article = _resolve_article_for_supplier(
+                            storage=clone_storage,
+                            supplier_id=matched_supplier_id,
+                            article_input=bind_article,
+                        )
+                        if canonical_article:
+                            bind_supplier_id = int(matched_supplier_id)
+                            bind_article = str(canonical_article)
+                            bind_supplier_name = str(matched_supplier_name or raw_offer_brand or bind_supplier_name)
+                            relinked_by_brand_guard = True
+                        else:
+                            _mark_link_brand_mismatch_needs_review(
+                                product_id=item.product_id,
+                                supplier_id=bind_supplier_id,
+                                article_number=bind_article,
+                                raw_brand=raw_offer_brand,
+                                supplier_brand=bind_supplier_name,
+                                reason="batch_brand_match_ok_article_not_found_for_brand",
+                            )
+                            processed += 1
+                            failed += 1
+                            results.append(
+                                {
+                                    "product_id": item.product_id,
+                                    "supplier_id": int(item.supplier_id),
+                                    "article": item.article,
+                                    "status": "skipped_brand_mismatch",
+                                    "reason": "brand_matched_article_missing",
+                                    "raw_offer_brand": raw_offer_brand,
+                                    "supplier_brand": bind_supplier_name,
+                                }
+                            )
+                            continue
+                    else:
+                        _mark_link_brand_mismatch_needs_review(
+                            product_id=item.product_id,
+                            supplier_id=bind_supplier_id,
+                            article_number=bind_article,
+                            raw_brand=raw_offer_brand,
+                            supplier_brand=bind_supplier_name,
+                            reason="batch_brand_mismatch_raw_offer_vs_supplier",
+                        )
+                        processed += 1
+                        failed += 1
+                        results.append(
+                            {
+                                "product_id": item.product_id,
+                                "supplier_id": int(item.supplier_id),
+                                "article": item.article,
+                                "status": "skipped_brand_mismatch",
+                                "reason": "brand_mismatch_needs_manual_review",
+                                "raw_offer_brand": raw_offer_brand,
+                                "supplier_brand": bind_supplier_name,
+                            }
+                        )
+                        continue
+
+            bind_result = manual_bind_product_to_autodb_task(
+                product_id=item.product_id,
+                supplier_id=bind_supplier_id,
+                article_number=bind_article,
+                supplier_name=bind_supplier_name,
+                article_id=None,
+                actor_id=str(actor_id or ""),
+            )
+            status_value = str(bind_result.get("status") or "")
+            processed += 1
+            if status_value == "bound":
+                bound += 1
+            else:
+                failed += 1
+            results.append(
+                {
+                    "product_id": item.product_id,
+                    "supplier_id": bind_supplier_id,
+                    "article": bind_article,
+                    "status": status_value or "error",
+                    "relinked_by_brand_guard": relinked_by_brand_guard,
+                    "detail": bind_result,
+                }
+            )
+        except Exception as exc:  # noqa: BLE001
+            processed += 1
+            failed += 1
+            error_text = str(exc)
+            results.append(
+                {
+                    "product_id": item.product_id,
+                    "supplier_id": int(item.supplier_id),
+                    "article": item.article,
+                    "status": "error",
+                    "reason": error_text,
+                }
+            )
+            if _is_quota_or_remote_stop_error(exc):
+                stop_reason = "quota_or_remote_error"
+                last_error = error_text
+                break
+
+        run.summary_json = {
+            **(run.summary_json or {}),
+            "running": True,
+            "requested_limit": max(1, min(int(limit or 0), 1000)),
+            "selected": len(candidates),
+            "processed": processed,
+            "bound": bound,
+            "failed": failed,
+            "stopped_reason": stop_reason,
+            "last_error": last_error,
+        }
+        run.save(update_fields=["summary_json", "updated_at"])
+
+    finished_at = timezone.now()
+    final_status = AutoDbMatchingRun.STATUS_SUCCESS
+    if stop_reason:
+        final_status = AutoDbMatchingRun.STATUS_PARTIAL
+    run.status = final_status
+    run.finished_at = finished_at
+    run.error = last_error
+    run.summary_json = {
+        **(run.summary_json or {}),
+        "running": False,
+        "requested_limit": max(1, min(int(limit or 0), 1000)),
+        "selected": len(candidates),
+        "processed": processed,
+        "bound": bound,
+        "failed": failed,
+        "stopped_reason": stop_reason,
+        "last_error": last_error,
+        "finished_at": finished_at.isoformat(),
+        "results_preview": results[:50],
+    }
+    run.save(update_fields=["status", "finished_at", "error", "summary_json", "updated_at"])
+
+    return {
+        "status": "done",
+        "run_id": str(run.id),
+        "selected": len(candidates),
+        "processed": processed,
+        "bound": bound,
+        "failed": failed,
+        "stopped_reason": stop_reason,
+        "last_error": last_error,
+    }
+
+
+def _is_quota_or_remote_stop_error(exc: Exception) -> bool:
+    if isinstance(exc, AutoDbProRemoteClientError):
+        return True
+    message = str(exc or "").lower()
+    if "1226" in message or "max_questions" in message or "quota" in message:
+        return True
+    return "remote" in message and ("timeout" in message or "connection" in message or "unavailable" in message)
+
+
+def _latest_raw_offer_brand_for_product(*, product_id: str) -> str:
+    value = (
+        SupplierRawOffer.objects.filter(matched_product_id=product_id)
+        .exclude(brand_name="")
+        .order_by("-updated_at")
+        .values_list("brand_name", flat=True)
+        .first()
+    )
+    return str(value or "").strip()
+
+
+def _mark_link_brand_mismatch_needs_review(
+    *,
+    product_id: str,
+    supplier_id: int,
+    article_number: str,
+    raw_brand: str,
+    supplier_brand: str,
+    reason: str,
+) -> None:
+    product = Product.objects.filter(pk=product_id).first()
+    if product is None:
+        return
+    article_value = str(article_number or "").strip()
+    if not article_value:
+        article_value = str(getattr(product, "autodb_article_number", "") or "").strip()
+    article_key = f"{int(supplier_id)}:{article_value}" if supplier_id and article_value else str(
+        getattr(product, "autodb_article_key", "") or ""
+    ).strip()
+    if not article_key:
+        return
+
+    now = timezone.now()
+    defaults = {
+        "autodb_supplier_id": int(supplier_id),
+        "autodb_article_number": article_value,
+        "status": AutoDbProductLinkQuality.STATUS_NEEDS_MANUAL_REVIEW,
+        "reason": reason,
+        "evidence": {
+            "source": "autodb.backoffice_tecdoc_batch_bind",
+            "raw_offer_brand": str(raw_brand or ""),
+            "supplier_brand": str(supplier_brand or ""),
+            "product_id": str(product_id),
+        },
+        "checked_at": now,
+    }
+    quality, created = AutoDbProductLinkQuality.objects.get_or_create(
+        product=product,
+        autodb_article_key=article_key,
+        defaults=defaults,
+    )
+    if created:
+        return
+    quality.autodb_supplier_id = int(supplier_id)
+    quality.autodb_article_number = article_value
+    quality.status = AutoDbProductLinkQuality.STATUS_NEEDS_MANUAL_REVIEW
+    quality.reason = reason
+    quality.evidence = defaults["evidence"]
+    quality.checked_at = now
+    quality.save(
+        update_fields=[
+            "autodb_supplier_id",
+            "autodb_article_number",
+            "status",
+            "reason",
+            "evidence",
+            "checked_at",
+            "updated_at",
+        ]
+    )
+
+
+def _resolve_supplier_by_brand(*, matcher: SupplierBrandMatcher, raw_brand: str) -> tuple[int | None, str, str]:
+    normalized = normalize_brand_lookup_key(raw_brand)
+    if not normalized:
+        return None, "", "brand_not_found"
+    result = matcher.resolve_many([normalized]).get(normalized)
+    if result is None or not result.matched_supplier_id:
+        return None, "", "brand_not_found"
+
+    supplier_name = ""
+    if result.candidates:
+        top = result.candidates[0]
+        supplier_name = str(top.supplier_matchcode or top.supplier_description or "").strip()
+    return int(result.matched_supplier_id), supplier_name, str(result.reason or "")
+
+
+def _resolve_article_for_supplier(*, storage: AutoDbRawCloneStorage, supplier_id: int, article_input: str) -> str:
+    supplier_value = int(supplier_id or 0)
+    article_raw = str(article_input or "").strip()
+    if supplier_value <= 0 or not article_raw:
+        return ""
+
+    variants: list[str] = []
+    for value in (article_raw, article_raw.replace(" ", ""), normalize_article(article_raw)):
+        candidate = str(value or "").strip()
+        if candidate and candidate not in variants:
+            variants.append(candidate)
+
+    for table in ("article_numbers", "articles"):
+        columns = list(storage.get_local_columns(table))
+        if not columns:
+            continue
+        supplier_column = storage.first_existing_column(table=table, candidates=["supplierId", "supplierid", "SupplierId", "supplier_id"])
+        article_column = storage.first_existing_column(
+            table=table,
+            candidates=["DataSupplierArticleNumber", "datasupplierarticlenumber", "article", "articlenumber", "number"],
+        )
+        if not supplier_column or not article_column:
+            continue
+        rows = storage.fetch_local_rows_in(
+            table=table,
+            column=article_column,
+            values=variants,
+            extra_filters={supplier_column: supplier_value},
+            limit=50,
+            columns=[article_column],
+        )
+        if not rows:
+            continue
+        by_lower = {str(row.get(article_column) or "").strip().lower(): str(row.get(article_column) or "").strip() for row in rows}
+        direct = by_lower.get(article_raw.lower())
+        if direct:
+            return direct
+        for variant in variants:
+            hit = by_lower.get(str(variant).lower())
+            if hit:
+                return hit
+        first = str(rows[0].get(article_column) or "").strip()
+        if first:
+            return first
+    return ""

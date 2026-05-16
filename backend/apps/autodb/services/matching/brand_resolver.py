@@ -3,9 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from django.db.models import Q
+from django.db.utils import OperationalError, ProgrammingError
 
 from apps.autodb.models import AutoDbSupplierBrandAlias
 from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
+from apps.autodb.services.supplier_brand_matcher import normalize_brand_lookup_key
 from apps.autodb.services.matching.constants import (
     BUILTIN_SAFE_ALIASES,
     INVALID_BRAND_VALUE_KEYS,
@@ -13,7 +15,6 @@ from apps.autodb.services.matching.constants import (
     UNSAFE_BRAND_KEYS,
 )
 from apps.supplier_imports.models import SupplierBrandAlias
-from apps.supplier_imports.parsers.utils import normalize_brand
 
 
 @dataclass(frozen=True)
@@ -65,7 +66,7 @@ class AutoDbBrandResolver:
         product_autodb_supplier_id: int | None = None,
     ) -> AutoDbBrandResolution:
         raw = str(raw_brand or "").strip()
-        normalized = normalize_brand(raw)
+        normalized = normalize_brand_lookup_key(raw)
         supplier_code_clean = str(supplier_code or "").strip().lower()
         if not normalized:
             return self._result(
@@ -77,7 +78,7 @@ class AutoDbBrandResolver:
                 "empty or non-normalizable raw_brand",
             )
 
-        if normalized in {normalize_brand(item) for item in INVALID_BRAND_VALUE_KEYS}:
+        if normalized in {normalize_brand_lookup_key(item) for item in INVALID_BRAND_VALUE_KEYS}:
             return self._result(
                 raw,
                 normalized,
@@ -87,7 +88,7 @@ class AutoDbBrandResolver:
                 "brand value is placeholder/invalid for TecDoc matching",
             )
 
-        if normalized in {normalize_brand(item) for item in NON_TECDOC_BRAND_KEYS}:
+        if normalized in {normalize_brand_lookup_key(item) for item in NON_TECDOC_BRAND_KEYS}:
             return self._result(raw, normalized, supplier_code_clean, "skipped_non_tecdoc", "non_tecdoc", "brand is outside TecDoc scope")
 
         alias = self._autodb_alias(normalized)
@@ -126,7 +127,11 @@ class AutoDbBrandResolver:
             )
 
         canonical_from_supplier_alias = self._supplier_import_alias(normalized, supplier_code_clean)
-        lookup_key = normalize_brand(canonical_from_supplier_alias) if canonical_from_supplier_alias else BUILTIN_SAFE_ALIASES.get(normalized, normalized)
+        lookup_key = (
+            normalize_brand_lookup_key(canonical_from_supplier_alias)
+            if canonical_from_supplier_alias
+            else BUILTIN_SAFE_ALIASES.get(normalized, normalized)
+        )
         resolver_source = "alias" if canonical_from_supplier_alias else ("exact_supplier" if lookup_key == normalized else "normalized_supplier")
 
         if normalized in UNSAFE_BRAND_KEYS and canonical_from_supplier_alias is None:
@@ -185,13 +190,16 @@ class AutoDbBrandResolver:
         )
 
     def _supplier_import_alias(self, normalized: str, supplier_code: str) -> str:
-        queryset = SupplierBrandAlias.objects.filter(normalized_alias=normalized, is_active=True)
-        if supplier_code:
-            queryset = queryset.filter(Q(supplier__code=supplier_code) | Q(supplier__isnull=True))
-        alias = queryset.order_by("-priority", "created_at").first()
-        if alias is None:
+        try:
+            queryset = SupplierBrandAlias.objects.filter(normalized_alias=normalized, is_active=True)
+            if supplier_code:
+                queryset = queryset.filter(Q(supplier__code=supplier_code) | Q(supplier__isnull=True))
+            alias = queryset.order_by("-priority", "created_at").first()
+            if alias is None:
+                return ""
+            return (alias.canonical_brand_name or (alias.canonical_brand.name if alias.canonical_brand_id else "")).strip()
+        except (ProgrammingError, OperationalError):
             return ""
-        return (alias.canonical_brand_name or (alias.canonical_brand.name if alias.canonical_brand_id else "")).strip()
 
     def _supplier_by_id(self, supplier_id: int) -> _SupplierCandidate | None:
         if supplier_id <= 0:
@@ -204,7 +212,7 @@ class AutoDbBrandResolver:
     def _supplier_candidates(self, normalized_key: str) -> list[_SupplierCandidate]:
         if not normalized_key:
             return []
-        relaxed_key = normalize_brand(normalized_key)
+        relaxed_key = normalize_brand_lookup_key(normalized_key)
         candidates: list[_SupplierCandidate] = []
         for supplier in self._load_suppliers():
             keys = {
@@ -218,8 +226,8 @@ class AutoDbBrandResolver:
             return candidates[:5]
         for supplier in self._load_suppliers():
             keys = {
-                normalize_brand(supplier.supplier_name),
-                normalize_brand(supplier.supplier_matchcode),
+                normalize_brand_lookup_key(supplier.supplier_name),
+                normalize_brand_lookup_key(supplier.supplier_matchcode),
             }
             if relaxed_key and relaxed_key in keys:
                 candidates.append(supplier)
@@ -261,8 +269,8 @@ class AutoDbBrandResolver:
             supplier_matchcode = str(row.get(match_col) or "").strip() if match_col else ""
             if not supplier_name:
                 continue
-            normalized_name = normalize_brand(supplier_name)
-            normalized_matchcode = normalize_brand(supplier_matchcode)
+            normalized_name = normalize_brand_lookup_key(supplier_name)
+            normalized_matchcode = normalize_brand_lookup_key(supplier_matchcode)
             if not normalized_name and not normalized_matchcode:
                 continue
             nbrofarticles = 0

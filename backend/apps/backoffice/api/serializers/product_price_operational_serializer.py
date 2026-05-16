@@ -8,7 +8,7 @@ class ProductPriceOperationalSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
     product_sku = serializers.CharField(source="product.sku", read_only=True)
     product_article = serializers.CharField(source="product.article", read_only=True)
-    brand_name = serializers.CharField(source="product.brand.name", read_only=True)
+    brand_name = serializers.SerializerMethodField(read_only=True)
     category_name = serializers.SerializerMethodField(read_only=True)
     policy_name = serializers.CharField(source="policy.name", read_only=True)
 
@@ -41,3 +41,9 @@ class ProductPriceOperationalSerializer(serializers.ModelSerializer):
         if category is None:
             return ""
         return str(category.name or "")
+
+    def get_brand_name(self, obj: ProductPrice) -> str:
+        product = getattr(obj, "product", None)
+        if product is None:
+            return ""
+        return str(getattr(product, "display_brand_name", "") or getattr(product, "autodb_supplier_name", "") or "").strip()

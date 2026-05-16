@@ -4,6 +4,8 @@ from dataclasses import asdict, dataclass
 
 from django.conf import settings
 
+from apps.autodb.services.product_attribute_enrichment import AutoDbProductAttributeEnrichmentService
+from apps.autodb.services.product_fitment_enrichment import AutoDbProductFitmentEnrichmentService
 from apps.autodb.services.product_name_enrichment import AutoDbProductNameEnrichmentService
 from apps.autodb.services.product_image_enrichment import AutoDbProductImageEnrichmentService
 from apps.autodb.services.raw_offer_enrichment import AutoDbRawOfferEnrichmentService, RawOfferEnrichmentSummary
@@ -35,6 +37,13 @@ class SupplierImportAutoDbSummary:
     failed: int = 0
     products_linked: int = 0
     product_names_updated: int = 0
+    product_fitments_updated: int = 0
+    fitments_created: int = 0
+    fitments_updated: int = 0
+    fitments_stale_marked: int = 0
+    product_attributes_updated: int = 0
+    attributes_created: int = 0
+    attributes_updated: int = 0
     product_images_updated: int = 0
     gpl_images_created: int = 0
     autodb_images_created: int = 0
@@ -56,11 +65,15 @@ class SupplierImportAutoDbPostProcessor:
         *,
         raw_offer_enrichment_service: AutoDbRawOfferEnrichmentService | None = None,
         product_name_service: AutoDbProductNameEnrichmentService | None = None,
+        product_fitment_service: AutoDbProductFitmentEnrichmentService | None = None,
+        product_attribute_service: AutoDbProductAttributeEnrichmentService | None = None,
         gpl_image_service: GplProductImageService | None = None,
         autodb_image_service: AutoDbProductImageEnrichmentService | None = None,
     ):
         self.raw_offer_enrichment_service = raw_offer_enrichment_service or AutoDbRawOfferEnrichmentService()
         self.product_name_service = product_name_service or AutoDbProductNameEnrichmentService()
+        self.product_fitment_service = product_fitment_service or AutoDbProductFitmentEnrichmentService()
+        self.product_attribute_service = product_attribute_service or AutoDbProductAttributeEnrichmentService()
         self.gpl_image_service = gpl_image_service or GplProductImageService()
         self.autodb_image_service = autodb_image_service or AutoDbProductImageEnrichmentService()
 
@@ -112,15 +125,23 @@ class SupplierImportAutoDbPostProcessor:
             )
             self._merge_raw_summary(summary=summary, raw_summary=raw_summary)
 
-        if update_product_names:
-            linked_product_ids = self._collect_linked_product_ids(offer_qs=offer_qs)
+        linked_product_ids = self._collect_linked_product_ids(offer_qs=offer_qs)
+
+        if autodb_enrich:
+            self._update_product_fitments_and_attributes(
+                summary=summary,
+                product_ids=linked_product_ids,
+                dry_run=dry_run,
+            )
+
+        # Keep translations in sync for linked products whenever AutoDB enrichment is active.
+        should_update_names = bool(update_product_names or autodb_enrich)
+        if should_update_names:
             self._update_product_names(
                 summary=summary,
                 product_ids=linked_product_ids,
                 dry_run=dry_run,
             )
-        else:
-            linked_product_ids = self._collect_linked_product_ids(offer_qs=offer_qs)
 
         if update_product_images:
             self._update_product_images(
@@ -134,7 +155,7 @@ class SupplierImportAutoDbPostProcessor:
 
     def _build_offers_queryset(self, *, run: ImportRun):
         qs = (
-            SupplierRawOffer.objects.select_related("matched_product", "matched_product__brand", "source", "supplier")
+            SupplierRawOffer.objects.select_related("matched_product", "source", "supplier")
             .filter(run=run, matched_product__isnull=False)
             .order_by("id")
         )
@@ -209,7 +230,7 @@ class SupplierImportAutoDbPostProcessor:
         if not product_ids:
             return
 
-        products = Product.objects.filter(id__in=product_ids).select_related("brand", "category").order_by("id")
+        products = Product.objects.filter(id__in=product_ids).select_related("category").order_by("id")
         for product in products.iterator(chunk_size=200):
             if bool(product.name_manually_locked):
                 summary.names_skipped_manual_locked += 1
@@ -248,7 +269,7 @@ class SupplierImportAutoDbPostProcessor:
         if not product_ids:
             return
 
-        products = Product.objects.filter(id__in=product_ids).select_related("brand", "category").order_by("id")
+        products = Product.objects.filter(id__in=product_ids).select_related("category").order_by("id")
         for product in products.iterator(chunk_size=200):
             if str(getattr(run.source, "code", "") or "").lower() == "gpl":
                 gpl_result = self.gpl_image_service.sync_product_images(product=product, dry_run=dry_run)
@@ -266,3 +287,34 @@ class SupplierImportAutoDbPostProcessor:
             summary.stale_images_marked += autodb_result.stale_marked
             if autodb_result.created > 0 or autodb_result.stale_marked > 0:
                 summary.product_images_updated += 1
+
+    def _update_product_fitments_and_attributes(
+        self,
+        *,
+        summary: SupplierImportAutoDbSummary,
+        product_ids: list[str],
+        dry_run: bool,
+    ) -> None:
+        if not product_ids:
+            return
+
+        products = Product.objects.filter(id__in=product_ids).select_related("category").order_by("id")
+        for product in products.iterator(chunk_size=200):
+            try:
+                fitment = self.product_fitment_service.enrich_product(product=product, dry_run=dry_run)
+                summary.fitments_created += int(fitment.fitments_created or 0)
+                summary.fitments_updated += int(fitment.fitments_updated or 0)
+                summary.fitments_stale_marked += int(fitment.stale_marked or 0)
+                if (fitment.fitments_created or fitment.fitments_updated or fitment.stale_marked) > 0:
+                    summary.product_fitments_updated += 1
+            except Exception:
+                summary.failed += 1
+
+            try:
+                attrs = self.product_attribute_service.enrich_product(product=product, dry_run=dry_run)
+                summary.attributes_created += int(attrs.product_attributes_created or 0)
+                summary.attributes_updated += int(attrs.product_attributes_updated or 0)
+                if (attrs.product_attributes_created or attrs.product_attributes_updated) > 0:
+                    summary.product_attributes_updated += 1
+            except Exception:
+                summary.failed += 1

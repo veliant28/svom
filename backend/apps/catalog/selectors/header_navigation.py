@@ -2,10 +2,20 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.core.cache import cache
+
 from apps.catalog.models import Category, CategoryNavigationCollection
+
+_HEADER_NAVIGATION_CACHE_TTL_SECONDS = 300
 
 
 def get_header_navigation_payload(*, locale: str | None = None) -> list[dict[str, Any]]:
+    normalized_locale = (locale or "").strip().lower() or "default"
+    cache_key = f"catalog:header_navigation:{normalized_locale}"
+    cached_payload = cache.get(cache_key)
+    if isinstance(cached_payload, list):
+        return cached_payload
+
     roots = list(
         Category.objects.filter(
             is_active=True,
@@ -47,6 +57,7 @@ def get_header_navigation_payload(*, locale: str | None = None) -> list[dict[str
                 "sections": sections,
             }
         )
+    cache.set(cache_key, payload, timeout=_HEADER_NAVIGATION_CACHE_TTL_SECONDS)
     return payload
 
 

@@ -9,7 +9,6 @@ def get_operational_supplier_offers_queryset() -> QuerySet[SupplierOffer]:
     return SupplierOffer.objects.select_related(
         "supplier",
         "product",
-        "product__brand",
         "product__category",
     ).order_by("-updated_at")
 
@@ -17,7 +16,6 @@ def get_operational_supplier_offers_queryset() -> QuerySet[SupplierOffer]:
 def get_operational_product_prices_queryset() -> QuerySet[ProductPrice]:
     return ProductPrice.objects.select_related(
         "product",
-        "product__brand",
         "product__category",
         "policy",
     ).order_by("-updated_at")

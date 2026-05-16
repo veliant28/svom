@@ -195,7 +195,7 @@ class AutoDbProductSplitV2ApplyOneService:
         if not is_clean or blockers:
             raise RuntimeError(f"Approval candidate is not clean: clean={is_clean} blockers={blockers}")
 
-        product = Product.objects.select_related("brand").get(id=product_id)
+        product = Product.objects.get(id=product_id)
         trusted = self._is_trusted(product)
         attr_count = ProductAttribute.objects.filter(product=product).count()
         fitment_count = ProductFitment.objects.filter(product=product).count()
@@ -251,7 +251,7 @@ class AutoDbProductSplitV2ApplyOneService:
         )
 
     def _build_baseline(self, candidate: dict[str, Any]) -> list[dict[str, Any]]:
-        product = Product.objects.select_related("brand", "category").get(id=candidate["product_id"])
+        product = Product.objects.select_related("category").get(id=candidate["product_id"])
         rows: list[dict[str, Any]] = []
         rows.append(
             {
@@ -329,8 +329,8 @@ class AutoDbProductSplitV2ApplyOneService:
         return rows
 
     def _post_apply_verification(self, candidate: dict[str, Any], result: Any) -> list[dict[str, Any]]:
-        source = Product.objects.select_related("brand").get(id=result.source_product_id)
-        new = Product.objects.select_related("brand").get(id=result.new_product_id)
+        source = Product.objects.get(id=result.source_product_id)
+        new = Product.objects.get(id=result.new_product_id)
         rows: list[dict[str, Any]] = []
 
         rows.append(
@@ -408,8 +408,8 @@ class AutoDbProductSplitV2ApplyOneService:
         return rows
 
     def _admin_search_smoke(self, candidate: dict[str, Any], result: Any) -> str:
-        source = Product.objects.select_related("brand").get(id=result.source_product_id)
-        new = Product.objects.select_related("brand").get(id=result.new_product_id)
+        source = Product.objects.get(id=result.source_product_id)
+        new = Product.objects.get(id=result.new_product_id)
         source_search = Product.objects.filter(Q(svom_sku=candidate["original_sku"]) | Q(sku=candidate["original_sku"])).count()
         new_search = Product.objects.filter(id=new.id).count()
         source_brand_hits = Product.objects.filter(id=source.id, display_brand_name=source.display_brand_name).count()

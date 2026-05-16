@@ -6,7 +6,7 @@ from apps.catalog.services.product_sku import get_product_display_sku
 
 class CommerceProductSummarySerializer(serializers.ModelSerializer):
     sku = serializers.SerializerMethodField()
-    brand_name = serializers.CharField(source="brand.name", read_only=True)
+    brand_name = serializers.SerializerMethodField()
     final_price = serializers.DecimalField(source="product_price.final_price", max_digits=12, decimal_places=2, read_only=True)
     currency = serializers.CharField(source="product_price.currency", read_only=True)
     primary_image = serializers.SerializerMethodField()
@@ -26,6 +26,9 @@ class CommerceProductSummarySerializer(serializers.ModelSerializer):
 
     def get_sku(self, obj: Product) -> str:
         return get_product_display_sku(obj)
+
+    def get_brand_name(self, obj: Product) -> str:
+        return str(obj.display_brand_name or obj.autodb_supplier_name or "").strip()
 
     def get_primary_image(self, obj: Product) -> str:
         request = self.context.get("request")

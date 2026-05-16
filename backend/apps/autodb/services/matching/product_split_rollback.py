@@ -190,11 +190,11 @@ class AutoDbProductSplitRollbackService:
         split_raw_count_after = split_raw_count_before - len(moved_raw_ids_on_split)
         split_productprice_count_after = split_productprice_count - len(pp_ids_on_split)
 
-        restore_brand_name = str(source.brand.name if source.brand_id else "").strip()
+        restore_brand_name = str(source.display_brand_name or source.autodb_supplier_name or "" if source.brand_id else "").strip()
         restore_display = restore_brand_name
         restore_autodb_id: int | None = None
         restore_autodb_name = ""
-        split_brand_name = str(split.brand.name if split.brand_id else "").strip()
+        split_brand_name = str(split.display_brand_name or split.autodb_supplier_name or "" if split.brand_id else "").strip()
         if restore_brand_name and split_brand_name and restore_brand_name.casefold() == split_brand_name.casefold():
             restore_autodb_id = int(split.autodb_supplier_id or 0) or None
             restore_autodb_name = str(split.autodb_supplier_name or "").strip()

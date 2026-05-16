@@ -5,6 +5,11 @@ import { useTranslations } from "next-intl";
 
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
 import { useFooterSettings } from "@/features/backoffice/hooks/use-footer-settings";
+import {
+  formatFooterPhoneForInput,
+  formatFooterPhoneForSave,
+  normalizeFooterPhoneDigits,
+} from "@/shared/lib/footer-phone";
 
 type WeekdayCode = "ПН" | "ВТ" | "СР" | "ЧТ" | "ПТ" | "СБ" | "ВС";
 
@@ -46,7 +51,7 @@ export function FooterSettingsPage() {
       selectedDays: parsedWorkingHours.selectedDays,
       startTime: parsedWorkingHours.startTime,
       endTime: parsedWorkingHours.endTime,
-      phoneDigits: normalizePhoneDigits(settings.phone || ""),
+      phoneDigits: normalizeFooterPhoneDigits(settings.phone || ""),
     });
   }, [settings]);
 
@@ -64,9 +69,9 @@ export function FooterSettingsPage() {
     () => buildWorkingHours(form.selectedDays, form.startTime, form.endTime),
     [form.endTime, form.selectedDays, form.startTime],
   );
-  const serializedPhone = useMemo(() => formatPhoneForSave(form.phoneDigits), [form.phoneDigits]);
-  const maskedPhone = useMemo(() => formatPhoneForInput(form.phoneDigits), [form.phoneDigits]);
-  const initialPhoneDigits = useMemo(() => normalizePhoneDigits(settings?.phone || ""), [settings?.phone]);
+  const serializedPhone = useMemo(() => formatFooterPhoneForSave(form.phoneDigits), [form.phoneDigits]);
+  const maskedPhone = useMemo(() => formatFooterPhoneForInput(form.phoneDigits), [form.phoneDigits]);
+  const initialPhoneDigits = useMemo(() => normalizeFooterPhoneDigits(settings?.phone || ""), [settings?.phone]);
   const isDirty = (settings?.working_hours || "").trim() !== serializedWorkingHours || initialPhoneDigits !== form.phoneDigits;
   const isWorkingHoursValid = form.selectedDays.length > 0 && isValidTime(form.startTime) && isValidTime(form.endTime);
   const isPhoneValid = form.phoneDigits.length === 10;
@@ -165,8 +170,8 @@ export function FooterSettingsPage() {
               onChange={(event) => {
                 setForm((prev) => {
                   const previousDigits = prev.phoneDigits;
-                  const previousMasked = formatPhoneForInput(previousDigits);
-                  let nextDigits = normalizePhoneDigits(event.target.value);
+                  const previousMasked = formatFooterPhoneForInput(previousDigits);
+                  let nextDigits = normalizeFooterPhoneDigits(event.target.value);
                   const removedOnlyMaskChar =
                     nextDigits === previousDigits && event.target.value.length < previousMasked.length;
                   if (removedOnlyMaskChar) {
@@ -246,68 +251,4 @@ function parseWorkingHours(value: string): Pick<FooterForm, "selectedDays" | "st
 function buildWorkingHours(selectedDays: WeekdayCode[], startTime: string, endTime: string): string {
   const days = (selectedDays.length ? selectedDays : DEFAULT_SELECTED_DAYS).join(", ");
   return `${days} ${normalizeTime(startTime, DEFAULT_START_TIME)}-${normalizeTime(endTime, DEFAULT_END_TIME)}`;
-}
-
-function normalizePhoneDigits(value: string): string {
-  const digits = String(value || "").replace(/\D+/g, "");
-  if (!digits) {
-    return "";
-  }
-  if (digits.startsWith("380")) {
-    return digits.slice(2, 12);
-  }
-  if (digits.startsWith("38")) {
-    const rest = digits.slice(2);
-    if (!rest) {
-      return "";
-    }
-    if (rest.startsWith("0")) {
-      return rest.slice(0, 10);
-    }
-    return `0${rest}`.slice(0, 10);
-  }
-  if (digits.startsWith("0")) {
-    return digits.slice(0, 10);
-  }
-  if (digits.length >= 10) {
-    const tail = digits.slice(-10);
-    return tail.startsWith("0") ? tail : `0${tail}`.slice(0, 10);
-  }
-  return `0${digits}`.slice(0, 10);
-}
-
-function formatPhoneForInput(digits: string): string {
-  const normalized = normalizePhoneDigits(digits);
-  if (!normalized) {
-    return "";
-  }
-  const operator = normalized.slice(0, 3);
-  const left = normalized.slice(3, 6);
-  const middle = normalized.slice(6, 8);
-  const right = normalized.slice(8, 10);
-  let value = "38";
-  if (operator) {
-    value += `(${operator}`;
-    if (operator.length === 3) {
-      value += ")";
-    }
-  }
-  if (left) {
-    value += left;
-  }
-  if (middle) {
-    value += `-${middle}`;
-  }
-  if (right) {
-    value += `-${right}`;
-  }
-  return value;
-}
-
-function formatPhoneForSave(digits: string): string {
-  const normalized = normalizePhoneDigits(digits);
-  if (!normalized) {
-    return "";
-  }
-  return formatPhoneForInput(normalized);
 }

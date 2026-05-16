@@ -14,6 +14,8 @@ from apps.autodb.models import (
     AutoDbProductGroup,
     AutoDbSupplier,
 )
+from apps.autodb.services.column_helpers import find_column_name, find_value
+from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
 from apps.catalog.models import Product
 from apps.catalog.services.category_management import normalized_category_name
 from apps.supplier_imports.models import SupplierRawOffer
@@ -51,6 +53,9 @@ def get_autodb_product_content(*, product: Product, prefer_live: bool = True) ->
         return AutoDbProductContent(image_urls=[], attributes=[], product_groups=[])
 
     supplier_ids = _resolve_supplier_ids(pairs=pairs)
+    direct_supplier_id = int(getattr(product, "autodb_supplier_id", 0) or 0)
+    if direct_supplier_id > 0:
+        supplier_ids.add(direct_supplier_id)
     if not supplier_ids:
         return AutoDbProductContent(image_urls=[], attributes=[], product_groups=[])
 
@@ -63,6 +68,13 @@ def get_autodb_product_content(*, product: Product, prefer_live: bool = True) ->
             logger.warning("autodb_live_content_refresh_failed product_id=%s error=%s", product.id, exc)
 
     content = _build_content_from_cache(supplier_ids=supplier_ids, articles=articles)
+    if not content.attributes or not content.product_groups:
+        fallback = _build_content_from_local_clone(supplier_ids=supplier_ids, articles=articles)
+        content = AutoDbProductContent(
+            image_urls=content.image_urls or fallback.image_urls,
+            attributes=content.attributes or fallback.attributes,
+            product_groups=content.product_groups or fallback.product_groups,
+        )
     cache.set(
         cache_key,
         {
@@ -216,6 +228,180 @@ def _build_content_from_cache(*, supplier_ids: set[int], articles: set[str]) -> 
     )
 
 
+def _build_content_from_local_clone(*, supplier_ids: set[int], articles: set[str]) -> AutoDbProductContent:
+    try:
+        storage = AutoDbRawCloneStorage()
+    except Exception:  # noqa: BLE001
+        return AutoDbProductContent(image_urls=[], attributes=[], product_groups=[])
+
+    attributes = _build_attributes_from_local_clone(storage=storage, supplier_ids=supplier_ids, articles=articles)
+    product_groups = _build_groups_from_local_clone(storage=storage, supplier_ids=supplier_ids, articles=articles)
+    return AutoDbProductContent(
+        image_urls=[],
+        attributes=attributes,
+        product_groups=product_groups,
+    )
+
+
+def _build_attributes_from_local_clone(
+    *,
+    storage: AutoDbRawCloneStorage,
+    supplier_ids: set[int],
+    articles: set[str],
+) -> list[dict[str, str]]:
+    try:
+        storage.ensure_table("article_attributes")
+        columns = list(storage.get_local_columns("article_attributes"))
+    except Exception:  # noqa: BLE001
+        return []
+
+    supplier_col = find_column_name(columns, ["supplierId", "supplierid", "SupplierId", "supplier_id"])
+    article_col = find_column_name(
+        columns,
+        ["DataSupplierArticleNumber", "datasupplierarticlenumber", "articleNumber", "articlenumber", "article", "number"],
+    )
+    name_col = find_column_name(columns, ["attributeName", "name", "title", "criterionName", "criteriaName", "displaytitle"])
+    value_col = find_column_name(columns, ["attributeValue", "value", "criterionValue", "criteriaValue", "displayvalue", "description"])
+    unit_col = find_column_name(columns, ["unit", "measureUnit", "uom"])
+    if not supplier_col or not article_col or not name_col:
+        return []
+
+    rows = _fetch_clone_rows(
+        storage=storage,
+        table="article_attributes",
+        supplier_col=supplier_col,
+        article_col=article_col,
+        supplier_ids=supplier_ids,
+        articles=articles,
+        columns=columns,
+    )
+    out: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for row in rows:
+        clean_name = str(find_value(row, [name_col]) or "").strip()
+        clean_value = str(find_value(row, [value_col]) or "").strip() if value_col else ""
+        clean_unit = str(find_value(row, [unit_col]) or "").strip() if unit_col else ""
+        if not clean_name or not clean_value:
+            continue
+        if clean_unit:
+            clean_value = f"{clean_value} {clean_unit}".strip()
+        dedupe_key = (clean_name.lower(), clean_value.lower())
+        if dedupe_key in seen:
+            continue
+        seen.add(dedupe_key)
+        out.append({"attribute_name": clean_name[:255], "value": clean_value[:255]})
+        if len(out) >= 120:
+            break
+    return out
+
+
+def _build_groups_from_local_clone(
+    *,
+    storage: AutoDbRawCloneStorage,
+    supplier_ids: set[int],
+    articles: set[str],
+) -> list[dict[str, str | int]]:
+    try:
+        storage.ensure_table("article_prd")
+        article_prd_columns = list(storage.get_local_columns("article_prd"))
+    except Exception:  # noqa: BLE001
+        return []
+
+    supplier_col = find_column_name(article_prd_columns, ["supplierId", "supplierid", "SupplierId", "supplier_id"])
+    article_col = find_column_name(
+        article_prd_columns,
+        ["DataSupplierArticleNumber", "datasupplierarticlenumber", "articleNumber", "articlenumber", "article", "number"],
+    )
+    prd_id_col = find_column_name(article_prd_columns, ["prdId", "productId", "productid", "groupId", "id"])
+    if not supplier_col or not article_col or not prd_id_col:
+        return []
+
+    link_rows = _fetch_clone_rows(
+        storage=storage,
+        table="article_prd",
+        supplier_col=supplier_col,
+        article_col=article_col,
+        supplier_ids=supplier_ids,
+        articles=articles,
+        columns=article_prd_columns,
+    )
+    group_ids: list[int] = []
+    seen_ids: set[int] = set()
+    for row in link_rows:
+        raw_id = find_value(row, [prd_id_col])
+        group_id = _to_int(raw_id)
+        if not group_id or group_id in seen_ids:
+            continue
+        seen_ids.add(group_id)
+        group_ids.append(group_id)
+        if len(group_ids) >= 120:
+            break
+    if not group_ids:
+        return []
+
+    names_by_id: dict[int, str] = {}
+    try:
+        storage.ensure_table("prd")
+        prd_columns = list(storage.get_local_columns("prd"))
+        id_col = find_column_name(prd_columns, ["id", "prdId", "productId", "productid"])
+        name_col = find_column_name(prd_columns, ["description", "name", "title", "text", "fullDescription"])
+        if id_col and name_col:
+            prd_rows = storage.fetch_local_rows_in(
+                table="prd",
+                column=id_col,
+                values=group_ids,
+                limit=max(len(group_ids) * 3, 200),
+                columns=prd_columns,
+            )
+            for row in prd_rows:
+                parsed_id = _to_int(find_value(row, [id_col]))
+                if not parsed_id:
+                    continue
+                names_by_id[parsed_id] = str(find_value(row, [name_col]) or "").strip()[:255]
+    except Exception:  # noqa: BLE001
+        names_by_id = {}
+
+    out: list[dict[str, str | int]] = []
+    for group_id in group_ids:
+        out.append(
+            {
+                "prd_id": group_id,
+                "prd_name": names_by_id.get(group_id, ""),
+            }
+        )
+    return out
+
+
+def _fetch_clone_rows(
+    *,
+    storage: AutoDbRawCloneStorage,
+    table: str,
+    supplier_col: str,
+    article_col: str,
+    supplier_ids: set[int],
+    articles: set[str],
+    columns: list[str],
+) -> list[dict[str, Any]]:
+    if not supplier_ids or not articles:
+        return []
+    rows: list[dict[str, Any]] = []
+    for supplier_id in sorted(supplier_ids):
+        try:
+            chunk = storage.fetch_local_rows_in(
+                table=table,
+                column=article_col,
+                values=sorted(articles),
+                extra_filters={supplier_col: supplier_id},
+                limit=3000,
+                columns=columns,
+            )
+        except Exception:  # noqa: BLE001
+            continue
+        if chunk:
+            rows.extend(chunk)
+    return rows
+
+
 def _refresh_cache_from_live(*, supplier_ids: set[int], articles: set[str]) -> None:
     if mysql is None:
         return
@@ -363,8 +549,8 @@ def _refresh_images_from_live(*, source, supplier_ids: set[int], articles: set[s
 def _refresh_attributes_from_live(*, source, supplier_ids: set[int], articles: set[str], columns: list[str]) -> None:
     supplier_col = _pick_column(columns, ("supplierId", "sup_id", "ART_SUP_ID", "BrandNo"))
     article_col = _pick_column(columns, ("DataSupplierArticleNumber", "articleNumber", "ART_ARTICLE_NR", "ArtNo"))
-    name_col = _pick_column(columns, ("attributeName", "name", "title", "criterionName", "criteriaName"))
-    value_col = _pick_column(columns, ("attributeValue", "value", "criterionValue", "criteriaValue"))
+    name_col = _pick_column(columns, ("attributeName", "name", "title", "criterionName", "criteriaName", "displaytitle"))
+    value_col = _pick_column(columns, ("attributeValue", "value", "criterionValue", "criteriaValue", "displayvalue", "description"))
     if not supplier_col or not article_col or not name_col:
         return
 
@@ -576,7 +762,11 @@ def _pick_column(columns: list[str], candidates: tuple[str, ...]) -> str | None:
 
 def _resolve_article_brand_pairs(*, product: Product) -> set[tuple[str, str]]:
     pairs: set[tuple[str, str]] = set()
-    fallback_brand = normalize_brand(getattr(product.brand, "name", ""))
+    fallback_brand = normalize_brand(
+        str(getattr(product, "display_brand_name", "") or "").strip()
+        or str(getattr(product, "autodb_supplier_name", "") or "").strip()
+        or str(getattr(product, "normalized_brand", "") or "").strip()
+    )
 
     product_article = normalize_article(product.article)
     if product_article and fallback_brand:

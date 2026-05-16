@@ -8,12 +8,10 @@ from rest_framework import serializers
 
 from apps.autodb.selectors.admin_supplier_brands import get_admin_supplier_brand_name_by_id
 from apps.backoffice.services import ProductOperationsService
-from apps.catalog.models import AutoDbProductLinkQuality, Brand, Category, Product, ProductAttribute
+from apps.catalog.models import AutoDbProductLinkQuality, Category, Product, ProductAttribute
 from apps.catalog.services import (
     ensure_product_svom_sku,
-    find_brand_by_normalized_name,
     generate_unique_product_slug,
-    generate_unique_brand_slug,
     get_product_display_brand_payload,
     get_product_display_name_with_meta,
     get_product_display_sku,
@@ -49,11 +47,11 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
         "Івано-Франківська обл.",
     )
 
-    brand = serializers.PrimaryKeyRelatedField(queryset=Brand.objects.all(), required=False, allow_null=True)
+    brand = serializers.IntegerField(source="brand_id", read_only=True)
     autodb_supplier_id = serializers.IntegerField(required=False, allow_null=True)
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.filter(is_assignable=True), allow_null=True, required=False)
     brand_name = serializers.SerializerMethodField(read_only=True)
-    current_brand_name = serializers.CharField(source="brand.name", read_only=True)
+    current_brand_name = serializers.SerializerMethodField(read_only=True)
     display_brand = serializers.SerializerMethodField(read_only=True)
     brand_source = serializers.SerializerMethodField(read_only=True)
     autodb_supplier_name = serializers.CharField(read_only=True)
@@ -264,15 +262,7 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
         if not supplier_name:
             raise serializers.ValidationError({"autodb_supplier_id": "Supplier missing in local Auto_DB_Pro."})
 
-        brand = find_brand_by_normalized_name(name=supplier_name)
-        if brand is None:
-            brand = Brand.objects.create(
-                name=supplier_name,
-                slug=generate_unique_brand_slug(name=supplier_name),
-                is_active=True,
-            )
-
-        attrs["brand"] = brand
+        attrs["brand_id"] = 1
         attrs["autodb_supplier_id"] = supplier_id
         attrs["autodb_supplier_name"] = supplier_name
         attrs["display_brand_name"] = supplier_name
@@ -306,6 +296,9 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
 
     def get_brand_source(self, obj: Product) -> str:
         return self._brand_payload(obj).brand_source
+
+    def get_current_brand_name(self, obj: Product) -> str:
+        return sanitize_product_name(str(obj.autodb_supplier_name or obj.display_brand_name or ""))
 
     def get_internal_import_key(self, obj: Product) -> str:
         return get_product_internal_import_key(obj)
@@ -410,6 +403,9 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
         return payload
 
     def _get_link_quality_status(self, obj: Product) -> str:
+        annotated_status = getattr(obj, "_autodb_link_quality_status", None)
+        if annotated_status is not None:
+            return str(annotated_status or "")
         article_key = str(getattr(obj, "autodb_article_key", "") or "").strip()
         if not article_key:
             return ""
@@ -425,12 +421,18 @@ class BackofficeCatalogProductSerializer(serializers.ModelSerializer):
         return self._get_link_quality_status(obj)
 
     def get_autodb_attributes_count(self, obj: Product) -> int:
+        annotated_count = getattr(obj, "_autodb_attributes_count", None)
+        if annotated_count is not None:
+            return int(annotated_count or 0)
         return ProductAttribute.objects.filter(
             product=obj,
             source=ProductAttribute.SOURCE_AUTODB_PRO,
         ).count()
 
     def get_autodb_fitments_count(self, obj: Product) -> int:
+        annotated_count = getattr(obj, "_autodb_fitments_count", None)
+        if annotated_count is not None:
+            return int(annotated_count or 0)
         return ProductFitment.objects.filter(
             product=obj,
             source=ProductFitment.SOURCE_AUTODB_PRO,

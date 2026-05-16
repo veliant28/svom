@@ -1,5 +1,6 @@
-from django.db.models import Exists, OuterRef, Q
+from django.db.models import CharField, Count, Exists, IntegerField, OuterRef, Q, Subquery, Value
 from django.db.models import Prefetch
+from django.db.models.functions import Coalesce
 from django.db.models.functions import Length
 from django.db.models.deletion import ProtectedError
 from rest_framework import status
@@ -12,7 +13,8 @@ from rest_framework.response import Response
 from apps.backoffice.api.serializers import BackofficeCatalogProductSerializer
 from apps.backoffice.permissions import IsStaffOrSuperuser
 from apps.catalog.models import AutoDbProductLinkQuality
-from apps.catalog.models import Product
+from apps.catalog.models import Product, ProductAttribute
+from apps.compatibility.models import ProductFitment
 from apps.pricing.models import SupplierOffer
 from apps.supplier_imports.models import SupplierRawOffer
 
@@ -66,12 +68,61 @@ class BackofficeCatalogProductListCreateAPIView(ListCreateAPIView):
             to_attr="backoffice_raw_offers",
         )
 
+    @staticmethod
+    def _with_backoffice_annotations(queryset):
+        link_quality_status_subquery = (
+            AutoDbProductLinkQuality.objects.filter(
+                product_id=OuterRef("pk"),
+                autodb_article_key=OuterRef("autodb_article_key"),
+            )
+            .order_by("-checked_at", "-updated_at")
+            .values("status")[:1]
+        )
+        autodb_attributes_count_subquery = (
+            ProductAttribute.objects.filter(
+                product_id=OuterRef("pk"),
+                source=ProductAttribute.SOURCE_AUTODB_PRO,
+            )
+            .order_by()
+            .values("product_id")
+            .annotate(total=Count("id"))
+            .values("total")[:1]
+        )
+        autodb_fitments_count_subquery = (
+            ProductFitment.objects.filter(
+                product_id=OuterRef("pk"),
+                source=ProductFitment.SOURCE_AUTODB_PRO,
+                is_stale=False,
+                excluded_from_public_filtering=False,
+                quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
+            )
+            .order_by()
+            .values("product_id")
+            .annotate(total=Count("id"))
+            .values("total")[:1]
+        )
+        return queryset.annotate(
+            _autodb_link_quality_status=Coalesce(
+                Subquery(link_quality_status_subquery, output_field=CharField()),
+                Value("", output_field=CharField()),
+            ),
+            _autodb_attributes_count=Coalesce(
+                Subquery(autodb_attributes_count_subquery, output_field=IntegerField()),
+                Value(0, output_field=IntegerField()),
+            ),
+            _autodb_fitments_count=Coalesce(
+                Subquery(autodb_fitments_count_subquery, output_field=IntegerField()),
+                Value(0, output_field=IntegerField()),
+            ),
+        )
+
     def get_queryset(self):
         queryset = (
-            Product.objects.select_related("brand", "category", "product_price", "product_price__policy")
+            Product.objects.select_related("category", "product_price", "product_price__policy")
             .prefetch_related(self._supplier_offers_prefetch(), self._raw_offers_prefetch())
             .order_by("name")
         )
+        queryset = self._with_backoffice_annotations(queryset)
         query = self.request.query_params.get("q", "").strip()
         brand = self.request.query_params.get("brand", "").strip()
         category = self.request.query_params.get("category", "").strip()
@@ -99,7 +150,6 @@ class BackofficeCatalogProductListCreateAPIView(ListCreateAPIView):
                 | Q(article__icontains=query)
                 | Q(name__icontains=query)
                 | Q(slug__icontains=query)
-                | Q(brand__name__icontains=query)
                 | Q(display_brand_name__icontains=query)
                 | Q(autodb_supplier_name__icontains=query)
                 | Q(category__name__icontains=query),
@@ -108,7 +158,7 @@ class BackofficeCatalogProductListCreateAPIView(ListCreateAPIView):
             if str(brand).isdigit():
                 queryset = queryset.filter(autodb_supplier_id=int(brand))
             else:
-                queryset = queryset.filter(brand_id=brand)
+                queryset = queryset.none()
         if category:
             queryset = queryset.filter(category_id=category)
         if supplier_code and supplier_code != "all":
@@ -190,7 +240,7 @@ class BackofficeCatalogProductListCreateAPIView(ListCreateAPIView):
 
         rows = (
             Product.objects.filter(id__in=page_ids)
-            .select_related("brand", "category", "product_price", "product_price__policy")
+            .select_related("category", "product_price", "product_price__policy")
             .prefetch_related(self._supplier_offers_prefetch(), self._raw_offers_prefetch())
         )
         by_id = {item.id: item for item in rows}
@@ -235,7 +285,7 @@ class BackofficeCatalogProductRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroy
             to_attr="backoffice_raw_offers",
         )
         return (
-            Product.objects.select_related("brand", "category", "product_price", "product_price__policy")
+            Product.objects.select_related("category", "product_price", "product_price__policy")
             .prefetch_related(supplier_offers_prefetch, raw_offers_prefetch)
             .order_by("name")
         )

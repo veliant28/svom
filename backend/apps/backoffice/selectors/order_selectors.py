@@ -86,7 +86,7 @@ def apply_operational_order_filters(queryset: QuerySet[Order], *, params) -> Que
 
 
 def get_procurement_supplier_offers_queryset() -> QuerySet[SupplierOffer]:
-    return SupplierOffer.objects.select_related("supplier", "product", "product__brand").order_by(
+    return SupplierOffer.objects.select_related("supplier", "product").order_by(
         "supplier__priority",
         "supplier__name",
         "id",

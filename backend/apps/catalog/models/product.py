@@ -123,6 +123,7 @@ class Product(UUIDPrimaryKeyMixin, TimestampedMixin, PublishableMixin):
         verbose_name = _("Товар")
         verbose_name_plural = _("Товары")
         indexes = [
+            models.Index(fields=("name",), name="catalog_product_name_idx"),
             models.Index(fields=("brand", "category"), name="cat_prod_brand_cat_idx"),
             models.Index(fields=("is_active", "is_featured"), name="catalog_product_featured_idx"),
         ]

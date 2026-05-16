@@ -53,10 +53,11 @@ class AutoDbRawOfferEnrichmentServiceTests(SimpleTestCase):
             self._offer(brand="AUTEX", article="820100", normalized_brand="AUTEX", normalized_article="820100", matched_product_id="p2"),
         ]
 
-        buckets, total, failed = service.build_pair_buckets(offers=offers)
+        buckets, total, failed, skipped_non_tecdoc = service.build_pair_buckets(offers=offers, tecdoc_only=False)
 
         self.assertEqual(total, 3)
         self.assertEqual(failed, 0)
+        self.assertEqual(skipped_non_tecdoc, 0)
         self.assertEqual(len(buckets), 2)
 
     def test_build_pair_buckets_uses_product_article_from_db(self):
@@ -73,9 +74,10 @@ class AutoDbRawOfferEnrichmentServiceTests(SimpleTestCase):
                 raw_payload={"Артикул": "324966", "Артикул ТД": "WP6873", "tecdoc_article": "214082", "Код": "0000001"},
             )
         ]
-        buckets, total, failed = service.build_pair_buckets(offers=offers)
+        buckets, total, failed, skipped_non_tecdoc = service.build_pair_buckets(offers=offers, tecdoc_only=False)
         self.assertEqual(total, 1)
         self.assertEqual(failed, 0)
+        self.assertEqual(skipped_non_tecdoc, 0)
         self.assertEqual(buckets[0].sample_article, "214082")
 
     @patch("apps.autodb.services.raw_offer_enrichment.Product.objects.in_bulk", return_value={})
@@ -101,6 +103,7 @@ class AutoDbRawOfferEnrichmentServiceTests(SimpleTestCase):
                 dry_run=True,
                 allow_remote=False,
                 enrich_related=False,
+                tecdoc_only=False,
                 batch_size=100,
                 progress_every=0,
                 progress_callback=None,
@@ -147,6 +150,7 @@ class AutoDbRawOfferEnrichmentServiceTests(SimpleTestCase):
                 dry_run=True,
                 allow_remote=True,
                 enrich_related=False,
+                tecdoc_only=False,
                 batch_size=100,
                 progress_every=0,
                 progress_callback=None,
@@ -177,6 +181,7 @@ class AutoDbRawOfferEnrichmentServiceTests(SimpleTestCase):
                 dry_run=False,
                 allow_remote=True,
                 enrich_related=False,
+                tecdoc_only=False,
                 batch_size=100,
                 progress_every=0,
                 progress_callback=None,
@@ -206,6 +211,7 @@ class AutoDbRawOfferEnrichmentServiceTests(SimpleTestCase):
                 dry_run=True,
                 allow_remote=False,
                 enrich_related=False,
+                tecdoc_only=False,
                 batch_size=3,
                 progress_every=0,
                 progress_callback=None,

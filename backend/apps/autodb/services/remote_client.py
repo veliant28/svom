@@ -26,11 +26,17 @@ VEHICLE_CATALOG_TABLE_WHITELIST = {
     "manufacturers",
     "models",
     "engines",
+    "axles",
+    "motorbikes",
     "passanger_cars",
     "passanger_car_engines",
     "passanger_car_attributes",
+    "commercial_vehicles",
+    "commercial_vehicle_engines",
+    "commercial_vehicle_attributes",
     "prd",
     "passanger_car_trees",
+    "commercial_vehicle_trees",
 }
 
 ARTICLE_CATALOG_TABLE_WHITELIST = {

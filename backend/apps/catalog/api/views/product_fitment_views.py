@@ -7,9 +7,11 @@ from rest_framework.views import APIView
 from apps.catalog.selectors import get_product_detail_queryset
 from apps.catalog.services.product_fitment_lookup import (
     get_autodb_fitment_queryset,
-    get_public_autodb_fitment_ids,
+    get_public_autodb_fitment_entries,
+    LINKAGE_TYPE_PASSENGER_CAR,
+    _linkage_type_key,
     parse_positive_int,
-    resolve_public_autodb_vehicle_map,
+    resolve_public_autodb_vehicle_map_by_entries,
     resolve_selected_passanger_car_id,
     resolve_selected_autodb_vehicle_display,
     resolve_selected_autocatalog_vehicle,
@@ -51,30 +53,41 @@ class ProductFitmentOptionsAPIView(APIView):
         autodb_maps = get_autodb_fitment_queryset(product=product, selected_vehicle=selected_vehicle)
         external_count = len(autodb_maps)
         if external_count == 0:
-            fitment_ids = set(get_public_autodb_fitment_ids(product=product))
-            fitment_vehicle_map = resolve_public_autodb_vehicle_map(passanger_car_ids=sorted(fitment_ids))
+            fitment_entries = get_public_autodb_fitment_entries(product=product, include_commercial=True)
+            fitment_vehicle_map = resolve_public_autodb_vehicle_map_by_entries(fitment_entries=fitment_entries)
             selected_vehicle_id = int(selected_vehicle_display.get("vehicle_id", 0)) if selected_vehicle_display else 0
             if selected_vehicle_id <= 0:
                 selected_vehicle_id = int(resolve_selected_passanger_car_id(request) or 0)
-            selected_vehicle_fits = selected_vehicle_id > 0 and selected_vehicle_id in fitment_ids
+            passenger_fitment_ids = {
+                int(item["vehicle_id"])
+                for item in fitment_entries
+                if _linkage_type_key(str(item.get("linkage_type") or "")) == _linkage_type_key(LINKAGE_TYPE_PASSENGER_CAR)
+                and int(item["vehicle_id"]) > 0
+            }
+            selected_vehicle_fits = selected_vehicle_id > 0 and selected_vehicle_id in passenger_fitment_ids
 
             vehicle_rows: list[dict] = []
-            for vehicle_id in sorted(fitment_ids):
-                vehicle = fitment_vehicle_map.get(vehicle_id)
+            for entry in fitment_entries:
+                vehicle_id = int(entry.get("vehicle_id") or 0)
+                linkage_type = str(entry.get("linkage_type") or "")
+                if vehicle_id <= 0:
+                    continue
+                vehicle = fitment_vehicle_map.get((_linkage_type_key(linkage_type), vehicle_id))
                 if vehicle is None:
                     vehicle = serialize_autodb_fitment_fallback_row(
                         passanger_car_id=vehicle_id,
                         selected_vehicle=selected_vehicle_display,
+                        linkage_type=linkage_type,
                     )
                     vehicle = {
                         "vehicle_id": int(vehicle_id),
                         "make": str(vehicle.get("make") or ""),
-                            "model": str(vehicle.get("model") or ""),
-                            "modification": str(vehicle.get("modification") or ""),
-                            "label": str(vehicle.get("label") or f"Автомобиль #{vehicle_id}"),
-                            "model_id": 0,
-                            "manufacturer_id": 0,
-                        }
+                        "model": str(vehicle.get("model") or ""),
+                        "modification": str(vehicle.get("modification") or ""),
+                        "label": str(vehicle.get("label") or f"Автомобиль #{vehicle_id}"),
+                        "model_id": 0,
+                        "manufacturer_id": 0,
+                    }
                 vehicle_rows.append(
                     {
                         "vehicle_id": int(vehicle.get("vehicle_id") or 0),
@@ -146,7 +159,7 @@ class ProductFitmentOptionsAPIView(APIView):
                     "selected_make": response_make,
                     "selected_model": response_model,
                     "selected_modification": response_modification,
-                    "total_fitments": len(fitment_ids),
+                    "total_fitments": len(vehicle_rows),
                 }
             )
 
@@ -241,24 +254,47 @@ class ProductFitmentRowsAPIView(APIView):
             results.extend(mapped_rows[offset : offset + limit])
             total_count = external_count
         else:
-            fitment_ids = sorted(set(get_public_autodb_fitment_ids(product=product)))
-            fitment_vehicle_map = resolve_public_autodb_vehicle_map(passanger_car_ids=fitment_ids)
+            fitment_entries = get_public_autodb_fitment_entries(product=product, include_commercial=True)
+            fitment_vehicle_map = resolve_public_autodb_vehicle_map_by_entries(fitment_entries=fitment_entries)
+            filtered_entries = [
+                item for item in fitment_entries
+                if int(item.get("vehicle_id") or 0) > 0
+            ]
             selected_vehicle_id = int(selected_vehicle_display.get("vehicle_id", 0)) if selected_vehicle_display else 0
             if selected_modification:
                 selected_modification_id = parse_positive_int(selected_modification)
                 if selected_modification_id:
-                    fitment_ids = [value for value in fitment_ids if value == selected_modification_id]
+                    filtered_entries = [
+                        item for item in filtered_entries
+                        if int(item.get("vehicle_id") or 0) == selected_modification_id
+                    ]
             if selected_make:
-                fitment_ids = [
-                    value
-                    for value in fitment_ids
-                    if str((fitment_vehicle_map.get(value) or {}).get("make") or "").strip() == selected_make
+                filtered_entries = [
+                    item for item in filtered_entries
+                    if str(
+                        (
+                            fitment_vehicle_map.get(
+                                (_linkage_type_key(str(item.get("linkage_type") or "")), int(item.get("vehicle_id") or 0))
+                            )
+                            or {}
+                        ).get("make")
+                        or ""
+                    ).strip()
+                    == selected_make
                 ]
             if selected_model:
-                fitment_ids = [
-                    value
-                    for value in fitment_ids
-                    if str((fitment_vehicle_map.get(value) or {}).get("model") or "").strip() == selected_model
+                filtered_entries = [
+                    item for item in filtered_entries
+                    if str(
+                        (
+                            fitment_vehicle_map.get(
+                                (_linkage_type_key(str(item.get("linkage_type") or "")), int(item.get("vehicle_id") or 0))
+                            )
+                            or {}
+                        ).get("model")
+                        or ""
+                    ).strip()
+                    == selected_model
                 ]
             if (
                 selected_vehicle_id > 0
@@ -266,11 +302,16 @@ class ProductFitmentRowsAPIView(APIView):
                 and not selected_model
                 and not selected_modification
             ):
-                fitment_ids = [value for value in fitment_ids if value == selected_vehicle_id]
+                filtered_entries = [
+                    item for item in filtered_entries
+                    if int(item.get("vehicle_id") or 0) == selected_vehicle_id
+                ]
 
-            total_count = len(fitment_ids)
-            for passanger_car_id in fitment_ids[offset : offset + limit]:
-                vehicle = fitment_vehicle_map.get(passanger_car_id)
+            total_count = len(filtered_entries)
+            for entry in filtered_entries[offset : offset + limit]:
+                passanger_car_id = int(entry.get("vehicle_id") or 0)
+                linkage_type = str(entry.get("linkage_type") or "")
+                vehicle = fitment_vehicle_map.get((_linkage_type_key(linkage_type), passanger_car_id))
                 if vehicle is not None:
                     results.append(serialize_autodb_fitment_mapping_from_selector(vehicle))
                     continue
@@ -278,6 +319,7 @@ class ProductFitmentRowsAPIView(APIView):
                     serialize_autodb_fitment_fallback_row(
                         passanger_car_id=passanger_car_id,
                         selected_vehicle=selected_vehicle_display,
+                        linkage_type=linkage_type,
                     )
                 )
 

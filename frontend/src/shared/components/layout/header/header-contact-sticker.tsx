@@ -4,13 +4,14 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 
 import { useFooterSettings } from "@/features/marketing/hooks/use-footer-settings";
+import { formatFooterPhoneDisplay } from "@/shared/lib/footer-phone";
 
 export function HeaderContactSticker() {
   const t = useTranslations("common");
   const { settings } = useFooterSettings();
 
   const workingHoursValue = (settings?.working_hours || "").trim() || t("footer.workingHoursValue");
-  const phoneValue = (settings?.phone || "").trim() || t("footer.phoneValue");
+  const phoneValue = formatFooterPhoneDisplay(settings?.phone || "") || t("footer.phoneValue");
   const phoneHref = `tel:${phoneValue.replace(/[^\d+]/g, "")}`;
 
   return (

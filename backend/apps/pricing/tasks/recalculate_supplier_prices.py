@@ -13,7 +13,7 @@ def recalculate_supplier_prices_task(
 ) -> dict[str, int]:
     queryset = (
         Product.objects.filter(is_active=True, supplier_offers__supplier_id__in=supplier_ids)
-        .select_related("brand", "category")
+        .select_related("category")
         .distinct()
     )
 

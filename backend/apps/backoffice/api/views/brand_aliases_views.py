@@ -25,7 +25,7 @@ class BrandAliasListCreateAPIView(ListCreateAPIView):
                 Q(supplier_brand_alias__icontains=query)
                 | Q(normalized_alias__icontains=query)
                 | Q(canonical_brand_name__icontains=query)
-                | Q(canonical_brand__name__icontains=query)
+                | Q(canonical_display_brand_name__icontains=query)
             )
         if source_code:
             queryset = queryset.filter(source__code=source_code)

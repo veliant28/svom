@@ -7,6 +7,11 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
+from apps.autodb.services.article_enrichment import AutoDbArticleEnrichmentService
+from apps.autodb.services.product_attribute_enrichment import AutoDbProductAttributeEnrichmentService
+from apps.autodb.services.product_fitment_enrichment import AutoDbProductFitmentEnrichmentService
+from apps.autodb.services.product_image_enrichment import AutoDbProductImageEnrichmentService
+from apps.autodb.services.product_name_enrichment import AutoDbProductNameEnrichmentService
 from apps.catalog.models import AutoDbProductLinkQuality, Product
 
 
@@ -19,6 +24,11 @@ class Command(BaseCommand):
         parser.add_argument("--only-safe", action="store_true", help="Process only decision=safe_link_candidate")
         parser.add_argument("--dry-run", action="store_true", help="Run without writes")
         parser.add_argument("--apply", action="store_true", help="Apply link writes")
+        parser.add_argument(
+            "--skip-post-enrichment",
+            action="store_true",
+            help="Skip post-link enrichment (name/fitment/attributes/images) during apply mode.",
+        )
         parser.add_argument("--limit", type=int, default=0, help="Limit rows after filters (0 = all)")
         parser.add_argument("--export-csv", type=str, required=True, help="Output dry-run csv path")
 
@@ -28,6 +38,8 @@ class Command(BaseCommand):
             raise CommandError("Provide --supplier")
         dry_run = bool(options.get("dry_run"))
         do_apply = bool(options.get("apply"))
+        skip_post_enrichment = bool(options.get("skip_post_enrichment"))
+        post_enrichment_enabled = do_apply and not skip_post_enrichment
         only_safe = bool(options.get("only_safe"))
         limit = max(int(options.get("limit") or 0), 0)
         input_path = Path(str(options.get("candidates_csv") or "")).expanduser()
@@ -83,6 +95,17 @@ class Command(BaseCommand):
             "would_change_category": 0,
             "would_change_images": 0,
             "would_change_primary_image": 0,
+            "post_enrichment_attempted": 0,
+            "post_enrichment_ok": 0,
+            "post_enrichment_partial": 0,
+            "post_enrichment_failed": 0,
+            "post_enrichment_name_updated": 0,
+            "post_enrichment_fitments_created": 0,
+            "post_enrichment_fitments_updated": 0,
+            "post_enrichment_attributes_created": 0,
+            "post_enrichment_attributes_updated": 0,
+            "post_enrichment_images_created": 0,
+            "post_enrichment_images_stale_marked": 0,
         }
 
         existing_quality_keys = {
@@ -198,6 +221,30 @@ class Command(BaseCommand):
                                     counters["updated_quality_rows"] += 1
                                 else:
                                     counters["unchanged_quality_rows"] += 1
+                                if post_enrichment_enabled:
+                                    counters["post_enrichment_attempted"] += 1
+                                    enrichment = self._run_post_link_enrichment(product=product)
+                                    status = str(enrichment.get("status") or "")
+                                    if status == "ok":
+                                        counters["post_enrichment_ok"] += 1
+                                    elif status == "partial":
+                                        counters["post_enrichment_partial"] += 1
+                                    else:
+                                        counters["post_enrichment_failed"] += 1
+                                    if str(enrichment.get("name_status") or "") == "updated":
+                                        counters["post_enrichment_name_updated"] += 1
+                                    counters["post_enrichment_fitments_created"] += int(enrichment.get("fitments_created") or 0)
+                                    counters["post_enrichment_fitments_updated"] += int(enrichment.get("fitments_updated") or 0)
+                                    counters["post_enrichment_attributes_created"] += int(
+                                        enrichment.get("attributes_created") or 0
+                                    )
+                                    counters["post_enrichment_attributes_updated"] += int(
+                                        enrichment.get("attributes_updated") or 0
+                                    )
+                                    counters["post_enrichment_images_created"] += int(enrichment.get("images_created") or 0)
+                                    counters["post_enrichment_images_stale_marked"] += int(
+                                        enrichment.get("images_stale_marked") or 0
+                                    )
                             except Exception:
                                 counters["failed"] += 1
                                 action = "failed"
@@ -281,6 +328,17 @@ class Command(BaseCommand):
             "would_change_category",
             "would_change_images",
             "would_change_primary_image",
+            "post_enrichment_attempted",
+            "post_enrichment_ok",
+            "post_enrichment_partial",
+            "post_enrichment_failed",
+            "post_enrichment_name_updated",
+            "post_enrichment_fitments_created",
+            "post_enrichment_fitments_updated",
+            "post_enrichment_attributes_created",
+            "post_enrichment_attributes_updated",
+            "post_enrichment_images_created",
+            "post_enrichment_images_stale_marked",
         ):
             self.stdout.write(f"- {key}: {counters[key]}")
         self.stdout.write("- price/stock changed=0")
@@ -366,3 +424,77 @@ class Command(BaseCommand):
             )
             return "updated"
         return "unchanged"
+
+    def _run_post_link_enrichment(self, *, product: Product) -> dict[str, int | str]:
+        supplier_id = int(getattr(product, "autodb_supplier_id", 0) or 0)
+        article_number = str(getattr(product, "autodb_article_number", "") or "").strip()
+        if supplier_id <= 0 or not article_number:
+            return {"status": "failed", "error": "missing_autodb_link"}
+
+        errors: list[str] = []
+        name_status = ""
+        fitments_created = 0
+        fitments_updated = 0
+        attributes_created = 0
+        attributes_updated = 0
+        images_created = 0
+        images_stale_marked = 0
+
+        try:
+            AutoDbArticleEnrichmentService().enrich_article(
+                supplier_id=supplier_id,
+                article_number=article_number,
+                dry_run=False,
+            )
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"clone:{exc}")
+
+        try:
+            name_result = AutoDbProductNameEnrichmentService().enrich_product(
+                product=product,
+                dry_run=False,
+                only_missing_translations=False,
+            )
+            name_status = str(name_result.status or "")
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"name:{exc}")
+
+        try:
+            fitment_result = AutoDbProductFitmentEnrichmentService().enrich_product(product=product, dry_run=False)
+            fitments_created = int(fitment_result.fitments_created or 0)
+            fitments_updated = int(fitment_result.fitments_updated or 0)
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"fitments:{exc}")
+
+        try:
+            attribute_result = AutoDbProductAttributeEnrichmentService().enrich_product(product=product, dry_run=False)
+            attributes_created = int(attribute_result.product_attributes_created or 0)
+            attributes_updated = int(attribute_result.product_attributes_updated or 0)
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"attributes:{exc}")
+
+        try:
+            image_result = AutoDbProductImageEnrichmentService().sync_product_images(
+                product=product,
+                dry_run=False,
+                prefer_gpl=True,
+            )
+            images_created = int(image_result.created or 0)
+            images_stale_marked = int(image_result.stale_marked or 0)
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"images:{exc}")
+
+        status = "ok"
+        if errors:
+            status = "failed" if len(errors) >= 5 else "partial"
+        return {
+            "status": status,
+            "name_status": name_status,
+            "fitments_created": fitments_created,
+            "fitments_updated": fitments_updated,
+            "attributes_created": attributes_created,
+            "attributes_updated": attributes_updated,
+            "images_created": images_created,
+            "images_stale_marked": images_stale_marked,
+            "errors_count": len(errors),
+        }

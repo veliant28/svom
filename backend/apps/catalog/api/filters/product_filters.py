@@ -1,10 +1,11 @@
 import django_filters
+from django.db.models import Q
 
 from apps.catalog.models import Category, Product
 
 
 class ProductFilterSet(django_filters.FilterSet):
-    brand = django_filters.CharFilter(field_name="brand__slug")
+    brand = django_filters.CharFilter(method="filter_brand")
     category = django_filters.CharFilter(method="filter_category")
     category_id = django_filters.UUIDFilter(method="filter_category_id")
     is_featured = django_filters.BooleanFilter(field_name="is_featured")
@@ -30,6 +31,18 @@ class ProductFilterSet(django_filters.FilterSet):
     def filter_category(self, queryset, name, value):
         category = Category.objects.filter(slug=str(value or "").strip()).first()
         return self._filter_category_with_descendants(queryset, category)
+
+    def filter_brand(self, queryset, name, value):
+        del name
+        raw = str(value or "").strip()
+        if not raw:
+            return queryset
+        if raw.isdigit():
+            return queryset.filter(autodb_supplier_id=int(raw))
+        return queryset.filter(
+            Q(display_brand_name__icontains=raw)
+            | Q(autodb_supplier_name__icontains=raw)
+        )
 
     def filter_category_id(self, queryset, name, value):
         category = Category.objects.filter(id=value).first()

@@ -140,7 +140,7 @@ class AutoDbMultiOfferConflictClassifier:
             )
             if article_norm:
                 offer_article_norms.add(article_norm)
-            candidate = self.brand_resolver.resolve(raw_brand=raw_brand or product.display_brand_name or product.brand.name, supplier_code=offer.supplier.code)
+            candidate = self.brand_resolver.resolve(raw_brand=raw_brand or product.display_brand_name or product.display_brand_name or product.autodb_supplier_name or "", supplier_code=offer.supplier.code)
             if candidate.supplier_id:
                 candidate_supplier_ids.add(int(candidate.supplier_id))
             value = self._decimal(offer.purchase_price)

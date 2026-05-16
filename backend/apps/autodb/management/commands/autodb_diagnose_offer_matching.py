@@ -94,7 +94,7 @@ class Command(BaseCommand):
                     variants=article_norm.search_variants,
                 )
 
-        buckets, _, failed_build = service.build_pair_buckets(offers=valid_offers)
+        buckets, _, failed_build, _skipped_non_tecdoc = service.build_pair_buckets(offers=valid_offers, tecdoc_only=False)
         if failed_build:
             reason_counts["invalid_article"] += failed_build
 

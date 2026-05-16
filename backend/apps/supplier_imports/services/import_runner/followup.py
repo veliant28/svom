@@ -7,7 +7,7 @@ from apps.search.services import ProductIndexer
 
 
 def reprice_products(*, affected_product_ids: list[str], source, run) -> dict[str, int]:
-    queryset = Product.objects.filter(id__in=affected_product_ids).select_related("brand", "category")
+    queryset = Product.objects.filter(id__in=affected_product_ids).select_related("category")
     stats = ProductRepricer().recalculate_products(
         queryset,
         source=PriceHistory.SOURCE_IMPORT,

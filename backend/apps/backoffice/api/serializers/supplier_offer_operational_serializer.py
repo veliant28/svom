@@ -10,7 +10,7 @@ class SupplierOfferOperationalSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
     product_sku = serializers.CharField(source="product.sku", read_only=True)
     product_article = serializers.CharField(source="product.article", read_only=True)
-    brand_name = serializers.CharField(source="product.brand.name", read_only=True)
+    brand_name = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = SupplierOffer
@@ -35,3 +35,9 @@ class SupplierOfferOperationalSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
+
+    def get_brand_name(self, obj: SupplierOffer) -> str:
+        product = getattr(obj, "product", None)
+        if product is None:
+            return ""
+        return str(getattr(product, "display_brand_name", "") or getattr(product, "autodb_supplier_name", "") or "").strip()

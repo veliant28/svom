@@ -28,7 +28,7 @@ class ProductSearchService:
             | Q(sku__icontains=cleaned_query)
             | Q(svom_sku__icontains=cleaned_query)
             | Q(article__icontains=cleaned_query)
-            | Q(brand__name__icontains=cleaned_query)
+            | Q(display_brand_name__icontains=cleaned_query)
         )
 
     def _search_ids_elasticsearch(self, query: str) -> list[str]:

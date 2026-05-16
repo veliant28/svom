@@ -50,4 +50,4 @@ class MarketingAPISmokeTests(APITestCase):
         self.assertEqual(len(promo_config_response.data["banners"]), 1)
         self.assertEqual(promo_config_response.data["settings"]["transition_effect"], "fade")
         self.assertEqual(footer_response.data["working_hours"], "Mon-Sat 10:00-17:00")
-        self.assertEqual(footer_response.data["phone"], "+380998979467")
+        self.assertEqual(footer_response.data["phone"], "38 (099) 897-94-67")

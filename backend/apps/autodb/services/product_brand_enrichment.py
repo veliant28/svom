@@ -58,7 +58,7 @@ class AutoDbProductBrandEnrichmentService:
         self._details_name_by_supplier_id: dict[int, str] = {}
 
     def build_queryset(self, *, only_linked: bool = False, product_id: str = "", include_all: bool = False) -> QuerySet[Product]:
-        qs = Product.objects.select_related("brand", "category").order_by("id")
+        qs = Product.objects.select_related("category").order_by("id")
         if only_linked:
             qs = qs.filter(autodb_supplier_id__isnull=False)
         elif not include_all:

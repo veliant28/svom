@@ -35,7 +35,6 @@ def _has_wishlist_fitment_filter(fitment_params) -> bool:
 def _wishlist_product_queryset(*, fitment_params=None):
     product_queryset = (
         WishlistItem.product.field.related_model.objects.select_related(
-            "brand",
             "category",
             "category__parent",
             "category__parent__parent",
@@ -85,7 +84,6 @@ def get_cart_queryset(*, user_id) -> QuerySet[Cart]:
                 queryset=(
                     CartItem.objects.select_related(
                         "product",
-                        "product__brand",
                         "product__product_price",
                     ).prefetch_related(*image_prefetches, supplier_offer_prefetch)
                 ),
@@ -106,7 +104,6 @@ def get_orders_queryset(*, user_id) -> QuerySet[Order]:
                 queryset=(
                     OrderItem.objects.select_related(
                         "product",
-                        "product__brand",
                         "product__product_price",
                     ).prefetch_related(*image_prefetches, supplier_offer_prefetch)
                 ),

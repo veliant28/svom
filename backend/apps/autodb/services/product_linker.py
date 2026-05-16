@@ -170,7 +170,7 @@ class AutoDbProductLinkService:
         )
 
     def link_product_by_id(self, *, product_id: str, dry_run: bool = False, allow_remote: bool = True) -> ProductLinkResult:
-        product = Product.objects.select_related("brand").get(pk=product_id)
+        product = Product.objects.get(pk=product_id)
         brand_name = getattr(product.brand, "name", "")
         article = product.article or product.sku
         return self.link_product(
@@ -231,7 +231,7 @@ class AutoDbProductLinkService:
         )
 
     def link_from_raw_offer(self, *, raw_offer_id: str, dry_run: bool = False, allow_remote: bool = True) -> ProductLinkResult:
-        raw_offer = SupplierRawOffer.objects.select_related("matched_product", "matched_product__brand").get(pk=raw_offer_id)
+        raw_offer = SupplierRawOffer.objects.select_related("matched_product").get(pk=raw_offer_id)
         if raw_offer.matched_product is None:
             raise ValueError("Raw offer is not linked to a Product.")
 

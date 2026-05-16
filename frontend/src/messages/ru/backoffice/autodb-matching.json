@@ -299,7 +299,7 @@
         "fitmentModelLabel": "Модель",
         "fitmentAllMakes": "Все марки",
         "fitmentAllModels": "Все модели",
-        "fitmentRows": "Строк применяемости: {count}",
+        "fitmentRows": "Совместимостей: {count}",
         "fitmentEmpty": "Нет данных применяемости",
         "skuPlaceholder": "SVOM SKU",
         "lookupLoading": "Поиск товаров...",
@@ -340,7 +340,11 @@
         "clonePlan": "План синхронизации",
         "findByArticle": "Найти по артикулу",
         "loadFullInfo": "Загрузить полную информацию",
-        "bindSkuTooltip": "Связать выбранный SKU с найденным артикулом Auto-DB"
+        "bindSkuTooltip": "Связать выбранный SKU с найденным артикулом Auto-DB",
+        "batchSizeMinus": "Уменьшить размер батча",
+        "batchSizePlus": "Увеличить размер батча",
+        "batchSizeInput": "Размер батча",
+        "runTecdocBatch": "Запустить TecDoc batch"
       },
       "toasts": {
         "dryRunCompleted": "Dry-run выполнен",
@@ -357,6 +361,8 @@
         "selectResultRequired": "Сначала выберите найденный бренд/артикул",
         "manualBindQueued": "Ручная связка поставлена в очередь",
         "manualBindDone": "Ручная связка выполнена",
+        "batchQueued": "TecDoc batch поставлен в очередь",
+        "batchAlreadyRunning": "TecDoc batch уже выполняется",
         "candidatesFound": "Найдено совпадений: {count}",
         "exportDownloaded": "CSV скопирован",
         "actionRequiresConfirmation": "Требуется подтверждение",

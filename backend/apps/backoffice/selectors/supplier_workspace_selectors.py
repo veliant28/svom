@@ -30,7 +30,7 @@ def get_supplier_source_by_code(*, supplier_code: str) -> ImportSource:
 
 def get_supplier_prices_queryset(*, supplier_code: str) -> QuerySet[SupplierOffer]:
     return (
-        SupplierOffer.objects.select_related("supplier", "product", "product__brand")
+        SupplierOffer.objects.select_related("supplier", "product")
         .filter(supplier__code=supplier_code)
         .order_by("product__name", "supplier_sku")
     )
@@ -43,7 +43,7 @@ def apply_supplier_prices_filters(*, queryset: QuerySet[SupplierOffer], query: s
             | Q(product__sku__icontains=query)
             | Q(product__article__icontains=query)
             | Q(product__name__icontains=query)
-            | Q(product__brand__name__icontains=query)
+            | Q(product__display_brand_name__icontains=query)
         )
     if availability in {"true", "1", "yes"}:
         queryset = queryset.filter(is_available=True)

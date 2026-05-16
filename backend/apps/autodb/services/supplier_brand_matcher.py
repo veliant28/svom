@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from django.db.models import Q
+from django.db.utils import OperationalError, ProgrammingError
 
 from apps.autodb.models import AutoDbSupplierBrandAlias
 from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
@@ -30,6 +31,24 @@ class SupplierBrandMatchResult:
     candidates: tuple[SupplierBrandCandidate, ...]
 
 
+def normalize_brand_lookup_key(value: str | None) -> str:
+    if not value:
+        return ""
+    normalized = str(value).upper().strip()
+    replacements = {
+        "Ä": "AE",
+        "Ö": "OE",
+        "Ü": "UE",
+        "ẞ": "SS",
+        "ß": "SS",
+        "Æ": "AE",
+        "Œ": "OE",
+    }
+    for source, target in replacements.items():
+        normalized = normalized.replace(source, target)
+    return normalize_brand(normalized)
+
+
 class SupplierBrandMatcher:
     LOOKUP_COLUMNS = ("description", "matchcode", "fulldescription")
     HIGH_CONFIDENCE_ALIAS = 0.9
@@ -41,7 +60,7 @@ class SupplierBrandMatcher:
         self._autodb_alias_cache: dict[str, dict[str, Any]] | None = None
 
     def resolve_many(self, brands: list[str], *, source_id: str | None = None, supplier_id: str | None = None) -> dict[str, SupplierBrandMatchResult]:
-        unique = sorted({normalize_brand(item) for item in brands if normalize_brand(item)})
+        unique = sorted({normalize_brand_lookup_key(item) for item in brands if normalize_brand_lookup_key(item)})
         if not unique:
             return {}
         rows = self._load_suppliers()
@@ -57,9 +76,9 @@ class SupplierBrandMatcher:
             row_desc = str(row.get("description") or "")
             row_matchcode = str(row.get("matchcode") or "")
             row_full = str(row.get("fulldescription") or "")
-            desc_norm = normalize_brand(row_desc)
-            match_norm = normalize_brand(row_matchcode)
-            full_norm = normalize_brand(row_full)
+            desc_norm = normalize_brand_lookup_key(row_desc)
+            match_norm = normalize_brand_lookup_key(row_matchcode)
+            full_norm = normalize_brand_lookup_key(row_full)
 
             for key in {desc_norm, full_norm}:
                 if key:
@@ -153,11 +172,14 @@ class SupplierBrandMatcher:
         scoped = scoped.filter(Q(supplier_id=supplier_id) | Q(supplier__isnull=True)) if supplier_id else scoped
 
         alias_map: dict[str, str] = {}
-        for item in scoped.order_by("-priority")[:5000]:
-            alias = normalize_brand(item.normalized_alias)
-            canonical = normalize_brand(item.canonical_brand_name or (item.canonical_brand.name if item.canonical_brand else ""))
-            if alias and canonical and alias not in alias_map:
-                alias_map[alias] = canonical
+        try:
+            for item in scoped.order_by("-priority")[:5000]:
+                alias = normalize_brand_lookup_key(item.normalized_alias)
+                canonical = normalize_brand_lookup_key(item.canonical_brand_name or (item.canonical_brand.name if item.canonical_brand else ""))
+                if alias and canonical and alias not in alias_map:
+                    alias_map[alias] = canonical
+        except (ProgrammingError, OperationalError):
+            alias_map = {}
 
         if source_id is None and supplier_id is None:
             self._alias_cache = alias_map
@@ -174,7 +196,7 @@ class SupplierBrandMatcher:
             )
             alias_map: dict[str, dict[str, Any]] = {}
             for item in queryset.iterator(chunk_size=500):
-                normalized = normalize_brand(item.normalized_raw_brand or item.raw_brand)
+                normalized = normalize_brand_lookup_key(item.normalized_raw_brand or item.raw_brand)
                 if not normalized:
                     continue
                 confidence = float(item.confidence or 0.0)
@@ -218,7 +240,7 @@ class SupplierBrandMatcher:
         return sorted(best.values(), key=lambda item: (-item.confidence, item.supplier_id))
 
     def _relax(self, value: str) -> str:
-        text = str(value or "").upper()
+        text = normalize_brand_lookup_key(value)
         for needle in ("-", ".", "_", " "):
             text = text.replace(needle, "")
         return text

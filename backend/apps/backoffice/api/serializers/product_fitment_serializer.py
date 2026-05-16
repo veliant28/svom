@@ -9,7 +9,7 @@ from apps.vehicles.services import normalize_vehicle_name
 
 
 class BackofficeProductFitmentSerializer(serializers.ModelSerializer):
-    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.select_related("brand", "category"))
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.select_related("category"))
     modification = serializers.PrimaryKeyRelatedField(
         queryset=VehicleModification.objects.select_related(
             "engine",

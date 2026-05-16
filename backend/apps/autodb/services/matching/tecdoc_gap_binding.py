@@ -251,15 +251,15 @@ class AutoDbTecdocGapBindingService:
 
         collected: dict[tuple[str, str], list[tuple[str, str]]] = defaultdict(list)
         offers = (
-            SupplierOffer.objects.select_related("product", "product__brand", "supplier")
+            SupplierOffer.objects.select_related("product", "supplier")
             .filter(supplier__code__in=supplier_codes)
-            .filter(Q(product__brand__name__in=brands) | Q(product__display_brand_name__in=brands))
+            .filter(Q(product__display_brand_name__in=brands) | Q(product__display_brand_name__in=brands))
             .order_by("supplier__code", "product__sku")
         )
         for offer in offers.iterator(chunk_size=5000):
             supplier_code = str(offer.supplier.code or "")
             display_brand = str(offer.product.display_brand_name or "")
-            brand_name = str(offer.product.brand.name or "")
+            brand_name = str(offer.product.display_brand_name or product.autodb_supplier_name or "" or "")
             key = (supplier_code, display_brand if (supplier_code, display_brand) in keys else brand_name)
             if key not in keys:
                 continue
@@ -476,7 +476,7 @@ class AutoDbTecdocGapBindingService:
             else:
                 summary["aliases_would_create"] += 1
 
-            qs = Product.objects.filter(brand__name=raw_brand)
+            qs = Product.objects.filter(display_brand_name=raw_brand)
             expected_hash = hashlib.sha1(f"{supplier_id}:{Product.BRAND_SOURCE_AUTODB_PRO}:{supplier_name}".encode("utf-8")).hexdigest()
             would_bind = qs.filter(autodb_supplier_id__isnull=True, brand_manually_locked=False).count()
             would_fix = qs.filter(autodb_supplier_id=supplier_id, brand_manually_locked=False).filter(
@@ -567,7 +567,7 @@ class AutoDbTecdocGapBindingService:
                 else:
                     summary["aliases_skipped_existing"] += 1
 
-                qs = Product.objects.filter(brand__name=raw_brand)
+                qs = Product.objects.filter(display_brand_name=raw_brand)
                 bound = qs.filter(autodb_supplier_id__isnull=True, brand_manually_locked=False).update(
                     autodb_supplier_id=supplier_id,
                     autodb_supplier_name=supplier_name,
@@ -749,9 +749,9 @@ class AutoDbTecdocGapBindingService:
 
     def _sample_products(self, *, raw_brand: str, supplier_code: str, limit: int = 5) -> tuple[str, str]:
         offers = (
-            SupplierOffer.objects.select_related("product", "product__brand", "supplier")
+            SupplierOffer.objects.select_related("product", "supplier")
             .filter(supplier__code=supplier_code)
-            .filter(Q(product__display_brand_name=raw_brand) | Q(product__brand__name=raw_brand))
+            .filter(Q(product__display_brand_name=raw_brand) | Q(product__display_brand_name=raw_brand))
             .order_by("product__sku")
             [: max(1, int(limit))]
         )
@@ -764,7 +764,7 @@ class AutoDbTecdocGapBindingService:
 
     def _brand_products(self, *, raw_brand: str, supplier_code: str):
         return Product.objects.filter(
-            Q(display_brand_name=raw_brand) | Q(brand__name=raw_brand),
+            Q(display_brand_name=raw_brand) | Q(display_brand_name=raw_brand),
             supplier_offers__supplier__code=supplier_code,
         ).distinct()
 

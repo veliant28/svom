@@ -84,7 +84,7 @@ class AutoDbProductFitmentAuditService:
         queryset = (
             Product.objects.filter(fitments__source=ProductFitment.SOURCE_AUTODB_PRO)
             .distinct()
-            .select_related("brand", "category")
+            .select_related("category")
             .prefetch_related(Prefetch("fitments", queryset=fitments_qs, to_attr="autodb_fitments"))
             .order_by("id")
         )

@@ -51,7 +51,7 @@ class BackofficeFooterSettingsAPITests(APITestCase):
 
         settings = FooterSettings.objects.get(code=FooterSettings.DEFAULT_CODE)
         self.assertEqual(settings.working_hours, "ПН-ПТ 09:00-18:00")
-        self.assertEqual(settings.phone, "+38(067)111-22-33")
+        self.assertEqual(settings.phone, "38 (067) 111-22-33")
 
     def test_manager_without_capability_cannot_access_footer_settings(self):
         response = self.client.get(

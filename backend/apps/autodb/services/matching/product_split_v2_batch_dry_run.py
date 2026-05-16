@@ -154,7 +154,7 @@ class AutoDbProductSplitV2BatchDryRunService:
                 )
                 continue
 
-            product = Product.objects.filter(id=product_id).select_related("brand").first()
+            product = Product.objects.filter(id=product_id).first()
             if product is None:
                 audit_rows.append(
                     {

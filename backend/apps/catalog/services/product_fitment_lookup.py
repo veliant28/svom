@@ -7,7 +7,13 @@ from dataclasses import dataclass
 from django.db.models import Q
 
 from apps.autodb.models import AutoDbArticleLinkage, AutoDbSupplier
-from apps.autodb.selectors import list_passanger_cars, list_passanger_cars_by_ids, list_vehicle_manufacturers, list_vehicle_models
+from apps.autodb.selectors import (
+    list_commercial_vehicles_by_ids,
+    list_passanger_cars,
+    list_passanger_cars_by_ids,
+    list_vehicle_manufacturers,
+    list_vehicle_models,
+)
 from apps.catalog.models import AutoDbProductLinkQuality, Product
 from apps.catalog.services.autodb_vehicle_display import (
     build_autodb_garage_vehicle_label,
@@ -19,6 +25,8 @@ from apps.supplier_imports.parsers.utils import normalize_article, normalize_bra
 from apps.users.models import GarageVehicle
 
 FITMENT_PROVIDER_AUTODB = "autodb"
+LINKAGE_TYPE_PASSENGER_CAR = "PassengerCar"
+LINKAGE_TYPE_COMMERCIAL_VEHICLE = "CommercialVehicle"
 
 
 @dataclass(frozen=True)
@@ -204,9 +212,24 @@ def serialize_autodb_fitment_mapping_from_selector(vehicle: dict[str, object]) -
     }
 
 
-def serialize_autodb_fitment_fallback_row(*, passanger_car_id: int, selected_vehicle: dict[str, str | int] | None = None) -> dict:
+def _linkage_type_key(value: str | None) -> str:
+    return str(value or "").strip().lower()
+
+
+def serialize_autodb_fitment_fallback_row(
+    *,
+    passanger_car_id: int,
+    selected_vehicle: dict[str, str | int] | None = None,
+    linkage_type: str = LINKAGE_TYPE_PASSENGER_CAR,
+) -> dict:
+    is_passenger = _linkage_type_key(linkage_type) == _linkage_type_key(LINKAGE_TYPE_PASSENGER_CAR)
+    fallback_label = (
+        f"Автомобиль #{passanger_car_id}"
+        if is_passenger
+        else f"Коммерческий транспорт #{passanger_car_id}"
+    )
     selected_id = int(selected_vehicle.get("vehicle_id", 0)) if selected_vehicle else 0
-    if selected_vehicle and selected_id == int(passanger_car_id):
+    if is_passenger and selected_vehicle and selected_id == int(passanger_car_id):
         label = str(selected_vehicle.get("label") or "")
         return {
             "id": f"autodb-{passanger_car_id}",
@@ -217,12 +240,13 @@ def serialize_autodb_fitment_fallback_row(*, passanger_car_id: int, selected_veh
             "engine": str(selected_vehicle.get("engine") or ""),
             "modification": str(selected_vehicle.get("modification") or label),
             "body": str(selected_vehicle.get("body") or ""),
-            "label": label or f"Автомобиль #{passanger_car_id}",
+            "label": label or fallback_label,
             "subtitle": str(selected_vehicle.get("subtitle") or ""),
             "note": "Auto-DB Pro applicability",
             "is_exact": False,
         }
 
+    label = fallback_label
     return {
         "id": f"autodb-{passanger_car_id}",
         "vehicle_id": int(passanger_car_id),
@@ -230,9 +254,9 @@ def serialize_autodb_fitment_fallback_row(*, passanger_car_id: int, selected_veh
         "model": "",
         "generation": "",
         "engine": "",
-        "modification": "",
+        "modification": label,
         "body": "",
-        "label": f"Автомобиль #{passanger_car_id}",
+        "label": label,
         "subtitle": "",
         "note": "Auto-DB Pro applicability",
         "is_exact": False,
@@ -281,28 +305,22 @@ def _normalized_signature(value: str | None) -> str:
 def get_autodb_fitment_queryset(*, product: Product, selected_vehicle: SelectedAutocatalogVehicle | None = None):
     if not _can_use_autodb_fitments_for_public(product=product):
         return []
-    fitment_ids = get_public_autodb_fitment_ids(product=product)
-    vehicle_map = resolve_public_autodb_vehicle_map(passanger_car_ids=fitment_ids)
+    fitment_entries = get_public_autodb_fitment_entries(product=product, include_commercial=True)
+    vehicle_map = resolve_public_autodb_vehicle_map_by_entries(fitment_entries=fitment_entries)
     rows: list[dict[str, object]] = []
-    for car_id in sorted(set(fitment_ids)):
-        vehicle = vehicle_map.get(int(car_id))
+    for entry in fitment_entries:
+        car_id = int(entry["vehicle_id"])
+        linkage_type = str(entry["linkage_type"] or "")
+        vehicle = vehicle_map.get((_linkage_type_key(linkage_type), car_id))
         if vehicle is not None:
             rows.append(dict(vehicle))
             continue
         rows.append(
-            {
-                "vehicle_id": int(car_id),
-                "model_id": 0,
-                "manufacturer_id": 0,
-                "make": "",
-                "model": "",
-                "modification": "",
-                "years": "",
-                "engine": "",
-                "body": "",
-                "label": f"Автомобиль #{int(car_id)}",
-                "subtitle": "",
-            }
+            serialize_autodb_fitment_fallback_row(
+                passanger_car_id=car_id,
+                selected_vehicle=None,
+                linkage_type=linkage_type,
+            )
         )
     if selected_vehicle is None:
         return rows
@@ -325,28 +343,95 @@ def get_autodb_fitment_queryset(*, product: Product, selected_vehicle: SelectedA
     return sorted(rows, key=_order)
 
 
-def get_public_autodb_fitment_ids(*, product: Product) -> list[int]:
+def get_public_autodb_fitment_entries(*, product: Product, include_commercial: bool = False) -> list[dict[str, object]]:
     if not _can_use_autodb_fitments_for_public(product=product):
         return []
-    fitment_ids: set[int] = set()
 
-    for value in _public_autodb_fitments_qs(product=product).values_list("autodb_passanger_car_id", flat=True).distinct():
-        parsed = parse_positive_int(value)
-        if parsed:
-            fitment_ids.add(parsed)
+    out: dict[tuple[int, str], dict[str, object]] = {}
+    autodb_rows = _public_autodb_fitments_qs(
+        product=product,
+        include_commercial=include_commercial,
+    ).values_list("autodb_passanger_car_id", "linkage_type")
+    for vehicle_id_raw, linkage_type_raw in autodb_rows.iterator(chunk_size=1000):
+        vehicle_id = parse_positive_int(vehicle_id_raw)
+        if not vehicle_id:
+            continue
+        linkage_type = str(linkage_type_raw or "").strip() or LINKAGE_TYPE_PASSENGER_CAR
+        key = (vehicle_id, _linkage_type_key(linkage_type))
+        if key in out:
+            continue
+        out[key] = {
+            "vehicle_id": vehicle_id,
+            "linkage_type": linkage_type,
+            "is_passenger": _linkage_type_key(linkage_type) == _linkage_type_key(LINKAGE_TYPE_PASSENGER_CAR),
+        }
 
-    for value in _public_manual_fitments_qs(product=product).values_list("autodb_passanger_car_id", flat=True).distinct():
-        parsed = parse_positive_int(value)
-        if parsed:
-            fitment_ids.add(parsed)
+    manual_rows = _public_manual_fitments_qs(product=product).values_list("autodb_passanger_car_id", "linkage_type")
+    for vehicle_id_raw, linkage_type_raw in manual_rows.iterator(chunk_size=1000):
+        vehicle_id = parse_positive_int(vehicle_id_raw)
+        if not vehicle_id:
+            continue
+        linkage_type = str(linkage_type_raw or "").strip() or LINKAGE_TYPE_PASSENGER_CAR
+        key = (vehicle_id, _linkage_type_key(linkage_type))
+        if key in out:
+            continue
+        out[key] = {
+            "vehicle_id": vehicle_id,
+            "linkage_type": linkage_type,
+            "is_passenger": _linkage_type_key(linkage_type) == _linkage_type_key(LINKAGE_TYPE_PASSENGER_CAR),
+        }
 
-    return sorted(fitment_ids)
+    return sorted(
+        out.values(),
+        key=lambda row: (
+            0 if bool(row.get("is_passenger")) else 1,
+            int(row.get("vehicle_id") or 0),
+            str(row.get("linkage_type") or ""),
+        ),
+    )
+
+
+def get_public_autodb_fitment_ids(*, product: Product, include_commercial: bool = False) -> list[int]:
+    entries = get_public_autodb_fitment_entries(product=product, include_commercial=include_commercial)
+    return sorted({int(row["vehicle_id"]) for row in entries if int(row["vehicle_id"]) > 0})
 
 
 def resolve_public_autodb_vehicle_map(*, passanger_car_ids: list[int]) -> dict[int, dict[str, object]]:
     if not passanger_car_ids:
         return {}
     return list_passanger_cars_by_ids(passanger_car_ids)
+
+
+def resolve_public_autodb_vehicle_map_by_entries(
+    *,
+    fitment_entries: list[dict[str, object]],
+) -> dict[tuple[str, int], dict[str, object]]:
+    if not fitment_entries:
+        return {}
+
+    passenger_ids: list[int] = []
+    commercial_ids: list[int] = []
+    for entry in fitment_entries:
+        vehicle_id = int(entry.get("vehicle_id") or 0)
+        if vehicle_id <= 0:
+            continue
+        if bool(entry.get("is_passenger")):
+            passenger_ids.append(vehicle_id)
+        else:
+            commercial_ids.append(vehicle_id)
+
+    out: dict[tuple[str, int], dict[str, object]] = {}
+    if passenger_ids:
+        passenger_map = list_passanger_cars_by_ids(passenger_ids)
+        for vehicle_id, payload in passenger_map.items():
+            out[(_linkage_type_key(LINKAGE_TYPE_PASSENGER_CAR), int(vehicle_id))] = payload
+
+    if commercial_ids:
+        commercial_map = list_commercial_vehicles_by_ids(commercial_ids)
+        for vehicle_id, payload in commercial_map.items():
+            out[(_linkage_type_key(LINKAGE_TYPE_COMMERCIAL_VEHICLE), int(vehicle_id))] = payload
+
+    return out
 
 
 def _can_use_autodb_fitments_for_public(*, product: Product) -> bool:
@@ -363,19 +448,23 @@ def _can_use_autodb_fitments_for_public(*, product: Product) -> bool:
     ).exists()
     if not has_trusted_quality:
         return False
-    return _public_autodb_fitments_qs(product=product).filter(autodb_article_key=article_key).exists()
+    return _public_autodb_fitments_qs(product=product, include_commercial=True).filter(
+        autodb_article_key=article_key
+    ).exists()
 
 
-def _public_autodb_fitments_qs(*, product: Product):
-    return ProductFitment.objects.filter(
+def _public_autodb_fitments_qs(*, product: Product, include_commercial: bool = False):
+    queryset = ProductFitment.objects.filter(
         product=product,
         source=ProductFitment.SOURCE_AUTODB_PRO,
-        linkage_type__iexact="PassengerCar",
         is_stale=False,
         excluded_from_public_filtering=False,
         quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
         autodb_passanger_car_id__isnull=False,
     )
+    if include_commercial:
+        return queryset
+    return queryset.filter(linkage_type__iexact=LINKAGE_TYPE_PASSENGER_CAR)
 
 
 def _public_manual_fitments_qs(*, product: Product):

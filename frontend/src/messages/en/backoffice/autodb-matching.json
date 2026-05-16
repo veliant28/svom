@@ -299,7 +299,7 @@
         "fitmentModelLabel": "Model",
         "fitmentAllMakes": "All makes",
         "fitmentAllModels": "All models",
-        "fitmentRows": "Fitment rows: {count}",
+        "fitmentRows": "Fitments: {count}",
         "fitmentEmpty": "No fitment data",
         "skuPlaceholder": "SVOM SKU",
         "lookupLoading": "Searching products...",
@@ -340,7 +340,11 @@
         "clonePlan": "Sync plan",
         "findByArticle": "Find by article",
         "loadFullInfo": "Load full product info",
-        "bindSkuTooltip": "Bind selected SKU to found Auto-DB article"
+        "bindSkuTooltip": "Bind selected SKU to found Auto-DB article",
+        "batchSizeMinus": "Decrease batch size",
+        "batchSizePlus": "Increase batch size",
+        "batchSizeInput": "Batch size",
+        "runTecdocBatch": "Run TecDoc batch"
       },
       "toasts": {
         "dryRunCompleted": "Dry-run completed",
@@ -357,6 +361,8 @@
         "selectResultRequired": "Select found brand/article first",
         "manualBindQueued": "Manual binding queued",
         "manualBindDone": "Manual binding completed",
+        "batchQueued": "TecDoc batch queued",
+        "batchAlreadyRunning": "TecDoc batch is already running",
         "candidatesFound": "Matches found: {count}",
         "exportDownloaded": "CSV copied",
         "actionRequiresConfirmation": "Confirmation required",

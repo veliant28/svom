@@ -100,15 +100,15 @@ def _iter_utr_pair_rows():
     current_queryset = (
         SupplierOffer.objects.filter(supplier__code="utr")
         .exclude(supplier_sku="")
-        .values("supplier_sku", "product__article", "product__brand__name")
+        .values("supplier_sku", "product__article", "product__display_brand_name", "product__autodb_supplier_name")
         .distinct()
-        .order_by("supplier_sku", "product__article", "product__brand__name")
+        .order_by("supplier_sku", "product__article", "product__display_brand_name", "product__autodb_supplier_name")
     )
     for row in current_queryset.iterator(chunk_size=2000):
         yield {
             "external_sku": row.get("supplier_sku") or "",
             "article": row.get("product__article") or "",
-            "brand_name": row.get("product__brand__name") or "",
+            "brand_name": row.get("product__display_brand_name") or row.get("product__autodb_supplier_name") or "",
         }
 
 

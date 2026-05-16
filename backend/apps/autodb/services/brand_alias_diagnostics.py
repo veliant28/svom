@@ -7,9 +7,13 @@ from typing import Any
 from django.db.models import Q
 
 from apps.autodb.models import AutoDbSupplierBrandAlias
-from apps.autodb.services.supplier_brand_matcher import SupplierBrandMatchResult, SupplierBrandMatcher
+from apps.autodb.services.supplier_brand_matcher import (
+    SupplierBrandMatchResult,
+    SupplierBrandMatcher,
+    normalize_brand_lookup_key,
+)
 from apps.supplier_imports.models import SupplierRawOffer
-from apps.supplier_imports.parsers.utils import normalize_article, normalize_brand
+from apps.supplier_imports.parsers.utils import normalize_article
 
 
 def _brand_hint_key(value: str) -> str:
@@ -24,6 +28,39 @@ INVALID_AUTO_BRANDS = {
     _brand_hint_key("ТМК"),
     _brand_hint_key("Промбизнес"),
     _brand_hint_key("Покраско"),
+    _brand_hint_key("AT"),
+    _brand_hint_key("K2"),
+    _brand_hint_key("LSA"),
+    _brand_hint_key("MITKA"),
+    _brand_hint_key("DAINTON"),
+    _brand_hint_key("LAVITA"),
+    _brand_hint_key("VIRA"),
+    _brand_hint_key("CS SYSTEM"),
+    _brand_hint_key("Elegant"),
+    _brand_hint_key("MOL"),
+    _brand_hint_key("XADO"),
+    _brand_hint_key("LOTOS"),
+    _brand_hint_key("HELPIX"),
+    _brand_hint_key("Hi-Gear"),
+    _brand_hint_key("TURTLE WAX"),
+    _brand_hint_key("TotalEnergies"),
+    _brand_hint_key("DOLONI"),
+    _brand_hint_key("YATO"),
+    _brand_hint_key("NANO5"),
+    _brand_hint_key("Mr.Build"),
+    _brand_hint_key("VERYLUBE"),
+    _brand_hint_key("Doctor Wax"),
+    _brand_hint_key("Done Deal"),
+    _brand_hint_key("STEEL POWER"),
+    _brand_hint_key("VOIN"),
+    _brand_hint_key("Smirdex"),
+    _brand_hint_key("VIROK"),
+    _brand_hint_key("NOVVIC"),
+    _brand_hint_key("STEP UP"),
+    _brand_hint_key("NANOX"),
+    _brand_hint_key("ANY WAY"),
+    _brand_hint_key("ATAMAN"),
+    _brand_hint_key("asia360"),
 }
 
 
@@ -88,7 +125,9 @@ class AutoDbBrandAliasDiagnosticsService:
         values = queryset.values("brand_name", "normalized_brand", "article", "external_sku")
         for row in values.iterator(chunk_size=2000):
             raw_brand = str(row.get("brand_name") or "").strip()
-            normalized = str(row.get("normalized_brand") or "").strip() or normalize_brand(raw_brand)
+            normalized = normalize_brand_lookup_key(raw_brand)
+            if not normalized:
+                normalized = normalize_brand_lookup_key(str(row.get("normalized_brand") or ""))
             if brand_filters and _brand_hint_key(raw_brand or normalized) not in brand_filters:
                 continue
             raw_key = raw_brand or normalized or "-"
@@ -192,7 +231,7 @@ class AutoDbBrandAliasDiagnosticsService:
             is_active=True,
         ).values("normalized_raw_brand", "autodb_supplier_id", "manual_confirmed", "confidence")
         for row in queryset.iterator(chunk_size=1000):
-            key = str(row.get("normalized_raw_brand") or "")
+            key = normalize_brand_lookup_key(str(row.get("normalized_raw_brand") or ""))
             if key and key not in result:
                 result[key] = row
         return result
@@ -219,4 +258,7 @@ class AutoDbBrandAliasDiagnosticsService:
             "note": note or "",
             "is_active": True,
         }
-        return AutoDbSupplierBrandAlias.objects.update_or_create(normalized_raw_brand=normalized_brand, defaults=defaults)
+        return AutoDbSupplierBrandAlias.objects.update_or_create(
+            normalized_raw_brand=normalize_brand_lookup_key(normalized_brand),
+            defaults=defaults,
+        )

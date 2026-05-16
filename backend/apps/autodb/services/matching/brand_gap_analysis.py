@@ -320,9 +320,9 @@ class AutoDbBrandGapAnalysisService:
 
     def _sample_products(self, *, raw_brand: str, supplier_code: str, limit: int = 5) -> tuple[str, str]:
         offers = (
-            SupplierOffer.objects.select_related("product", "product__brand", "supplier")
+            SupplierOffer.objects.select_related("product", "supplier")
             .filter(supplier__code=supplier_code)
-            .filter(Q(product__display_brand_name=raw_brand) | Q(product__brand__name=raw_brand))
+            .filter(Q(product__display_brand_name=raw_brand) | Q(product__display_brand_name=raw_brand))
             .order_by("product__sku")
             [: max(1, int(limit))]
         )
@@ -337,7 +337,7 @@ class AutoDbBrandGapAnalysisService:
     def _source_origin(self, *, raw_brand: str, supplier_code: str, sample_limit: int = 5) -> str:
         product_ids = list(
             SupplierOffer.objects.filter(supplier__code=supplier_code)
-            .filter(Q(product__display_brand_name=raw_brand) | Q(product__brand__name=raw_brand))
+            .filter(Q(product__display_brand_name=raw_brand) | Q(product__display_brand_name=raw_brand))
             .values_list("product_id", flat=True)[:200]
         )
         if not product_ids:

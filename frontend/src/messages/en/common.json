@@ -132,7 +132,7 @@
       "workingHours": "Working hours",
       "workingHoursValue": "Mon, Tue, Wed, Thu, Fri, Sat 10:00-17:00",
       "phone": "Phone",
-      "phoneValue": "+38(099)897-94-67"
+      "phoneValue": "38 (099) 897-94-67"
     },
     "theme": {
       "switch": "Toggle theme mode",
@@ -148,7 +148,7 @@
       "action": "Home"
     },
     "apiErrors": {
-      "phoneFormat": "Enter phone in format 38(0XX)XXX-XX-XX.",
+      "phoneFormat": "Enter phone in format 38 (0XX) XXX-XX-XX.",
       "required": "Fill in the required field.",
       "notBlank": "This field cannot be empty.",
       "invalidEmail": "Enter a valid email address.",

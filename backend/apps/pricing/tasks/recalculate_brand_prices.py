@@ -13,7 +13,7 @@ def recalculate_brand_prices_task(
 ) -> dict[str, int]:
     queryset = (
         Product.objects.filter(is_active=True, brand_id__in=brand_ids)
-        .select_related("brand", "category")
+        .select_related("category")
         .distinct()
     )
     return ProductRepricer().recalculate_products(

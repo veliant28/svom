@@ -15,6 +15,8 @@ from .autodb_matching import (
     BackofficeAutoDbMatchingRemoteQuotaAPIView,
     BackofficeAutoDbMatchingRunLocalDryRunAPIView,
     BackofficeAutoDbMatchingRunRemoteAPIView,
+    BackofficeAutoDbMatchingTecdocBatchRunAPIView,
+    BackofficeAutoDbMatchingTecdocBatchStateAPIView,
 )
 
 __all__ = [
@@ -34,4 +36,6 @@ __all__ = [
     "BackofficeAutoDbMatchingRemoteQuotaAPIView",
     "BackofficeAutoDbMatchingRunLocalDryRunAPIView",
     "BackofficeAutoDbMatchingRunRemoteAPIView",
+    "BackofficeAutoDbMatchingTecdocBatchRunAPIView",
+    "BackofficeAutoDbMatchingTecdocBatchStateAPIView",
 ]

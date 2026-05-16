@@ -299,7 +299,7 @@
         "fitmentModelLabel": "Модель",
         "fitmentAllMakes": "Усі марки",
         "fitmentAllModels": "Усі моделі",
-        "fitmentRows": "Рядків застосовності: {count}",
+        "fitmentRows": "Сумісностей: {count}",
         "fitmentEmpty": "Немає даних застосовності",
         "skuPlaceholder": "SVOM SKU",
         "lookupLoading": "Пошук товарів...",
@@ -340,7 +340,11 @@
         "clonePlan": "План синхронізації",
         "findByArticle": "Знайти за артикулом",
         "loadFullInfo": "Завантажити повну інформацію",
-        "bindSkuTooltip": "Звʼязати обраний SKU зі знайденим артикулом Auto-DB"
+        "bindSkuTooltip": "Звʼязати обраний SKU зі знайденим артикулом Auto-DB",
+        "batchSizeMinus": "Зменшити розмір батча",
+        "batchSizePlus": "Збільшити розмір батча",
+        "batchSizeInput": "Розмір батча",
+        "runTecdocBatch": "Запустити TecDoc batch"
       },
       "toasts": {
         "dryRunCompleted": "Dry-run выполнен",
@@ -357,6 +361,8 @@
         "selectResultRequired": "Спочатку оберіть знайдений бренд/артикул",
         "manualBindQueued": "Ручну звʼязку поставлено в чергу",
         "manualBindDone": "Ручну звʼязку виконано",
+        "batchQueued": "TecDoc batch поставлено в чергу",
+        "batchAlreadyRunning": "TecDoc batch уже виконується",
         "candidatesFound": "Знайдено збігів: {count}",
         "exportDownloaded": "CSV скопійовано",
         "actionRequiresConfirmation": "Потрібне підтвердження",

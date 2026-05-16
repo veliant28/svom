@@ -11,6 +11,10 @@ from .actions import (
     BackofficeAutoDbMatchingRunLocalDryRunAPIView,
     BackofficeAutoDbMatchingRunRemoteAPIView,
 )
+from .batch import (
+    BackofficeAutoDbMatchingTecdocBatchRunAPIView,
+    BackofficeAutoDbMatchingTecdocBatchStateAPIView,
+)
 from .dashboard import BackofficeAutoDbMatchingDashboardAPIView
 from .jobs import (
     BackofficeAutoDbMatchingBrandCoverageAPIView,
@@ -36,4 +40,6 @@ __all__ = [
     "BackofficeAutoDbMatchingRemoteQuotaAPIView",
     "BackofficeAutoDbMatchingRunLocalDryRunAPIView",
     "BackofficeAutoDbMatchingRunRemoteAPIView",
+    "BackofficeAutoDbMatchingTecdocBatchRunAPIView",
+    "BackofficeAutoDbMatchingTecdocBatchStateAPIView",
 ]

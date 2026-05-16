@@ -194,6 +194,22 @@ export type AutoDbActionResponse = {
   result?: Record<string, unknown>;
 };
 
+export type AutoDbTecdocBatchRun = {
+  id: string;
+  status: string;
+  run_type: string;
+  started_at: string | null;
+  finished_at: string | null;
+  summary: Record<string, unknown>;
+  error: string;
+};
+
+export type AutoDbTecdocBatchStateResponse = {
+  running: boolean;
+  active_run: AutoDbTecdocBatchRun | null;
+  latest_run: AutoDbTecdocBatchRun | null;
+};
+
 export type AutoDbSkuLookupRow = {
   id: string;
   sku: string;

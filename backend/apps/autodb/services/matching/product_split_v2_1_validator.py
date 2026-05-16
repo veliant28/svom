@@ -197,7 +197,7 @@ class AutoDbProductSplitV21Validator:
         }
 
     def validate_candidate(self, candidate: SplitV21Candidate) -> SplitV21ValidationResult:
-        source = Product.objects.select_related("brand").filter(id=candidate.source_product_id).first()
+        source = Product.objects.filter(id=candidate.source_product_id).first()
         blockers: list[str] = []
         notes: list[str] = []
 
@@ -262,7 +262,7 @@ class AutoDbProductSplitV21Validator:
                         status=self.STATUS_ALREADY_APPLIED,
                         clean=True,
                         blockers=tuple(),
-                        source_catalog_brand=str(source.brand.name if source.brand_id else ""),
+                        source_catalog_brand=str(source.display_brand_name or source.autodb_supplier_name or "" if source.brand_id else ""),
                         source_display_brand=str(source.display_brand_name or ""),
                         expected_source_brand=candidate.source_brand_after,
                         expected_new_brand=candidate.new_brand_after,
@@ -271,7 +271,7 @@ class AutoDbProductSplitV21Validator:
                         source_productprice_purchase=self._source_price_purchase(source),
                         expected_source_purchase_from_keep="",
                         expected_new_purchase_from_move="",
-                        source_catalog_brand_norm=normalize_brand(str(source.brand.name if source.brand_id else "")),
+                        source_catalog_brand_norm=normalize_brand(str(source.display_brand_name or source.autodb_supplier_name or "" if source.brand_id else "")),
                         expected_source_brand_norm=normalize_brand(candidate.source_brand_after),
                         notes=f"already applied on product_id={target_id}",
                     )
@@ -286,7 +286,7 @@ class AutoDbProductSplitV21Validator:
 
         expected_source_norm = normalize_brand(candidate.source_brand_after or candidate.keep_brand_norm)
         expected_new_norm = normalize_brand(candidate.new_brand_after or candidate.move_brand_norm)
-        source_norm = normalize_brand(str(source.brand.name if source.brand_id else ""))
+        source_norm = normalize_brand(str(source.display_brand_name or source.autodb_supplier_name or "" if source.brand_id else ""))
         display_norm = normalize_brand(str(source.display_brand_name or ""))
 
         if expected_source_norm and source_norm != expected_source_norm:
@@ -412,7 +412,7 @@ class AutoDbProductSplitV21Validator:
             status=status,
             clean=not blockers,
             blockers=tuple(sorted(set(blockers))),
-            source_catalog_brand=str(source.brand.name if source.brand_id else ""),
+            source_catalog_brand=str(source.display_brand_name or source.autodb_supplier_name or "" if source.brand_id else ""),
             source_display_brand=str(source.display_brand_name or ""),
             expected_source_brand=candidate.source_brand_after,
             expected_new_brand=candidate.new_brand_after,

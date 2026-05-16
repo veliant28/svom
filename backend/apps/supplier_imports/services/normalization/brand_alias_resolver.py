@@ -86,6 +86,17 @@ class BrandAliasResolverService:
         source: ImportSource | None,
         supplier: Supplier | None,
     ) -> SupplierBrandAlias | None:
+        del normalized_alias, source, supplier
+        # Default DB brand alias tables are intentionally removed.
+        return None
+
+    def _pick_alias_legacy(
+        self,
+        *,
+        normalized_alias: str,
+        source: ImportSource | None,
+        supplier: Supplier | None,
+    ) -> SupplierBrandAlias | None:
         cache_key = (
             normalized_alias,
             str(source.id) if source is not None else "",
@@ -108,7 +119,12 @@ class BrandAliasResolverService:
         else:
             queryset = queryset.filter(source__isnull=True, supplier__isnull=True)
 
-        aliases = list(queryset.select_related("canonical_brand", "supplier", "source"))
+        try:
+            aliases = list(queryset.select_related("canonical_brand", "supplier", "source"))
+        except (ProgrammingError, OperationalError):
+            # Brand alias table may be intentionally removed in default DB.
+            self._alias_cache[cache_key] = None
+            return None
         if not aliases:
             self._alias_cache[cache_key] = None
             return None

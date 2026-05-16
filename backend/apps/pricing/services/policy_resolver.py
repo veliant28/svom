@@ -23,16 +23,22 @@ class PolicyResolver:
         return PricingPolicy.objects.filter(is_active=True).order_by("priority", "id")
 
     def _brand_category_policy(self, product: Product):
+        brand_id = getattr(product, "brand_id", None)
+        if not brand_id:
+            return self._base_queryset().none()
         return self._base_queryset().filter(
             scope=PricingPolicy.SCOPE_BRAND_CATEGORY,
-            brand=product.brand,
+            brand_id=brand_id,
             category=product.category,
         )
 
     def _brand_policy(self, product: Product):
+        brand_id = getattr(product, "brand_id", None)
+        if not brand_id:
+            return self._base_queryset().none()
         return self._base_queryset().filter(
             scope=PricingPolicy.SCOPE_BRAND,
-            brand=product.brand,
+            brand_id=brand_id,
         )
 
     def _category_policy(self, product: Product):

@@ -13,7 +13,7 @@ def seed_pricing_demo(*, products: list[Product]) -> dict[str, int]:
     policies_count = _seed_pricing_policies(suppliers=suppliers)
 
     repricing_stats = ProductRepricer().recalculate_products(
-        Product.objects.filter(id__in=[product.id for product in products]).select_related("brand", "category"),
+        Product.objects.filter(id__in=[product.id for product in products]).select_related("category"),
         source=PriceHistory.SOURCE_AUTO,
         trigger_note="seed_demo_data",
     )

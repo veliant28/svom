@@ -15,12 +15,12 @@ class ProductBrandDisplay:
 
 
 def get_product_display_brand_payload(product: Product) -> ProductBrandDisplay:
-    current_brand_name = sanitize_brand_name(str(getattr(getattr(product, "brand", None), "name", "") or ""))
     linked = bool(getattr(product, "autodb_supplier_id", None))
 
     autodb_supplier_name = sanitize_brand_name(str(getattr(product, "autodb_supplier_name", "") or ""))
     display_brand_name = sanitize_brand_name(str(getattr(product, "display_brand_name", "") or ""))
     normalized_brand = sanitize_brand_name(str(getattr(product, "normalized_brand", "") or ""))
+    current_brand_name = display_brand_name or autodb_supplier_name or normalized_brand
     source = str(getattr(product, "brand_source", "") or "").strip()
 
     if linked and autodb_supplier_name:

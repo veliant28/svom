@@ -5,7 +5,11 @@ from apps.catalog.models import AutoDbProductLinkQuality, Product
 from apps.catalog.services.autodb_content import get_autodb_primary_image_url
 from apps.catalog.services.product_management import get_product_display_name
 from apps.catalog.services.product_branding import get_product_display_brand_payload
-from apps.catalog.services.product_sku import get_product_display_sku, get_product_manufacturer_article
+from apps.catalog.services.product_sku import (
+    get_product_catalog_article,
+    get_product_display_sku,
+    get_product_manufacturer_article,
+)
 from apps.catalog.services.product_stock import resolve_display_stock_qty
 from apps.catalog.services.product_fitment_lookup import (
     get_public_autodb_fitment_ids,
@@ -16,7 +20,7 @@ from apps.pricing.models import SupplierOffer
 from apps.pricing.services import ProductSellableSnapshotService
 from apps.supplier_imports.models import SupplierRawOffer
 
-from .product_shared_serializer import ProductBrandSerializer, ProductCategorySerializer
+from .product_shared_serializer import ProductCategorySerializer
 
 sellable_service = ProductSellableSnapshotService()
 
@@ -103,7 +107,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         return get_product_display_sku(obj)
 
     def get_article(self, obj: Product) -> str:
-        return get_product_manufacturer_article(obj)
+        return get_product_catalog_article(obj)
 
     def get_manufacturer_article(self, obj: Product) -> str:
         return get_product_manufacturer_article(obj)
@@ -158,14 +162,13 @@ class ProductListSerializer(serializers.ModelSerializer):
         return get_product_display_brand_payload(obj)
 
     def get_brand(self, obj: Product) -> dict:
-        brand = getattr(obj, "brand", None)
-        if brand is None:
-            return {"id": "", "name": self._brand_payload(obj).display_brand, "slug": ""}
-        serializer = ProductBrandSerializer(
-            instance=brand,
-            context={**self.context, "product": obj},
-        )
-        return serializer.data
+        payload = self._brand_payload(obj)
+        supplier_id = getattr(obj, "autodb_supplier_id", None)
+        return {
+            "id": str(supplier_id or ""),
+            "name": payload.display_brand,
+            "slug": str(supplier_id or ""),
+        }
 
     def get_display_brand(self, obj: Product) -> str:
         return self._brand_payload(obj).display_brand
@@ -306,7 +309,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         return get_vehicle_filter_policy(getattr(obj, "category", None))
 
     def get_fitment_count(self, obj: Product) -> int:
-        return len(set(get_public_autodb_fitment_ids(product=obj)))
+        return len(set(get_public_autodb_fitment_ids(product=obj, include_commercial=True)))
 
     def get_is_autodb_compatible_data_available(self, obj: Product) -> bool:
         return self.get_fitment_count(obj) > 0

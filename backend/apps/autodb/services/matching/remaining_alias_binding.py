@@ -122,7 +122,7 @@ class AutoDbRemainingAliasBindingService:
         return [asdict(item) for item in AutoDbBrandCoverageAuditService().audit(supplier_code='', limit=0)]
 
     def _brand_products(self, raw_brand: str):
-        return Product.objects.filter(brand__name=raw_brand)
+        return Product.objects.filter(display_brand_name=raw_brand)
 
     def _build_needs_alias_candidates(
         self,

@@ -147,6 +147,49 @@ class BackofficeAutoDbMatchingApiTests(APITestCase):
         self.assertIn("WA 6342", result["variants"])
         self.assertIn("fuzzy/OE/cross/name disabled", result["reason"])
 
+    def test_manual_local_search_resolves_commercial_vehicle_labels_in_compatibility_preview(self):
+        with connections["auto_db_pro"].cursor() as cursor:
+            cursor.execute(
+                'CREATE TABLE IF NOT EXISTS article_li ("supplierId" INTEGER, "DataSupplierArticleNumber" TEXT, "linkageId" INTEGER, "linkageTypeId" TEXT)'
+            )
+            cursor.execute(
+                'CREATE TABLE IF NOT EXISTS commercial_vehicles ("id" INTEGER, "modelid" INTEGER, "description" TEXT, "fulldescription" TEXT, "constructioninterval" TEXT)'
+            )
+            cursor.execute('CREATE TABLE IF NOT EXISTS models ("id" INTEGER, "description" TEXT, "fulldescription" TEXT)')
+            cursor.execute("TRUNCATE TABLE article_li")
+            cursor.execute("TRUNCATE TABLE commercial_vehicles")
+            cursor.execute("TRUNCATE TABLE models")
+            cursor.execute(
+                'INSERT INTO article_li ("supplierId", "DataSupplierArticleNumber", "linkageId", "linkageTypeId") VALUES (%s, %s, %s, %s)',
+                [10, "WA 6342", 4401, "CommercialVehicle"],
+            )
+            cursor.execute(
+                'INSERT INTO models ("id", "description", "fulldescription") VALUES (%s, %s, %s)',
+                [901, "SPRINTER", "MERCEDES-BENZ SPRINTER"],
+            )
+            cursor.execute(
+                'INSERT INTO commercial_vehicles ("id", "modelid", "description", "fulldescription", "constructioninterval") VALUES (%s, %s, %s, %s, %s)',
+                [4401, 901, "316 CDI", "MERCEDES-BENZ SPRINTER 316 CDI", "2018-"],
+            )
+
+        response = self.client.post(
+            reverse("backoffice_api:autodb-matching-manual-local"),
+            {"supplier_id": 10, "supplier_name": "WIX", "article": "WA6342"},
+            format="json",
+            **self._auth(self.staff_token),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        result = response.data["results"][0]
+        preview = result["details"]["compatibility_preview"]
+        self.assertTrue(preview)
+        first = preview[0]
+        self.assertEqual(first["linkage_type"], "CommercialVehicle")
+        self.assertEqual(first["label"], "MERCEDES-BENZ SPRINTER 316 CDI")
+        self.assertEqual(first["make"], "MERCEDES-BENZ")
+        self.assertEqual(first["model"], "SPRINTER")
+        self.assertNotEqual(first["label"], "CommercialVehicle #4401")
+
     def test_quota_endpoint_returns_recent_points_and_no_secrets(self):
         quota = AutoDbRemoteQuotaState.objects.create(remote_key=REMOTE_QUOTA_KEY)
         AutoDbRemoteQuotaTracker().record_quota_error(

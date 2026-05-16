@@ -5,6 +5,24 @@ from apps.core.db.mixins import TimestampedMixin, UUIDPrimaryKeyMixin
 from apps.supplier_imports.parsers.utils import normalize_brand
 
 
+def _normalize_brand_lookup_key(value: str | None) -> str:
+    if not value:
+        return ""
+    normalized = str(value).upper().strip()
+    replacements = {
+        "Ä": "AE",
+        "Ö": "OE",
+        "Ü": "UE",
+        "ẞ": "SS",
+        "ß": "SS",
+        "Æ": "AE",
+        "Œ": "OE",
+    }
+    for source, target in replacements.items():
+        normalized = normalized.replace(source, target)
+    return normalize_brand(normalized)
+
+
 class AutoDbSupplierBrandAlias(UUIDPrimaryKeyMixin, TimestampedMixin):
     SOURCE_AUTO = "auto"
     SOURCE_MANUAL = "manual"
@@ -39,7 +57,7 @@ class AutoDbSupplierBrandAlias(UUIDPrimaryKeyMixin, TimestampedMixin):
         ]
 
     def save(self, *args, **kwargs):
-        self.normalized_raw_brand = normalize_brand(self.raw_brand)[:255]
+        self.normalized_raw_brand = _normalize_brand_lookup_key(self.raw_brand)[:255]
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:

@@ -9,7 +9,7 @@ from django.core.management.base import BaseCommand, CommandError
 from apps.autodb.models import AutoDbSupplierBrandAlias
 from apps.autodb.services import AutoDbBrandAliasDiagnosticsService
 from apps.autodb.services.brand_alias_diagnostics import _brand_hint_key
-from apps.supplier_imports.parsers.utils import normalize_brand
+from apps.autodb.services.supplier_brand_matcher import normalize_brand_lookup_key
 
 
 def _parse_brand_filters(raw_value: str) -> set[str]:
@@ -266,7 +266,7 @@ class Command(BaseCommand):
             reader = csv.DictReader(fh)
             for row in reader:
                 raw_brand = str(row.get("raw_brand") or "").strip()
-                normalized_brand = normalize_brand(raw_brand)
+                normalized_brand = normalize_brand_lookup_key(raw_brand)
                 recommendation = str(row.get("recommended_action") or row.get("recommendation") or "").strip()
                 proposed_supplier_id = str(row.get("proposed_supplier_id") or row.get("recommended_supplier_id") or "").strip()
                 try:

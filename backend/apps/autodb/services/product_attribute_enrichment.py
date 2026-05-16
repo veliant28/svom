@@ -71,7 +71,7 @@ class AutoDbProductAttributeEnrichmentService:
         only_missing: bool,
         product_id: str,
     ) -> QuerySet[Product]:
-        qs = Product.objects.select_related("brand", "category").prefetch_related(
+        qs = Product.objects.select_related("category").prefetch_related(
             "product_attributes",
             "product_attributes__attribute",
             "product_attributes__attribute_value",

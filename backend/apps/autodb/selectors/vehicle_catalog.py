@@ -258,6 +258,130 @@ def _build_passanger_car_payload(row: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
+def _build_vehicle_selector_payload(
+    *,
+    vehicle_id: int,
+    model_id: int,
+    manufacturer_id: int,
+    manufacturer_description: Any,
+    manufacturer_full_description: Any,
+    model_description: Any,
+    model_full_description: Any,
+    vehicle_description: Any,
+    vehicle_full_description: Any,
+    construction_interval: Any,
+    fallback_label_prefix: str,
+) -> dict[str, Any]:
+    construction_interval_value = _safe_name(construction_interval)
+    parsed = parse_construction_interval_years(construction_interval_value)
+    make = _safe_name(manufacturer_description, manufacturer_full_description)
+    model_name = _safe_name(model_description, model_full_description)
+    modification = _safe_name(vehicle_description, vehicle_full_description)
+    years = ""
+    if parsed.year_from or parsed.year_to:
+        start_label = str(parsed.year_from) if parsed.year_from else "?"
+        end_label = str(parsed.year_to) if parsed.year_to else "..."
+        years = f"{start_label}–{end_label}"
+
+    label_parts = [part for part in [make, model_name, modification] if part]
+    label = " ".join(label_parts).strip()
+    if years:
+        label = f"{label} ({years})" if label else years
+    if not label:
+        label = f"{fallback_label_prefix} #{vehicle_id}"
+
+    return {
+        "vehicle_id": vehicle_id,
+        "model_id": model_id,
+        "manufacturer_id": manufacturer_id,
+        "make": make,
+        "model": model_name,
+        "modification": modification,
+        "years": years,
+        "engine": "",
+        "body": "",
+        "label": label,
+        "subtitle": "",
+    }
+
+
+def _list_vehicle_rows_by_ids(
+    *,
+    table: str,
+    vehicle_ids: Iterable[int | str],
+    fallback_label_prefix: str,
+) -> dict[int, dict[str, Any]]:
+    normalized_ids = sorted({_coerce_int(value) for value in vehicle_ids if _coerce_int(value) is not None})
+    if not normalized_ids:
+        return {}
+
+    vehicle_columns = set(_table_columns(table))
+    model_columns = set(_table_columns("models"))
+    manufacturer_columns = set(_table_columns("manufacturers"))
+    if not {"id", "modelid"}.issubset(vehicle_columns):
+        return {}
+    if "id" not in model_columns:
+        return {}
+
+    vehicle_select: list[str] = ['v."id" AS vehicle_id', 'v."modelid" AS model_id']
+    if "description" in vehicle_columns:
+        vehicle_select.append('v."description" AS vehicle_description')
+    if "fulldescription" in vehicle_columns:
+        vehicle_select.append('v."fulldescription" AS vehicle_full_description')
+    if "constructioninterval" in vehicle_columns:
+        vehicle_select.append('v."constructioninterval" AS construction_interval')
+
+    model_select: list[str] = ['m."id" AS model_row_id']
+    if "manufacturerid" in model_columns:
+        model_select.append('m."manufacturerid" AS manufacturer_id')
+    if "description" in model_columns:
+        model_select.append('m."description" AS model_description')
+    if "fulldescription" in model_columns:
+        model_select.append('m."fulldescription" AS model_full_description')
+
+    manufacturer_select: list[str] = []
+    if "description" in manufacturer_columns:
+        manufacturer_select.append('mf."description" AS manufacturer_description')
+    if "fulldescription" in manufacturer_columns:
+        manufacturer_select.append('mf."fulldescription" AS manufacturer_full_description')
+
+    select_clause = ", ".join([*vehicle_select, *model_select, *manufacturer_select])
+    placeholders = ", ".join(["%s"] * len(normalized_ids))
+    join_manufacturer = ""
+    if "manufacturerid" in model_columns:
+        join_manufacturer = 'LEFT JOIN "manufacturers" mf ON mf."id" = m."manufacturerid"'
+
+    sql = (
+        f"SELECT {select_clause} "
+        f'FROM "{table}" v '
+        'LEFT JOIN "models" m ON m."id" = v."modelid" '
+        f"{join_manufacturer} "
+        f'WHERE v."id" IN ({placeholders})'
+    )
+
+    rows = _fetch_rows(sql, normalized_ids)
+    payload: dict[int, dict[str, Any]] = {}
+    for row in rows:
+        vehicle_id = _coerce_int(row.get("vehicle_id"))
+        if vehicle_id is None:
+            continue
+
+        payload[vehicle_id] = _build_vehicle_selector_payload(
+            vehicle_id=vehicle_id,
+            model_id=_coerce_int(row.get("model_id")) or 0,
+            manufacturer_id=_coerce_int(row.get("manufacturer_id")) or 0,
+            manufacturer_description=row.get("manufacturer_description"),
+            manufacturer_full_description=row.get("manufacturer_full_description"),
+            model_description=row.get("model_description"),
+            model_full_description=row.get("model_full_description"),
+            vehicle_description=row.get("vehicle_description"),
+            vehicle_full_description=row.get("vehicle_full_description"),
+            construction_interval=row.get("construction_interval"),
+            fallback_label_prefix=fallback_label_prefix,
+        )
+    return payload
+
+
 def list_passanger_cars(model_id: int | str) -> list[dict[str, Any]]:
     model_id_int = _coerce_int(model_id)
     if model_id_int is None:
@@ -299,94 +423,19 @@ def list_passanger_cars(model_id: int | str) -> list[dict[str, Any]]:
 
 
 def list_passanger_cars_by_ids(passanger_car_ids: Iterable[int | str]) -> dict[int, dict[str, Any]]:
-    normalized_ids = sorted({_coerce_int(value) for value in passanger_car_ids if _coerce_int(value) is not None})
-    if not normalized_ids:
-        return {}
-
-    pc_columns = set(_table_columns("passanger_cars"))
-    model_columns = set(_table_columns("models"))
-    manufacturer_columns = set(_table_columns("manufacturers"))
-    if not {"id", "modelid"}.issubset(pc_columns):
-        return {}
-    if "id" not in model_columns:
-        return {}
-
-    pc_select: list[str] = ['pc."id" AS passanger_car_id', 'pc."modelid" AS model_id']
-    if "description" in pc_columns:
-        pc_select.append('pc."description" AS passanger_description')
-    if "fulldescription" in pc_columns:
-        pc_select.append('pc."fulldescription" AS passanger_full_description')
-    if "constructioninterval" in pc_columns:
-        pc_select.append('pc."constructioninterval" AS construction_interval')
-
-    model_select: list[str] = ['m."id" AS model_row_id']
-    if "manufacturerid" in model_columns:
-        model_select.append('m."manufacturerid" AS manufacturer_id')
-    if "description" in model_columns:
-        model_select.append('m."description" AS model_description')
-    if "fulldescription" in model_columns:
-        model_select.append('m."fulldescription" AS model_full_description')
-
-    manufacturer_select: list[str] = []
-    if "description" in manufacturer_columns:
-        manufacturer_select.append('mf."description" AS manufacturer_description')
-    if "fulldescription" in manufacturer_columns:
-        manufacturer_select.append('mf."fulldescription" AS manufacturer_full_description')
-
-    select_clause = ", ".join([*pc_select, *model_select, *manufacturer_select])
-    placeholders = ", ".join(["%s"] * len(normalized_ids))
-
-    join_manufacturer = ""
-    if "manufacturerid" in model_columns:
-        join_manufacturer = 'LEFT JOIN "manufacturers" mf ON mf."id" = m."manufacturerid"'
-
-    sql = (
-        f"SELECT {select_clause} "
-        'FROM "passanger_cars" pc '
-        'LEFT JOIN "models" m ON m."id" = pc."modelid" '
-        f"{join_manufacturer} "
-        f"WHERE pc.\"id\" IN ({placeholders})"
+    return _list_vehicle_rows_by_ids(
+        table="passanger_cars",
+        vehicle_ids=passanger_car_ids,
+        fallback_label_prefix="Автомобиль",
     )
 
-    rows = _fetch_rows(sql, normalized_ids)
-    payload: dict[int, dict[str, Any]] = {}
-    for row in rows:
-        vehicle_id = _coerce_int(row.get("passanger_car_id"))
-        if vehicle_id is None:
-            continue
 
-        construction_interval = _safe_name(row.get("construction_interval"))
-        parsed = parse_construction_interval_years(construction_interval)
-        make = _safe_name(row.get("manufacturer_description"), row.get("manufacturer_full_description"))
-        model_name = _safe_name(row.get("model_description"), row.get("model_full_description"))
-        modification = _safe_name(row.get("passanger_description"), row.get("passanger_full_description"))
-        years = ""
-        if parsed.year_from or parsed.year_to:
-            start_label = str(parsed.year_from) if parsed.year_from else "?"
-            end_label = str(parsed.year_to) if parsed.year_to else "..."
-            years = f"{start_label}–{end_label}"
-
-        label_parts = [part for part in [make, model_name, modification] if part]
-        label = " ".join(label_parts).strip()
-        if years:
-            label = f"{label} ({years})" if label else years
-        if not label:
-            label = f"Автомобиль #{vehicle_id}"
-
-        payload[vehicle_id] = {
-            "vehicle_id": vehicle_id,
-            "model_id": _coerce_int(row.get("model_id")) or 0,
-            "manufacturer_id": _coerce_int(row.get("manufacturer_id")) or 0,
-            "make": make,
-            "model": model_name,
-            "modification": modification,
-            "years": years,
-            "engine": "",
-            "body": "",
-            "label": label,
-            "subtitle": "",
-        }
-    return payload
+def list_commercial_vehicles_by_ids(commercial_vehicle_ids: Iterable[int | str]) -> dict[int, dict[str, Any]]:
+    return _list_vehicle_rows_by_ids(
+        table="commercial_vehicles",
+        vehicle_ids=commercial_vehicle_ids,
+        fallback_label_prefix="Коммерческий транспорт",
+    )
 
 
 def get_passanger_car(passanger_car_id: int | str) -> dict[str, Any] | None:

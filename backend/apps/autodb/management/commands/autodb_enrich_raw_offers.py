@@ -23,6 +23,7 @@ class Command(BaseCommand):
         parser.add_argument("--batch-size", type=int, default=1000, help="Batch size for offers/pairs pipeline.")
         parser.add_argument("--no-remote", action="store_true", help="Disable remote Auto-DB Pro fallback for missing local pairs.")
         parser.add_argument("--enrich-related", action="store_true", help="Fetch related article_* rows in bulk for found composite keys.")
+        parser.add_argument("--tecdoc-only", action="store_true", help="Hard filter: process only TecDoc-like brands (skip explicit non-TecDoc brands).")
         parser.add_argument("--progress-every", type=int, default=0, help="Print progress every N processed pairs.")
         parser.add_argument(
             "--wait-for-autodb",
@@ -40,6 +41,7 @@ class Command(BaseCommand):
         limit = max(int(options.get("limit") or 0), 0)
         no_remote_flag = bool(options.get("no_remote"))
         enrich_related = bool(options.get("enrich_related"))
+        tecdoc_only = bool(options.get("tecdoc_only"))
         progress_every = max(int(options.get("progress_every") or 0), 0)
         wait_for_autodb = max(int(options.get("wait_for_autodb") or 0), 0)
         remote_disabled_reason = ""
@@ -99,7 +101,7 @@ class Command(BaseCommand):
         self.stdout.write(
             "Auto_DB_Pro raw offers enrichment started "
             f"dry_run={dry_run} allow_remote={allow_remote} batch_size={batch_size} enrich_related={enrich_related} "
-            f"wait_for_autodb={wait_for_autodb}"
+            f"tecdoc_only={tecdoc_only} wait_for_autodb={wait_for_autodb}"
         )
 
         service = AutoDbRawOfferEnrichmentService()
@@ -109,6 +111,7 @@ class Command(BaseCommand):
             allow_remote=allow_remote,
             remote_disabled_reason=remote_disabled_reason,
             enrich_related=enrich_related,
+            tecdoc_only=tecdoc_only,
             batch_size=batch_size,
             progress_every=progress_every,
             progress_callback=self._on_progress if progress_every > 0 else None,
@@ -119,6 +122,7 @@ class Command(BaseCommand):
             dry_run=dry_run,
             allow_remote=allow_remote,
             enrich_related=enrich_related,
+            tecdoc_only=tecdoc_only,
         )
 
     def _build_offer_queryset(self, *, supplier_codes: list[str], only_unlinked: bool, only_matched_products: bool):
@@ -159,7 +163,15 @@ class Command(BaseCommand):
             f"elapsed={elapsed_seconds:.1f}s rate={rate:.2f}/s eta={eta_seconds:.1f}s"
         )
 
-    def _print_summary(self, *, summary: RawOfferEnrichmentSummary, dry_run: bool, allow_remote: bool, enrich_related: bool) -> None:
+    def _print_summary(
+        self,
+        *,
+        summary: RawOfferEnrichmentSummary,
+        dry_run: bool,
+        allow_remote: bool,
+        enrich_related: bool,
+        tecdoc_only: bool,
+    ) -> None:
         self.stdout.write("Auto_DB_Pro raw offers enrichment summary:")
         self.stdout.write(f"- total raw offers: {summary.total_raw_offers}")
         self.stdout.write(f"- unique pairs: {summary.unique_pairs}")
@@ -167,6 +179,7 @@ class Command(BaseCommand):
         self.stdout.write(f"- remote hits: {summary.remote_hits}")
         self.stdout.write(f"- not found: {summary.not_found}")
         self.stdout.write(f"- failed: {summary.failed}")
+        self.stdout.write(f"- skipped non-tecdoc: {summary.skipped_non_tecdoc}")
         self.stdout.write(f"- enriched articles: {summary.enriched_articles}")
         self.stdout.write(f"- linked products: {summary.linked_products}")
         self.stdout.write(f"- skipped no matched_product: {summary.skipped_no_matched_product}")
@@ -182,5 +195,6 @@ class Command(BaseCommand):
         if dry_run:
             self.stdout.write("- mode: dry-run (no Product/SupplierRawOffer writes)")
         self.stdout.write("- lookup mode: local-first with remote fallback" if allow_remote else "- lookup mode: local-only")
+        self.stdout.write("- tecdoc_only: enabled" if tecdoc_only else "- tecdoc_only: disabled")
         if enrich_related and dry_run:
             self.stdout.write("- enrich-related: requested but skipped in dry-run")

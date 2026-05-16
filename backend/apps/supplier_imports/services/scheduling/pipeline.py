@@ -366,7 +366,7 @@ class ScheduledSupplierImportPipelineService:
     def _reprice_product_ids(self, *, product_ids: list[str], source_code: str, run_id: str) -> dict[str, int]:
         if not product_ids:
             return {"repriced": 0, "skipped": 0, "errors": 0}
-        queryset = Product.objects.filter(id__in=product_ids).select_related("brand", "category")
+        queryset = Product.objects.filter(id__in=product_ids).select_related("category")
         return ProductRepricer().recalculate_products(
             queryset,
             source=PriceHistory.SOURCE_IMPORT,

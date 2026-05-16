@@ -129,7 +129,7 @@ class AutoDbProductSplitV2BlockerDiagnosisService:
         if not product_ids:
             return out
 
-        products = Product.objects.select_related("brand").filter(id__in=product_ids)
+        products = Product.objects.filter(id__in=product_ids)
         out["products"] = {str(item.id): item for item in products}
 
         attr_rows = ProductAttribute.objects.filter(product_id__in=product_ids).values("product_id").annotate(c=Count("id"))
@@ -303,7 +303,7 @@ class AutoDbProductSplitV2BlockerDiagnosisService:
         max_batch_size: int,
     ) -> list[dict[str, Any]]:
         product_ids = [str(row.get("product_id") or "").strip() for row in source_rows if str(row.get("product_id") or "").strip()]
-        product_map = {str(item.id): item for item in Product.objects.select_related("brand").filter(id__in=product_ids)}
+        product_map = {str(item.id): item for item in Product.objects.filter(id__in=product_ids)}
         attr_counts = self._count_by_product(ProductAttribute.objects.filter(product_id__in=product_ids).values("product_id").annotate(c=Count("id")))
         fitment_counts = self._count_by_product(ProductFitment.objects.filter(product_id__in=product_ids).values("product_id").annotate(c=Count("id")))
         image_counts = self._count_by_product(ProductImage.objects.filter(product_id__in=product_ids).values("product_id").annotate(c=Count("id")))

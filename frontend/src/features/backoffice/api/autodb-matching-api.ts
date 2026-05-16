@@ -8,6 +8,7 @@ import type {
   AutoDbRemoteQuota,
   AutoDbSearchResponse,
   AutoDbSkuLookupResponse,
+  AutoDbTecdocBatchStateResponse,
 } from "@/features/backoffice/types/backoffice";
 
 const BASE = "/backoffice/autodb-matching";
@@ -80,4 +81,12 @@ export function planAutoDbSafeLink(token: string, body: Record<string, unknown>)
 
 export function planAutoDbEnrichment(token: string, body: Record<string, unknown>) {
   return postJson<AutoDbActionResponse, Record<string, unknown>>(`${BASE}/plan-enrichment/`, body, undefined, { token });
+}
+
+export function getAutoDbTecdocBatchState(token: string) {
+  return getJson<AutoDbTecdocBatchStateResponse>(`${BASE}/tecdoc-batch/state/`, undefined, { token });
+}
+
+export function runAutoDbTecdocBatch(token: string, body: { batch_size: number }) {
+  return postJson<AutoDbActionResponse, { batch_size: number }>(`${BASE}/tecdoc-batch/run/`, body, undefined, { token });
 }

@@ -85,6 +85,7 @@ class ManualAutoDbSearch:
             article_number=article_for_linkage,
             source="local",
         )
+        product_title = safe_str(previews.get("product_title"))
         linkage_present = (article_prd_rows + article_links_rows) > 0 and prd_rows > 0
         status_value = "not_found"
         if matched_table and linkage_present:
@@ -94,6 +95,8 @@ class ManualAutoDbSearch:
         details_article = previews["article"] if previews["article"] else matched_row
         if matched_row:
             details_article = {**details_article, **matched_row}
+        if product_title and not safe_str(details_article.get("articleName")):
+            details_article = {**details_article, "articleName": product_title}
 
         return {
             "source": "local",
@@ -109,7 +112,7 @@ class ManualAutoDbSearch:
             "article_key": f"{supplier_id}:{matched_article}" if matched_article else "",
             "prd_linkage_present": linkage_present,
             "prd_id": prd_ids[0] if prd_ids else None,
-            "generic": "",
+            "generic": product_title,
             "category_metadata_present": prd_rows > 0,
             "attributes_available_count": attributes_rows,
             "fitments_available_count": fitment_rows,
@@ -321,8 +324,14 @@ class ManualAutoDbSearch:
             source=source,
             limit=images_limit,
         )
+        product_title = self._primary_prd_title(
+            supplier_id=supplier_id,
+            article_number=article_number,
+            source=source,
+        )
         return {
             "article": article_row,
+            "product_title": product_title,
             "attributes_preview": self._attribute_preview(attribute_rows),
             "compatibility_preview": self._compatibility_preview(
                 supplier_id=supplier_id,
@@ -331,6 +340,99 @@ class ManualAutoDbSearch:
             ),
             "image_thumbnails": self._extract_image_urls(image_rows),
         }
+
+    def _primary_prd_title(self, *, supplier_id: int, article_number: str, source: str) -> str:
+        prd_ids: list[int] = []
+        for table in ("article_prd", "article_links"):
+            rows = self._article_rows(
+                table=table,
+                supplier_id=supplier_id,
+                article_number=article_number,
+                source=source,
+                limit=120,
+            )
+            for row in rows:
+                parsed_id = self._safe_int(
+                    row.get("productId")
+                    or row.get("productid")
+                    or row.get("ProductId")
+                    or row.get("prdId")
+                    or row.get("prdid")
+                    or row.get("id")
+                )
+                if parsed_id is not None and parsed_id not in prd_ids:
+                    prd_ids.append(parsed_id)
+            if prd_ids:
+                break
+        if not prd_ids:
+            return ""
+
+        prd_rows = self._prd_rows_by_ids(prd_ids=prd_ids[:40], source=source)
+        if not prd_rows:
+            return ""
+
+        by_id: dict[int, dict[str, Any]] = {}
+        for row in prd_rows:
+            parsed_id = self._safe_int(row.get("id") or row.get("productId") or row.get("productid"))
+            if parsed_id is not None and parsed_id not in by_id:
+                by_id[parsed_id] = row
+
+        for prd_id in prd_ids:
+            row = by_id.get(prd_id)
+            if not row:
+                continue
+            title = safe_str(
+                row.get("description")
+                or row.get("Description")
+                or row.get("normalizeddescription")
+                or row.get("NormalizedDescription")
+                or row.get("fullDescription")
+                or row.get("assemblygroupdescription")
+            )
+            if title:
+                return title
+        return ""
+
+    def _prd_rows_by_ids(self, *, prd_ids: list[int], source: str) -> list[dict[str, Any]]:
+        if not prd_ids:
+            return []
+        if source == "remote":
+            try:
+                remote_columns = self.storage.get_remote_columns("prd")
+                id_col = find_column_name(remote_columns, ["id", "productId", "productid", "ProductId", "prdId", "prdid"])
+                if not id_col:
+                    return []
+                selected = [
+                    column
+                    for column in ("id", "productId", "productid", "description", "Description", "normalizeddescription", "NormalizedDescription")
+                    if find_column_name(remote_columns, [column])
+                ]
+                return self.storage.fetch_remote_rows_in(
+                    table="prd",
+                    column=id_col,
+                    values=prd_ids,
+                    columns=selected or remote_columns,
+                    limit=max(len(prd_ids) * 3, 120),
+                )
+            except Exception:  # noqa: BLE001
+                return []
+
+        local_columns = self.storage.get_local_columns("prd")
+        id_col = find_column_name(local_columns, ["id", "productId", "productid", "ProductId", "prdId", "prdid"])
+        if not id_col:
+            return []
+        selected = [
+            column
+            for column in ("id", "productId", "productid", "description", "Description", "normalizeddescription", "NormalizedDescription")
+            if find_column_name(local_columns, [column])
+        ]
+        return self._safe_fetch_local_rows_in(
+            table="prd",
+            column=id_col,
+            values=prd_ids,
+            columns=selected or list(local_columns),
+            limit=max(len(prd_ids) * 3, 120),
+        )
 
     def _article_row(self, *, supplier_id: int, article_number: str, source: str) -> dict[str, Any]:
         rows = self._article_rows(
@@ -422,14 +524,29 @@ class ManualAutoDbSearch:
         linkage_meta = list(dict.fromkeys(linkage_meta))[:60]
         if not linkage_meta:
             return []
-        passenger_linkage_ids = [linkage_id for linkage_id, linkage_type in linkage_meta if linkage_type.casefold() == "passengercar"]
-        cars = self._passenger_cars_by_ids(linkage_ids=passenger_linkage_ids, source=source)
-        model_ids = [self._safe_int(item.get("modelid") or item.get("modelId")) for item in cars.values()]
+        passenger_linkage_ids = [
+            linkage_id for linkage_id, linkage_type in linkage_meta if linkage_type.casefold() == "passengercar"
+        ]
+        commercial_linkage_ids = [
+            linkage_id for linkage_id, linkage_type in linkage_meta if linkage_type.casefold() == "commercialvehicle"
+        ]
+        passenger_cars = self._passenger_cars_by_ids(linkage_ids=passenger_linkage_ids, source=source)
+        commercial_cars = self._commercial_vehicles_by_ids(linkage_ids=commercial_linkage_ids, source=source)
+        model_ids = [
+            self._safe_int(item.get("modelid") or item.get("modelId"))
+            for item in [*passenger_cars.values(), *commercial_cars.values()]
+        ]
         model_ids = [item for item in model_ids if item is not None]
         models = self._models_by_ids(model_ids=model_ids[:120], source=source)
         out: list[dict[str, Any]] = []
         for linkage_id, linkage_type in linkage_meta:
-            car = cars.get(linkage_id, {})
+            linkage_type_key = linkage_type.casefold()
+            if linkage_type_key == "passengercar":
+                car = passenger_cars.get(linkage_id, {})
+            elif linkage_type_key == "commercialvehicle":
+                car = commercial_cars.get(linkage_id, {})
+            else:
+                car = {}
             model_id = self._safe_int(car.get("modelid") or car.get("modelId"))
             model = models.get(model_id or -1, {})
             model_desc = safe_str(model.get("description"))
@@ -456,13 +573,27 @@ class ManualAutoDbSearch:
         return out[:40]
 
     def _passenger_cars_by_ids(self, *, linkage_ids: list[int], source: str) -> dict[int, dict[str, Any]]:
+        return self._vehicles_by_ids(
+            table="passanger_cars",
+            linkage_ids=linkage_ids,
+            source=source,
+        )
+
+    def _commercial_vehicles_by_ids(self, *, linkage_ids: list[int], source: str) -> dict[int, dict[str, Any]]:
+        return self._vehicles_by_ids(
+            table="commercial_vehicles",
+            linkage_ids=linkage_ids,
+            source=source,
+        )
+
+    def _vehicles_by_ids(self, *, table: str, linkage_ids: list[int], source: str) -> dict[int, dict[str, Any]]:
         if not linkage_ids:
             return {}
         rows: list[dict[str, Any]] = []
         if source == "remote":
             try:
                 rows = self.storage.fetch_remote_rows_in(
-                    table="passanger_cars",
+                    table=table,
                     column="id",
                     values=linkage_ids[:60],
                     columns=["id", "modelid", "description", "fulldescription", "constructioninterval"],
@@ -472,7 +603,7 @@ class ManualAutoDbSearch:
                 rows = []
         else:
             rows = self._safe_fetch_local_rows_in(
-                table="passanger_cars",
+                table=table,
                 column="id",
                 values=linkage_ids[:60],
                 columns=["id", "modelid", "description", "fulldescription", "constructioninterval"],
@@ -588,6 +719,9 @@ def remote_result_payload(
     compatibility_preview = preview_payload.get("compatibility_preview") if isinstance(preview_payload.get("compatibility_preview"), list) else []
     image_thumbnails = preview_payload.get("image_thumbnails") if isinstance(preview_payload.get("image_thumbnails"), list) else []
     article_details = preview_payload.get("article") if isinstance(preview_payload.get("article"), dict) else {}
+    product_title = safe_str(preview_payload.get("product_title", ""))
+    if product_title and not safe_str(article_details.get("articleName")):
+        article_details = {**article_details, "articleName": product_title}
     return {
         "source": safe_str(getattr(result, "matched_source", "")) or "remote",
         "supplier_id": getattr(result, "supplier_id", None),
@@ -602,7 +736,7 @@ def remote_result_payload(
         "article_key": f"{getattr(result, 'supplier_id', '')}:{matched_article}" if matched_article else "",
         "prd_linkage_present": bool(getattr(result, "linkage_present", False)),
         "prd_id": None,
-        "generic": "",
+        "generic": product_title,
         "category_metadata_present": int(getattr(result, "prd_rows", 0) or 0) > 0,
         "attributes_available_count": len(attributes_preview),
         "fitments_available_count": len(compatibility_preview),

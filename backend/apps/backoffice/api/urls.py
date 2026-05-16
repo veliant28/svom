@@ -18,6 +18,8 @@ from apps.backoffice.api.views.autodb_matching import (
     BackofficeAutoDbMatchingRemoteQuotaAPIView,
     BackofficeAutoDbMatchingRunLocalDryRunAPIView,
     BackofficeAutoDbMatchingRunRemoteAPIView,
+    BackofficeAutoDbMatchingTecdocBatchRunAPIView,
+    BackofficeAutoDbMatchingTecdocBatchStateAPIView,
 )
 from apps.backoffice.api.views import (
     BackofficeAutoDbVehicleCatalogAPIView,
@@ -257,6 +259,8 @@ urlpatterns = [
     path("autodb-matching/audit-link/", BackofficeAutoDbMatchingAuditLinkAPIView.as_view(), name="autodb-matching-audit-link"),
     path("autodb-matching/plan-safe-link/", BackofficeAutoDbMatchingPlanSafeLinkAPIView.as_view(), name="autodb-matching-plan-safe-link"),
     path("autodb-matching/plan-enrichment/", BackofficeAutoDbMatchingPlanEnrichmentAPIView.as_view(), name="autodb-matching-plan-enrichment"),
+    path("autodb-matching/tecdoc-batch/run/", BackofficeAutoDbMatchingTecdocBatchRunAPIView.as_view(), name="autodb-matching-tecdoc-batch-run"),
+    path("autodb-matching/tecdoc-batch/state/", BackofficeAutoDbMatchingTecdocBatchStateAPIView.as_view(), name="autodb-matching-tecdoc-batch-state"),
     path("article-rules/", ArticleRuleListCreateAPIView.as_view(), name="article-rule-list-create"),
     path("article-rules/<uuid:id>/", ArticleRuleRetrieveUpdateAPIView.as_view(), name="article-rule-update"),
     path("import-quality/summary/", ImportQualitySummaryAPIView.as_view(), name="import-quality-summary"),

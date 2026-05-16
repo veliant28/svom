@@ -237,7 +237,7 @@ class AutoDbProductSplitV21ApplyClean5Service:
     def _build_baseline(self, candidates: list[CleanCandidate], before: dict[str, Any]) -> list[dict[str, Any]]:
         rows: list[dict[str, Any]] = []
         for candidate in candidates:
-            product = Product.objects.select_related("brand", "category").get(id=candidate.product_id)
+            product = Product.objects.select_related("category").get(id=candidate.product_id)
             rows.append(
                 {
                     "scope": "original_product",
@@ -444,8 +444,8 @@ class AutoDbProductSplitV21ApplyClean5Service:
                 )
                 continue
             result = applied["result"]
-            source = Product.objects.select_related("brand").get(id=result.source_product_id)
-            new = Product.objects.select_related("brand").get(id=result.new_product_id)
+            source = Product.objects.get(id=result.source_product_id)
+            new = Product.objects.get(id=result.new_product_id)
             moved_offer_ok = (
                 SupplierOffer.objects.filter(id__in=list(result.moved_offer_ids), product_id=result.new_product_id).count()
                 == len(result.moved_offer_ids)

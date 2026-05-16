@@ -10,9 +10,10 @@ from apps.autodb.services.article_number_normalizer import ArticleNumberNormaliz
 from apps.autodb.services.article_enrichment import AutoDbArticleEnrichmentService
 from apps.autodb.services.article_lookup import ArticleLookupResult
 from apps.autodb.services.column_helpers import find_value
+from apps.autodb.services.matching.constants import NON_TECDOC_BRAND_KEYS
 from apps.autodb.services.product_linker import AutoDbProductLinkService
 from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
-from apps.autodb.services.supplier_brand_matcher import SupplierBrandCandidate, SupplierBrandMatcher
+from apps.autodb.services.supplier_brand_matcher import SupplierBrandCandidate, SupplierBrandMatcher, normalize_brand_lookup_key
 from apps.catalog.models import Product
 from apps.supplier_imports.models import SupplierRawOffer
 from apps.supplier_imports.parsers.utils import normalize_article, normalize_brand
@@ -52,6 +53,7 @@ class RawOfferEnrichmentSummary:
     remote_hits: int = 0
     not_found: int = 0
     failed: int = 0
+    skipped_non_tecdoc: int = 0
     enriched_articles: int = 0
     linked_products: int = 0
     skipped_no_matched_product: int = 0
@@ -99,11 +101,17 @@ class AutoDbRawOfferEnrichmentService:
         self.product_linker = product_linker or AutoDbProductLinkService()
         self.article_normalizer = article_normalizer or ArticleNumberNormalizer()
         self.brand_matcher = brand_matcher or SupplierBrandMatcher(storage=self.storage)
+        self._non_tecdoc_brand_keys = {
+            normalize_brand_lookup_key(str(item).strip())
+            for item in NON_TECDOC_BRAND_KEYS
+            if str(item).strip()
+        }
 
-    def build_pair_buckets(self, *, offers: Iterable[SupplierRawOffer]) -> tuple[list[PairBucket], int, int]:
+    def build_pair_buckets(self, *, offers: Iterable[SupplierRawOffer], tecdoc_only: bool) -> tuple[list[PairBucket], int, int, int]:
         buckets: dict[tuple[str, str], PairBucket] = {}
         total_raw_offers = 0
         failed = 0
+        skipped_non_tecdoc = 0
 
         for offer in offers:
             total_raw_offers += 1
@@ -117,12 +125,25 @@ class AutoDbRawOfferEnrichmentService:
                 failed += 1
                 continue
 
-            brand_name = str(getattr(getattr(matched_product, "brand", None), "name", "") or "").strip() or str(offer.brand_name or "").strip()
-            normalized_brand = str(getattr(matched_product, "normalized_brand", "") or "").strip() or normalize_brand(brand_name)
+            # Prefer the current raw-offer brand over cached product fields.
+            # This prevents stale wrong links (same article, different brand) from self-reinforcing.
+            brand_name = (
+                str(offer.brand_name or "").strip()
+                or str(getattr(matched_product, "display_brand_name", "") or "").strip()
+                or str(getattr(matched_product, "autodb_supplier_name", "") or "").strip()
+            )
+            normalized_brand = (
+                str(offer.normalized_brand or "").strip()
+                or normalize_brand(brand_name)
+                or str(getattr(matched_product, "normalized_brand", "") or "").strip()
+            )
             normalized_article = normalize_article(article_raw)
             article_normalized = self.article_normalizer.normalize(article_raw or normalized_article)
             if not normalized_brand or not normalized_article:
                 failed += 1
+                continue
+            if tecdoc_only and self._is_explicit_non_tecdoc_brand(brand_name or normalized_brand):
+                skipped_non_tecdoc += 1
                 continue
 
             key = (normalized_brand, normalized_article)
@@ -143,7 +164,7 @@ class AutoDbRawOfferEnrichmentService:
             if offer.matched_product_id:
                 bucket.matched_product_ids.add(str(offer.matched_product_id))
 
-        return list(buckets.values()), total_raw_offers, failed
+        return list(buckets.values()), total_raw_offers, failed, skipped_non_tecdoc
 
     def run(
         self,
@@ -153,6 +174,7 @@ class AutoDbRawOfferEnrichmentService:
         allow_remote: bool,
         remote_disabled_reason: str = "",
         enrich_related: bool,
+        tecdoc_only: bool,
         batch_size: int,
         progress_every: int,
         progress_callback,
@@ -161,9 +183,10 @@ class AutoDbRawOfferEnrichmentService:
         started = time.monotonic()
         summary = RawOfferEnrichmentSummary()
 
-        buckets, total_raw_offers, failed = self.build_pair_buckets(offers=offers)
+        buckets, total_raw_offers, failed, skipped_non_tecdoc = self.build_pair_buckets(offers=offers, tecdoc_only=tecdoc_only)
         summary.total_raw_offers = total_raw_offers
         summary.failed += failed
+        summary.skipped_non_tecdoc += skipped_non_tecdoc
         summary.unique_pairs = len(buckets)
 
         resolutions: list[PairResolution] = []
@@ -261,6 +284,12 @@ class AutoDbRawOfferEnrichmentService:
         summary.elapsed_seconds = max(time.monotonic() - started, 0.0)
         return summary
 
+    def _is_explicit_non_tecdoc_brand(self, value: str) -> bool:
+        normalized = normalize_brand_lookup_key(str(value or "").strip())
+        if not normalized:
+            return False
+        return normalized in self._non_tecdoc_brand_keys
+
     def _resolve_local_chunk(self, buckets: list[PairBucket]) -> list[PairResolution]:
         source_id = self._single_scope([item.source_id for item in buckets])
         supplier_scope_id = self._single_scope([item.supplier_id for item in buckets])
@@ -272,11 +301,23 @@ class AutoDbRawOfferEnrichmentService:
         resolutions: list[PairResolution] = []
         for item in buckets:
             matched = brand_results.get(item.normalized_brand)
+            matched_reason = str(matched.reason or "") if matched else ""
+            # Strict brand gate for auto-link batches: do not accept relaxed brand matches.
+            if matched is not None and matched_reason == "relaxed_match":
+                resolutions.append(
+                    PairResolution(
+                        bucket=item,
+                        supplier_id=None,
+                        reason="brand_not_exact",
+                        supplier_candidates=matched.candidates,
+                    )
+                )
+                continue
             resolutions.append(
                 PairResolution(
                     bucket=item,
                     supplier_id=matched.matched_supplier_id if matched else None,
-                    reason=matched.reason if matched else "brand_not_found",
+                    reason=matched_reason if matched else "brand_not_found",
                     supplier_candidates=matched.candidates if matched else (),
                 )
             )

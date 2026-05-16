@@ -32,14 +32,14 @@ class AutoDbBrandCoverageAuditService:
         groups: dict[tuple[str, str], dict[str, object]] = defaultdict(
             lambda: {"product_ids": set(), "stock_gt_0": 0, "raw_brand": "", "bound_supplier_ids": set()}
         )
-        queryset = SupplierOffer.objects.select_related("supplier", "product", "product__brand").order_by("supplier__code", "product__brand__name")
+        queryset = SupplierOffer.objects.select_related("supplier", "product").order_by("supplier__code", "product__display_brand_name")
         if supplier_code:
             queryset = queryset.filter(supplier__code=supplier_code)
         if limit:
             queryset = queryset[: max(int(limit), 1)]
 
         for offer in queryset:
-            raw_brand = offer.product.display_brand_name or offer.product.brand.name or offer.product.normalized_brand
+            raw_brand = offer.product.display_brand_name or offer.product.display_brand_name or product.autodb_supplier_name or "" or offer.product.normalized_brand
             key = (offer.supplier.code, normalize_brand(raw_brand))
             data = groups[key]
             data["raw_brand"] = raw_brand

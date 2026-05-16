@@ -24,7 +24,7 @@ class ProductPriceOperationalListAPIView(ListAPIView):
                 Q(product__name__icontains=query)
                 | Q(product__sku__icontains=query)
                 | Q(product__article__icontains=query)
-                | Q(product__brand__name__icontains=query)
+                | Q(product__display_brand_name__icontains=query)
                 | Q(policy__name__icontains=query)
             )
 
