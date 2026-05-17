@@ -26,6 +26,28 @@ class ProductNameTranslationService:
     """Local translation abstraction with safe fallback and no external calls by default."""
 
     _cache: dict[str, tuple[str, str, str]] | None = None
+    _protected_token_re = re.compile(r"\b([A-Za-z0-9][A-Za-z0-9./+\-]{1,})\b")
+    _wiper_variants_by_lang: dict[str, tuple[str, ...]] = {
+        "uk": (
+            "щітка склоочисника",
+            "вітровий склоочисник щітка",
+            "склоочисник щітка",
+        ),
+        "ru": (
+            "щетка стеклоочистителя",
+            "дворники",
+        ),
+        "en": (
+            "wiper blade",
+            "wiper brush",
+            "windscreen wiper",
+        ),
+    }
+    _wiper_base_by_lang: dict[str, str] = {
+        "uk": "Щітка склоочисника",
+        "ru": "Щетка стеклоочистителя",
+        "en": "Wiper blade",
+    }
 
     def translate_product_name(self, *, source_text: str, source_lang: str | None = None) -> ProductNameTranslationResult:
         clean = sanitize_product_name(source_text or "")
@@ -39,6 +61,7 @@ class ProductNameTranslationService:
             )
 
         lang = (source_lang or "").strip().lower() or self._detect_language(clean)
+        protected_tokens = self._extract_protected_tokens(clean)
         uk = clean
         ru = clean
         en = clean
@@ -50,10 +73,28 @@ class ProductNameTranslationService:
             translated = True
 
         if not translated and self._is_offline_translate_enabled():
-            offline = self._translate_via_offline_api(source_text=clean, source_lang=lang)
+            offline = self._translate_via_offline_api(
+                source_text=clean,
+                source_lang=lang,
+                protected_tokens=protected_tokens,
+            )
             if offline is not None:
                 uk, ru, en = offline
                 translated = True
+
+        uk, ru, en = self._normalize_domain_translation(
+            source_text=clean,
+            source_lang=lang,
+            uk=uk,
+            ru=ru,
+            en=en,
+        )
+        uk, ru, en = self._ensure_protected_tokens(
+            source_text=clean,
+            uk=uk,
+            ru=ru,
+            en=en,
+        )
 
         status = "translated" if translated else "pending"
         return ProductNameTranslationResult(
@@ -115,7 +156,13 @@ class ProductNameTranslationService:
     def _is_offline_translate_enabled(self) -> bool:
         return bool(getattr(settings, "AUTODB_OFFLINE_TRANSLATE_ENABLED", False))
 
-    def _translate_via_offline_api(self, *, source_text: str, source_lang: str) -> tuple[str, str, str] | None:
+    def _translate_via_offline_api(
+        self,
+        *,
+        source_text: str,
+        source_lang: str,
+        protected_tokens: list[str],
+    ) -> tuple[str, str, str] | None:
         base_url = str(getattr(settings, "AUTODB_OFFLINE_TRANSLATE_URL", "http://libretranslate:5000")).strip().rstrip("/")
         if not base_url:
             return None
@@ -124,6 +171,7 @@ class ProductNameTranslationService:
         timeout_s = max(timeout_ms, 500) / 1000.0
 
         source_code = source_lang if source_lang in {"ru", "uk", "en"} else "auto"
+        masked_source, placeholders = self._mask_protected_tokens(source_text=source_text, protected_tokens=protected_tokens)
 
         translated_values: dict[str, str] = {}
         for target in ("uk", "ru", "en"):
@@ -135,12 +183,12 @@ class ProductNameTranslationService:
                 api_key=api_key,
                 source=source_code,
                 target=target,
-                text=source_text,
+                text=masked_source,
                 timeout_s=timeout_s,
             )
             if not translated:
                 return None
-            translated_values[target] = translated
+            translated_values[target] = self._restore_placeholders(translated_text=translated, placeholders=placeholders)
 
         uk = sanitize_product_name(translated_values.get("uk") or source_text)
         ru = sanitize_product_name(translated_values.get("ru") or source_text)
@@ -187,3 +235,120 @@ class ProductNameTranslationService:
             return ""
         translated = sanitize_product_name(str(data.get("translatedText") or ""))
         return translated[:255]
+
+    def _extract_protected_tokens(self, value: str) -> list[str]:
+        out: list[str] = []
+        for match in self._protected_token_re.finditer(str(value or "")):
+            token = sanitize_product_name(match.group(1))
+            if not token:
+                continue
+            if not self._is_protected_token(token):
+                continue
+            if token.upper() in {item.upper() for item in out}:
+                continue
+            out.append(token)
+        return out
+
+    def _is_protected_token(self, token: str) -> bool:
+        if not token:
+            return False
+        if any(char.isdigit() for char in token):
+            return True
+        if token.upper() == token and len(token) >= 2:
+            return True
+        if "-" in token and any(char.isupper() for char in token):
+            return True
+        return False
+
+    def _mask_protected_tokens(self, *, source_text: str, protected_tokens: list[str]) -> tuple[str, dict[str, str]]:
+        text = str(source_text or "")
+        placeholders: dict[str, str] = {}
+        for index, token in enumerate(protected_tokens):
+            placeholder = f"__AUTODB_TOKEN_{index}__"
+            placeholders[placeholder] = token
+            pattern = re.compile(rf"(?<![A-Za-z0-9]){re.escape(token)}(?![A-Za-z0-9])", flags=re.IGNORECASE)
+            text = pattern.sub(placeholder, text)
+        return text, placeholders
+
+    def _restore_placeholders(self, *, translated_text: str, placeholders: dict[str, str]) -> str:
+        text = str(translated_text or "")
+        for placeholder, token in placeholders.items():
+            text = text.replace(placeholder, token)
+        return sanitize_product_name(text)
+
+    def _contains_wiper_term(self, *, value: str) -> bool:
+        lower = str(value or "").lower()
+        for variants in self._wiper_variants_by_lang.values():
+            for candidate in variants:
+                if candidate and candidate in lower:
+                    return True
+        return False
+
+    def _normalize_domain_translation(
+        self,
+        *,
+        source_text: str,
+        source_lang: str,
+        uk: str,
+        ru: str,
+        en: str,
+    ) -> tuple[str, str, str]:
+        if not self._contains_wiper_term(value=source_text):
+            return uk, ru, en
+
+        current = {
+            "uk": sanitize_product_name(uk),
+            "ru": sanitize_product_name(ru),
+            "en": sanitize_product_name(en),
+        }
+        for lang in ("uk", "ru", "en"):
+            suffix = self._extract_wiper_suffix(text=current[lang], lang=lang)
+            if not suffix:
+                suffix = self._extract_wiper_suffix(text=source_text, lang=source_lang)
+            base = self._wiper_base_by_lang[lang]
+            current[lang] = self._compose_base_and_suffix(base=base, suffix=suffix)
+        return current["uk"], current["ru"], current["en"]
+
+    def _extract_wiper_suffix(self, *, text: str, lang: str) -> str:
+        clean = sanitize_product_name(text)
+        variants = self._wiper_variants_by_lang.get(lang, ())
+        for variant in variants:
+            pattern = re.compile(rf"\b{re.escape(variant)}\b", flags=re.IGNORECASE)
+            match = pattern.search(clean)
+            if not match:
+                continue
+            prefix = sanitize_product_name(clean[: match.start()].strip(" ,.;:-"))
+            suffix = sanitize_product_name(clean[match.end() :].strip(" ,.;:-"))
+            if suffix and prefix:
+                return sanitize_product_name(f"{prefix} {suffix}")
+            if suffix:
+                return suffix
+            if prefix:
+                return prefix
+            return ""
+        return ""
+
+    def _compose_base_and_suffix(self, *, base: str, suffix: str) -> str:
+        base_clean = sanitize_product_name(base)
+        suffix_clean = sanitize_product_name(suffix)
+        if not suffix_clean:
+            return base_clean
+        if suffix_clean.lower() in base_clean.lower():
+            return base_clean
+        return sanitize_product_name(f"{base_clean} {suffix_clean}")[:255]
+
+    def _ensure_protected_tokens(self, *, source_text: str, uk: str, ru: str, en: str) -> tuple[str, str, str]:
+        protected_tokens = self._extract_protected_tokens(source_text)
+        values: dict[str, str] = {
+            "uk": sanitize_product_name(uk),
+            "ru": sanitize_product_name(ru),
+            "en": sanitize_product_name(en),
+        }
+        for lang in ("uk", "ru", "en"):
+            current = values[lang]
+            for token in protected_tokens:
+                if token.upper() in current.upper():
+                    continue
+                current = sanitize_product_name(f"{current} {token}")
+            values[lang] = current[:255]
+        return values["uk"], values["ru"], values["en"]

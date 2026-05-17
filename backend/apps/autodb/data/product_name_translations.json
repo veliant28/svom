@@ -17,37 +17,58 @@
     "uk": "Амортизатор",
     "ru": "Амортизатор",
     "en": "Shock absorber",
-    "aliases": ["Shock absorber", "Амортизатори"]
+    "aliases": [
+      "Shock absorber",
+      "Амортизатори"
+    ]
   },
   {
     "uk": "Шарнірний комплект",
     "ru": "Шарнирный комплект",
     "en": "Joint kit",
-    "aliases": ["Joint kit", "Шарнирний комплект", "Шарнірный комплект"]
+    "aliases": [
+      "Joint kit",
+      "Шарнирний комплект",
+      "Шарнірный комплект"
+    ]
   },
   {
     "uk": "Фільтр оливи",
     "ru": "Масляный фильтр",
     "en": "Oil filter",
-    "aliases": ["Oil filter", "Масляный фильтр", "Фiльтр оливи"]
+    "aliases": [
+      "Oil filter",
+      "Масляный фильтр",
+      "Фiльтр оливи"
+    ]
   },
   {
     "uk": "Повітряний фільтр",
     "ru": "Воздушный фильтр",
     "en": "Air filter",
-    "aliases": ["Air filter", "Воздушный фильтр", "Фильтр воздушный"]
+    "aliases": [
+      "Air filter",
+      "Воздушный фильтр",
+      "Фильтр воздушный"
+    ]
   },
   {
     "uk": "Паливний фільтр",
     "ru": "Топливный фильтр",
     "en": "Fuel filter",
-    "aliases": ["Fuel filter", "Топливный фильтр"]
+    "aliases": [
+      "Fuel filter",
+      "Топливный фильтр"
+    ]
   },
   {
     "uk": "Гальмівні колодки",
     "ru": "Тормозные колодки",
     "en": "Brake pads",
-    "aliases": ["Brake pads", "Комплект тормозных колодок"]
+    "aliases": [
+      "Brake pads",
+      "Комплект тормозных колодок"
+    ]
   },
   {
     "uk": "Фільтр",
@@ -112,6 +133,772 @@
       "Шарнір Наконечник поперечної рульової тяги",
       "Наконечник поперечной рулевой тяги",
       "Tie rod end"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника CHAMPION EF40/B01",
+    "ru": "Щетка стеклоочистителя CHAMPION EF40/B01",
+    "en": "CHAMPION wiper blade EF40/B01",
+    "aliases": [
+      "Manual lock: CHAMPION EF40/B01",
+      "Щітка склоочисника CHAMPION EF40/B01"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника CHAMPION EF45/B01",
+    "ru": "Щетка стеклоочистителя CHAMPION EF45/B01",
+    "en": "CHAMPION wiper blade EF45/B01",
+    "aliases": [
+      "Manual lock: CHAMPION EF45/B01",
+      "Щітка склоочисника CHAMPION EF45/B01"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника VALEO 576003",
+    "ru": "Щетка стеклоочистителя VALEO 576003",
+    "en": "VALEO wiper blade 576003",
+    "aliases": [
+      "Manual lock: VALEO 576003",
+      "Щітка склоочисника VALEO 576003"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB65210",
+    "ru": "Щетка стеклоочистителя FENOX WB65210",
+    "en": "FENOX wiper blade WB65210",
+    "aliases": [
+      "Manual lock: FENOX WB65210",
+      "Щітка склоочисника FENOX WB65210"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB48210",
+    "ru": "Щетка стеклоочистителя FENOX WB48210",
+    "en": "FENOX wiper blade WB48210",
+    "aliases": [
+      "Manual lock: FENOX WB48210",
+      "Щітка склоочисника FENOX WB48210"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB50010",
+    "ru": "Щетка стеклоочистителя FENOX WB50010",
+    "en": "FENOX wiper blade WB50010",
+    "aliases": [
+      "Manual lock: FENOX WB50010",
+      "Щітка склоочисника FENOX WB50010"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB45010",
+    "ru": "Щетка стеклоочистителя FENOX WB45010",
+    "en": "FENOX wiper blade WB45010",
+    "aliases": [
+      "Manual lock: FENOX WB45010",
+      "Щітка склоочисника FENOX WB45010"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB48010",
+    "ru": "Щетка стеклоочистителя FENOX WB48010",
+    "en": "FENOX wiper blade WB48010",
+    "aliases": [
+      "Manual lock: FENOX WB48010",
+      "Щітка склоочисника FENOX WB48010"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB38210",
+    "ru": "Щетка стеклоочистителя FENOX WB38210",
+    "en": "FENOX wiper blade WB38210",
+    "aliases": [
+      "Manual lock: FENOX WB38210",
+      "Щітка склоочисника FENOX WB38210"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB43010",
+    "ru": "Щетка стеклоочистителя FENOX WB43010",
+    "en": "FENOX wiper blade WB43010",
+    "aliases": [
+      "Manual lock: FENOX WB43010",
+      "Щітка склоочисника FENOX WB43010"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB35210",
+    "ru": "Щетка стеклоочистителя FENOX WB35210",
+    "en": "FENOX wiper blade WB35210",
+    "aliases": [
+      "Manual lock: FENOX WB35210",
+      "Щітка склоочисника FENOX WB35210"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB35010",
+    "ru": "Щетка стеклоочистителя FENOX WB35010",
+    "en": "FENOX wiper blade WB35010",
+    "aliases": [
+      "Manual lock: FENOX WB35010",
+      "Щітка склоочисника FENOX WB35010"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB38010",
+    "ru": "Щетка стеклоочистителя FENOX WB38010",
+    "en": "FENOX wiper blade WB38010",
+    "aliases": [
+      "Manual lock: FENOX WB38010",
+      "Щітка склоочисника FENOX WB38010"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB55010",
+    "ru": "Щетка стеклоочистителя FENOX WB55010",
+    "en": "FENOX wiper blade WB55010",
+    "aliases": [
+      "Manual lock: FENOX WB55010",
+      "Щітка склоочисника FENOX WB55010"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB70210",
+    "ru": "Щетка стеклоочистителя FENOX WB70210",
+    "en": "FENOX wiper blade WB70210",
+    "aliases": [
+      "Manual lock: FENOX WB70210",
+      "Щітка склоочисника FENOX WB70210"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB33010",
+    "ru": "Щетка стеклоочистителя FENOX WB33010",
+    "en": "FENOX wiper blade WB33010",
+    "aliases": [
+      "Manual lock: FENOX WB33010",
+      "Щітка склоочисника FENOX WB33010"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB70010",
+    "ru": "Щетка стеклоочистителя FENOX WB70010",
+    "en": "FENOX wiper blade WB70010",
+    "aliases": [
+      "Manual lock: FENOX WB70010",
+      "Щітка склоочисника FENOX WB70010"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB53210",
+    "ru": "Щетка стеклоочистителя FENOX WB53210",
+    "en": "FENOX wiper blade WB53210",
+    "aliases": [
+      "Manual lock: FENOX WB53210",
+      "Щітка склоочисника FENOX WB53210"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB58210",
+    "ru": "Щетка стеклоочистителя FENOX WB58210",
+    "en": "FENOX wiper blade WB58210",
+    "aliases": [
+      "Manual lock: FENOX WB58210",
+      "Щітка склоочисника FENOX WB58210"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB58010",
+    "ru": "Щетка стеклоочистителя FENOX WB58010",
+    "en": "FENOX wiper blade WB58010",
+    "aliases": [
+      "Manual lock: FENOX WB58010",
+      "Щітка склоочисника FENOX WB58010"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB65010",
+    "ru": "Щетка стеклоочистителя FENOX WB65010",
+    "en": "FENOX wiper blade WB65010",
+    "aliases": [
+      "Manual lock: FENOX WB65010",
+      "Щітка склоочисника FENOX WB65010"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB50210",
+    "ru": "Щетка стеклоочистителя FENOX WB50210",
+    "en": "FENOX wiper blade WB50210",
+    "aliases": [
+      "Manual lock: FENOX WB50210",
+      "Щітка склоочисника FENOX WB50210"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB53010",
+    "ru": "Щетка стеклоочистителя FENOX WB53010",
+    "en": "FENOX wiper blade WB53010",
+    "aliases": [
+      "Manual lock: FENOX WB53010",
+      "Щітка склоочисника FENOX WB53010"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB43210",
+    "ru": "Щетка стеклоочистителя FENOX WB43210",
+    "en": "FENOX wiper blade WB43210",
+    "aliases": [
+      "Manual lock: FENOX WB43210",
+      "Щітка склоочисника FENOX WB43210"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB60010",
+    "ru": "Щетка стеклоочистителя FENOX WB60010",
+    "en": "FENOX wiper blade WB60010",
+    "aliases": [
+      "Manual lock: FENOX WB60010",
+      "Щітка склоочисника FENOX WB60010"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB40010",
+    "ru": "Щетка стеклоочистителя FENOX WB40010",
+    "en": "FENOX wiper blade WB40010",
+    "aliases": [
+      "Manual lock: FENOX WB40010",
+      "Щітка склоочисника FENOX WB40010"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB33210",
+    "ru": "Щетка стеклоочистителя FENOX WB33210",
+    "en": "FENOX wiper blade WB33210",
+    "aliases": [
+      "Manual lock: FENOX WB33210",
+      "Щітка склоочисника FENOX WB33210"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника CHAMPION ER43/B01",
+    "ru": "Щетка стеклоочистителя CHAMPION ER43/B01",
+    "en": "CHAMPION wiper blade ER43/B01",
+    "aliases": [
+      "Manual lock: CHAMPION ER43/B01",
+      "Щітка склоочисника CHAMPION ER43/B01"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника Easyvision Multi-clip 500 мм CHAMPION EF50/B01",
+    "ru": "Щетка стеклоочистителя Easyvision Multi-clip 500 мм CHAMPION EF50/B01",
+    "en": "Easyvision Multi-clip wiper blade 500 mm CHAMPION EF50/B01",
+    "aliases": [
+      "Manual lock: CHAMPION EF50/B01",
+      "Щітка склоочисника Easyvision Multi-clip 500 мм CHAMPION EF50/B01"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника безкаркасна 550 мм CHAMPION EF55/B01",
+    "ru": "Щетка стеклоочистителя бескаркасная 550 мм CHAMPION EF55/B01",
+    "en": "Frameless wiper blade 550 mm CHAMPION EF55/B01",
+    "aliases": [
+      "Manual lock: CHAMPION EF55/B01",
+      "Щітка склоочисника безкаркасна 550 мм CHAMPION EF55/B01"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника CHAMPION Easyvision Retrofit ER45/B01",
+    "ru": "Щетка стеклоочистителя CHAMPION Easyvision Retrofit ER45/B01",
+    "en": "CHAMPION Easyvision Retrofit wiper blade ER45/B01",
+    "aliases": [
+      "Manual lock: CHAMPION ER45/B01",
+      "Щітка склоочисника CHAMPION Easyvision Retrofit ER45/B01"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника SILENCIO REAR",
+    "ru": "Щетка стеклоочистителя SILENCIO REAR",
+    "en": "Wiper blade SILENCIO REAR",
+    "aliases": [
+      "Щетка стеклоочистителя SILENCIO REAR",
+      "Щітка склоочисника SILENCIO REAR"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FIRST MULTICONNECTION",
+    "ru": "Щетка стеклоочистителя FIRST MULTICONNECTION",
+    "en": "Wiper blade FIRST MULTICONNECTION",
+    "aliases": [
+      "Щетка стеклоочистителя FIRST MULTICONNECTION",
+      "Щітка склоочисника FIRST MULTICONNECTION"
+    ]
+  },
+  {
+    "uk": "Труба вихлопних газів",
+    "ru": "Труба выхлопных газов",
+    "en": "Exhaust pipe",
+    "aliases": [
+      "Трубка Труба выхлопного газа, универсальная",
+      "Труба вихлопних газів"
+    ]
+  },
+  {
+    "uk": "Тракція / стійка, стабілізатор",
+    "ru": "Тяга / стойка, стабилизатор",
+    "en": "Traction / rack, stabilizer",
+    "aliases": [
+      "Тяга / стойка, стабилизатор",
+      "Тракція / стійка, стабілізатор"
+    ]
+  },
+  {
+    "uk": "Стрижка ролика, час полікліну",
+    "ru": "Натяжной ролик, поликлиновойремень",
+    "en": "Stretching roller, polyclin time",
+    "aliases": [
+      "Натяжной ролик, поликлиновойремень",
+      "Стрижка ролика, час полікліну"
+    ]
+  },
+  {
+    "uk": "Стартовий акумулятор AGM",
+    "ru": "Стартерная аккумуляторная батарея Start-Stop AGM",
+    "en": "Start-Stop AGM battery",
+    "aliases": [
+      "Стартерная аккумуляторная батарея",
+      "Стартовий акумулятор AGM"
+    ]
+  },
+  {
+    "uk": "Середній вихлопний глушник",
+    "ru": "Средний глушитель выхлопных газов",
+    "en": "Medium exhaust muffler",
+    "aliases": [
+      "Амортизатор Средний глушитель выхлопных газов",
+      "Середній вихлопний глушник"
+    ]
+  },
+  {
+    "uk": "Салонний фільтр",
+    "ru": "Фильтр салона",
+    "en": "Cabin air filter",
+    "aliases": [
+      "Фильтр, воздух во внутренном пространстве",
+      "Салонний фільтр"
+    ]
+  },
+  {
+    "uk": "Роликовий підшипник, амортизація амортизатора",
+    "ru": "Подшипник качения, опора стойки амортизатора",
+    "en": "Rolling bearing, shock absorber support",
+    "aliases": [
+      "Подшипник качения, опора стойки амортизатора",
+      "Роликовий підшипник, амортизація амортизатора"
+    ]
+  },
+  {
+    "uk": "Ремкомплект, гальмівний супорт",
+    "ru": "Ремкомплект, тормозной суппорт",
+    "en": "Brake caliper repair kit",
+    "aliases": [
+      "Ремкомплект, тормозной суппорт",
+      "Ремкомплект, гальмівний супорт"
+    ]
+  },
+  {
+    "uk": "Ремінь ГРМ",
+    "ru": "Ремень ГРМ",
+    "en": "Timing belt",
+    "aliases": [
+      "Ремень ГРМ",
+      "Ремінь ГРМ"
+    ]
+  },
+  {
+    "uk": "Резонатор вихлопної системи",
+    "ru": "Резонатор выхлопной системы",
+    "en": "Exhaust resonator",
+    "aliases": [
+      "Резонатор вихлопної системи"
+    ]
+  },
+  {
+    "uk": "Підвіска, стабілізатор",
+    "ru": "Подвеска Опора, стабилизатор",
+    "en": "Support suspension, stabilizer",
+    "aliases": [
+      "Подвеска Опора, стабилизатор",
+      "Підвіска, стабілізатор"
+    ]
+  },
+  {
+    "uk": "Підвіска, приводний вал",
+    "ru": "Подвеска, карданный вал",
+    "en": "Suspension, driveshaft",
+    "aliases": [
+      "Подвеска, карданный вал",
+      "Підвіска, приводний вал"
+    ]
+  },
+  {
+    "uk": "Підвіска, незалежний важіль підвіски коліс",
+    "ru": "Подвеска, рычаг независимой подвески колеса",
+    "en": "Suspension, independent wheel suspension lever",
+    "aliases": [
+      "Подвеска, рычаг независимой подвески колеса",
+      "Підвіска, незалежний важіль підвіски коліс"
+    ]
+  },
+  {
+    "uk": "Комплект гальмівних колодок, дискова гальма",
+    "ru": "Комплект тормозных колодок, дисковый тормоз",
+    "en": "Set of brake pads, disc brake",
+    "aliases": [
+      "Комплект тормозных колодок, дисковый тормоз",
+      "Комплект гальмівних колодок, дискова гальма"
+    ]
+  },
+  {
+    "uk": "Колісний комплект підшипника",
+    "ru": "Комплект подшипника ступицы колеса",
+    "en": "Wheel hub bearing kit",
+    "aliases": [
+      "Комплект подшипника ступицы колеса",
+      "Колісний комплект підшипника"
+    ]
+  },
+  {
+    "uk": "Клиновий ремінь",
+    "ru": "Клиновой ремень",
+    "en": "Wedge belt",
+    "aliases": [
+      "Клиновой ремень",
+      "Клиновий ремінь"
+    ]
+  },
+  {
+    "uk": "Кільце ущільнення, диференціал",
+    "ru": "Уплотняющее кольцо, дифференциал",
+    "en": "Sealing ring, differential",
+    "aliases": [
+      "Уплотняющее кольцо, дифференциал",
+      "Кільце ущільнення, диференціал"
+    ]
+  },
+  {
+    "uk": "Касування, поперечні підвіски",
+    "ru": "Гильза, подвески поперечного рычага",
+    "en": "Casing, transverse arm suspensions",
+    "aliases": [
+      "Гильза, подвески поперечного рычага",
+      "Касування, поперечні підвіски"
+    ]
+  },
+  {
+    "uk": "Кабель, система парковки",
+    "ru": "Трос, стояночная тормозная система",
+    "en": "Cable, parking braking system",
+    "aliases": [
+      "Трос, стояночная тормозная система",
+      "Кабель, система парковки"
+    ]
+  },
+  {
+    "uk": "Диск тиску зчеплення",
+    "ru": "Нажимной диск сцепления",
+    "en": "Clutch pressure disc",
+    "aliases": [
+      "Нажимной диск сцепления",
+      "Диск тиску зчеплення"
+    ]
+  },
+  {
+    "uk": "Диск гальмівний",
+    "ru": "Тормозной диск",
+    "en": "Brake disc",
+    "aliases": [
+      "Тормозной диск",
+      "Диск гальмівний"
+    ]
+  },
+  {
+    "uk": "Глушник вихлопних газів кінцевий",
+    "ru": "Глушитель выхлопных газов конечный",
+    "en": "Rear exhaust silencer",
+    "aliases": [
+      "Глушитель выхлопных газов конечный",
+      "Глушник вихлопних газів кінцевий"
+    ]
+  },
+  {
+    "uk": "Вітровий склоочисник щітка",
+    "ru": "Щетка стеклоочистителя",
+    "en": "Windscreen wiper brush",
+    "aliases": [
+      "Щетка стеклоочистителя",
+      "Вітровий склоочисник щітка"
+    ]
+  },
+  {
+    "uk": "Амортизатор Середній вихлопний глушник",
+    "ru": "Амортизатор Средний глушитель выхлопных газов",
+    "en": "Amortizer Medium exhaust muffler",
+    "aliases": [
+      "Амортизатор Середній вихлопний глушник"
+    ]
+  },
+  {
+    "uk": "Top Road Газ амортизатор",
+    "ru": "Амортизатор TOP ROAD GAS",
+    "en": "Top Road Gas shock absorber",
+    "aliases": [
+      "Top Road Газ амортизатор"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника HYDROCONNECT",
+    "ru": "Щетка стеклоочистителя HYDROCONNECT",
+    "en": "Wiper blade HYDROCONNECT",
+    "aliases": [
+      "Щетка стеклоочистителя HYDROCONNECT",
+      "Щітка склоочисника HYDROCONNECT"
+    ]
+  },
+  {
+    "uk": "Супер 2000 X1 10W-40 моторне мастило",
+    "ru": "Моторное масло Super 2000 X1 10W-40",
+    "en": "Super 2000 X1 10W-40 engine oil",
+    "aliases": [
+      "Моторное масло",
+      "Супер 2000 X1 10W-40 моторне мастило"
+    ]
+  },
+  {
+    "uk": "Масло трансмісійне ATF 3309",
+    "ru": "Трансмиссионное масло ATF 3309",
+    "en": "Transmission oil ATF 3309",
+    "aliases": [
+      "Трансмиссионное масло",
+      "Масло трансмісійне ATF 3309"
+    ]
+  },
+  {
+    "uk": "Поршень, гальмівний кронштейн тіла",
+    "ru": "Поршень, корпус скобы тормоза",
+    "en": "Piston, brake bracket body",
+    "aliases": [
+      "Поршень, корпус скобы тормоза",
+      "Поршень, гальмівний кронштейн тіла"
+    ]
+  },
+  {
+    "uk": "Комплект пильовика, приводний вал",
+    "ru": "Комплект пыльника, приводной вал",
+    "en": "CV boot kit, drive shaft",
+    "aliases": [
+      "Комплект пылника, приводной вал",
+      "Комплект пильовика, приводний вал"
+    ]
+  },
+  {
+    "uk": "ШРУС зовнішній AUTOMEGA Seat, Volkswagen (110078910)",
+    "ru": "ШРУС наружный AUTOMEGA Seat, Volkswagen (110078910)",
+    "en": "Outer CV joint AUTOMEGA Seat, Volkswagen (110078910)",
+    "aliases": [
+      "Manual lock: 7S5V8O2M7624",
+      "ШРУС зовнішній AUTOMEGA Seat, Volkswagen (110078910)"
+    ]
+  },
+  {
+    "uk": "ШРУС зовнішній FENOX АЗЛК 2141 (CV 16033)",
+    "ru": "ШРУС наружный FENOX АЗЛК 2141 (CV 16033)",
+    "en": "Outer CV joint FENOX AZLK 2141 (CV 16033)",
+    "aliases": [
+      "Manual lock: 0S6V2O1M8806",
+      "ШРУС зовнішній FENOX АЗЛК 2141 (CV 16033)"
+    ]
+  },
+  {
+    "uk": "ШРУС зовнішній MEYLE Audi, Seat, Skoda, Volkswagen (1004980212)",
+    "ru": "ШРУС наружный MEYLE Audi, Seat, Skoda, Volkswagen (1004980212)",
+    "en": "Outer CV joint MEYLE Audi, Seat, Skoda, Volkswagen (1004980212)",
+    "aliases": [
+      "Manual lock: 1S0V6O2M1447",
+      "ШРУС зовнішній MEYLE Audi, Seat, Skoda, Volkswagen (1004980212)"
+    ]
+  },
+  {
+    "uk": "Шток вилки перемикання передач AUTOMEGA 1071105741H0",
+    "ru": "Шток вилки переключения передач AUTOMEGA 1071105741H0",
+    "en": "Gearshift fork selector rod AUTOMEGA 1071105741H0",
+    "aliases": [
+      "Manual lock: 0S8V6O8M7750",
+      "Шток вилки перемикання передач AUTOMEGA 1071105741H0"
+    ]
+  },
+  {
+    "uk": "Шток вилки перемикання передач AUTOMEGA 107110595191",
+    "ru": "Шток вилки переключения передач AUTOMEGA 107110595191",
+    "en": "Gearshift fork selector rod AUTOMEGA 107110595191",
+    "aliases": [
+      "Manual lock: 4S4V4O9M6121",
+      "Шток вилки перемикання передач AUTOMEGA 107110595191"
+    ]
+  },
+  {
+    "uk": "Штуцер прямий PE AUTOMOTIVE M16x1.5 під трубку Ø12 (076.015-30)",
+    "ru": "Штуцер прямой PE AUTOMOTIVE M16x1.5 под трубку Ø12 (076.015-30)",
+    "en": "Straight fitting PE AUTOMOTIVE M16x1.5 for tube Ø12 (076.015-30)",
+    "aliases": [
+      "Manual lock: 2S5V3O0M2279",
+      "Штуцер прямий PE AUTOMOTIVE M16x1.5 під трубку Ø12 (076.015-30)"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника CHAMPION X53E 530 мм (21\")",
+    "ru": "Щетка стеклоочистителя CHAMPION X53E 530 мм (21\")",
+    "en": "CHAMPION wiper blade X53E 530 mm (21\")",
+    "aliases": [
+      "Manual lock: 3S4V7O6M7341",
+      "Щітка склоочисника CHAMPION X53E 530 мм (21\")"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника CHAMPION X55E 550 мм (22\")",
+    "ru": "Щетка стеклоочистителя CHAMPION X55E 550 мм (22\")",
+    "en": "CHAMPION wiper blade X55E 550 mm (22\")",
+    "aliases": [
+      "Manual lock: 4S0V3O9M5244",
+      "Щітка склоочисника CHAMPION X55E 550 мм (22\")"
+    ]
+  },
+  {
+    "uk": "Щітковий вузол генератора FENOX ВАЗ 2101-2106, 2121 (AGB37701)",
+    "ru": "Щеточный узел генератора FENOX ВАЗ 2101-2106, 2121 (AGB37701)",
+    "en": "Generator brush holder FENOX VAZ 2101-2106, 2121 (AGB37701)",
+    "aliases": [
+      "Manual lock: 4S8V5O2M3253",
+      "Щітковий вузол генератора FENOX ВАЗ 2101-2106, 2121 (AGB37701)"
+    ]
+  },
+  {
+    "uk": "Щітковий вузол генератора FENOX ГАЗ 402, 2 контакти (AGB37702)",
+    "ru": "Щеточный узел генератора FENOX ГАЗ 402, 2 контакта (AGB37702)",
+    "en": "Generator brush holder FENOX GAZ 402, 2-pin (AGB37702)",
+    "aliases": [
+      "Manual lock: 6S6V4O9M4755",
+      "Щітковий вузол генератора FENOX ГАЗ 402, 2 контакти (AGB37702)"
+    ]
+  },
+  {
+    "uk": "Шток вилки перемикання передач AUTOMEGA 130115710",
+    "ru": "Шток вилки переключения передач AUTOMEGA 130115710",
+    "en": "Gearshift fork selector rod AUTOMEGA 130115710",
+    "aliases": [
+      "Manual lock: 6S1V8O4M3190",
+      "Шток вилки перемикання передач AUTOMEGA 130115710"
+    ]
+  },
+  {
+    "uk": "ШРУС зовнішній FENOX Lada Largus 1.6, Nissan Note, Micra, 22 шліци (CV 16229)",
+    "ru": "ШРУС наружный FENOX Lada Largus 1.6, Nissan Note, Micra, 22 шлица (CV 16229)",
+    "en": "Outer CV joint FENOX Lada Largus 1.6, Nissan Note, Micra, 22 splines (CV 16229)",
+    "aliases": [
+      "Manual lock: 3S5V8O9M3180",
+      "ШРУС зовнішній FENOX Lada Largus 1.6, Nissan Note, Micra, 22 шліци (CV 16229)",
+      "CV 16229"
+    ]
+  },
+  {
+    "uk": "ШРУС зовнішній FENOX Daewoo Lanos 1.6 16V, Nubira 1.6 16V, Espero 1.5 16V (CV 16053)",
+    "ru": "ШРУС наружный FENOX Daewoo Lanos 1.6 16V, Nubira 1.6 16V, Espero 1.5 16V (CV 16053)",
+    "en": "Outer CV joint FENOX Daewoo Lanos 1.6 16V, Nubira 1.6 16V, Espero 1.5 16V (CV 16053)",
+    "aliases": [
+      "Manual lock: 3S2V4O9M6402",
+      "ШРУС зовнішній FENOX Daewoo Lanos 1.6 16V, Nubira 1.6 16V, Espero 1.5 16V (CV 16053)",
+      "CV 16053"
+    ]
+  },
+  {
+    "uk": "ШРУС зовнішній FENOX Daewoo Lanos 1.4/1.5 з ABS (CV 16067)",
+    "ru": "ШРУС наружный FENOX Daewoo Lanos 1.4/1.5 с ABS (CV 16067)",
+    "en": "Outer CV joint FENOX Daewoo Lanos 1.4/1.5 with ABS (CV 16067)",
+    "aliases": [
+      "Manual lock: 1S1V3O4M7660",
+      "ШРУС зовнішній FENOX Daewoo Lanos 1.4/1.5 з ABS (CV 16067)",
+      "CV 16067"
+    ]
+  },
+  {
+    "uk": "ШРУС зовнішній FENOX Daewoo Lanos 1.4/1.5, 29 шліців (CV 16054)",
+    "ru": "ШРУС наружный FENOX Daewoo Lanos 1.4/1.5, 29 шлицов (CV 16054)",
+    "en": "Outer CV joint FENOX Daewoo Lanos 1.4/1.5, 29 splines (CV 16054)",
+    "aliases": [
+      "Manual lock: 5S0V2O5M0020",
+      "ШРУС зовнішній FENOX Daewoo Lanos 1.4/1.5, 29 шліців (CV 16054)",
+      "CV 16054"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB45200",
+    "ru": "Щетка стеклоочистителя FENOX WB45200",
+    "en": "FENOX wiper blade WB45200",
+    "aliases": [
+      "Manual lock: 1S0V5O1M2070",
+      "Щітка склоочисника FENOX WB45200"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB38200",
+    "ru": "Щетка стеклоочистителя FENOX WB38200",
+    "en": "FENOX wiper blade WB38200",
+    "aliases": [
+      "Manual lock: 7S9V3O7M1498",
+      "Щітка склоочисника FENOX WB38200"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB35200",
+    "ru": "Щетка стеклоочистителя FENOX WB35200",
+    "en": "FENOX wiper blade WB35200",
+    "aliases": [
+      "Manual lock: 3S5V9O7M2740",
+      "Щітка склоочисника FENOX WB35200"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB48200",
+    "ru": "Щетка стеклоочистителя FENOX WB48200",
+    "en": "FENOX wiper blade WB48200",
+    "aliases": [
+      "Manual lock: 0S3V8O1M7935",
+      "Щітка склоочисника FENOX WB48200"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB43200",
+    "ru": "Щетка стеклоочистителя FENOX WB43200",
+    "en": "FENOX wiper blade WB43200",
+    "aliases": [
+      "Manual lock: 9S8V3O5M4148",
+      "Щітка склоочисника FENOX WB43200"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB50200",
+    "ru": "Щетка стеклоочистителя FENOX WB50200",
+    "en": "FENOX wiper blade WB50200",
+    "aliases": [
+      "Manual lock: 2S9V0O7M5932",
+      "Щітка склоочисника FENOX WB50200"
+    ]
+  },
+  {
+    "uk": "Щітка склоочисника FENOX WB58200",
+    "ru": "Щетка стеклоочистителя FENOX WB58200",
+    "en": "FENOX wiper blade WB58200",
+    "aliases": [
+      "Manual lock: 6S1V9O7M7893",
+      "Щітка склоочисника FENOX WB58200"
     ]
   }
 ]
