@@ -87,7 +87,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   return createPortal(
     <div
       data-modal-root="search"
-      className="fixed inset-0 z-[90] flex items-start justify-center bg-black/35 px-3 pb-6 pt-[12vh] backdrop-blur-[1px]"
+      className="fixed inset-0 z-[90] flex items-start justify-center bg-black/35 px-3 pb-6 pt-[12vh]"
       style={{ isolation: "isolate", transform: "translateZ(0)" }}
       onMouseDown={(event) => {
         if (!dialogRef.current?.contains(event.target as Node)) {
@@ -139,7 +139,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
           </label>
         </form>
 
-        <div className="mt-3 max-h-[52vh] overflow-y-auto pr-1">
+        <div className="mt-3 max-h-[52vh] overflow-y-auto overscroll-contain pr-1 [scrollbar-gutter:stable]">
           <SearchSuggestionsList
             query={query}
             suggestions={suggestions}

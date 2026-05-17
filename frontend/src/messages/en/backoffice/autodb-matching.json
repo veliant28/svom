@@ -347,7 +347,7 @@
         "runTecdocBatch": "Run TecDoc batch",
         "stopTecdocBatch": "Stop TecDoc batch",
         "bulkActions": "Bulk actions",
-        "bulkRunBatch": "Run batch",
+        "bulkRunBatch": "Запустить TecDoc batch",
         "selectAll": "Select all on page",
         "selectOne": "Select product"
       },

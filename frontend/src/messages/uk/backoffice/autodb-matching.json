@@ -347,7 +347,7 @@
         "runTecdocBatch": "Запустити TecDoc batch",
         "stopTecdocBatch": "Зупинити TecDoc batch",
         "bulkActions": "Масові дії",
-        "bulkRunBatch": "Запустити batch",
+        "bulkRunBatch": "Запустить TecDoc batch",
         "selectAll": "Обрати всі на сторінці",
         "selectOne": "Обрати товар"
       },

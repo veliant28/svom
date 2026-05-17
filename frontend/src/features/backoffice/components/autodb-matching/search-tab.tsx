@@ -459,6 +459,9 @@ function ResultDetails({
     .join(" · ");
   const productName = resolveProductName(articleRow, result);
   const productDescription = resolveArticleDescription(articleRow, productName);
+  const productHeaderLine = `${brandArticleLine}${productDescription ? ` · ${productDescription}` : ""}`;
+  const productNameShort = ellipsize(productName, 34);
+  const productHeaderLineShort = ellipsize(productHeaderLine, 44);
 
   const attributes = attributePreviewRows.length
     ? attributePreviewRows
@@ -496,16 +499,15 @@ function ResultDetails({
   return (
     <div className="grid min-h-0 auto-rows-min content-start gap-2 overflow-auto">
       <div className="pt-0.5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h3 className="truncate text-base font-semibold">{productName}</h3>
-            <p className="mt-1 truncate text-sm" style={{ color: "var(--muted)" }}>
-              {brandArticleLine}
-              {productDescription ? ` · ${productDescription}` : ""}
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="min-w-0 basis-0 flex-1 overflow-hidden">
+            <h3 className="truncate text-base font-semibold" title={productName}>{productNameShort}</h3>
+            <p className="mt-1 truncate text-sm" style={{ color: "var(--muted)" }} title={productHeaderLine}>
+              {productHeaderLineShort}
             </p>
           </div>
 
-          <div className="relative flex shrink-0 items-center gap-2">
+          <div className="relative ml-auto flex shrink-0 items-center gap-2">
             <div className="relative">
               <input
                 ref={skuInputRef}
@@ -583,7 +585,7 @@ function ResultDetails({
                                 {isSelected ? ` · ${t("search.selectedSkuSuffix")}` : ""}
                               </p>
                               <p className="truncate" style={{ color: "var(--muted)" }}>
-                                {row.brand_name} · {row.name}
+                                {row.brand_name} · {(row.article || row.sku).trim()} · {row.name}
                               </p>
                             </button>
                           </li>
@@ -688,14 +690,24 @@ function ResultDetails({
 
         {visibleFitments.length ? (
           <div className="mt-2 max-h-56 space-y-1 overflow-auto pr-1">
-            {visibleFitments.map((fitment, index) => (
-              <div key={String(fitment.id ?? index)} className="rounded-md border px-2 py-1.5 text-xs" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>
-                <p className="font-medium" style={{ color: "var(--text)" }}>
-                  {fitment.label || [fitment.make, fitment.model].filter(Boolean).join(" · ")}
-                </p>
-                <p>{[fitment.modification, fitment.engine, fitment.generation].filter(Boolean).join(" · ")}</p>
-              </div>
-            ))}
+            {visibleFitments.map((fitment, index) => {
+              const fitmentTopLine = fitment.label || [fitment.make, fitment.model].filter(Boolean).join(" · ");
+              const fitmentBottomLine = [fitment.modification, fitment.engine, fitment.generation].filter(Boolean).join(" · ");
+              return (
+                <div key={String(fitment.id ?? index)} className="min-w-0 rounded-md border px-2 py-1.5 text-xs" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>
+                  <p
+                    className="truncate font-medium"
+                    style={{ color: "var(--text)" }}
+                    title={fitmentTopLine}
+                  >
+                    {ellipsize(fitmentTopLine, 58)}
+                  </p>
+                  <p className="truncate" title={fitmentBottomLine}>
+                    {ellipsize(fitmentBottomLine, 34)}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>{t("search.fitmentEmpty")}</p>
@@ -716,6 +728,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function readString(record: Record<string, unknown>, key: string): string {
   const value = record[key];
   return typeof value === "string" ? value.trim() : "";
+}
+
+function ellipsize(value: string, maxLength: number): string {
+  const text = String(value || "");
+  if (text.length <= maxLength) return text;
+  const safeLength = Math.max(4, maxLength);
+  return `${text.slice(0, safeLength - 3).trimEnd()}...`;
 }
 
 

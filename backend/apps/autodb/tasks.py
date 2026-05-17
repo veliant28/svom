@@ -443,7 +443,9 @@ def run_backoffice_tecdoc_batch_bind_task(
                             )
                             continue
 
-                # Remote-first: fetch current article rows from remote and replace local clone rows before bind.
+                # Remote-first: refresh full article-related clone tables before bind.
+                # Fitment/image/name enrichment runs right after bind and depends on
+                # article_li/article_images/article_attributes being present locally.
                 pre_clone = AutoDbArticleEnrichmentService().enrich_article(
                     supplier_id=bind_supplier_id,
                     article_number=bind_article,

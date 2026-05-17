@@ -214,6 +214,7 @@ export type AutoDbSkuLookupRow = {
   id: string;
   sku: string;
   svom_sku: string;
+  article: string;
   name: string;
   brand_name: string;
 };

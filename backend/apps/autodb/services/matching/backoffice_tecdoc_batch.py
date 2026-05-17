@@ -43,8 +43,6 @@ class BackofficeTecdocBatchSelector:
         else:
             queryset = self._base_queryset()
         for product in queryset.iterator(chunk_size=250):
-            if requested_product_ids and self._has_trusted_link_quality(product):
-                continue
             supplier_id = int(getattr(product, "autodb_supplier_id", 0) or 0)
             article = _safe_str(getattr(product, "autodb_article_number", "")) or _safe_str(getattr(product, "article", ""))
             if supplier_id <= 0 or not article:

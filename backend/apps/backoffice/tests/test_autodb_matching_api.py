@@ -132,6 +132,20 @@ class BackofficeAutoDbMatchingApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["cards"]["linked_products"], 1)
 
+    def test_product_lookup_returns_article_for_dropdown_display(self):
+        response = self.client.get(
+            reverse("backoffice_api:autodb-matching-product-lookup"),
+            {"q": "WIX-001"},
+            **self._auth(self.staff_token),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        row = response.data["results"][0]
+        self.assertEqual(row["sku"], "WIX-001")
+        self.assertEqual(row["article"], "WA6342")
+        self.assertEqual(row["brand_name"], "WIX")
+
     def test_manual_local_search_uses_deterministic_variants(self):
         response = self.client.post(
             reverse("backoffice_api:autodb-matching-manual-local"),
