@@ -56,6 +56,7 @@ class ProductNameSourceDiagnostics:
 
 class AutoDbProductNameEnrichmentService:
     _letter_re = re.compile(r"[A-Za-zА-Яа-яІіЇїЄєҐґ]")
+    _placeholder_artifact_re = re.compile(r"(?:auto\s*db|autodb|автодб)", re.IGNORECASE)
 
     def __init__(
         self,
@@ -130,11 +131,30 @@ class AutoDbProductNameEnrichmentService:
             )
 
         source_hash = sha1(f"{source_kind}:{clean_title}".encode("utf-8")).hexdigest()  # noqa: S324
+        has_placeholder_artifacts = self._has_placeholder_artifacts(
+            name_uk=str(product.name_uk or ""),
+            name_en=str(product.name_en or ""),
+        )
+        has_latin_suffix_quality_issue = self._has_latin_suffix_quality_issue(
+            source_title=clean_title,
+            name_uk=str(product.name_uk or ""),
+            name_ru=str(product.name_ru or ""),
+            name_en=str(product.name_en or ""),
+        )
+        has_dictionary_mismatch = self._has_dictionary_mismatch(
+            source_title=clean_title,
+            name_uk=str(product.name_uk or ""),
+            name_ru=str(product.name_ru or ""),
+            name_en=str(product.name_en or ""),
+        )
         needs_translation = (
             not product.name_uk
             or not product.name_ru
             or not product.name_en
             or (product.name_source_hash or "") != source_hash
+            or has_placeholder_artifacts
+            or has_latin_suffix_quality_issue
+            or has_dictionary_mismatch
         )
         if only_missing_translations and not (not product.name_uk or not product.name_ru or not product.name_en):
             return ProductNameEnrichmentResult(
@@ -248,6 +268,49 @@ class AutoDbProductNameEnrichmentService:
             source_reason=diagnostics.source_reason,
             supplier_fallback_used=diagnostics.supplier_fallback_used,
         )
+
+    def _has_placeholder_artifacts(self, *, name_uk: str, name_en: str) -> bool:
+        return bool(
+            self._placeholder_artifact_re.search(name_uk or "")
+            or self._placeholder_artifact_re.search(name_en or "")
+        )
+
+    def _has_latin_suffix_quality_issue(self, *, source_title: str, name_uk: str, name_ru: str, name_en: str) -> bool:
+        expected = self.translator._apply_headword_translation_for_latin_suffix(
+            source_text=source_title,
+            uk=source_title,
+            ru=source_title,
+            en=source_title,
+        )
+        if expected == (source_title, source_title, source_title):
+            return False
+        current = (
+            sanitize_product_name(name_uk or ""),
+            sanitize_product_name(name_ru or ""),
+            sanitize_product_name(name_en or ""),
+        )
+        return current != expected
+
+    def _has_dictionary_mismatch(self, *, source_title: str, name_uk: str, name_ru: str, name_en: str) -> bool:
+        load_index = getattr(self.translator, "_load_translation_index", None)
+        normalize_key = getattr(self.translator, "_normalize_key", None)
+        if not callable(load_index) or not callable(normalize_key):
+            return False
+        try:
+            mapped = load_index().get(normalize_key(source_title))
+        except Exception:  # noqa: BLE001
+            return False
+        if not mapped:
+            return False
+        if not isinstance(mapped, (tuple, list)) or len(mapped) < 3:
+            return False
+        current = (
+            sanitize_product_name(name_uk or ""),
+            sanitize_product_name(name_ru or ""),
+            sanitize_product_name(name_en or ""),
+        )
+        expected = tuple(sanitize_product_name(str(item or "")) for item in mapped)
+        return current != expected
 
     def build_diagnostics(self, *, product: Product) -> ProductNameSourceDiagnostics:
         supplier_id = int(product.autodb_supplier_id or 0)

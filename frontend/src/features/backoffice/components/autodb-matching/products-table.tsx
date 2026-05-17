@@ -5,6 +5,7 @@ import { BackofficeTable, type BackofficeColumn } from "@/features/backoffice/co
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
+import { getLocalizedProductName } from "@/features/backoffice/lib/products/localized-product-name";
 import type { AutoDbProductJob } from "@/features/backoffice/types/backoffice";
 
 import { translateAutoDbReason } from "./reason-i18n";
@@ -81,6 +82,7 @@ function supplierTooltipLabel(code: string): string {
 
 export function AutoDbMatchingProductsTable({
   t,
+  locale,
   rows,
   isLoading,
   error,
@@ -97,6 +99,7 @@ export function AutoDbMatchingProductsTable({
   onSearchProduct,
 }: {
   t: Translator;
+  locale: string;
   rows: AutoDbProductJob[];
   isLoading: boolean;
   error: string | null;
@@ -186,22 +189,25 @@ export function AutoDbMatchingProductsTable({
       key: "name",
       label: t("products.columnsShort.name"),
       className: "w-[294px]",
-      render: (row) => (
-        <div className="min-w-0">
-          <BackofficeTooltip
-            content={row.product.name || "-"}
-            placement="top"
-            align="start"
-            wrapperClassName="inline-flex max-w-full"
-            tooltipClassName="max-w-[320px]"
-          >
-            <span tabIndex={0} className="block truncate cursor-help font-medium">
-              {row.product.name || "-"}
-            </span>
-          </BackofficeTooltip>
-          <p className="truncate text-xs" style={{ color: "var(--muted)" }}>{row.product.category || "-"}</p>
-        </div>
-      ),
+      render: (row) => {
+        const displayName = getLocalizedProductName(row.product, locale);
+        return (
+          <div className="min-w-0">
+            <BackofficeTooltip
+              content={displayName}
+              placement="top"
+              align="start"
+              wrapperClassName="inline-flex max-w-full"
+              tooltipClassName="max-w-[320px]"
+            >
+              <span tabIndex={0} className="block truncate cursor-help font-medium">
+                {displayName}
+              </span>
+            </BackofficeTooltip>
+            <p className="truncate text-xs" style={{ color: "var(--muted)" }}>{row.product.category || "-"}</p>
+          </div>
+        );
+      },
     },
     {
       key: "brand",
@@ -324,7 +330,7 @@ export function AutoDbMatchingProductsTable({
         </div>
       ),
     },
-  ], [allPageSelected, onOpenDetails, onSearchProduct, onToggleSelectAllPage, onToggleSelected, selectedSet, t]);
+  ], [allPageSelected, locale, onOpenDetails, onSearchProduct, onToggleSelectAllPage, onToggleSelected, selectedSet, t]);
 
   return (
     <AsyncState isLoading={isLoading} error={error} empty={!rows.length} emptyLabel={t("states.emptyProducts")}>

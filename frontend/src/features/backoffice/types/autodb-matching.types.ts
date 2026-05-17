@@ -3,8 +3,15 @@ export type AutoDbQuotaPoint = {
   query_count: number;
   cumulative_used: number;
   run_id?: string;
+  consumer?: string;
   status?: string;
   error?: string;
+};
+
+export type AutoDbQuotaConsumer = {
+  consumer: string;
+  query_count: number;
+  percent: number;
 };
 
 export type AutoDbRemoteQuota = {
@@ -21,6 +28,8 @@ export type AutoDbRemoteQuota = {
   last_quota_error_at: string | null;
   cooldown_until: string | null;
   recent_points: AutoDbQuotaPoint[];
+  consumers_breakdown?: AutoDbQuotaConsumer[];
+  top_consumers?: AutoDbQuotaConsumer[];
 };
 
 export type AutoDbDashboard = {
@@ -59,6 +68,9 @@ export type AutoDbProductJob = {
     sku: string;
     svom_sku: string;
     name: string;
+    name_uk?: string;
+    name_ru?: string;
+    name_en?: string;
     brand: string;
     category: string;
     is_active: boolean;
@@ -194,13 +206,34 @@ export type AutoDbActionResponse = {
   result?: Record<string, unknown>;
 };
 
+export type AutoDbTecdocBatchSummary = {
+  running?: boolean;
+  stage?: string;
+  requested_limit?: number;
+  requested_product_ids_count?: number;
+  selected?: number;
+  processed?: number;
+  bound?: number;
+  failed?: number;
+  stopped_reason?: string;
+  last_error?: string;
+  processing_index?: number;
+  processing_product_id?: string;
+  processing_supplier_id?: number;
+  processing_article?: string;
+  started_at?: string;
+  finished_at?: string;
+  last_heartbeat_at?: string;
+  results_preview?: Array<Record<string, unknown>>;
+};
+
 export type AutoDbTecdocBatchRun = {
   id: string;
   status: string;
   run_type: string;
   started_at: string | null;
   finished_at: string | null;
-  summary: Record<string, unknown>;
+  summary: AutoDbTecdocBatchSummary;
   error: string;
 };
 

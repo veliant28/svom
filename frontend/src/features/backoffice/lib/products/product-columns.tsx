@@ -9,6 +9,7 @@ import type { BackofficeCatalogProduct } from "@/features/backoffice/types/catal
 import { formatBackofficeDate } from "@/features/backoffice/lib/supplier-workspace";
 
 import { buildProductPriceMeta } from "./price-utils";
+import { getLocalizedProductName } from "./localized-product-name";
 import { extractWarehouseSegments, formatWarehouseLabel, formatWarehouseQty, resolveWarehouseTone } from "./warehouse-utils";
 
 type Translator = (key: string, values?: Record<string, string | number>) => string;
@@ -128,7 +129,7 @@ export function createProductColumns({
           <input
             type="checkbox"
             checked={selectedSet.has(item.id)}
-            aria-label={`${t("products.table.columns.select")}: ${item.display_name || item.name}`}
+            aria-label={`${t("products.table.columns.select")}: ${getLocalizedProductName(item, locale)}`}
             onChange={() => onToggleSelected(item.id)}
           />
         </div>
@@ -145,7 +146,7 @@ export function createProductColumns({
       label: t("products.table.columns.product"),
       className: "w-[20%]",
       render: (item) => {
-        const displayName = (item.display_name || item.name || "").trim() || "-";
+        const displayName = getLocalizedProductName(item, locale);
         const productSku = (item.product_display_sku || item.svom_sku || item.sku || item.internal_import_key || "").trim() || "-";
         return (
           <div className="min-w-0">

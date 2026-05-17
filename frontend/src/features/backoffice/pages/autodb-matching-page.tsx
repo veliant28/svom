@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { RefreshCw } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { Clock3, LoaderCircle, RefreshCw } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 
+import { AutoDbBatchHistoryModal } from "@/features/backoffice/components/autodb-matching/batch-history-modal";
 import { AutoDbMatchingDashboardTab } from "@/features/backoffice/components/autodb-matching/dashboard-tab";
 import { AutoDbMatchingProductsTab } from "@/features/backoffice/components/autodb-matching/products-tab";
 import { AutoDbMatchingSearchTab } from "@/features/backoffice/components/autodb-matching/search-tab";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
+import { useAutoDbBatchMonitor } from "@/features/backoffice/hooks/use-autodb-batch-monitor";
 import type { AutoDbProductJob } from "@/features/backoffice/types/backoffice";
 
 type TabKey = "dashboard" | "products" | "search";
@@ -15,11 +17,17 @@ type TabKey = "dashboard" | "products" | "search";
 const TABS: TabKey[] = ["dashboard", "products", "search"];
 
 export function AutoDbMatchingPage() {
+  const locale = useLocale();
   const t = useTranslations("backoffice.autodbMatching");
   const tDashboard = useTranslations("backoffice.dashboard");
   const [tab, setTab] = useState<TabKey>("dashboard");
   const [seedJob, setSeedJob] = useState<AutoDbProductJob | null>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const batch = useAutoDbBatchMonitor({
+    refreshNonce,
+    isHistoryModalOpen: historyOpen,
+  });
   const title =
     tab === "dashboard"
       ? t("tabs.dashboardTitle")
@@ -32,15 +40,31 @@ export function AutoDbMatchingPage() {
       <PageHeader
         title={title}
         actions={(
-          <button
-            type="button"
-            className="inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold transition-colors"
-            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
-            onClick={() => setRefreshNonce((prev) => prev + 1)}
-          >
-            <RefreshCw size={16} className="animate-spin" style={{ animationDuration: "2.2s" }} />
-            {tDashboard("actions.refreshOperationalContour")}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold transition-colors"
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+              onClick={() => setHistoryOpen(true)}
+            >
+              {batch.isRunning ? (
+                <LoaderCircle size={16} className="animate-spin" />
+              ) : (
+                <Clock3 size={16} />
+              )}
+              <span className={batch.isRunning ? "animate-pulse" : ""}>{t("batchHistory.button")}</span>
+            </button>
+
+            <button
+              type="button"
+              className="inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold transition-colors"
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+              onClick={() => setRefreshNonce((prev) => prev + 1)}
+            >
+              <RefreshCw size={16} className="animate-spin" style={{ animationDuration: "2.2s" }} />
+              {tDashboard("actions.refreshOperationalContour")}
+            </button>
+          </div>
         )}
         switcher={(
           <div
@@ -81,6 +105,7 @@ export function AutoDbMatchingPage() {
       {tab === "dashboard" ? <AutoDbMatchingDashboardTab refreshNonce={refreshNonce} /> : null}
       {tab === "products" ? (
         <AutoDbMatchingProductsTab
+          locale={locale}
           refreshNonce={refreshNonce}
           onSearchProduct={(job) => {
             setSeedJob(job);
@@ -89,6 +114,15 @@ export function AutoDbMatchingPage() {
         />
       ) : null}
       {tab === "search" ? <AutoDbMatchingSearchTab seedJob={seedJob} refreshNonce={refreshNonce} /> : null}
+
+      <AutoDbBatchHistoryModal
+        isOpen={historyOpen}
+        locale={locale}
+        run={batch.run}
+        remoteQuota={batch.remoteQuota}
+        isRunning={batch.isRunning}
+        onClose={() => setHistoryOpen(false)}
+      />
     </section>
   );
 }

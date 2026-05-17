@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import os
 import re
+import sys
 from datetime import timedelta
 from typing import Any
 
 from django.conf import settings
+from django.db import transaction
 from django.utils import timezone
 
 from apps.autodb.models import AutoDbRemoteQuotaState
@@ -26,45 +29,49 @@ class AutoDbRemoteQuotaTracker:
         status: str = "ok",
     ) -> AutoDbRemoteQuotaState:
         now = timezone.now()
-        self._ensure_window(quota, now=now)
-        count = max(int(query_count or 0), 0)
-        quota.estimated_queries_used = int(quota.estimated_queries_used or 0) + count
-        limit = max(int(quota.estimated_limit_per_hour or DEFAULT_LIMIT_PER_HOUR), 1)
-        auto_paused = False
-        if int(quota.estimated_queries_used or 0) >= limit:
-            quota.cooldown_until = quota.expected_reset_at
-            quota.last_quota_error_at = now
-            if not quota.last_error:
-                quota.last_error = "local quota gate reached estimated hourly limit"
-            auto_paused = True
-        quota.last_ok_at = now
-        quota.last_query_at = now
-        if not auto_paused:
-            quota.last_error = ""
-        quota.recent_points_json = self._append_point(
-            quota.recent_points_json,
-            timestamp=now,
-            query_count=count,
-            cumulative_used=quota.estimated_queries_used,
-            run_id=run_id,
-            status="quota_paused" if auto_paused else status,
-        )
-        quota.save(
-            update_fields=[
-                "estimated_limit_per_hour",
-                "window_started_at",
-                "expected_reset_at",
-                "estimated_queries_used",
-                "last_ok_at",
-                "last_query_at",
-                "last_quota_error_at",
-                "cooldown_until",
-                "last_error",
-                "recent_points_json",
-                "updated_at",
-            ]
-        )
-        return quota
+        with transaction.atomic():
+            locked = self._lock_quota(quota)
+            self._ensure_window(locked, now=now)
+            count = max(int(query_count or 0), 0)
+            locked.estimated_queries_used = int(locked.estimated_queries_used or 0) + count
+            limit = max(int(locked.estimated_limit_per_hour or DEFAULT_LIMIT_PER_HOUR), 1)
+            auto_paused = False
+            if int(locked.estimated_queries_used or 0) >= limit:
+                locked.cooldown_until = locked.expected_reset_at
+                locked.last_quota_error_at = now
+                if not locked.last_error:
+                    locked.last_error = "local quota gate reached hourly limit"
+                auto_paused = True
+            locked.last_ok_at = now
+            locked.last_query_at = now
+            if not auto_paused:
+                locked.last_error = ""
+            consumer = self._consumer_name(run_id=run_id)
+            locked.recent_points_json = self._append_point(
+                locked.recent_points_json,
+                timestamp=now,
+                query_count=count,
+                cumulative_used=locked.estimated_queries_used,
+                run_id=run_id,
+                consumer=consumer,
+                status="quota_paused" if auto_paused else status,
+            )
+            locked.save(
+                update_fields=[
+                    "estimated_limit_per_hour",
+                    "window_started_at",
+                    "expected_reset_at",
+                    "estimated_queries_used",
+                    "last_ok_at",
+                    "last_query_at",
+                    "last_quota_error_at",
+                    "cooldown_until",
+                    "last_error",
+                    "recent_points_json",
+                    "updated_at",
+                ]
+            )
+            return locked
 
     def record_quota_error(
         self,
@@ -75,36 +82,40 @@ class AutoDbRemoteQuotaTracker:
         run_id: str = "",
     ) -> AutoDbRemoteQuotaState:
         now = timezone.now()
-        self._ensure_window(quota, now=now)
-        sanitized_error = self._sanitize_error(error)
-        quota.last_quota_error_at = now
-        quota.last_query_at = now
-        quota.cooldown_until = now + timedelta(minutes=int(cooldown_minutes))
-        quota.expected_reset_at = quota.cooldown_until
-        quota.last_error = sanitized_error
-        quota.recent_points_json = self._append_point(
-            quota.recent_points_json,
-            timestamp=now,
-            query_count=0,
-            cumulative_used=int(quota.estimated_queries_used or 0),
-            run_id=run_id,
-            status="quota_paused",
-            error=sanitized_error,
-        )
-        quota.save(
-            update_fields=[
-                "estimated_limit_per_hour",
-                "window_started_at",
-                "expected_reset_at",
-                "last_quota_error_at",
-                "last_query_at",
-                "cooldown_until",
-                "last_error",
-                "recent_points_json",
-                "updated_at",
-            ]
-        )
-        return quota
+        with transaction.atomic():
+            locked = self._lock_quota(quota)
+            self._ensure_window(locked, now=now)
+            sanitized_error = self._sanitize_error(error)
+            locked.last_quota_error_at = now
+            locked.last_query_at = now
+            locked.cooldown_until = now + timedelta(minutes=int(cooldown_minutes))
+            locked.expected_reset_at = locked.cooldown_until
+            locked.last_error = sanitized_error
+            consumer = self._consumer_name(run_id=run_id)
+            locked.recent_points_json = self._append_point(
+                locked.recent_points_json,
+                timestamp=now,
+                query_count=0,
+                cumulative_used=int(locked.estimated_queries_used or 0),
+                run_id=run_id,
+                consumer=consumer,
+                status="quota_paused",
+                error=sanitized_error,
+            )
+            locked.save(
+                update_fields=[
+                    "estimated_limit_per_hour",
+                    "window_started_at",
+                    "expected_reset_at",
+                    "last_quota_error_at",
+                    "last_query_at",
+                    "cooldown_until",
+                    "last_error",
+                    "recent_points_json",
+                    "updated_at",
+                ]
+            )
+            return locked
 
     def serialize(self, quota: AutoDbRemoteQuotaState | None) -> dict[str, Any]:
         now = timezone.now()
@@ -115,12 +126,13 @@ class AutoDbRemoteQuotaTracker:
         self._ensure_window(quota, now=now)
         paused = bool(quota.cooldown_until and quota.cooldown_until > now)
         status = "quota_paused" if paused else self._usage_status(quota)
+        recent_points = self._recent_points(quota.recent_points_json, now=now)
         return self._payload(
             status=status,
             limit=int(quota.estimated_limit_per_hour or DEFAULT_LIMIT_PER_HOUR),
             used=int(quota.estimated_queries_used or 0),
             now=now,
-            recent_points=self._recent_points(quota.recent_points_json, now=now),
+            recent_points=recent_points,
             quota=quota,
         )
 
@@ -136,11 +148,27 @@ class AutoDbRemoteQuotaTracker:
             quota.last_error = ""
             quota.recent_points_json = self._recent_points(quota.recent_points_json, now=now)
 
-    def _append_point(self, points: Any, *, timestamp, query_count: int, cumulative_used: int, run_id: str, status: str, error: str = "") -> list[dict]:
+    def _append_point(
+        self,
+        points: Any,
+        *,
+        timestamp,
+        query_count: int,
+        cumulative_used: int,
+        run_id: str,
+        consumer: str,
+        status: str,
+        error: str = "",
+    ) -> list[dict]:
         bucket = timestamp.replace(second=0, microsecond=0).isoformat()
         out = [item for item in points if isinstance(item, dict)] if isinstance(points, list) else []
         for item in out:
-            if item.get("timestamp") == bucket and item.get("run_id", "") == run_id and item.get("status", "") == status:
+            if (
+                item.get("timestamp") == bucket
+                and item.get("run_id", "") == run_id
+                and item.get("consumer", "") == consumer
+                and item.get("status", "") == status
+            ):
                 item["query_count"] = int(item.get("query_count") or 0) + query_count
                 item["cumulative_used"] = cumulative_used
                 if error:
@@ -152,6 +180,7 @@ class AutoDbRemoteQuotaTracker:
                 "query_count": query_count,
                 "cumulative_used": cumulative_used,
                 "run_id": run_id,
+                "consumer": consumer,
                 "status": status,
                 "error": error,
             }
@@ -185,6 +214,8 @@ class AutoDbRemoteQuotaTracker:
         remaining = max(limit - used, 0)
         reset_at = getattr(quota, "expected_reset_at", None) if quota is not None else now + timedelta(minutes=WINDOW_MINUTES)
         seconds_until_reset = max(int((reset_at - now).total_seconds()), 0) if reset_at else 0
+        consumers = self._consumers_breakdown(recent_points)
+        top_consumers = consumers[:3]
         return {
             "status": status,
             "estimated_limit_per_hour": limit,
@@ -199,6 +230,8 @@ class AutoDbRemoteQuotaTracker:
             "last_quota_error_at": getattr(quota, "last_quota_error_at", None).isoformat() if quota and quota.last_quota_error_at else None,
             "cooldown_until": getattr(quota, "cooldown_until", None).isoformat() if quota and quota.cooldown_until else None,
             "recent_points": recent_points,
+            "consumers_breakdown": consumers,
+            "top_consumers": top_consumers,
         }
 
     def is_paused(self, quota: AutoDbRemoteQuotaState | None) -> bool:
@@ -209,3 +242,59 @@ class AutoDbRemoteQuotaTracker:
         text = _BASIC_AUTH_RE.sub(r"\1", str(error or ""))
         text = _MYSQL_USER_RE.sub("User '[redacted]'", text)
         return text[:300]
+
+    def _lock_quota(self, quota: AutoDbRemoteQuotaState) -> AutoDbRemoteQuotaState:
+        return AutoDbRemoteQuotaState.objects.select_for_update().get(pk=quota.pk)
+
+    def _consumer_name(self, *, run_id: str) -> str:
+        token = str(run_id or "").strip().lower()
+        if token.startswith("catalog-"):
+            return "catalog"
+        if token.startswith("manual-") or "manual" in token:
+            return "manual"
+        if token.startswith("remote-select1") or token.startswith("autodb-lookup"):
+            return "lookup"
+        if token.startswith("batch") or token.startswith("tecdoc"):
+            return "celery_batch"
+        if "backoffice" in token:
+            return "backoffice"
+        if token and token not in {"known", "remaining"}:
+            if self._looks_like_uuid(token):
+                return self._runtime_consumer()
+            return "service"
+        return self._runtime_consumer()
+
+    def _runtime_consumer(self) -> str:
+        argv = " ".join(str(item) for item in sys.argv).lower()
+        if "celery" in argv:
+            return "celery_batch"
+        if "manage.py" in argv:
+            return "management"
+        cmd = str(os.getenv("SERVER_SOFTWARE") or "").lower()
+        if "gunicorn" in cmd or "uvicorn" in cmd:
+            return "api"
+        return "unknown"
+
+    def _looks_like_uuid(self, value: str) -> bool:
+        cleaned = value.replace("-", "")
+        return len(cleaned) == 32 and all(char in "0123456789abcdef" for char in cleaned)
+
+    def _consumers_breakdown(self, points: list[dict]) -> list[dict[str, Any]]:
+        totals: dict[str, int] = {}
+        overall = 0
+        for item in points:
+            count = max(int(item.get("query_count") or 0), 0)
+            consumer = str(item.get("consumer") or "").strip() or self._consumer_name(run_id=str(item.get("run_id") or ""))
+            totals[consumer] = totals.get(consumer, 0) + count
+            overall += count
+        if overall <= 0:
+            return []
+        rows = sorted(totals.items(), key=lambda pair: (-pair[1], pair[0]))
+        return [
+            {
+                "consumer": name,
+                "query_count": value,
+                "percent": round((value / overall) * 100, 2),
+            }
+            for name, value in rows
+        ]

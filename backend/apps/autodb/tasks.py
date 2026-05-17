@@ -334,6 +334,8 @@ def run_backoffice_tecdoc_batch_bind_task(
     if run is None:
         return {"status": "not_found", "detail": "run not found", "run_id": str(run_id)}
 
+    requested_limit = max(1, min(int(limit or 0), 1000))
+    requested_product_ids_count = len(product_ids or [])
     started_at = timezone.now()
     run.started_at = run.started_at or started_at
     run.status = AutoDbMatchingRun.STATUS_RUNNING
@@ -341,8 +343,9 @@ def run_backoffice_tecdoc_batch_bind_task(
     run.summary_json = {
         **(run.summary_json or {}),
         "running": True,
-        "requested_limit": max(1, min(int(limit or 0), 1000)),
-        "requested_product_ids_count": len(product_ids or []),
+        "stage": "selecting_candidates",
+        "requested_limit": requested_limit,
+        "requested_product_ids_count": requested_product_ids_count,
         "processed": 0,
         "bound": 0,
         "failed": 0,
@@ -350,6 +353,7 @@ def run_backoffice_tecdoc_batch_bind_task(
         "last_error": "",
         "actor_id": str(actor_id or ""),
         "started_at": run.started_at.isoformat() if run.started_at else started_at.isoformat(),
+        "last_heartbeat_at": started_at.isoformat(),
     }
     run.save(update_fields=["started_at", "status", "error", "summary_json", "updated_at"])
 
@@ -357,7 +361,7 @@ def run_backoffice_tecdoc_batch_bind_task(
     brand_matcher = SupplierBrandMatcher()
     clone_storage = AutoDbRawCloneStorage()
     candidates = selector.select_candidates(
-        limit=max(1, min(int(limit or 0), 1000)),
+        limit=requested_limit,
         product_ids=product_ids,
     )
     results: list[dict[str, object]] = []
@@ -366,8 +370,44 @@ def run_backoffice_tecdoc_batch_bind_task(
     failed = 0
     stop_reason = ""
     last_error = ""
+    now = timezone.now()
+    run.summary_json = {
+        **(run.summary_json or {}),
+        "running": True,
+        "stage": "processing_items",
+        "requested_limit": requested_limit,
+        "requested_product_ids_count": requested_product_ids_count,
+        "selected": len(candidates),
+        "processed": processed,
+        "bound": bound,
+        "failed": failed,
+        "stopped_reason": stop_reason,
+        "last_error": last_error,
+        "last_heartbeat_at": now.isoformat(),
+    }
+    run.save(update_fields=["summary_json", "updated_at"])
 
-    for item in candidates:
+    for index, item in enumerate(candidates, start=1):
+        loop_heartbeat = timezone.now()
+        run.summary_json = {
+            **(run.summary_json or {}),
+            "running": True,
+            "stage": "processing_item",
+            "requested_limit": requested_limit,
+            "requested_product_ids_count": requested_product_ids_count,
+            "selected": len(candidates),
+            "processing_index": index,
+            "processing_product_id": str(item.product_id),
+            "processing_supplier_id": int(item.supplier_id),
+            "processing_article": str(item.article or ""),
+            "processed": processed,
+            "bound": bound,
+            "failed": failed,
+            "stopped_reason": stop_reason,
+            "last_error": last_error,
+            "last_heartbeat_at": loop_heartbeat.isoformat(),
+        }
+        run.save(update_fields=["summary_json", "updated_at"])
         try:
             bind_supplier_id = int(item.supplier_id)
             bind_article = str(item.article or "")
@@ -527,17 +567,20 @@ def run_backoffice_tecdoc_batch_bind_task(
                 last_error = error_text
                 break
 
+        loop_done = timezone.now()
         run.summary_json = {
             **(run.summary_json or {}),
             "running": True,
-            "requested_limit": max(1, min(int(limit or 0), 1000)),
-            "requested_product_ids_count": len(product_ids or []),
+            "stage": "processing_items",
+            "requested_limit": requested_limit,
+            "requested_product_ids_count": requested_product_ids_count,
             "selected": len(candidates),
             "processed": processed,
             "bound": bound,
             "failed": failed,
             "stopped_reason": stop_reason,
             "last_error": last_error,
+            "last_heartbeat_at": loop_done.isoformat(),
         }
         run.save(update_fields=["summary_json", "updated_at"])
 
@@ -551,14 +594,16 @@ def run_backoffice_tecdoc_batch_bind_task(
     run.summary_json = {
         **(run.summary_json or {}),
         "running": False,
-        "requested_limit": max(1, min(int(limit or 0), 1000)),
-        "requested_product_ids_count": len(product_ids or []),
+        "stage": "finished",
+        "requested_limit": requested_limit,
+        "requested_product_ids_count": requested_product_ids_count,
         "selected": len(candidates),
         "processed": processed,
         "bound": bound,
         "failed": failed,
         "stopped_reason": stop_reason,
         "last_error": last_error,
+        "last_heartbeat_at": finished_at.isoformat(),
         "finished_at": finished_at.isoformat(),
         "results_preview": results[:50],
     }

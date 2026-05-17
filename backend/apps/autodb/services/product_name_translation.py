@@ -48,6 +48,24 @@ class ProductNameTranslationService:
         "ru": "Щетка стеклоочистителя",
         "en": "Wiper blade",
     }
+    _legacy_placeholder_re = re.compile(r"__AUTODB_TOKEN_(\d+)__", re.IGNORECASE)
+    _translated_placeholder_token_re = r"(?:auto\s*db|autodb|автодб)(?:[ _-]*token)?"
+    _cyrillic_re = re.compile(r"[А-Яа-яЁёІіЇїЄєҐґ]")
+    _english_cyrillic_term_replacements: tuple[tuple[str, str], ...] = (
+        (r"\bВАЗ\b", "VAZ"),
+        (r"\bГАЗ\b", "GAZ"),
+        (r"\bУАЗ\b", "UAZ"),
+        (r"\bЗАЗ\b", "ZAZ"),
+        (r"\bЗІЛ\b", "ZIL"),
+        (r"\bЗИЛ\b", "ZIL"),
+        (r"\bАЗЛК\b", "AZLK"),
+        (r"\bІЖ\b", "IZH"),
+        (r"\bИЖ\b", "IZH"),
+        (r"\bдовгий\b", "long"),
+        (r"\bдовга\b", "long"),
+        (r"\bдовге\b", "long"),
+        (r"\bдовгі\b", "long"),
+    )
 
     def translate_product_name(self, *, source_text: str, source_lang: str | None = None) -> ProductNameTranslationResult:
         clean = sanitize_product_name(source_text or "")
@@ -89,12 +107,19 @@ class ProductNameTranslationService:
             ru=ru,
             en=en,
         )
+        uk, ru, en = self._apply_headword_translation_for_latin_suffix(
+            source_text=clean,
+            uk=uk,
+            ru=ru,
+            en=en,
+        )
         uk, ru, en = self._ensure_protected_tokens(
             source_text=clean,
             uk=uk,
             ru=ru,
             en=en,
         )
+        en = self._normalize_english_cyrillic_terms(en=en)
 
         status = "translated" if translated else "pending"
         return ProductNameTranslationResult(
@@ -264,7 +289,7 @@ class ProductNameTranslationService:
         text = str(source_text or "")
         placeholders: dict[str, str] = {}
         for index, token in enumerate(protected_tokens):
-            placeholder = f"__AUTODB_TOKEN_{index}__"
+            placeholder = f"@@AUTODB{index}@@"
             placeholders[placeholder] = token
             pattern = re.compile(rf"(?<![A-Za-z0-9]){re.escape(token)}(?![A-Za-z0-9])", flags=re.IGNORECASE)
             text = pattern.sub(placeholder, text)
@@ -272,9 +297,119 @@ class ProductNameTranslationService:
 
     def _restore_placeholders(self, *, translated_text: str, placeholders: dict[str, str]) -> str:
         text = str(translated_text or "")
+        ordered_tokens: list[tuple[int, str]] = []
         for placeholder, token in placeholders.items():
             text = text.replace(placeholder, token)
-        return sanitize_product_name(text)
+            legacy_match = self._legacy_placeholder_re.fullmatch(placeholder.strip())
+            if legacy_match:
+                ordered_tokens.append((int(legacy_match.group(1)), token))
+                continue
+            modern_match = re.fullmatch(r"@@AUTODB(\d+)@@", placeholder.strip(), flags=re.IGNORECASE)
+            if modern_match:
+                ordered_tokens.append((int(modern_match.group(1)), token))
+
+        for index, token in ordered_tokens:
+            compact_placeholder_pattern = re.compile(
+                rf"@*\s*(?:auto\s*db|autodb|автодб)\s*(?:token\s*)?{index}(?:st|nd|rd|th)?\s*@*",
+                flags=re.IGNORECASE,
+            )
+            text = compact_placeholder_pattern.sub(token, text)
+            translated_pattern = re.compile(
+                rf"\b{self._translated_placeholder_token_re}[ _-]*{index}(?:st|nd|rd|th)?\b",
+                flags=re.IGNORECASE,
+            )
+            text = translated_pattern.sub(token, text)
+
+        # If placeholder artifacts survive translation, drop them.
+        text = re.sub(
+            rf"\b{self._translated_placeholder_token_re}[ _-]*\d+(?:st|nd|rd|th)?\b",
+            "",
+            text,
+            flags=re.IGNORECASE,
+        )
+        text = re.sub(
+            r"@+\s*autodb\s*\d+\s*@+",
+            "",
+            text,
+            flags=re.IGNORECASE,
+        )
+        text = text.replace("@", "")
+
+        # Collapse tail duplicates like "... A-line 15 A-line 15".
+        token_tail = " ".join(token for _, token in sorted(ordered_tokens, key=lambda item: item[0])).strip()
+        if token_tail:
+            repeated_tail = f"{token_tail} {token_tail}"
+            if text.lower().endswith(repeated_tail.lower()):
+                text = text[: -len(repeated_tail)].rstrip()
+                text = sanitize_product_name(f"{text} {token_tail}")
+
+        # Restore spacing for accidentally glued protected tokens, e.g. "A-line12".
+        sorted_tokens = [token for _, token in sorted(ordered_tokens, key=lambda item: item[0]) if token]
+        for left, right in zip(sorted_tokens, sorted_tokens[1:]):
+            glued_pattern = re.compile(
+                rf"{re.escape(left)}\s*{re.escape(right)}",
+                flags=re.IGNORECASE,
+            )
+            text = glued_pattern.sub(f"{left} {right}", text)
+        for token in sorted_tokens:
+            duplicate_pattern = re.compile(
+                rf"({re.escape(token)})\s+\1",
+                flags=re.IGNORECASE,
+            )
+            text = duplicate_pattern.sub(token, text)
+            duplicate_compact_pattern = re.compile(
+                rf"({re.escape(token)})\1",
+                flags=re.IGNORECASE,
+            )
+            text = duplicate_compact_pattern.sub(token, text)
+
+        normalized = sanitize_product_name(text)
+        lowered = normalized.lower()
+        if normalized and len(normalized) % 2 == 0:
+            half = len(normalized) // 2
+            if lowered[:half] == lowered[half:]:
+                normalized = normalized[:half]
+
+        return sanitize_product_name(normalized)
+
+    def _apply_headword_translation_for_latin_suffix(
+        self,
+        *,
+        source_text: str,
+        uk: str,
+        ru: str,
+        en: str,
+    ) -> tuple[str, str, str]:
+        source = sanitize_product_name(source_text)
+        if not source:
+            return uk, ru, en
+
+        # Keep this normalization scoped to names like:
+        # "Амортизатор MONROE ORIGINAL (Gas Technology)"
+        # where the suffix is a Latin/brand tail that should stay untouched.
+        match = re.match(r"^\s*([А-Яа-яЁёІіЇїЄєҐґ\s\-/'`]+?)\s+(.+)$", source)
+        if not match:
+            return uk, ru, en
+
+        head = sanitize_product_name(match.group(1))
+        suffix = sanitize_product_name(match.group(2))
+        if not head or not suffix:
+            return uk, ru, en
+        if not re.search(r"[A-Za-z0-9]", suffix):
+            return uk, ru, en
+        if self._cyrillic_re.search(suffix):
+            return uk, ru, en
+
+        mapped = self._load_translation_index().get(self._normalize_key(head))
+        if not mapped:
+            return uk, ru, en
+
+        mapped_uk, mapped_ru, mapped_en = mapped
+        return (
+            sanitize_product_name(f"{mapped_uk} {suffix}")[:255],
+            sanitize_product_name(f"{mapped_ru} {suffix}")[:255],
+            sanitize_product_name(f"{mapped_en} {suffix}")[:255],
+        )
 
     def _contains_wiper_term(self, *, value: str) -> bool:
         lower = str(value or "").lower()
@@ -352,3 +487,14 @@ class ProductNameTranslationService:
                 current = sanitize_product_name(f"{current} {token}")
             values[lang] = current[:255]
         return values["uk"], values["ru"], values["en"]
+
+    def _normalize_english_cyrillic_terms(self, *, en: str) -> str:
+        text = sanitize_product_name(en or "")
+        if not text or not self._cyrillic_re.search(text):
+            return text
+
+        for pattern, replacement in self._english_cyrillic_term_replacements:
+            text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+
+        text = re.sub(r"\s{2,}", " ", text).strip()
+        return sanitize_product_name(text)[:255]

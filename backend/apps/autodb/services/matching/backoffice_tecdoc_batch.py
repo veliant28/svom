@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from django.db.models import Exists, OuterRef, Q
+from django.db.models import Q
 
 from apps.autodb.services.matching.constants import NON_TECDOC_BRAND_KEYS
 from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
@@ -23,6 +23,9 @@ class TecdocBatchCandidate:
 
 
 class BackofficeTecdocBatchSelector:
+    AUTO_SCAN_LIMIT_MULTIPLIER = 20
+    AUTO_SCAN_LIMIT_CAP = 20_000
+
     def __init__(self, *, storage: AutoDbRawCloneStorage | None = None):
         self.storage = storage or AutoDbRawCloneStorage()
         self._non_tecdoc = {
@@ -35,17 +38,24 @@ class BackofficeTecdocBatchSelector:
         target_limit = max(1, min(int(limit or 0), 1000))
         selected: list[TecdocBatchCandidate] = []
         requested_product_ids = [str(item).strip() for item in (product_ids or []) if str(item).strip()]
+        queryset = self._base_queryset(product_ids=requested_product_ids or None)
+        scanned = 0
         if requested_product_ids:
-            queryset = (
-                Product.objects.filter(id__in=requested_product_ids)
-                .order_by("-updated_at", "id")
-            )
+            max_scan = len(requested_product_ids)
         else:
-            queryset = self._base_queryset()
+            max_scan = min(
+                max(target_limit * self.AUTO_SCAN_LIMIT_MULTIPLIER, target_limit),
+                self.AUTO_SCAN_LIMIT_CAP,
+            )
         for product in queryset.iterator(chunk_size=250):
+            scanned += 1
+            if scanned > max_scan:
+                break
             supplier_id = int(getattr(product, "autodb_supplier_id", 0) or 0)
             article = _safe_str(getattr(product, "autodb_article_number", "")) or _safe_str(getattr(product, "article", ""))
             if supplier_id <= 0 or not article:
+                continue
+            if self._has_trusted_link_quality(product):
                 continue
             if self._is_non_tecdoc(product):
                 continue
@@ -62,15 +72,9 @@ class BackofficeTecdocBatchSelector:
                 break
         return selected
 
-    def _base_queryset(self):
-        trusted_exists = AutoDbProductLinkQuality.objects.filter(
-            product_id=OuterRef("pk"),
-            autodb_article_key=OuterRef("autodb_article_key"),
-            status=AutoDbProductLinkQuality.STATUS_TRUSTED,
-        )
+    def _base_queryset(self, *, product_ids: list[str] | None = None):
         queryset = (
-            Product.objects.annotate(_trusted=Exists(trusted_exists))
-            .filter(_trusted=False)
+            Product.objects
             .filter(autodb_supplier_id__isnull=False)
             .filter(
                 (
@@ -82,19 +86,33 @@ class BackofficeTecdocBatchSelector:
                     & ~Q(article="")
                 )
             )
-            .order_by("-updated_at", "id")
+            .only("id", "autodb_supplier_id", "autodb_supplier_name", "autodb_article_number", "article", "display_brand_name", "autodb_article_key")
         )
-        return queryset
+        if product_ids:
+            return queryset.filter(id__in=product_ids).order_by("-id")
+        return queryset.order_by("-id")
 
     def _has_trusted_link_quality(self, product: Product) -> bool:
+        product_id = str(getattr(product, "id", "") or "")
         article_key = _safe_str(getattr(product, "autodb_article_key", ""))
-        if not article_key:
+        if not product_id or not article_key:
             return False
-        return AutoDbProductLinkQuality.objects.filter(
-            product_id=product.id,
+        cache_key = (product_id, article_key)
+        cache = getattr(self, "_trusted_cache", None)
+        if cache is None:
+            cache = {}
+            self._trusted_cache = cache
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return bool(cached)
+
+        trusted = AutoDbProductLinkQuality.objects.filter(
+            product_id=product_id,
             autodb_article_key=article_key,
             status=AutoDbProductLinkQuality.STATUS_TRUSTED,
         ).exists()
+        cache[cache_key] = bool(trusted)
+        return bool(trusted)
 
     def _is_non_tecdoc(self, product: Product) -> bool:
         brand = _safe_str(getattr(product, "display_brand_name", "")) or _safe_str(getattr(product, "autodb_supplier_name", ""))

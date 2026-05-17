@@ -42,9 +42,11 @@ function resolveQuotaCooldownSeconds(quota: AutoDbRemoteQuota | null | undefined
 }
 
 export function AutoDbMatchingProductsTab({
+  locale,
   onSearchProduct,
   refreshNonce,
 }: {
+  locale: string;
   onSearchProduct: (job: AutoDbProductJob) => void;
   refreshNonce: number;
 }) {
@@ -259,6 +261,7 @@ export function AutoDbMatchingProductsTab({
 
       <AutoDbMatchingProductsTable
         t={t}
+        locale={locale}
         rows={rows}
         isLoading={isLoading}
         error={error}

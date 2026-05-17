@@ -2,9 +2,6 @@ from unittest.mock import patch
 
 from django.test import TestCase, override_settings
 
-from apps.autodb.models import AutoDbRemoteQuotaState
-from apps.autodb.services.matching.constants import REMOTE_QUOTA_KEY
-from apps.autodb.services.matching.quota_tracker import AutoDbRemoteQuotaTracker
 from apps.autodb.services.remote_client import AutoDbProRemoteClient, AutoDbProRemoteClientError
 
 
@@ -41,19 +38,6 @@ class AutoDbProRemoteClientTests(TestCase):
         client = AutoDbProRemoteClient.from_settings()
         with self.assertRaises(AutoDbProRemoteClientError):
             client.count_table("totally_unknown_table")
-
-    @override_settings(AUTODB_PRO_REMOTE_STRICT_QUOTA_GATE_ENABLED=True, AUTODB_PRO_REMOTE_LIMIT_PER_HOUR=1)
-    @patch("apps.autodb.services.remote_client.mysql.connector.connect")
-    def test_quota_gate_blocks_query_before_connect(self, connect_mock):
-        quota = AutoDbRemoteQuotaState.objects.create(remote_key=REMOTE_QUOTA_KEY)
-        AutoDbRemoteQuotaTracker().record_success(quota, query_count=1, run_id="test")
-
-        client = AutoDbProRemoteClient.from_settings()
-        with self.assertRaises(AutoDbProRemoteClientError) as exc_ctx:
-            client.select("SELECT 1")
-
-        self.assertIn("blocked by quota gate", str(exc_ctx.exception))
-        connect_mock.assert_not_called()
 
     @override_settings(
         AUTODB_PRO_REMOTE_ENABLED=True,

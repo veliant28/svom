@@ -108,6 +108,7 @@ export function AutoDbQuotaCard({
   const usagePercent = Math.min(100, Math.max(0, Number(data?.usage_percent ?? (used / limit) * 100)));
   const tone = statusTone(data?.status ?? "ok");
   const secondsLeft = resolvePausedTimerSeconds(data ?? null, nowMs);
+  const topConsumers = useMemo(() => data?.consumers_breakdown ?? data?.top_consumers ?? [], [data?.consumers_breakdown, data?.top_consumers]);
 
   const recentPoints = useMemo(() => data?.recent_points ?? [], [data?.recent_points]);
   const windowMs = 60 * 60 * 1000;
@@ -115,6 +116,24 @@ export function AutoDbQuotaCard({
   const rangeStartMs = chartNowMs - windowMs;
 
   const chartOption = useMemo(() => {
+    const consumerLabel = (value: string) =>
+      (
+        {
+          celery_batch: t("quota.consumerCelery"),
+          manual: t("quota.consumerManual"),
+          api: t("quota.consumerApi"),
+          backoffice: t("quota.consumerBackoffice"),
+          catalog: t("quota.consumerCatalog"),
+          management: t("quota.consumerManagement"),
+          lookup: t("quota.consumerLookup"),
+          service: t("quota.consumerService"),
+          unknown: t("quota.consumerOther"),
+        } as Record<string, string>
+      )[value] ?? t("quota.consumerOther");
+    const topConsumersText = topConsumers
+      .slice(0, 10)
+      .map((item) => `${consumerLabel(String(item.consumer || ""))} ${Number(item.percent || 0).toFixed(0)}%`)
+      .join(", ");
     const parsedRows: QuotaPoint[] = recentPoints
       .map((point) => {
         const ts = new Date(point.timestamp).getTime();
@@ -155,6 +174,7 @@ export function AutoDbQuotaCard({
             `${t("quota.queriesPerMinute")}: ${qpm}`,
             `Load: ${Number(percent).toFixed(1)}%`,
             `Used: ${cumulative}/${limit}`,
+            `${t("quota.topConsumersTooltip")}: ${topConsumersText || "0"}`,
           ].join("<br/>");
         },
       },
@@ -211,7 +231,7 @@ export function AutoDbQuotaCard({
         },
       ],
     };
-  }, [limit, rangeEndMs, rangeStartMs, recentPoints, t, tone, usagePercent, used]);
+  }, [limit, rangeEndMs, rangeStartMs, recentPoints, t, tone, topConsumers, usagePercent, used]);
 
   const timerValue = secondsLeft === null ? tDashboard("cards.unprocessedOrdersTimerIdle") : formatCountdown(secondsLeft);
   const timerLabel = tDashboard("cards.unprocessedOrdersTimer", { value: timerValue });

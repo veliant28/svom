@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
+from hashlib import sha1
 
 from django.test import SimpleTestCase
 
@@ -185,3 +186,127 @@ class AutoDbProductNameEnrichmentServiceTests(SimpleTestCase):
         service.enrich_product(product=_build_product(), dry_run=True)
 
         utr_cls.assert_not_called()
+
+    def test_retranslates_when_existing_names_contain_placeholder_artifacts(self):
+        translator = Mock()
+        translator.translate_product_name.return_value = ProductNameTranslationResult(
+            uk="Свічка запалювання A-line 12",
+            ru="Свеча зажигания A-line 12",
+            en="Spark plug A-line 12",
+            status="translated",
+        )
+        service = AutoDbProductNameEnrichmentService(translator=translator)
+        service._resolve_supplier_raw_name = Mock(return_value="")
+        service.build_diagnostics = Mock(
+            return_value=_diag(
+                source_kind=Product.NAME_SOURCE_AUTODB_PRO,
+                before="Свеча зажигания",
+                after="Свеча зажигания A-line 12",
+                fallback=False,
+                reason="prd.normalized_plus_description",
+            )
+        )
+
+        source_hash = sha1(f"{Product.NAME_SOURCE_AUTODB_PRO}:Свеча зажигания A-line 12".encode("utf-8")).hexdigest()
+        product = _build_product(
+            name_uk="AutoDB TOKEN 0 АВТОДБ TOKEN 1st A-line 12",
+            name_ru="Свеча зажигания A-line 12",
+            name_en="AUTODB TOKEN 0 AUTODB TOKEN 1st A-line 12",
+            name_source_hash=source_hash,
+        )
+        result = service.enrich_product(product=product, dry_run=False)
+
+        self.assertEqual(result.status, "updated")
+        self.assertEqual(product.name_uk, "Свічка запалювання A-line 12")
+        self.assertEqual(product.name_en, "Spark plug A-line 12")
+
+    def test_retranslates_when_latin_suffix_quality_is_broken(self):
+        translator = Mock()
+        translator.translate_product_name.return_value = ProductNameTranslationResult(
+            uk="Амортизатор MONROE ORIGINAL (Gas Technology)",
+            ru="Амортизатор MONROE ORIGINAL (Gas Technology)",
+            en="Shock absorber MONROE ORIGINAL (Gas Technology)",
+            status="translated",
+        )
+        translator._apply_headword_translation_for_latin_suffix = Mock(
+            return_value=(
+                "Амортизатор MONROE ORIGINAL (Gas Technology)",
+                "Амортизатор MONROE ORIGINAL (Gas Technology)",
+                "Shock absorber MONROE ORIGINAL (Gas Technology)",
+            )
+        )
+        service = AutoDbProductNameEnrichmentService(translator=translator)
+        service._resolve_supplier_raw_name = Mock(return_value="")
+        service.build_diagnostics = Mock(
+            return_value=_diag(
+                source_kind=Product.NAME_SOURCE_AUTODB_PRO,
+                before="Амортизатор",
+                after="Амортизатор MONROE ORIGINAL (Gas Technology)",
+                fallback=False,
+                reason="prd.normalized_plus_description",
+            )
+        )
+
+        source_hash = sha1(
+            f"{Product.NAME_SOURCE_AUTODB_PRO}:Амортизатор MONROE ORIGINAL (Gas Technology)".encode("utf-8")
+        ).hexdigest()
+        product = _build_product(
+            name_uk="Шоктейлер MONROE ORIGINAL (Технології га)",
+            name_ru="Амортизатор MONROE ORIGINAL (Gas Technology)",
+            name_en="Shock absorber MONROE ORIGINAL (Gas Technology)",
+            name_source_hash=source_hash,
+        )
+        result = service.enrich_product(product=product, dry_run=False)
+
+        self.assertEqual(result.status, "updated")
+        self.assertEqual(product.name_uk, "Амортизатор MONROE ORIGINAL (Gas Technology)")
+
+    def test_retranslates_when_dictionary_mapping_differs_even_if_hash_unchanged(self):
+        translator = Mock()
+        translator.translate_product_name.return_value = ProductNameTranslationResult(
+            uk="Прокладка, картер рульового механізму",
+            ru="Прокладка, картер рулевого механизма",
+            en="Gasket, steering gear housing",
+            status="translated",
+        )
+        translator._normalize_key = lambda value: str(value or "").strip().lower()
+        translator._load_translation_index = lambda: {
+            "прокладка, картер рулевого механизма": (
+                "Прокладка, картер рульового механізму",
+                "Прокладка, картер рулевого механизма",
+                "Gasket, steering gear housing",
+            )
+        }
+        translator._apply_headword_translation_for_latin_suffix = Mock(
+            return_value=(
+                "Прокладка, картер рулевого механизма",
+                "Прокладка, картер рулевого механизма",
+                "Прокладка, картер рулевого механизма",
+            )
+        )
+        service = AutoDbProductNameEnrichmentService(translator=translator)
+        service._resolve_supplier_raw_name = Mock(return_value="")
+        service.build_diagnostics = Mock(
+            return_value=_diag(
+                source_kind=Product.NAME_SOURCE_AUTODB_PRO,
+                before="Прокладка, картер рулевого механизма",
+                after="Прокладка, картер рулевого механизма",
+                fallback=False,
+                reason="articles.normalized_description",
+            )
+        )
+
+        source_hash = sha1(
+            f"{Product.NAME_SOURCE_AUTODB_PRO}:Прокладка, картер рулевого механизма".encode("utf-8")
+        ).hexdigest()
+        product = _build_product(
+            name_uk="Газування, керма",
+            name_ru="Прокладка, картер рулевого механизма",
+            name_en="Gasting, steering crankcase",
+            name_source_hash=source_hash,
+        )
+        result = service.enrich_product(product=product, dry_run=False)
+
+        self.assertEqual(result.status, "updated")
+        self.assertEqual(product.name_uk, "Прокладка, картер рульового механізму")
+        self.assertEqual(product.name_en, "Gasket, steering gear housing")
