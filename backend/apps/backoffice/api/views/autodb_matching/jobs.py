@@ -4,7 +4,7 @@ from dataclasses import asdict
 import re
 
 from django.core.paginator import Paginator
-from django.db.models import Exists, Q
+from django.db.models import F, OuterRef, Q, Subquery
 from rest_framework import status
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
@@ -13,17 +13,16 @@ from apps.autodb.models import AutoDbMatchJob
 from apps.autodb.services.matching.constants import NON_TECDOC_BRAND_KEYS
 from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
 from apps.autodb.services.supplier_brand_matcher import normalize_brand_lookup_key
-from apps.catalog.models import Product
+from apps.catalog.models import AutoDbProductLinkQuality, Product
 from apps.autodb.services.matching.brand_coverage import AutoDbBrandCoverageAuditService
 
 from .._base import BackofficeAPIView
 from .serializers import (
     serialize_fallback_product,
     serialize_fallback_product_detail,
-    serialize_job,
     serialize_job_detail,
 )
-from .utils import job_trusted_link_exists_queryset, parse_bool, parse_positive_int, parse_supplier_id, safe_str
+from .utils import parse_bool, parse_positive_int, parse_supplier_id, safe_str
 
 
 class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
@@ -51,16 +50,11 @@ class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
     def get(self, request):
         page = parse_positive_int(request.query_params.get("page"), default=1)
         page_size = parse_positive_int(request.query_params.get("page_size"), default=25, maximum=100)
-        queryset = self._filtered_queryset(request).order_by(*self._ordering(request)).distinct()
-        if queryset.exists():
-            paginator = Paginator(queryset, page_size)
-            page_obj = paginator.get_page(page)
-            return Response({"count": paginator.count, "results": [serialize_job(item) for item in page_obj.object_list]})
-
-        fallback_qs = self._fallback_unlinked_products_queryset(request).order_by(*self._fallback_ordering(request)).distinct()
-        paginator = Paginator(fallback_qs, page_size)
-        page_obj = paginator.get_page(page)
         matching_status = safe_str(request.query_params.get("matching_status"))
+        queryset = self._fallback_unlinked_products_queryset(request)
+        queryset = self._apply_linked_fresh_ordering(queryset, request=request, matching_status=matching_status).distinct()
+        paginator = Paginator(queryset, page_size)
+        page_obj = paginator.get_page(page)
         results = [
             serialize_fallback_product(
                 item,
@@ -71,132 +65,18 @@ class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
         ]
         return Response({"count": paginator.count, "results": results})
 
-    def _base_queryset(self):
-        return (
-            AutoDbMatchJob.objects.select_related(
-                "product",
-                "product__category",
-                "product__product_price",
-                "supplier_offer",
-                "supplier_offer__supplier",
-            )
-            .prefetch_related("evidence", "product__supplier_offers__supplier")
-            .annotate(_trusted=Exists(job_trusted_link_exists_queryset()))
-            .filter(_trusted=False)
-        )
-
-    def _filtered_queryset(self, request):
-        queryset = self._base_queryset()
-        query = safe_str(request.query_params.get("q"))
-        supplier_code = safe_str(request.query_params.get("supplier_code"))
-        brand = safe_str(request.query_params.get("brand"))
-        autodb_supplier = safe_str(request.query_params.get("autodb_supplier"))
-        matching_status = safe_str(request.query_params.get("matching_status"))
-        article_source = safe_str(request.query_params.get("article_source"))
-        tecdoc_status = safe_str(request.query_params.get("tecdoc_status"))
-        has_price = parse_bool(request.query_params.get("has_price"))
-        stock_gt_0 = parse_bool(request.query_params.get("stock_gt_0"))
-
-        if query:
-            queryset = queryset.filter(
-                Q(product__sku__icontains=query)
-                | Q(product__svom_sku__icontains=query)
-                | Q(product__name__icontains=query)
-                | Q(raw_brand__icontains=query)
-                | Q(article_value__icontains=query)
-                | Q(canonical_article__icontains=query)
-                | Q(supplier_code__icontains=query)
-            )
-        if supplier_code:
-            queryset = queryset.filter(supplier_code=supplier_code)
-        if brand:
-            queryset = queryset.filter(Q(raw_brand__icontains=brand) | Q(product__display_brand_name__icontains=brand))
-        if autodb_supplier:
-            supplier_id = parse_supplier_id(autodb_supplier)
-            queryset = queryset.filter(resolved_supplier_id=supplier_id) if supplier_id else queryset.filter(raw_brand__icontains=autodb_supplier)
-        if matching_status:
-            queryset = queryset.filter(status=matching_status)
-        if article_source:
-            queryset = queryset.filter(article_source_type=article_source)
-        if has_price is not None:
-            queryset = queryset.filter(product__product_price__isnull=not has_price)
-        queryset = self._apply_stock_filter(queryset, stock_gt_0)
-        queryset = self._apply_tecdoc_filter(queryset, tecdoc_status)
-        return self._apply_flag_filters(queryset, request)
-
-    def _apply_stock_filter(self, queryset, stock_gt_0: bool | None):
-        if stock_gt_0 is True:
-            return queryset.filter(Q(supplier_offer__stock_qty__gt=0) | Q(product__available_stock_qty_cached__gt=0))
-        if stock_gt_0 is False:
-            return queryset.filter(Q(supplier_offer__stock_qty__lte=0) | Q(supplier_offer__isnull=True))
-        return queryset
-
-    def _apply_tecdoc_filter(self, queryset, tecdoc_status: str):
-        if tecdoc_status == "tecdoc":
-            return queryset.exclude(resolved_supplier_id__isnull=True).exclude(status=AutoDbMatchJob.STATUS_SKIPPED_NON_TECDOC)
-        if tecdoc_status == "non_tecdoc":
-            return queryset.filter(status=AutoDbMatchJob.STATUS_SKIPPED_NON_TECDOC)
-        if tecdoc_status == "unknown":
-            return queryset.filter(
-                Q(resolved_supplier_id__isnull=True)
-                | Q(status__in=[AutoDbMatchJob.STATUS_SKIPPED_BRAND_UNRESOLVED, AutoDbMatchJob.STATUS_SKIPPED_UNSAFE_AMBIGUOUS])
-            )
-        return queryset
-
-    def _apply_flag_filters(self, queryset, request):
-        flag_status_map = {
-            "only_safe_candidates": AutoDbMatchJob.STATUS_SAFE_LINK_CANDIDATE,
-            "needs_review": AutoDbMatchJob.STATUS_NEEDS_REVIEW,
-            "quota_paused": AutoDbMatchJob.STATUS_QUOTA_PAUSED,
-            "bad_article_source": AutoDbMatchJob.STATUS_SKIPPED_BAD_ARTICLE_SOURCE,
-            "split_needed": AutoDbMatchJob.STATUS_SKIPPED_SPLIT_NEEDED,
-            "unsafe_ambiguous": AutoDbMatchJob.STATUS_SKIPPED_UNSAFE_AMBIGUOUS,
-        }
-        for param, status_value in flag_status_map.items():
-            if parse_bool(request.query_params.get(param)) is True:
-                queryset = queryset.filter(status=status_value)
-        return queryset
-
-    def _ordering(self, request) -> tuple[str, str]:
-        ordering_map = {
-            "sku": "product__sku",
-            "name": "product__name",
-            "brand": "raw_brand",
-            "supplier_code": "supplier_code",
-            "article": "canonical_article",
-            "status": "status",
-            "updated_at": "updated_at",
-            "stock": "supplier_offer__stock_qty",
-        }
-        sort_key = safe_str(request.query_params.get("ordering")) or "updated_at"
-        descending = sort_key.startswith("-")
-        clean_sort = sort_key[1:] if descending else sort_key
-        ordering = ordering_map.get(clean_sort, "updated_at")
-        if descending or clean_sort == "updated_at":
-            ordering = f"-{ordering}"
-        return ordering, "id"
-
     def _fallback_unlinked_products_queryset(self, request):
         matching_status = safe_str(request.query_params.get("matching_status"))
         tecdoc_status = safe_str(request.query_params.get("tecdoc_status"))
-        runtime_status_mode = (
-            matching_status in self.FALLBACK_LINKED_STATUS_ALIASES
-            or matching_status in self.FALLBACK_LOCAL_FOUND_STATUS_ALIASES
-            or matching_status in self.FALLBACK_REMOTE_FOUND_STATUS_ALIASES
-            or tecdoc_status in {"tecdoc", "non_tecdoc", "unknown"}
-        )
-
         queryset = (
             Product.objects.select_related("category", "product_price")
             .prefetch_related("supplier_offers__supplier")
         )
-        if not runtime_status_mode:
-            queryset = queryset.filter(autodb_supplier_id__isnull=True)
         queryset = self._apply_fallback_tecdoc_filter(
             queryset,
             tecdoc_status=tecdoc_status,
             matching_status=matching_status,
-            linked_mode=runtime_status_mode,
+            linked_mode=True,
         )
         query = safe_str(request.query_params.get("q"))
         supplier_code = safe_str(request.query_params.get("supplier_code"))
@@ -238,6 +118,13 @@ class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
                 queryset = queryset.filter(Q(article__isnull=True) | Q(article=""))
             elif matching_status == AutoDbMatchJob.STATUS_NEW:
                 queryset = self._exclude_explicit_non_tecdoc_brands(queryset)
+                queryset = queryset.filter(Q(article__isnull=False) & ~Q(article=""))
+                queryset = queryset.filter(Q(autodb_article_key__isnull=True) | Q(autodb_article_key=""))
+            elif matching_status == AutoDbMatchJob.STATUS_NEEDS_REVIEW:
+                queryset = queryset.filter(
+                    autodb_link_qualities__autodb_article_key=F("autodb_article_key"),
+                    autodb_link_qualities__status=AutoDbProductLinkQuality.STATUS_NEEDS_MANUAL_REVIEW,
+                )
             elif matching_status in self.FALLBACK_UNRESOLVED_STATUS_ALIASES:
                 return queryset.none()
             else:
@@ -350,6 +237,8 @@ class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
         return "unknown"
 
     def _fallback_serialized_status(self, *, item: Product, requested_status: str) -> str:
+        if self._has_needs_review_quality(item):
+            return AutoDbMatchJob.STATUS_NEEDS_REVIEW
         if requested_status in self.FALLBACK_REMOTE_FOUND_STATUS_ALIASES:
             return AutoDbMatchJob.STATUS_REMOTE_FOUND
         if requested_status in self.FALLBACK_LINKED_STATUS_ALIASES:
@@ -363,13 +252,8 @@ class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
         if requested_status in self.FALLBACK_LOCAL_FOUND_STATUS_ALIASES:
             supplier_id = int(getattr(item, "autodb_supplier_id", 0) or 0)
             article = safe_str(getattr(item, "autodb_article_number", "")) or safe_str(getattr(item, "article", ""))
-            return AutoDbMatchJob.STATUS_LOCAL_FOUND if supplier_id > 0 and article and self._has_local_article(
-                supplier_id=supplier_id,
-                article=article,
-            ) and not (
-                bool(safe_str(getattr(item, "autodb_article_key", "")))
-                and self._is_clone_linked(supplier_id=supplier_id, article=article)
-            ) else AutoDbMatchJob.STATUS_NEW
+            has_link = bool(safe_str(getattr(item, "autodb_article_key", "")))
+            return AutoDbMatchJob.STATUS_LOCAL_FOUND if supplier_id > 0 and article and not has_link else AutoDbMatchJob.STATUS_NEW
         if requested_status == AutoDbMatchJob.STATUS_SKIPPED_NON_TECDOC:
             return AutoDbMatchJob.STATUS_SKIPPED_NON_TECDOC
         if requested_status == AutoDbMatchJob.STATUS_SKIPPED_BAD_ARTICLE_SOURCE:
@@ -381,26 +265,30 @@ class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
         has_link = bool(safe_str(getattr(item, "autodb_article_key", "")))
         if supplier_id > 0 and article and has_link and self._is_clone_linked(supplier_id=supplier_id, article=article):
             return AutoDbMatchJob.STATUS_LINKED
-        if supplier_id > 0 and article and self._has_local_article(supplier_id=supplier_id, article=article):
+        if supplier_id > 0 and article and not has_link:
             return AutoDbMatchJob.STATUS_LOCAL_FOUND
         if not str(getattr(item, "article", "") or "").strip():
             return AutoDbMatchJob.STATUS_SKIPPED_BAD_ARTICLE_SOURCE
         return AutoDbMatchJob.STATUS_NEW
 
     def _fallback_status_for_response(self, *, item: Product, requested_status: str) -> str:
-        if requested_status == AutoDbMatchJob.STATUS_NEW:
-            return AutoDbMatchJob.STATUS_NEW
-        if requested_status in self.FALLBACK_LINKED_STATUS_ALIASES:
-            return AutoDbMatchJob.STATUS_LINKED
-        if requested_status in self.FALLBACK_LOCAL_FOUND_STATUS_ALIASES:
-            return AutoDbMatchJob.STATUS_LOCAL_FOUND
-        if requested_status in self.FALLBACK_REMOTE_FOUND_STATUS_ALIASES:
-            return AutoDbMatchJob.STATUS_REMOTE_FOUND
-        if requested_status == AutoDbMatchJob.STATUS_SKIPPED_NON_TECDOC:
-            return AutoDbMatchJob.STATUS_SKIPPED_NON_TECDOC
-        if requested_status == AutoDbMatchJob.STATUS_SKIPPED_BAD_ARTICLE_SOURCE:
-            return AutoDbMatchJob.STATUS_SKIPPED_BAD_ARTICLE_SOURCE
+        if requested_status:
+            return requested_status
         return self._fallback_serialized_status(item=item, requested_status=requested_status)
+
+    def _apply_linked_fresh_ordering(self, queryset, *, request, matching_status: str):
+        if matching_status in self.FALLBACK_LINKED_STATUS_ALIASES:
+            trusted_checked = (
+                AutoDbProductLinkQuality.objects.filter(
+                    product_id=OuterRef("pk"),
+                    autodb_article_key=OuterRef("autodb_article_key"),
+                    status=AutoDbProductLinkQuality.STATUS_TRUSTED,
+                )
+                .order_by("-checked_at", "-updated_at")
+                .values("checked_at")[:1]
+            )
+            return queryset.annotate(_linked_checked_at=Subquery(trusted_checked)).order_by("-_linked_checked_at", "-updated_at", "id")
+        return queryset.order_by(*self._fallback_ordering(request))
 
     def _filter_fallback_linked_queryset(self, queryset):
         candidate = queryset.filter(autodb_supplier_id__isnull=False).exclude(autodb_article_key__isnull=True).exclude(autodb_article_key="")
@@ -420,12 +308,17 @@ class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
                 & ~Q(article="")
             )
         )
-        without_key = candidate.filter(Q(autodb_article_key__isnull=True) | Q(autodb_article_key=""))
-        with_key = candidate.exclude(autodb_article_key__isnull=True).exclude(autodb_article_key="")
-        linked_with_key_ids = self._linked_product_ids(with_key)
-        unlinked_with_key = with_key.exclude(id__in=linked_with_key_ids) if linked_with_key_ids else with_key
-        unlinked_with_key_ids = list(unlinked_with_key.values_list("id", flat=True))
-        return candidate.filter(Q(autodb_article_key__isnull=True) | Q(autodb_article_key="") | Q(id__in=unlinked_with_key_ids))
+        return candidate.filter(Q(autodb_article_key__isnull=True) | Q(autodb_article_key=""))
+
+    def _has_needs_review_quality(self, item: Product) -> bool:
+        article_key = safe_str(getattr(item, "autodb_article_key", ""))
+        if not article_key:
+            return False
+        return AutoDbProductLinkQuality.objects.filter(
+            product_id=item.id,
+            autodb_article_key=article_key,
+            status=AutoDbProductLinkQuality.STATUS_NEEDS_MANUAL_REVIEW,
+        ).exists()
 
     def _linked_product_ids(self, queryset) -> list[str]:
         ids: list[str] = []
@@ -552,6 +445,23 @@ class BackofficeAutoDbMatchingJobDetailAPIView(BackofficeAPIView):
     required_capability = "autocatalog.view"
 
     def get(self, request, id):
+        helper = BackofficeAutoDbMatchingJobsAPIView()
+        product = (
+            Product.objects.select_related("category", "product_price")
+            .prefetch_related("supplier_offers__supplier")
+            .filter(id=id)
+            .first()
+        )
+        if product is not None:
+            status_guess = helper._fallback_serialized_status(item=product, requested_status="")
+            tecdoc_state = helper._fallback_tecdoc_status(product)
+            return Response(
+                serialize_fallback_product_detail(
+                    product,
+                    matching_status=status_guess,
+                    tecdoc_state=tecdoc_state,
+                )
+            )
         job = (
             AutoDbMatchJob.objects.select_related(
                 "product",
@@ -566,24 +476,6 @@ class BackofficeAutoDbMatchingJobDetailAPIView(BackofficeAPIView):
         )
         if job is not None:
             return Response(serialize_job_detail(job))
-
-        product = (
-            Product.objects.select_related("category", "product_price")
-            .prefetch_related("supplier_offers__supplier")
-            .filter(id=id)
-            .first()
-        )
-        if product is not None:
-            helper = BackofficeAutoDbMatchingJobsAPIView()
-            status_guess = helper._fallback_serialized_status(item=product, requested_status="")
-            tecdoc_state = helper._fallback_tecdoc_status(product)
-            return Response(
-                serialize_fallback_product_detail(
-                    product,
-                    matching_status=status_guess,
-                    tecdoc_state=tecdoc_state,
-                )
-            )
         raise NotFound()
 
 

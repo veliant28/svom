@@ -246,7 +246,6 @@ class BackofficeAutoDbMatchingProductLookupAPIView(BackofficeAPIView):
                 | Q(name__icontains=query)
                 | Q(display_brand_name__icontains=query)
             )
-            .select_related("brand")
             .order_by("-updated_at")[:limit]
         )
         rows = [
@@ -256,7 +255,7 @@ class BackofficeAutoDbMatchingProductLookupAPIView(BackofficeAPIView):
                 "svom_sku": safe_str(item.svom_sku),
                 "article": safe_str(item.article),
                 "name": safe_str(item.name),
-                "brand_name": safe_str(item.display_brand_name or item.autodb_supplier_name or getattr(item.brand, "name", "") or ""),
+                "brand_name": safe_str(item.display_brand_name or item.autodb_supplier_name or ""),
             }
             for item in qs
         ]

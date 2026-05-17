@@ -23,17 +23,12 @@ function clampBatchSize(value: number): number {
 }
 
 const STATUS_OPTIONS = [
-  "new",
-  "local_found",
-  "remote_found",
-  "needs_review",
-  "quota_paused",
-  "skipped_bad_article_source",
-  "skipped_brand_unresolved",
-  "skipped_non_tecdoc",
-  "skipped_split_needed",
-  "skipped_unsafe_ambiguous",
   "linked",
+  "local_found",
+  "needs_review",
+  "new",
+  "skipped_bad_article_source",
+  "skipped_non_tecdoc",
 ] as const;
 
 function humanizeStatus(value: string): string {
