@@ -50,3 +50,29 @@ class AutoDbArticleNameGatewayTests(SimpleTestCase):
 
         self.assertEqual(resolved, "")
         live_loader_mock.assert_not_called()
+
+    @patch("apps.catalog.services.autodb_content.cache")
+    @patch("apps.catalog.services.autodb_content.AutoDbProRemoteClient")
+    def test_resolve_name_uses_prd_description_fallback_when_article_inf_is_empty(self, remote_client_cls, cache_mock):
+        cache_mock.get.return_value = None
+        client = remote_client_cls.from_settings.return_value
+        client.select.side_effect = [
+            [{"id": 323}],
+            [],
+            [{"prd_description": "Шарнирный комплект, приводной вал", "prd_normalized": "Шарнирный комплект"}],
+        ]
+
+        resolved = resolve_autodb_article_name(
+            normalized_article="110078910",
+            normalized_brand="AUTOMEGA",
+            prefer_live=True,
+        )
+
+        self.assertEqual(resolved, "Шарнирный комплект, приводной вал")
+        self.assertEqual(client.select.call_count, 3)
+        first_query, _first_params = client.select.call_args_list[0][0][:2]
+        second_query, _second_params = client.select.call_args_list[1][0][:2]
+        third_query, _third_params = client.select.call_args_list[2][0][:2]
+        self.assertIn("FROM suppliers", first_query)
+        self.assertIn("FROM article_inf", second_query)
+        self.assertIn("FROM article_prd", third_query)

@@ -495,7 +495,24 @@ def _load_article_name_from_live(*, article_candidates: set[str], normalized_bra
             rows = cursor.fetchall()
         finally:
             cursor.close()
-        return _pick_best_article_name(rows)
+        best = _pick_best_article_name(rows)
+        if best:
+            return best
+
+        sql_prd = (
+            "SELECT p.description, p.normalizeddescription "
+            "FROM article_prd ap "
+            "LEFT JOIN prd p ON p.id = ap.productId "
+            f"WHERE ap.supplierid IN ({supplier_placeholders}) "
+            f"AND ap.datasupplierarticlenumber IN ({article_placeholders})"
+        )
+        cursor = source.cursor()
+        try:
+            cursor.execute(sql_prd, params)
+            prd_rows = cursor.fetchall()
+        finally:
+            cursor.close()
+        return _pick_best_prd_fallback_name(prd_rows)
     finally:
         source.close()
 
@@ -527,7 +544,24 @@ def _load_article_name_from_remote_gateway(*, article_candidates: set[str], norm
         for item in rows
         if isinstance(item, dict)
     ]
-    return _pick_best_article_name(normalized_rows)
+    best = _pick_best_article_name(normalized_rows)
+    if best:
+        return best
+
+    sql_prd = (
+        "SELECT p.description AS prd_description, p.normalizeddescription AS prd_normalized "
+        "FROM article_prd ap "
+        "LEFT JOIN prd p ON p.id = ap.productId "
+        f"WHERE ap.supplierid IN ({supplier_placeholders}) "
+        f"AND ap.datasupplierarticlenumber IN ({article_placeholders})"
+    )
+    prd_rows = client.select(sql_prd, tuple(params), run_id="catalog-article-name-prd-fallback")
+    normalized_prd_rows = [
+        (item.get("prd_description"), item.get("prd_normalized"))
+        for item in prd_rows
+        if isinstance(item, dict)
+    ]
+    return _pick_best_prd_fallback_name(normalized_prd_rows)
 
 
 def _refresh_images_from_live(*, source, supplier_ids: set[int], articles: set[str], columns: list[str]) -> None:
@@ -718,6 +752,15 @@ def _pick_best_article_name(rows: list[tuple[Any, ...]]) -> str:
             best_text = clean_text
 
     return best_text[:255]
+
+
+def _pick_best_prd_fallback_name(rows: list[tuple[Any, ...]]) -> str:
+    for description, normalized in rows:
+        for candidate in (description, normalized):
+            clean = _normalize_article_info_text(candidate)
+            if clean:
+                return clean[:255]
+    return ""
 
 
 def _build_article_candidates(*, article_raw: str, normalized_article: str) -> set[str]:
