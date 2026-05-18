@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import type { BackofficeLiqPaySettings } from "@/features/backoffice/types/payment.types";
 
@@ -17,11 +17,10 @@ export function LiqPaySettingsForm({
   isSaving: boolean;
   isTesting: boolean;
   isLoading: boolean;
-  onSave: (payload: Partial<{ is_enabled: boolean; public_key: string; private_key: string }>) => Promise<unknown>;
+  onSave: (payload: Partial<{ public_key: string; private_key: string }>) => Promise<unknown>;
   onTestConnection: () => Promise<unknown>;
   t: (key: string) => string;
 }) {
-  const [enabled, setEnabled] = useState<boolean>(Boolean(settings?.is_enabled));
   const [publicKey, setPublicKey] = useState("");
   const [privateKey, setPrivateKey] = useState("");
 
@@ -30,25 +29,12 @@ export function LiqPaySettingsForm({
   const serverUrlValue = settings?.server_url || (fallbackOrigin ? `${fallbackOrigin}/api/commerce/payments/liqpay/webhook/` : "");
   const resultUrlValue = settings?.result_url || (fallbackOrigin ? `${fallbackOrigin}/checkout` : "");
 
-  useEffect(() => {
-    setEnabled(Boolean(settings?.is_enabled));
-  }, [settings?.is_enabled]);
-
   return (
     <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
       <p className="text-sm font-semibold">{t("payments.liqpay.title")}</p>
       <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>{t("payments.liqpay.helper")}</p>
 
       <div className="mt-3 grid gap-3">
-        <label className="inline-flex items-center gap-2 text-xs font-medium">
-          <input
-            type="checkbox"
-            checked={enabled}
-            onChange={(event) => setEnabled(event.target.checked)}
-          />
-          {t("payments.liqpay.enabled")}
-        </label>
-
         <label className="flex flex-col gap-1 text-xs">
           {t("payments.liqpay.publicKey")}
           <input
@@ -109,9 +95,7 @@ export function LiqPaySettingsForm({
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
             disabled={!canSave}
             onClick={() => {
-              const payload: Partial<{ is_enabled: boolean; public_key: string; private_key: string }> = {
-                is_enabled: enabled,
-              };
+              const payload: Partial<{ public_key: string; private_key: string }> = {};
               if (publicKey.trim()) {
                 payload.public_key = publicKey.trim();
               }

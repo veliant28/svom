@@ -145,6 +145,95 @@
           "needDelivery": "Має бути увімкнений хоча б один спосіб доставки.",
           "needPayment": "Має бути увімкнений хоча б один спосіб оплати."
         }
+      },
+      "integrationCenter": {
+        "title": "Центр інтеграцій",
+        "subtitle": "Єдине керування увімкненням інтеграцій, оплати та доставки без кнопки збереження.",
+        "groups": {
+          "payments": "Оплата",
+          "delivery": "Доставка",
+          "suppliers": "Постачальники",
+          "system": "Системні",
+          "translator": "Перекладач"
+        },
+        "items": {
+          "paymentMonobank": {
+            "label": "Monobank",
+            "hint": "Вмикає/вимикає інтеграцію Monobank і одночасно показ способу оплати в checkout."
+          },
+          "paymentNovaPay": {
+            "label": "Nova Pay",
+            "hint": "Вмикає/вимикає інтеграцію Nova Pay і одночасно показ способу оплати в checkout."
+          },
+          "paymentLiqPay": {
+            "label": "LiqPay",
+            "hint": "Вмикає/вимикає інтеграцію LiqPay і одночасно показ способу оплати в checkout."
+          },
+          "paymentCod": {
+            "label": "Післяплата",
+            "hint": "Показує/приховує післяплату в checkout."
+          },
+          "deliveryPickup": {
+            "label": "Самовивіз",
+            "hint": "Показує/приховує самовивіз у checkout."
+          },
+          "deliveryNovaPoshta": {
+            "label": "Нова Пошта",
+            "hint": "Показує/приховує доставку Новою Поштою в checkout."
+          },
+          "deliveryCourier": {
+            "label": "Курʼєр",
+            "hint": "Показує/приховує курʼєрську доставку в checkout."
+          },
+          "supplierUtr": {
+            "label": "UTR",
+            "hint": "Вмикає/вимикає інтеграцію постачальника UTR."
+          },
+          "supplierGpl": {
+            "label": "GPL",
+            "hint": "Вмикає/вимикає інтеграцію постачальника GPL."
+          },
+          "integrationVchasno": {
+            "label": "Вчасно.Каса",
+            "hint": "Вмикає/вимикає інтеграцію Вчасно.Каса."
+          },
+          "integrationSeo": {
+            "label": "SEO",
+            "hint": "Вмикає/вимикає глобальну SEO-інтеграцію."
+          },
+          "integrationEmail": {
+            "label": "Email",
+            "hint": "Вмикає/вимикає реальну відправку email."
+          }
+        },
+        "translator": {
+          "providers": {
+            "google": {
+              "label": "Google Translate",
+              "hint": "Використовувати Google Translate для перекладу назв товарів."
+            },
+            "libretranslate": {
+              "label": "LibreTranslate",
+              "hint": "Використовувати LibreTranslate для перекладу назв товарів."
+            }
+          },
+          "googleToken": {
+            "label": "Google API key",
+            "hint": "Токен потрібен для запитів до Google Translate API. Застосовується одразу при blur/Enter.",
+            "placeholder": "Введіть новий ключ",
+            "masked": "Збережений ключ: {value}",
+            "empty": "Ключ не збережено"
+          }
+        },
+        "messages": {
+          "loadFailed": "Не вдалося завантажити налаштування Центру інтеграцій.",
+          "updateFailed": "Не вдалося оновити перемикач.",
+          "updated": "Налаштування оновлено.",
+          "translatorUpdateFailed": "Не вдалося оновити налаштування перекладача.",
+          "translatorProviderUpdated": "Провайдера перекладача оновлено.",
+          "translatorTokenUpdated": "Google API key оновлено.",
+          "empty": "Немає доступних перемикачів."
+        }
       }
     }
   }

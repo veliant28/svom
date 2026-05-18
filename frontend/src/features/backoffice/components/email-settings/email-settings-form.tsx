@@ -27,7 +27,6 @@ function settingsToFormState(settings: BackofficeEmailSettings | null): EmailSet
   const isResend = provider === "resend_smtp";
   return {
     provider,
-    is_enabled: Boolean(settings.is_enabled),
     from_name: settings.from_name || (isResend ? "SVOM" : ""),
     from_email: settings.from_email || (isResend ? "no-reply@svom.com.ua" : ""),
     host: settings.host || (isResend ? "smtp.resend.com" : ""),

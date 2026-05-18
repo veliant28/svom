@@ -163,6 +163,12 @@ BACKOFFICE_CAPABILITIES: tuple[BackofficeCapabilityDefinition, ...] = (
         description="Read and manage payment provider settings.",
     ),
     BackofficeCapabilityDefinition(
+        code="integrations.manage",
+        permission_codename="bo_cap_integrations_manage",
+        title="Integrations manage",
+        description="Manage integration enable/disable switches from Integration Center.",
+    ),
+    BackofficeCapabilityDefinition(
         code="checkout.methods.manage",
         permission_codename="bo_cap_checkout_methods_manage",
         title="Checkout methods manage",

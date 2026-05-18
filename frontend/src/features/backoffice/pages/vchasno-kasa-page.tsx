@@ -131,8 +131,7 @@ export function VchasnoKasaPage() {
       return false;
     }
     return (
-      settings.is_enabled !== form.is_enabled
-      || settings.rro_fn !== form.rro_fn
+      settings.rro_fn !== form.rro_fn
       || settings.default_payment_type !== form.default_payment_type
       || settings.default_tax_group !== form.default_tax_group
       || !arraysEqual(settings.selected_payment_methods || [], form.selected_payment_methods)
@@ -152,7 +151,6 @@ export function VchasnoKasaPage() {
     setFieldErrors({});
     try {
       const next = await updateBackofficeVchasnoKasaSettings(token, {
-        is_enabled: form.is_enabled,
         api_token: form.api_token.trim(),
         fiscal_api_token: form.fiscal_api_token.trim(),
         rro_fn: form.rro_fn.trim(),
@@ -315,11 +313,6 @@ export function VchasnoKasaPage() {
             <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>{t("vchasnoKasa.form.helper")}</p>
 
             <div className="mt-4 grid gap-3">
-              <VchasnoToggleField
-                label={t("vchasnoKasa.form.enabled")}
-                value={form.is_enabled}
-                onToggle={() => setForm((prev) => ({ ...prev, is_enabled: !prev.is_enabled }))}
-              />
               <VchasnoField
                 label={t("vchasnoKasa.form.apiToken")}
                 hint={settings?.api_token_masked ? `${t("vchasnoKasa.form.apiTokenMasked")}: ${settings.api_token_masked}` : ""}

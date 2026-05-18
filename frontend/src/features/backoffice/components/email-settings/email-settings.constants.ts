@@ -4,7 +4,6 @@ export type EmailProvider = "resend_smtp" | "manual_smtp";
 
 export type EmailSettingsFormState = {
   provider: EmailProvider;
-  is_enabled: boolean;
   from_name: string;
   from_email: string;
   host: string;
@@ -19,7 +18,6 @@ export type EmailSettingsFormState = {
 
 export const RESEND_PRESET: Omit<EmailSettingsFormState, "host_password"> = {
   provider: "resend_smtp",
-  is_enabled: true,
   from_name: "SVOM",
   from_email: "no-reply@svom.com.ua",
   host: "smtp.resend.com",
@@ -33,7 +31,6 @@ export const RESEND_PRESET: Omit<EmailSettingsFormState, "host_password"> = {
 
 export const EMPTY_STATE: EmailSettingsFormState = {
   provider: "resend_smtp",
-  is_enabled: false,
   from_name: "SVOM",
   from_email: "no-reply@svom.com.ua",
   host: "smtp.resend.com",
@@ -57,7 +54,6 @@ export function applyResendPreset(current: EmailSettingsFormState): EmailSetting
 export function buildEmailSettingsPayload(form: EmailSettingsFormState): BackofficeEmailSettingsPayload {
   const payload: BackofficeEmailSettingsPayload = {
     provider: form.provider,
-    is_enabled: form.is_enabled,
     from_name: form.from_name.trim(),
     from_email: form.from_email.trim(),
     host: form.host.trim(),

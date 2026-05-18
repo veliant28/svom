@@ -17,11 +17,10 @@ export function NovaPaySettingsForm({
   isSaving: boolean;
   isTesting: boolean;
   isLoading: boolean;
-  onSave: (payload: Partial<{ is_enabled: boolean; merchant_id: string; api_token: string }>) => Promise<unknown>;
+  onSave: (payload: Partial<{ merchant_id: string; api_token: string }>) => Promise<unknown>;
   onTestConnection: () => Promise<unknown>;
   t: (key: string) => string;
 }) {
-  const [enabled, setEnabled] = useState<boolean>(Boolean(settings?.is_enabled));
   const [merchantId, setMerchantId] = useState(settings?.merchant_id || "");
   const [apiToken, setApiToken] = useState("");
   const apiTokenMasked = settings?.api_token_masked || "";
@@ -29,9 +28,8 @@ export function NovaPaySettingsForm({
   const canSave = useMemo(() => !isSaving && !isLoading, [isLoading, isSaving]);
 
   useEffect(() => {
-    setEnabled(Boolean(settings?.is_enabled));
     setMerchantId(settings?.merchant_id || "");
-  }, [settings?.is_enabled, settings?.merchant_id]);
+  }, [settings?.merchant_id]);
 
   return (
     <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
@@ -39,15 +37,6 @@ export function NovaPaySettingsForm({
       <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>{t("payments.novapay.helper")}</p>
 
       <div className="mt-3 grid gap-3">
-        <label className="inline-flex items-center gap-2 text-xs font-medium">
-          <input
-            type="checkbox"
-            checked={enabled}
-            onChange={(event) => setEnabled(event.target.checked)}
-          />
-          {t("payments.novapay.enabled")}
-        </label>
-
         <label className="flex flex-col gap-1 text-xs">
           {t("payments.novapay.merchantId")}
           <input
@@ -77,8 +66,7 @@ export function NovaPaySettingsForm({
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
             disabled={!canSave}
             onClick={() => {
-              const payload: Partial<{ is_enabled: boolean; merchant_id: string; api_token: string }> = {
-                is_enabled: enabled,
+              const payload: Partial<{ merchant_id: string; api_token: string }> = {
                 merchant_id: merchantId.trim(),
               };
               if (apiToken.trim()) {

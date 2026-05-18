@@ -10,6 +10,8 @@ from urllib import request as urllib_request
 
 from django.conf import settings
 
+from apps.autodb.models import AutoDbTranslationSettings
+from apps.autodb.selectors import get_autodb_translation_settings, has_autodb_translation_settings_table
 from apps.catalog.services.product_management import sanitize_product_name
 
 
@@ -189,8 +191,8 @@ class ProductNameTranslationService:
         source_lang: str,
         protected_tokens: list[str],
     ) -> tuple[str, str, str] | None:
-        provider = str(getattr(settings, "AUTODB_OFFLINE_TRANSLATE_PROVIDER", "libretranslate") or "libretranslate").strip().lower()
-        if provider == "google":
+        provider = self._get_translate_provider()
+        if provider == AutoDbTranslationSettings.PROVIDER_GOOGLE:
             return self._translate_via_google_api(
                 source_text=source_text,
                 source_lang=source_lang,
@@ -260,7 +262,7 @@ class ProductNameTranslationService:
         ).strip()
         if not base_url:
             return None
-        api_key = str(getattr(settings, "AUTODB_GOOGLE_TRANSLATE_API_KEY", "") or "").strip()
+        api_key = self._get_google_api_key()
         if not api_key:
             return None
         timeout_ms = int(getattr(settings, "AUTODB_OFFLINE_TRANSLATE_TIMEOUT_MS", 4000) or 4000)
@@ -330,6 +332,43 @@ class ProductNameTranslationService:
             return ""
         translated = sanitize_product_name(str(data.get("translatedText") or ""))
         return translated[:255]
+
+    def _get_translation_settings(self) -> AutoDbTranslationSettings | None:
+        try:
+            if not has_autodb_translation_settings_table():
+                return None
+            return get_autodb_translation_settings()
+        except Exception:
+            return None
+
+    def _get_translate_provider(self) -> str:
+        fallback_provider = str(
+            getattr(settings, "AUTODB_OFFLINE_TRANSLATE_PROVIDER", AutoDbTranslationSettings.PROVIDER_LIBRETRANSLATE)
+            or AutoDbTranslationSettings.PROVIDER_LIBRETRANSLATE
+        ).strip().lower()
+        if fallback_provider not in {
+            AutoDbTranslationSettings.PROVIDER_GOOGLE,
+            AutoDbTranslationSettings.PROVIDER_LIBRETRANSLATE,
+        }:
+            fallback_provider = AutoDbTranslationSettings.PROVIDER_LIBRETRANSLATE
+        translation_settings = self._get_translation_settings()
+        if translation_settings is None:
+            return fallback_provider
+        provider = str(translation_settings.provider or "").strip().lower()
+        if provider in {
+            AutoDbTranslationSettings.PROVIDER_GOOGLE,
+            AutoDbTranslationSettings.PROVIDER_LIBRETRANSLATE,
+        }:
+            return provider
+        return fallback_provider
+
+    def _get_google_api_key(self) -> str:
+        translation_settings = self._get_translation_settings()
+        if translation_settings is not None:
+            from_db = str(translation_settings.google_api_key or "").strip()
+            if from_db:
+                return from_db
+        return str(getattr(settings, "AUTODB_GOOGLE_TRANSLATE_API_KEY", "") or "").strip()
 
     def _google_translate_text(
         self,

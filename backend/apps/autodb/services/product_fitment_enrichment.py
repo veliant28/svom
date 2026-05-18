@@ -446,14 +446,21 @@ class AutoDbProductFitmentEnrichmentService:
         if not supplier_column or not article_column:
             return []
 
-        exact_rows = self.storage.fetch_local_rows(
-            table="article_li",
-            filters={supplier_column: supplier_id, article_column: article_number},
-            limit=2000,
-            columns=columns,
-        )
-        if exact_rows:
-            return exact_rows
+        article_variants: list[str] = []
+        for candidate in (article_number, "".join(str(article_number).split())):
+            value = str(candidate or "").strip()
+            if value and value not in article_variants:
+                article_variants.append(value)
+
+        for variant in article_variants:
+            exact_rows = self.storage.fetch_local_rows(
+                table="article_li",
+                filters={supplier_column: supplier_id, article_column: variant},
+                limit=2000,
+                columns=columns,
+            )
+            if exact_rows:
+                return exact_rows
 
         supplier_rows = self.storage.fetch_local_rows(
             table="article_li",
@@ -461,11 +468,15 @@ class AutoDbProductFitmentEnrichmentService:
             limit=10000,
             columns=columns,
         )
-        target = article_number.strip().lower()
+        target_values = {value.strip().lower() for value in article_variants if value.strip()}
+        target_values |= {"".join(value.split()).lower() for value in article_variants if value.strip()}
         return [
             row
             for row in supplier_rows
-            if str(find_value(row, [article_column]) or "").strip().lower() == target
+            if (
+                str(find_value(row, [article_column]) or "").strip().lower() in target_values
+                or "".join(str(find_value(row, [article_column]) or "").split()).lower() in target_values
+            )
         ]
 
     def _find_existing_passanger_car_ids(self, *, linkage_ids: set[int]) -> set[int]:

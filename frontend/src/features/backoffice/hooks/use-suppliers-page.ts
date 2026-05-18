@@ -24,7 +24,6 @@ export function useSuppliersPage() {
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [fingerprint, setFingerprint] = useState("svom-backoffice");
-  const [isEnabled, setIsEnabled] = useState(true);
 
   useEffect(() => {
     if (!scope.workspace) {
@@ -32,7 +31,6 @@ export function useSuppliersPage() {
     }
     setLogin(scope.workspace.connection.login ?? "");
     setPassword("");
-    setIsEnabled(scope.workspace.supplier.is_enabled);
   }, [scope.workspace]);
 
   const actions = useSupplierActions({
@@ -53,11 +51,10 @@ export function useSuppliersPage() {
       login,
       password,
       fingerprint,
-      isEnabled,
     });
 
     setPassword("");
-  }, [actions, fingerprint, isEnabled, login, password, scope.token]);
+  }, [actions, fingerprint, login, password, scope.token]);
 
   const accessSecondsLeft = useTokenCountdown(scope.workspace?.connection.access_token_expires_at);
   const accessTone = supplierTokenCountdownTone(accessSecondsLeft);
@@ -91,8 +88,6 @@ export function useSuppliersPage() {
     setPassword,
     fingerprint,
     setFingerprint,
-    isEnabled,
-    setIsEnabled,
     handleSaveSettings,
     accessSecondsLeft,
     accessTone,

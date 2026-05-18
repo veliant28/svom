@@ -120,9 +120,11 @@ class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
                 queryset = self._exclude_explicit_non_tecdoc_brands(queryset)
                 queryset = queryset.filter(Q(article__isnull=False) & ~Q(article=""))
                 queryset = queryset.filter(Q(autodb_article_key__isnull=True) | Q(autodb_article_key=""))
+                queryset = queryset.exclude(
+                    autodb_link_qualities__status=AutoDbProductLinkQuality.STATUS_NEEDS_MANUAL_REVIEW,
+                )
             elif matching_status == AutoDbMatchJob.STATUS_NEEDS_REVIEW:
                 queryset = queryset.filter(
-                    autodb_link_qualities__autodb_article_key=F("autodb_article_key"),
                     autodb_link_qualities__status=AutoDbProductLinkQuality.STATUS_NEEDS_MANUAL_REVIEW,
                 )
             elif matching_status in self.FALLBACK_UNRESOLVED_STATUS_ALIASES:
@@ -311,12 +313,8 @@ class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
         return candidate.filter(Q(autodb_article_key__isnull=True) | Q(autodb_article_key=""))
 
     def _has_needs_review_quality(self, item: Product) -> bool:
-        article_key = safe_str(getattr(item, "autodb_article_key", ""))
-        if not article_key:
-            return False
         return AutoDbProductLinkQuality.objects.filter(
             product_id=item.id,
-            autodb_article_key=article_key,
             status=AutoDbProductLinkQuality.STATUS_NEEDS_MANUAL_REVIEW,
         ).exists()
 
@@ -362,7 +360,8 @@ class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
         return linked
 
     def _is_clone_linked(self, *, supplier_id: int, article: str) -> bool:
-        key = (int(supplier_id), safe_str(article).upper())
+        article_value = safe_str(article)
+        key = (int(supplier_id), article_value.upper())
         cache = getattr(self, "_clone_linked_cache", None)
         if cache is None:
             cache = {}
@@ -370,6 +369,14 @@ class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
         cached = cache.get(key)
         if cached is not None:
             return bool(cached)
+        article_variants: list[str] = []
+        for candidate in (article_value, "".join(article_value.split())):
+            value = safe_str(candidate)
+            if value and value not in article_variants:
+                article_variants.append(value)
+        if not article_variants:
+            cache[key] = False
+            return False
         storage = self._clone_storage()
         supplier_col_ap = storage.first_existing_column(table="article_prd", candidates=["supplierid", "supplierId", "SupplierId", "supplier_id", "supplier"])
         article_col_ap = storage.first_existing_column(
@@ -379,31 +386,36 @@ class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
         product_col_ap = storage.first_existing_column(table="article_prd", candidates=["productId", "productid", "id", "prdId", "prdid"])
         prd_id_col = storage.first_existing_column(table="prd", candidates=["id", "productId", "productid", "prdId", "prdid"])
         if not supplier_col_ap or not article_col_ap or not product_col_ap or not prd_id_col:
-            cache[key] = False
+            for value in article_variants:
+                cache[(int(supplier_id), value.upper())] = False
             return False
-        rows = storage.fetch_local_rows(
-            table="article_prd",
-            filters={supplier_col_ap: int(supplier_id), article_col_ap: article},
-            columns=[product_col_ap],
-            limit=200,
-        )
-        if not rows:
-            cache[key] = False
-            return False
-        product_ids = [row.get(product_col_ap) for row in rows if row.get(product_col_ap) not in (None, "")]
-        if not product_ids:
-            cache[key] = False
-            return False
-        prd_rows = storage.fetch_local_rows_in(
-            table="prd",
-            column=prd_id_col,
-            values=product_ids,
-            columns=[prd_id_col],
-            limit=1,
-        )
-        linked = bool(prd_rows)
-        cache[key] = linked
-        return linked
+        for variant in article_variants:
+            rows = storage.fetch_local_rows(
+                table="article_prd",
+                filters={supplier_col_ap: int(supplier_id), article_col_ap: variant},
+                columns=[product_col_ap],
+                limit=200,
+            )
+            if not rows:
+                continue
+            product_ids = [row.get(product_col_ap) for row in rows if row.get(product_col_ap) not in (None, "")]
+            if not product_ids:
+                continue
+            prd_rows = storage.fetch_local_rows_in(
+                table="prd",
+                column=prd_id_col,
+                values=product_ids,
+                columns=[prd_id_col],
+                limit=1,
+            )
+            if prd_rows:
+                for value in article_variants:
+                    cache[(int(supplier_id), value.upper())] = True
+                return True
+
+        for value in article_variants:
+            cache[(int(supplier_id), value.upper())] = False
+        return False
 
     def _clone_storage(self) -> AutoDbRawCloneStorage:
         storage = getattr(self, "_clone_storage_cache", None)

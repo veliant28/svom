@@ -161,6 +161,12 @@
               "description": "Allows viewing and managing payment provider settings."
             }
           },
+          "integrations": {
+            "manage": {
+              "title": "Integration Center",
+              "description": "Allows managing integration, payment and delivery toggles from Integration Center."
+            }
+          },
           "checkout": {
             "methods": {
               "manage": {

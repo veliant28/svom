@@ -1,7 +1,6 @@
 import type { BackofficeVchasnoKasaSettings } from "@/features/backoffice/types/vchasno-kasa.types";
 
 export type SettingsForm = {
-  is_enabled: boolean;
   api_token: string;
   fiscal_api_token: string;
   rro_fn: string;
@@ -14,7 +13,6 @@ export type SettingsForm = {
 };
 
 export const DEFAULT_FORM: SettingsForm = {
-  is_enabled: false,
   api_token: "",
   fiscal_api_token: "",
   rro_fn: "",
@@ -47,7 +45,6 @@ export function toVchasnoKasaSettingsForm(settings: BackofficeVchasnoKasaSetting
   const selectedPaymentMethods = normalizeCodes(settings.selected_payment_methods || []);
   const selectedTaxGroups = normalizeCodes(settings.selected_tax_groups || []);
   return {
-    is_enabled: settings.is_enabled,
     api_token: "",
     fiscal_api_token: "",
     rro_fn: settings.rro_fn || "",

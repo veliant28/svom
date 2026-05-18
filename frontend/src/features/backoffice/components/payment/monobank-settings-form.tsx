@@ -15,11 +15,10 @@ export function MonobankSettingsForm({
   settings: BackofficeMonobankSettings | null;
   isSaving: boolean;
   isTesting: boolean;
-  onSave: (payload: Partial<{ is_enabled: boolean; merchant_token: string; widget_key_id: string; widget_private_key: string }>) => Promise<unknown>;
+  onSave: (payload: Partial<{ merchant_token: string; widget_key_id: string; widget_private_key: string }>) => Promise<unknown>;
   onTestConnection: () => Promise<unknown>;
   t: (key: string) => string;
 }) {
-  const [enabled, setEnabled] = useState<boolean>(Boolean(settings?.is_enabled));
   const [token, setToken] = useState("");
   const [widgetKeyId, setWidgetKeyId] = useState(settings?.widget_key_id || "");
   const [widgetPrivateKey, setWidgetPrivateKey] = useState("");
@@ -30,9 +29,8 @@ export function MonobankSettingsForm({
   const canSave = useMemo(() => !isSaving, [isSaving]);
 
   useEffect(() => {
-    setEnabled(Boolean(settings?.is_enabled));
     setWidgetKeyId(settings?.widget_key_id || "");
-  }, [settings?.is_enabled, settings?.widget_key_id]);
+  }, [settings?.widget_key_id]);
 
   return (
     <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
@@ -40,15 +38,6 @@ export function MonobankSettingsForm({
       <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>{t("payments.monobank.helper")}</p>
 
       <div className="mt-3 grid gap-3">
-        <label className="inline-flex items-center gap-2 text-xs font-medium">
-          <input
-            type="checkbox"
-            checked={enabled}
-            onChange={(event) => setEnabled(event.target.checked)}
-          />
-          {t("payments.monobank.enabled")}
-        </label>
-
         <label className="flex flex-col gap-1 text-xs">
           {t("payments.monobank.token")}
           <input
@@ -102,8 +91,7 @@ export function MonobankSettingsForm({
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
             disabled={!canSave}
             onClick={() => {
-              const payload: Partial<{ is_enabled: boolean; merchant_token: string; widget_key_id: string; widget_private_key: string }> = {
-                is_enabled: enabled,
+              const payload: Partial<{ merchant_token: string; widget_key_id: string; widget_private_key: string }> = {
                 widget_key_id: widgetKeyId,
               };
               if (token.trim()) {

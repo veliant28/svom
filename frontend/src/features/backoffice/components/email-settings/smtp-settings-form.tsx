@@ -49,15 +49,6 @@ export function SmtpSettingsForm({
       </div>
 
       <div className="mt-4 grid gap-3">
-        <label className="inline-flex items-center gap-2 text-xs font-medium">
-          <input
-            type="checkbox"
-            checked={form.is_enabled}
-            onChange={(event) => onChange("is_enabled", event.target.checked)}
-          />
-          {t("email.fields.enabled")}
-        </label>
-
         <div className="grid gap-3 md:grid-cols-2">
           <label className="flex flex-col gap-1 text-xs">
             {t("email.fields.fromName")}

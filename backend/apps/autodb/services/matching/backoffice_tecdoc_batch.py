@@ -122,7 +122,8 @@ class BackofficeTecdocBatchSelector:
         return normalized in self._non_tecdoc
 
     def _is_clone_linked(self, *, supplier_id: int, article: str) -> bool:
-        key = (int(supplier_id), _safe_str(article).upper())
+        article_value = _safe_str(article)
+        key = (int(supplier_id), article_value.upper())
         cache = getattr(self, "_clone_linked_cache", None)
         if cache is None:
             cache = {}
@@ -130,6 +131,14 @@ class BackofficeTecdocBatchSelector:
         cached = cache.get(key)
         if cached is not None:
             return bool(cached)
+        article_variants: list[str] = []
+        for candidate in (article_value, "".join(article_value.split())):
+            value = _safe_str(candidate)
+            if value and value not in article_variants:
+                article_variants.append(value)
+        if not article_variants:
+            cache[key] = False
+            return False
 
         storage = self.storage
         supplier_col_ap = storage.first_existing_column(table="article_prd", candidates=["supplierid", "supplierId", "SupplierId", "supplier_id", "supplier"])
@@ -140,31 +149,36 @@ class BackofficeTecdocBatchSelector:
         product_col_ap = storage.first_existing_column(table="article_prd", candidates=["productId", "productid", "id", "prdId", "prdid"])
         prd_id_col = storage.first_existing_column(table="prd", candidates=["id", "productId", "productid", "prdId", "prdid"])
         if not supplier_col_ap or not article_col_ap or not product_col_ap or not prd_id_col:
-            cache[key] = False
+            for value in article_variants:
+                cache[(int(supplier_id), value.upper())] = False
             return False
 
-        rows = storage.fetch_local_rows(
-            table="article_prd",
-            filters={supplier_col_ap: int(supplier_id), article_col_ap: article},
-            columns=[product_col_ap],
-            limit=200,
-        )
-        if not rows:
-            cache[key] = False
-            return False
+        for variant in article_variants:
+            rows = storage.fetch_local_rows(
+                table="article_prd",
+                filters={supplier_col_ap: int(supplier_id), article_col_ap: variant},
+                columns=[product_col_ap],
+                limit=200,
+            )
+            if not rows:
+                continue
 
-        product_ids = [row.get(product_col_ap) for row in rows if row.get(product_col_ap) not in (None, "")]
-        if not product_ids:
-            cache[key] = False
-            return False
+            product_ids = [row.get(product_col_ap) for row in rows if row.get(product_col_ap) not in (None, "")]
+            if not product_ids:
+                continue
 
-        prd_rows = storage.fetch_local_rows_in(
-            table="prd",
-            column=prd_id_col,
-            values=product_ids,
-            columns=[prd_id_col],
-            limit=1,
-        )
-        linked = bool(prd_rows)
-        cache[key] = linked
-        return linked
+            prd_rows = storage.fetch_local_rows_in(
+                table="prd",
+                column=prd_id_col,
+                values=product_ids,
+                columns=[prd_id_col],
+                limit=1,
+            )
+            if prd_rows:
+                for value in article_variants:
+                    cache[(int(supplier_id), value.upper())] = True
+                return True
+
+        for value in article_variants:
+            cache[(int(supplier_id), value.upper())] = False
+        return False

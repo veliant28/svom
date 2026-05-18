@@ -25,40 +25,60 @@ export function PaymentMethodToggle({
   };
 }) {
   const methods = new Set(availableMethods);
-  return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(9.5rem,1fr))]">
-      {methods.has("cash_on_delivery") ? (
+  const paymentCards = [
+    methods.has("cash_on_delivery")
+      ? (
         <CodPaymentCard
           title={labels.codTitle}
           hint={labels.codHint}
           selected={value === "cash_on_delivery"}
           onSelect={() => onChange("cash_on_delivery")}
         />
-      ) : null}
-      {methods.has("monobank") ? (
+      )
+      : null,
+    methods.has("monobank")
+      ? (
         <MonobankPaymentCard
           title={labels.monobankTitle}
           hint={labels.monobankHint}
           selected={value === "monobank"}
           onSelect={() => onChange("monobank")}
         />
-      ) : null}
-      {methods.has("novapay") ? (
+      )
+      : null,
+    methods.has("novapay")
+      ? (
         <NovapayPaymentCard
           title={labels.novapayTitle}
           hint={labels.novapayHint}
           selected={value === "novapay"}
           onSelect={() => onChange("novapay")}
         />
-      ) : null}
-      {methods.has("liqpay") ? (
+      )
+      : null,
+    methods.has("liqpay")
+      ? (
         <LiqpayPaymentCard
           title={labels.liqpayTitle}
           hint={labels.liqpayHint}
           selected={value === "liqpay"}
           onSelect={() => onChange("liqpay")}
         />
-      ) : null}
+      )
+      : null,
+  ].filter(Boolean);
+
+  const containerClassName = paymentCards.length <= 2
+    ? "grid grid-cols-1 gap-3 sm:grid-cols-3"
+    : "grid grid-cols-1 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(9.5rem,1fr))]";
+
+  return (
+    <div className={containerClassName}>
+      {paymentCards.map((card, index) => (
+        <div key={`payment-card-${index}`}>
+          {card}
+        </div>
+      ))}
     </div>
   );
 }

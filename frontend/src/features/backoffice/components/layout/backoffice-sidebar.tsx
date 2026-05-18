@@ -55,7 +55,7 @@ type SidebarNavItem = {
     | "novaPoshtaSenders"
     | "footerSettings"
     | "emailSettings"
-    | "checkoutMethods"
+    | "integrationCenter"
     | "promoBanners"
     | "users"
     | "groups"
@@ -84,10 +84,10 @@ const NAV_ITEMS: SidebarNavItem[] = [
   },
   { href: "/backoffice/payments", icon: Wallet2, key: "payments", requiredCapability: BACKOFFICE_CAPABILITIES.paymentsView },
   {
-    href: "/backoffice/checkout-methods",
+    href: "/backoffice/integrations-center",
     icon: SlidersHorizontal,
-    key: "checkoutMethods",
-    requiredCapability: BACKOFFICE_CAPABILITIES.checkoutMethodsManage,
+    key: "integrationCenter",
+    requiredCapability: BACKOFFICE_CAPABILITIES.integrationsManage,
   },
   { href: "/backoffice/vchasno-kasa", icon: ReceiptText, key: "vchasnoKasa", requiredCapability: BACKOFFICE_CAPABILITIES.vchasnoKasaManage },
   { href: "/backoffice/brands", icon: Tags, key: "brands", requiredCapability: BACKOFFICE_CAPABILITIES.brandsView },

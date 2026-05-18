@@ -29,6 +29,7 @@ export type BackofficeCapabilityCode =
   | "seo.manage"
   | "autocatalog.view"
   | "payments.view"
+  | "integrations.manage"
   | "checkout.methods.manage"
   | "vchasno_kasa.manage"
   | "nova_poshta.settings"

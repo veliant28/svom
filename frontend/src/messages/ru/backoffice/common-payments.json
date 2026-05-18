@@ -145,6 +145,95 @@
           "needDelivery": "Должен быть включен хотя бы один способ доставки.",
           "needPayment": "Должен быть включен хотя бы один способ оплаты."
         }
+      },
+      "integrationCenter": {
+        "title": "Центр интеграций",
+        "subtitle": "Единое управление включением интеграций, оплаты и доставки без кнопки сохранения.",
+        "groups": {
+          "payments": "Оплата",
+          "delivery": "Доставка",
+          "suppliers": "Поставщики",
+          "system": "Системные",
+          "translator": "Переводчик"
+        },
+        "items": {
+          "paymentMonobank": {
+            "label": "Monobank",
+            "hint": "Включает/выключает интеграцию Monobank и одновременно показ способа оплаты в checkout."
+          },
+          "paymentNovaPay": {
+            "label": "Nova Pay",
+            "hint": "Включает/выключает интеграцию Nova Pay и одновременно показ способа оплаты в checkout."
+          },
+          "paymentLiqPay": {
+            "label": "LiqPay",
+            "hint": "Включает/выключает интеграцию LiqPay и одновременно показ способа оплаты в checkout."
+          },
+          "paymentCod": {
+            "label": "Наложенный платеж",
+            "hint": "Показывает/скрывает наложенный платеж в checkout."
+          },
+          "deliveryPickup": {
+            "label": "Самовывоз",
+            "hint": "Показывает/скрывает самовывоз в checkout."
+          },
+          "deliveryNovaPoshta": {
+            "label": "Новая Почта",
+            "hint": "Показывает/скрывает доставку Новой Почтой в checkout."
+          },
+          "deliveryCourier": {
+            "label": "Курьер",
+            "hint": "Показывает/скрывает курьерскую доставку в checkout."
+          },
+          "supplierUtr": {
+            "label": "UTR",
+            "hint": "Включает/выключает интеграцию поставщика UTR."
+          },
+          "supplierGpl": {
+            "label": "GPL",
+            "hint": "Включает/выключает интеграцию поставщика GPL."
+          },
+          "integrationVchasno": {
+            "label": "Вчасно.Каса",
+            "hint": "Включает/выключает интеграцию Вчасно.Каса."
+          },
+          "integrationSeo": {
+            "label": "SEO",
+            "hint": "Включает/выключает глобальную SEO-интеграцию."
+          },
+          "integrationEmail": {
+            "label": "Email",
+            "hint": "Включает/выключает реальную отправку email."
+          }
+        },
+        "translator": {
+          "providers": {
+            "google": {
+              "label": "Google Translate",
+              "hint": "Использовать Google Translate для перевода названий товаров."
+            },
+            "libretranslate": {
+              "label": "LibreTranslate",
+              "hint": "Использовать LibreTranslate для перевода названий товаров."
+            }
+          },
+          "googleToken": {
+            "label": "Google API key",
+            "hint": "Токен нужен для запросов к Google Translate API. Применяется сразу при blur/Enter.",
+            "placeholder": "Введите новый ключ",
+            "masked": "Сохранённый ключ: {value}",
+            "empty": "Ключ не сохранён"
+          }
+        },
+        "messages": {
+          "loadFailed": "Не удалось загрузить настройки Центра интеграций.",
+          "updateFailed": "Не удалось обновить переключатель.",
+          "updated": "Настройка обновлена.",
+          "translatorUpdateFailed": "Не удалось обновить настройки переводчика.",
+          "translatorProviderUpdated": "Провайдер переводчика обновлён.",
+          "translatorTokenUpdated": "Google API key обновлён.",
+          "empty": "Нет доступных переключателей."
+        }
       }
     }
   }

@@ -21,8 +21,6 @@ export function SuppliersPage() {
     setPassword,
     fingerprint,
     setFingerprint,
-    isEnabled,
-    setIsEnabled,
     handleSaveSettings,
     accessTone,
     connectionLabel,
@@ -60,11 +58,9 @@ export function SuppliersPage() {
                 password={password}
                 hasPassword={scope.workspace.connection.has_password}
                 fingerprint={fingerprint}
-                isEnabled={isEnabled}
                 onLoginChange={setLogin}
                 onPasswordChange={setPassword}
                 onFingerprintChange={setFingerprint}
-                onEnabledChange={setIsEnabled}
                 onSaveSettings={() => {
                   void handleSaveSettings();
                 }}

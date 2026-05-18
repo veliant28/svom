@@ -7,7 +7,6 @@ import type { BackofficeSeoSettings } from "@/features/backoffice/api/seo-api.ty
 
 type SeoSettingsFormState = Pick<
 BackofficeSeoSettings,
-  | "is_enabled"
   | "default_meta_title_uk"
   | "default_meta_title_ru"
   | "default_meta_title_en"
@@ -26,7 +25,6 @@ BackofficeSeoSettings,
 
 function toForm(settings: BackofficeSeoSettings | null): SeoSettingsFormState {
   return {
-    is_enabled: settings?.is_enabled ?? true,
     default_meta_title_uk: settings?.default_meta_title_uk ?? "",
     default_meta_title_ru: settings?.default_meta_title_ru ?? "",
     default_meta_title_en: settings?.default_meta_title_en ?? "",
@@ -92,14 +90,6 @@ export function SeoSettingsForm({
       </div>
 
       <div className="grid gap-3">
-        <ToggleField
-          label={t("seo.fields.enabled")}
-          checked={form.is_enabled}
-          disabled={!canManage}
-          onToggle={() => {
-            setForm((prev) => ({ ...prev, is_enabled: !prev.is_enabled }));
-          }}
-        />
         <label className="grid gap-1">
           <span className="text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>
             {t("seo.fields.canonicalBaseUrl")}
@@ -163,25 +153,6 @@ export function SeoSettingsForm({
         />
       </div>
     </section>
-  );
-}
-
-function ToggleField({
-  label,
-  checked,
-  disabled,
-  onToggle,
-}: {
-  label: string;
-  checked: boolean;
-  disabled: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <label className="inline-flex items-center gap-2 text-sm font-medium">
-      <input type="checkbox" checked={checked} disabled={disabled} onChange={onToggle} />
-      <span>{label}</span>
-    </label>
   );
 }
 

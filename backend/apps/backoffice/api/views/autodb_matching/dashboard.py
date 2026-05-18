@@ -129,14 +129,9 @@ class BackofficeAutoDbMatchingDashboardAPIView(BackofficeAPIView):
         )
         local_found_count = helper._filter_fallback_local_found_queryset(queryset).count()
         linked_count = helper._filter_fallback_linked_queryset(queryset).count()
-        needs_review_count = (
-            queryset.filter(
-                autodb_link_qualities__autodb_article_key=F("autodb_article_key"),
-                autodb_link_qualities__status=AutoDbProductLinkQuality.STATUS_NEEDS_MANUAL_REVIEW,
-            )
-            .distinct()
-            .count()
-        )
+        needs_review_count = queryset.filter(
+            autodb_link_qualities__status=AutoDbProductLinkQuality.STATUS_NEEDS_MANUAL_REVIEW,
+        ).distinct().count()
         skipped_non_tecdoc_count = helper._only_explicit_non_tecdoc_brands(queryset).count()
         bad_article_source_count = queryset.filter(Q(article__isnull=True) | Q(article="")).count()
 

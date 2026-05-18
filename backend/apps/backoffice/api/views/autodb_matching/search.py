@@ -445,9 +445,23 @@ class ManualAutoDbSearch:
         return rows[0] if rows else {}
 
     def _article_rows(self, *, table: str, supplier_id: int, article_number: str, source: str, limit: int) -> list[dict[str, Any]]:
-        if source == "remote":
-            return self._fetch_remote_rows(table=table, supplier_id=supplier_id, article_number=article_number, limit=limit)
-        return self._fetch_local_rows(table=table, supplier_id=supplier_id, article_number=article_number, limit=limit)
+        for variant in self._article_variants(article_number):
+            if source == "remote":
+                rows = self._fetch_remote_rows(table=table, supplier_id=supplier_id, article_number=variant, limit=limit)
+            else:
+                rows = self._fetch_local_rows(table=table, supplier_id=supplier_id, article_number=variant, limit=limit)
+            if rows:
+                return rows
+        return []
+
+    def _article_variants(self, article_number: str) -> list[str]:
+        article_value = safe_str(article_number)
+        variants: list[str] = []
+        for candidate in (article_value, "".join(article_value.split())):
+            value = safe_str(candidate)
+            if value and value not in variants:
+                variants.append(value)
+        return variants
 
     def _fetch_local_rows(self, *, table: str, supplier_id: int, article_number: str, limit: int) -> list[dict[str, Any]]:
         columns = self.storage.get_local_columns(table)

@@ -6,6 +6,9 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from apps.commerce.models import CheckoutMethodSettings, Order
+from apps.commerce.services.liqpay import get_liqpay_settings
+from apps.commerce.services.monobank import get_monobank_settings
+from apps.commerce.services.novapay import get_novapay_settings
 
 
 @dataclass(frozen=True)
@@ -34,9 +37,18 @@ def get_checkout_method_settings() -> CheckoutMethodSettings:
 
 def serialize_checkout_methods(*, settings: CheckoutMethodSettings | None = None) -> CheckoutMethodsPayload:
     settings = settings or get_checkout_method_settings()
+    payment_methods = [method for method, field in PAYMENT_METHOD_FLAGS if bool(getattr(settings, field))]
+
+    if Order.PAYMENT_MONOBANK in payment_methods and not bool(get_monobank_settings().is_enabled):
+        payment_methods.remove(Order.PAYMENT_MONOBANK)
+    if Order.PAYMENT_NOVAPAY in payment_methods and not bool(get_novapay_settings().is_enabled):
+        payment_methods.remove(Order.PAYMENT_NOVAPAY)
+    if Order.PAYMENT_LIQPAY in payment_methods and not bool(get_liqpay_settings().is_enabled):
+        payment_methods.remove(Order.PAYMENT_LIQPAY)
+
     return CheckoutMethodsPayload(
         delivery_methods=[method for method, field in DELIVERY_METHOD_FLAGS if bool(getattr(settings, field))],
-        payment_methods=[method for method, field in PAYMENT_METHOD_FLAGS if bool(getattr(settings, field))],
+        payment_methods=payment_methods,
     )
 
 

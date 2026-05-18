@@ -562,13 +562,23 @@ class AutoDbProductAttributeEnrichmentService:
             return []
 
         order_column = find_column_name(columns, ["id", "ID"])
-        return self.storage.fetch_local_rows(
-            table="article_attributes",
-            filters={supplier_column: supplier_id, article_column: article_number},
-            limit=1000,
-            order_by=order_column,
-            columns=columns,
-        )
+        article_variants: list[str] = []
+        for candidate in (article_number, "".join(str(article_number).split())):
+            value = str(candidate or "").strip()
+            if value and value not in article_variants:
+                article_variants.append(value)
+
+        for variant in article_variants:
+            rows = self.storage.fetch_local_rows(
+                table="article_attributes",
+                filters={supplier_column: supplier_id, article_column: variant},
+                limit=1000,
+                order_by=order_column,
+                columns=columns,
+            )
+            if rows:
+                return rows
+        return []
 
     def _safe_int(self, value: Any) -> int | None:
         try:

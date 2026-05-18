@@ -56,12 +56,10 @@ export function useSupplierActions({
     login,
     password,
     fingerprint,
-    isEnabled,
   }: {
     login: string;
     password: string;
     fingerprint: string;
-    isEnabled: boolean;
   }) => {
     if (!token) {
       return;
@@ -72,7 +70,6 @@ export function useSupplierActions({
         login,
         password,
         fingerprint,
-        isEnabled,
       })),
       {
         successMessage: tAuth("messages.settingsSaved"),

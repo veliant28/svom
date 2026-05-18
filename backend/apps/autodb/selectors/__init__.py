@@ -14,6 +14,7 @@ from .vehicle_catalog import (
     search_vehicle_manufacturers,
     search_vehicle_models,
 )
+from .translation_settings import get_autodb_translation_settings, has_autodb_translation_settings_table
 
 __all__ = [
     "list_vehicle_manufacturers",
@@ -30,4 +31,6 @@ __all__ = [
     "search_vehicle_models",
     "search_passanger_cars",
     "clear_vehicle_catalog_selector_cache",
+    "get_autodb_translation_settings",
+    "has_autodb_translation_settings_table",
 ]

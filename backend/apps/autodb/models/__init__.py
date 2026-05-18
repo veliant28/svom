@@ -19,6 +19,7 @@ from .supplier import AutoDbSupplier
 from .supplier_brand import AutoDbSupplierBrand
 from .supplier_brand_alias import AutoDbSupplierBrandAlias
 from .sync_state import AutoDbSyncState
+from .translation_settings import AutoDbTranslationSettings
 from .vehicle_attribute import AutoDbVehicleAttribute
 from .vehicle_manufacturer import AutoDbVehicleManufacturer
 from .vehicle_model import AutoDbVehicleModel
@@ -47,6 +48,7 @@ __all__ = [
     "AutoDbPrd",
     "AutoDbArticleProductGroup",
     "AutoDbSyncState",
+    "AutoDbTranslationSettings",
     "AutoDbMatchingRun",
     "AutoDbMatchJob",
     "AutoDbMatchEvidence",

@@ -234,11 +234,21 @@ class ProductFitmentRowsAPIView(APIView):
 
         selected_vehicle = resolve_selected_autocatalog_vehicle(request)
         selected_vehicle_display = resolve_selected_autodb_vehicle_display(request)
+        selected_vehicle_id = int(selected_vehicle_display.get("vehicle_id", 0)) if selected_vehicle_display else 0
         external_maps = get_autodb_fitment_queryset(product=product, selected_vehicle=selected_vehicle)
-        if selected_vehicle is not None and not selected_make and not selected_model:
+        mapped_rows = [serialize_autodb_fitment_mapping(mapping) for mapping in external_maps]
+        selected_vehicle_fits_external = bool(
+            selected_vehicle_id > 0
+            and any(int(row.get("vehicle_id") or 0) == selected_vehicle_id for row in mapped_rows)
+        )
+        if (
+            selected_vehicle is not None
+            and selected_vehicle_fits_external
+            and not selected_make
+            and not selected_model
+        ):
             selected_make = selected_vehicle.make_name
             selected_model = selected_vehicle.model_name
-        mapped_rows = [serialize_autodb_fitment_mapping(mapping) for mapping in external_maps]
         if selected_make:
             mapped_rows = [row for row in mapped_rows if str(row.get("make") or "").strip() == selected_make]
         if selected_model:
@@ -260,7 +270,10 @@ class ProductFitmentRowsAPIView(APIView):
                 item for item in fitment_entries
                 if int(item.get("vehicle_id") or 0) > 0
             ]
-            selected_vehicle_id = int(selected_vehicle_display.get("vehicle_id", 0)) if selected_vehicle_display else 0
+            selected_vehicle_fits_fallback = bool(
+                selected_vehicle_id > 0
+                and any(int(item.get("vehicle_id") or 0) == selected_vehicle_id for item in filtered_entries)
+            )
             if selected_modification:
                 selected_modification_id = parse_positive_int(selected_modification)
                 if selected_modification_id:
@@ -298,6 +311,7 @@ class ProductFitmentRowsAPIView(APIView):
                 ]
             if (
                 selected_vehicle_id > 0
+                and selected_vehicle_fits_fallback
                 and not selected_make
                 and not selected_model
                 and not selected_modification

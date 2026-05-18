@@ -60,8 +60,8 @@ def serialize_workspace_payload(*, source, integration, latest_run, latest_error
             "status_label": status.cooldown_status_label(can_run=cooldown.can_run, wait_seconds=cooldown.wait_seconds),
         },
         "utr": {
-            "available": False,
-            "catalog_integration_status": "disabled_price_supplier_only",
+            "available": True,
+            "catalog_integration_status": "enabled",
             "last_brands_import_at": integration.last_brands_import_at,
             "last_brands_import_count": integration.last_brands_import_count,
             "last_brands_import_error_at": integration.last_brands_import_error_at,

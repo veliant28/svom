@@ -145,6 +145,95 @@
           "needDelivery": "At least one delivery method must be enabled.",
           "needPayment": "At least one payment method must be enabled."
         }
+      },
+      "integrationCenter": {
+        "title": "Integration Center",
+        "subtitle": "Single place to enable/disable integrations, payment and delivery without a save button.",
+        "groups": {
+          "payments": "Payments",
+          "delivery": "Delivery",
+          "suppliers": "Suppliers",
+          "system": "System",
+          "translator": "Translator"
+        },
+        "items": {
+          "paymentMonobank": {
+            "label": "Monobank",
+            "hint": "Enables/disables Monobank integration and checkout payment visibility at the same time."
+          },
+          "paymentNovaPay": {
+            "label": "Nova Pay",
+            "hint": "Enables/disables Nova Pay integration and checkout payment visibility at the same time."
+          },
+          "paymentLiqPay": {
+            "label": "LiqPay",
+            "hint": "Enables/disables LiqPay integration and checkout payment visibility at the same time."
+          },
+          "paymentCod": {
+            "label": "Cash on delivery",
+            "hint": "Shows/hides cash on delivery in checkout."
+          },
+          "deliveryPickup": {
+            "label": "Pickup",
+            "hint": "Shows/hides pickup delivery in checkout."
+          },
+          "deliveryNovaPoshta": {
+            "label": "Nova Poshta",
+            "hint": "Shows/hides Nova Poshta delivery in checkout."
+          },
+          "deliveryCourier": {
+            "label": "Courier",
+            "hint": "Shows/hides courier delivery in checkout."
+          },
+          "supplierUtr": {
+            "label": "UTR",
+            "hint": "Enables/disables UTR supplier integration."
+          },
+          "supplierGpl": {
+            "label": "GPL",
+            "hint": "Enables/disables GPL supplier integration."
+          },
+          "integrationVchasno": {
+            "label": "Vchasno.Kasa",
+            "hint": "Enables/disables Vchasno.Kasa integration."
+          },
+          "integrationSeo": {
+            "label": "SEO",
+            "hint": "Enables/disables global SEO integration."
+          },
+          "integrationEmail": {
+            "label": "Email",
+            "hint": "Enables/disables real email sending."
+          }
+        },
+        "translator": {
+          "providers": {
+            "google": {
+              "label": "Google Translate",
+              "hint": "Use Google Translate for product name translation."
+            },
+            "libretranslate": {
+              "label": "LibreTranslate",
+              "hint": "Use LibreTranslate for product name translation."
+            }
+          },
+          "googleToken": {
+            "label": "Google API key",
+            "hint": "Token is required for Google Translate API calls. Applied immediately on blur/Enter.",
+            "placeholder": "Enter new key",
+            "masked": "Stored key: {value}",
+            "empty": "No key stored"
+          }
+        },
+        "messages": {
+          "loadFailed": "Failed to load Integration Center settings.",
+          "updateFailed": "Failed to update toggle.",
+          "updated": "Setting updated.",
+          "translatorUpdateFailed": "Failed to update translator settings.",
+          "translatorProviderUpdated": "Translator provider updated.",
+          "translatorTokenUpdated": "Google API key updated.",
+          "empty": "No toggles available."
+        }
       }
     }
   }

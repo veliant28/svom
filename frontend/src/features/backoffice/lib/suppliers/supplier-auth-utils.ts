@@ -8,18 +8,15 @@ export function buildSupplierSettingsPayload({
   login,
   password,
   fingerprint,
-  isEnabled,
 }: {
   login: string;
   password: string;
   fingerprint: string;
-  isEnabled: boolean;
 }) {
   return {
     login,
     password: password || undefined,
     browser_fingerprint: fingerprint || undefined,
-    is_enabled: isEnabled,
   };
 }
 

@@ -17,11 +17,9 @@ export function SupplierAuthorizationCard({
   password,
   hasPassword,
   fingerprint,
-  isEnabled,
   onLoginChange,
   onPasswordChange,
   onFingerprintChange,
-  onEnabledChange,
   onSaveSettings,
   onObtainToken,
   onRefreshToken,
@@ -33,11 +31,9 @@ export function SupplierAuthorizationCard({
   password: string;
   hasPassword: boolean;
   fingerprint: string;
-  isEnabled: boolean;
   onLoginChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onFingerprintChange: (value: string) => void;
-  onEnabledChange: (value: boolean) => void;
   onSaveSettings: () => void;
   onObtainToken: () => void;
   onRefreshToken: () => void;
@@ -92,15 +88,6 @@ export function SupplierAuthorizationCard({
             </label>
           ) : null}
         </div>
-
-        <label className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}>
-          <input
-            type="checkbox"
-            checked={isEnabled}
-            onChange={(event) => onEnabledChange(event.target.checked)}
-          />
-          {tAuth("fields.enabled")}
-        </label>
 
         <SupplierAuthorizationActions
           tAuth={tAuth}
