@@ -169,6 +169,12 @@ BACKOFFICE_CAPABILITIES: tuple[BackofficeCapabilityDefinition, ...] = (
         description="Manage integration enable/disable switches from Integration Center.",
     ),
     BackofficeCapabilityDefinition(
+        code="telegram.manage",
+        permission_codename="bo_cap_telegram_manage",
+        title="Telegram manage",
+        description="Read and manage Telegram integration settings and notification channels.",
+    ),
+    BackofficeCapabilityDefinition(
         code="checkout.methods.manage",
         permission_codename="bo_cap_checkout_methods_manage",
         title="Checkout methods manage",

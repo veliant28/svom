@@ -9,6 +9,7 @@ from rest_framework.exceptions import ValidationError as DRFValidationError
 
 from apps.backoffice.services.procurement_service import ProcurementService
 from apps.commerce.models import Order, OrderEvent, OrderItem
+from apps.core.services import send_ops_order_status_notification
 from apps.pricing.models import SupplierOffer
 from apps.users.rbac import get_user_system_role
 
@@ -286,6 +287,14 @@ class OrderOperationsService:
             },
             actor=actor,
         )
+        transaction.on_commit(
+            lambda: send_ops_order_status_notification(
+                order_number=order.order_number,
+                from_status=previous_status,
+                to_status=target_status,
+                actor_name=self._actor_label(actor),
+            )
+        )
 
         return OrderActionResult(order_id=str(order.id), status=order.status, receipt_notice_code=receipt_notice_code)
 
@@ -373,6 +382,14 @@ class OrderOperationsService:
                 },
                 actor=actor,
             )
+            transaction.on_commit(
+                lambda: send_ops_order_status_notification(
+                    order_number=order.order_number,
+                    from_status=previous_status,
+                    to_status=next_status,
+                    actor_name=self._actor_label(actor),
+                )
+            )
 
     def _save_order_with_actor(self, *, order: Order, update_fields: tuple[str, ...], actor) -> None:
         fields = list(update_fields)
@@ -446,6 +463,17 @@ class OrderOperationsService:
     @staticmethod
     def _status_label(status: str) -> str:
         return dict(Order.STATUS_CHOICES).get(status, status)
+
+    @staticmethod
+    def _actor_label(actor) -> str:
+        if actor is None:
+            return "System"
+        first_name = str(getattr(actor, "first_name", "") or "").strip()
+        last_name = str(getattr(actor, "last_name", "") or "").strip()
+        full_name = f"{first_name} {last_name}".strip()
+        if full_name:
+            return full_name
+        return str(getattr(actor, "email", "") or "").strip() or "System"
 
     def _schedule_vchasno_receipt_after_completion(self, *, order: Order) -> str:
         from apps.commerce.services.vchasno_kasa import get_vchasno_kasa_settings

@@ -18,6 +18,7 @@ const ROUTE_PREFETCH_LIST = [
   "/backoffice/hero-block",
   "/backoffice/promo-banners",
   "/backoffice/integrations-center",
+  "/backoffice/telegram",
   "/backoffice/vchasno-kasa",
   "/backoffice/brands",
   "/backoffice/categories",

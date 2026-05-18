@@ -167,6 +167,12 @@
               "description": "Allows managing integration, payment and delivery toggles from Integration Center."
             }
           },
+          "telegram": {
+            "manage": {
+              "title": "Telegram settings",
+              "description": "Allows managing Telegram bots and notification channels."
+            }
+          },
           "checkout": {
             "methods": {
               "manage": {

@@ -154,6 +154,7 @@
           "delivery": "Доставка",
           "suppliers": "Постачальники",
           "system": "Системні",
+          "telegram": "Telegram",
           "translator": "Перекладач"
         },
         "items": {
@@ -204,6 +205,22 @@
           "integrationEmail": {
             "label": "Email",
             "hint": "Вмикає/вимикає реальну відправку email."
+          },
+          "integrationTelegram": {
+            "label": "Telegram (master)",
+            "hint": "Глобально вмикає/вимикає Telegram-сповіщення."
+          },
+          "integrationTelegramOps": {
+            "label": "Telegram Ops",
+            "hint": "Сповіщення по замовленнях і ТТН для співробітників."
+          },
+          "integrationTelegramSupport": {
+            "label": "Telegram Support",
+            "hint": "Сповіщення для чату підтримки."
+          },
+          "integrationTelegramSystem": {
+            "label": "Telegram System",
+            "hint": "Сповіщення по бекапах, імпортах і системних подіях."
           }
         },
         "translator": {
@@ -233,6 +250,58 @@
           "translatorProviderUpdated": "Провайдера перекладача оновлено.",
           "translatorTokenUpdated": "Google API key оновлено.",
           "empty": "Немає доступних перемикачів."
+        }
+      },
+      "telegramSettings": {
+        "title": "Telegram налаштування",
+        "subtitle": "Керування трьома ботами: Ops, Support і System.",
+        "globalToggle": "Telegram інтеграція",
+        "fields": {
+          "enabled": "Увімкнено",
+          "botToken": "Bot token",
+          "savedToken": "Збережений токен: {value}",
+          "noToken": "Токен не збережено",
+          "chatId": "Chat ID"
+        },
+        "actions": {
+          "save": "Зберегти",
+          "test": "Тест"
+        },
+        "bots": {
+          "ops": {
+            "title": "Ops bot",
+            "testText": "SVOM test: Ops notifications",
+            "events": {
+              "orderStatus": "Статуси замовлень",
+              "waybillCreate": "Створення ТТН",
+              "waybillUpdate": "Редагування ТТН",
+              "waybillDelete": "Видалення ТТН"
+            }
+          },
+          "support": {
+            "title": "Support bot",
+            "testText": "SVOM test: Support notifications",
+            "events": {
+              "newThread": "Новий чат підтримки",
+              "newMessage": "Нове повідомлення клієнта"
+            }
+          },
+          "system": {
+            "title": "System bot",
+            "testText": "SVOM test: System notifications",
+            "events": {
+              "backupStatus": "Статуси бекапу",
+              "importStatus": "Статуси імпорту"
+            }
+          }
+        },
+        "messages": {
+          "loadFailed": "Не вдалося завантажити Telegram налаштування.",
+          "saveFailed": "Не вдалося зберегти Telegram налаштування.",
+          "saved": "Telegram налаштування оновлено.",
+          "testFailed": "Не вдалося відправити тестове повідомлення.",
+          "testOk": "Тестове повідомлення відправлено.",
+          "empty": "Telegram налаштування не знайдені."
         }
       }
     }

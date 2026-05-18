@@ -30,6 +30,7 @@ export type BackofficeCapabilityCode =
   | "autocatalog.view"
   | "payments.view"
   | "integrations.manage"
+  | "telegram.manage"
   | "checkout.methods.manage"
   | "vchasno_kasa.manage"
   | "nova_poshta.settings"

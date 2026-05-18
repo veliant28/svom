@@ -186,6 +186,7 @@ from .promo_banner_views import (
     BackofficePromoBannerSettingsAPIView,
 )
 from .email_settings_view import BackofficeEmailSettingsAPIView, BackofficeEmailSettingsTestAPIView
+from .telegram_settings_view import BackofficeTelegramSettingsAPIView, BackofficeTelegramTestAPIView
 
 __all__ = [
     "ArticleRuleListCreateAPIView",
@@ -350,6 +351,8 @@ __all__ = [
     "BackofficePromoBannerRetrieveUpdateDestroyAPIView",
     "BackofficeEmailSettingsAPIView",
     "BackofficeEmailSettingsTestAPIView",
+    "BackofficeTelegramSettingsAPIView",
+    "BackofficeTelegramTestAPIView",
     "RunImportSourceActionAPIView",
     "ImportAllActionAPIView",
     "RepriceAfterImportActionAPIView",

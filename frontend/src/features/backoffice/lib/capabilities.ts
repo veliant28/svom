@@ -33,6 +33,7 @@ export const BACKOFFICE_CAPABILITIES = {
   autocatalogView: "autocatalog.view",
   paymentsView: "payments.view",
   integrationsManage: "integrations.manage",
+  telegramManage: "telegram.manage",
   checkoutMethodsManage: "checkout.methods.manage",
   vchasnoKasaManage: "vchasno_kasa.manage",
   novaPoshtaSettings: "nova_poshta.settings",

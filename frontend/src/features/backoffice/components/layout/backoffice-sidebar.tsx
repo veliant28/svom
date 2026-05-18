@@ -25,6 +25,7 @@ import {
   Mail,
   Network,
   SlidersHorizontal,
+  Send,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -56,6 +57,7 @@ type SidebarNavItem = {
     | "footerSettings"
     | "emailSettings"
     | "integrationCenter"
+    | "telegramSettings"
     | "promoBanners"
     | "users"
     | "groups"
@@ -88,6 +90,12 @@ const NAV_ITEMS: SidebarNavItem[] = [
     icon: SlidersHorizontal,
     key: "integrationCenter",
     requiredCapability: BACKOFFICE_CAPABILITIES.integrationsManage,
+  },
+  {
+    href: "/backoffice/telegram",
+    icon: Send,
+    key: "telegramSettings",
+    requiredCapability: BACKOFFICE_CAPABILITIES.telegramManage,
   },
   { href: "/backoffice/vchasno-kasa", icon: ReceiptText, key: "vchasnoKasa", requiredCapability: BACKOFFICE_CAPABILITIES.vchasnoKasaManage },
   { href: "/backoffice/brands", icon: Tags, key: "brands", requiredCapability: BACKOFFICE_CAPABILITIES.brandsView },

@@ -154,6 +154,7 @@
           "delivery": "Доставка",
           "suppliers": "Поставщики",
           "system": "Системные",
+          "telegram": "Telegram",
           "translator": "Переводчик"
         },
         "items": {
@@ -204,6 +205,22 @@
           "integrationEmail": {
             "label": "Email",
             "hint": "Включает/выключает реальную отправку email."
+          },
+          "integrationTelegram": {
+            "label": "Telegram (master)",
+            "hint": "Глобально включает/выключает Telegram-уведомления."
+          },
+          "integrationTelegramOps": {
+            "label": "Telegram Ops",
+            "hint": "Уведомления по заказам и ТТН для сотрудников."
+          },
+          "integrationTelegramSupport": {
+            "label": "Telegram Support",
+            "hint": "Уведомления по чату поддержки."
+          },
+          "integrationTelegramSystem": {
+            "label": "Telegram System",
+            "hint": "Уведомления по бэкапам, импортам и системным событиям."
           }
         },
         "translator": {
@@ -233,6 +250,58 @@
           "translatorProviderUpdated": "Провайдер переводчика обновлён.",
           "translatorTokenUpdated": "Google API key обновлён.",
           "empty": "Нет доступных переключателей."
+        }
+      },
+      "telegramSettings": {
+        "title": "Telegram настройки",
+        "subtitle": "Управление тремя ботами: Ops, Support и System.",
+        "globalToggle": "Telegram интеграция",
+        "fields": {
+          "enabled": "Включено",
+          "botToken": "Bot token",
+          "savedToken": "Сохранённый токен: {value}",
+          "noToken": "Токен не сохранён",
+          "chatId": "Chat ID"
+        },
+        "actions": {
+          "save": "Сохранить",
+          "test": "Тест"
+        },
+        "bots": {
+          "ops": {
+            "title": "Ops bot",
+            "testText": "SVOM test: Ops notifications",
+            "events": {
+              "orderStatus": "Статусы заказов",
+              "waybillCreate": "Создание ТТН",
+              "waybillUpdate": "Редактирование ТТН",
+              "waybillDelete": "Удаление ТТН"
+            }
+          },
+          "support": {
+            "title": "Support bot",
+            "testText": "SVOM test: Support notifications",
+            "events": {
+              "newThread": "Новый чат поддержки",
+              "newMessage": "Новое сообщение клиента"
+            }
+          },
+          "system": {
+            "title": "System bot",
+            "testText": "SVOM test: System notifications",
+            "events": {
+              "backupStatus": "Статусы бэкапа",
+              "importStatus": "Статусы импорта"
+            }
+          }
+        },
+        "messages": {
+          "loadFailed": "Не удалось загрузить Telegram настройки.",
+          "saveFailed": "Не удалось сохранить Telegram настройки.",
+          "saved": "Telegram настройки обновлены.",
+          "testFailed": "Не удалось отправить тестовое сообщение.",
+          "testOk": "Тестовое сообщение отправлено.",
+          "empty": "Telegram настройки не найдены."
         }
       }
     }

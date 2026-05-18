@@ -17,3 +17,4 @@ export type * from "./rbac.types";
 export type * from "./loyalty.types";
 export type * from "./autodb-matching.types";
 export type * from "./integration-center.types";
+export type * from "./telegram-settings.types";

@@ -135,6 +135,11 @@ from .email_settings_serializer import (
     EmailDeliveryTestResponseSerializer,
     EmailDeliveryTestSerializer,
 )
+from .telegram_settings_serializer import (
+    TelegramSettingsSerializer,
+    TelegramTestMessageResponseSerializer,
+    TelegramTestMessageSerializer,
+)
 
 __all__ = [
     "ArticleNormalizationRuleSerializer",
@@ -245,4 +250,7 @@ __all__ = [
     "EmailDeliverySettingsSerializer",
     "EmailDeliveryTestResponseSerializer",
     "EmailDeliveryTestSerializer",
+    "TelegramSettingsSerializer",
+    "TelegramTestMessageSerializer",
+    "TelegramTestMessageResponseSerializer",
 ]

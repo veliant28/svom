@@ -10,6 +10,7 @@ import {
   LoaderCircle,
   Mail,
   ReceiptText,
+  Send,
   Store,
   Truck,
   type LucideIcon,
@@ -107,6 +108,17 @@ const TRANSLATOR_PROVIDERS: TranslatorProviderConfig[] = [
     icon: Languages,
   },
 ];
+
+const TELEGRAM_GROUP: ToggleGroupConfig = {
+  titleKey: "integrationCenter.groups.telegram",
+  icon: Send,
+  items: [
+    { key: "integration.telegram", labelKey: "integrationCenter.items.integrationTelegram.label", hintKey: "integrationCenter.items.integrationTelegram.hint", icon: Send },
+    { key: "integration.telegram_ops", labelKey: "integrationCenter.items.integrationTelegramOps.label", hintKey: "integrationCenter.items.integrationTelegramOps.hint", icon: Send },
+    { key: "integration.telegram_support", labelKey: "integrationCenter.items.integrationTelegramSupport.label", hintKey: "integrationCenter.items.integrationTelegramSupport.hint", icon: Send },
+    { key: "integration.telegram_system", labelKey: "integrationCenter.items.integrationTelegramSystem.label", hintKey: "integrationCenter.items.integrationTelegramSystem.hint", icon: Send },
+  ],
+};
 
 export function IntegrationCenterPage() {
   const t = useTranslations("backoffice.common");
@@ -211,62 +223,71 @@ export function IntegrationCenterPage() {
     }
   }
 
+  function renderToggleItem(item: ToggleConfig) {
+    const checked = Boolean(state?.[item.key]);
+    const isUpdating = Boolean(updatingKeys[item.key]);
+    return (
+      <BackofficeTooltip
+        key={item.key}
+        content={t(item.hintKey)}
+        placement="top"
+        align="center"
+        wrapperClassName="block"
+      >
+        <button
+          type="button"
+          aria-pressed={checked}
+          disabled={isUpdating}
+          className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border px-2.5 py-2 text-left text-xs disabled:opacity-80"
+          style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+          onClick={() => {
+            void handleToggle(item.key, !checked);
+          }}
+        >
+          <span className="inline-flex items-center gap-2">
+            <item.icon size={14} />
+            <span>{t(item.labelKey)}</span>
+          </span>
+          <span className="inline-flex items-center gap-2">
+            {isUpdating ? <LoaderCircle size={14} className="animate-spin" /> : null}
+            <input
+              type="checkbox"
+              checked={checked}
+              readOnly
+              tabIndex={-1}
+              className="pointer-events-none h-4 w-4"
+            />
+          </span>
+        </button>
+      </BackofficeTooltip>
+    );
+  }
+
   return (
     <AsyncState isLoading={isLoading} error={error} empty={isEmpty} emptyLabel={t("integrationCenter.messages.empty")}>
       <section className="grid gap-4">
         <PageHeader title={t("integrationCenter.title")} description={t("integrationCenter.subtitle")} />
 
-        <div className="grid gap-3 xl:grid-cols-2 2xl:grid-cols-5">
+        <div className="grid gap-3 xl:grid-cols-2 2xl:grid-cols-4">
           {GROUPS.map((group) => (
             <article key={group.titleKey} className="rounded-xl border p-3" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
               <p className="mb-2 inline-flex items-center gap-2 text-sm font-semibold">
                 <group.icon size={16} />
                 <span>{t(group.titleKey)}</span>
               </p>
-              <div className="grid gap-2">
-                {group.items.map((item) => {
-                  const checked = Boolean(state?.[item.key]);
-                  const isUpdating = Boolean(updatingKeys[item.key]);
-
-                  return (
-                    <BackofficeTooltip
-                      key={item.key}
-                      content={t(item.hintKey)}
-                      placement="top"
-                      align="center"
-                      wrapperClassName="block"
-                    >
-                      <button
-                        type="button"
-                        aria-pressed={checked}
-                        disabled={isUpdating}
-                        className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border px-2.5 py-2 text-left text-xs disabled:opacity-80"
-                        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-                        onClick={() => {
-                          void handleToggle(item.key, !checked);
-                        }}
-                      >
-                        <span className="inline-flex items-center gap-2">
-                          <item.icon size={14} />
-                          <span>{t(item.labelKey)}</span>
-                        </span>
-                        <span className="inline-flex items-center gap-2">
-                          {isUpdating ? <LoaderCircle size={14} className="animate-spin" /> : null}
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            readOnly
-                            tabIndex={-1}
-                            className="pointer-events-none h-4 w-4"
-                          />
-                        </span>
-                      </button>
-                    </BackofficeTooltip>
-                  );
-                })}
-              </div>
+              <div className="grid gap-2">{group.items.map((item) => renderToggleItem(item))}</div>
             </article>
           ))}
+        </div>
+
+        <div className="grid gap-3 xl:grid-cols-2">
+          <article className="rounded-xl border p-3" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
+            <p className="mb-2 inline-flex items-center gap-2 text-sm font-semibold">
+              <TELEGRAM_GROUP.icon size={16} />
+              <span>{t(TELEGRAM_GROUP.titleKey)}</span>
+            </p>
+            <div className="grid gap-2">{TELEGRAM_GROUP.items.map((item) => renderToggleItem(item))}</div>
+          </article>
 
           <article className="rounded-xl border p-3" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
             <p className="mb-2 inline-flex items-center gap-2 text-sm font-semibold">

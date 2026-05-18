@@ -154,6 +154,7 @@
           "delivery": "Delivery",
           "suppliers": "Suppliers",
           "system": "System",
+          "telegram": "Telegram",
           "translator": "Translator"
         },
         "items": {
@@ -204,6 +205,22 @@
           "integrationEmail": {
             "label": "Email",
             "hint": "Enables/disables real email sending."
+          },
+          "integrationTelegram": {
+            "label": "Telegram (master)",
+            "hint": "Globally enables/disables Telegram notifications."
+          },
+          "integrationTelegramOps": {
+            "label": "Telegram Ops",
+            "hint": "Order and waybill notifications for staff."
+          },
+          "integrationTelegramSupport": {
+            "label": "Telegram Support",
+            "hint": "Support chat notifications."
+          },
+          "integrationTelegramSystem": {
+            "label": "Telegram System",
+            "hint": "Backup/import and system event notifications."
           }
         },
         "translator": {
@@ -233,6 +250,58 @@
           "translatorProviderUpdated": "Translator provider updated.",
           "translatorTokenUpdated": "Google API key updated.",
           "empty": "No toggles available."
+        }
+      },
+      "telegramSettings": {
+        "title": "Telegram Settings",
+        "subtitle": "Manage three bots: Ops, Support and System.",
+        "globalToggle": "Telegram integration",
+        "fields": {
+          "enabled": "Enabled",
+          "botToken": "Bot token",
+          "savedToken": "Stored token: {value}",
+          "noToken": "No token stored",
+          "chatId": "Chat ID"
+        },
+        "actions": {
+          "save": "Save",
+          "test": "Test"
+        },
+        "bots": {
+          "ops": {
+            "title": "Ops bot",
+            "testText": "SVOM test: Ops notifications",
+            "events": {
+              "orderStatus": "Order statuses",
+              "waybillCreate": "Waybill creation",
+              "waybillUpdate": "Waybill update",
+              "waybillDelete": "Waybill deletion"
+            }
+          },
+          "support": {
+            "title": "Support bot",
+            "testText": "SVOM test: Support notifications",
+            "events": {
+              "newThread": "New support thread",
+              "newMessage": "New customer message"
+            }
+          },
+          "system": {
+            "title": "System bot",
+            "testText": "SVOM test: System notifications",
+            "events": {
+              "backupStatus": "Backup statuses",
+              "importStatus": "Import statuses"
+            }
+          }
+        },
+        "messages": {
+          "loadFailed": "Failed to load Telegram settings.",
+          "saveFailed": "Failed to save Telegram settings.",
+          "saved": "Telegram settings updated.",
+          "testFailed": "Failed to send test message.",
+          "testOk": "Test message sent.",
+          "empty": "Telegram settings not found."
         }
       }
     }

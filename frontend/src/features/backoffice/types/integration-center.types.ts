@@ -10,7 +10,11 @@ export type IntegrationCenterToggleKey =
   | "supplier.gpl"
   | "integration.vchasno_kasa"
   | "integration.seo"
-  | "integration.email";
+  | "integration.email"
+  | "integration.telegram"
+  | "integration.telegram_ops"
+  | "integration.telegram_support"
+  | "integration.telegram_system";
 
 export type BackofficeIntegrationCenterState = Record<IntegrationCenterToggleKey, boolean>;
 

@@ -17,7 +17,7 @@ from apps.commerce.services.liqpay import get_liqpay_settings
 from apps.commerce.services.monobank import get_monobank_settings
 from apps.commerce.services.novapay import get_novapay_settings
 from apps.commerce.services.vchasno_kasa import get_vchasno_kasa_settings, has_vchasno_kasa_settings_table
-from apps.core.selectors import get_email_delivery_settings
+from apps.core.selectors import get_email_delivery_settings, get_telegram_settings
 from apps.seo.selectors import get_seo_site_settings
 from apps.supplier_imports.selectors.integration_selectors import get_supplier_integration_by_code
 
@@ -34,6 +34,10 @@ TOGGLE_SUPPLIER_GPL = "supplier.gpl"
 TOGGLE_VCHASNO_KASA = "integration.vchasno_kasa"
 TOGGLE_SEO = "integration.seo"
 TOGGLE_EMAIL = "integration.email"
+TOGGLE_TELEGRAM_MASTER = "integration.telegram"
+TOGGLE_TELEGRAM_OPS = "integration.telegram_ops"
+TOGGLE_TELEGRAM_SUPPORT = "integration.telegram_support"
+TOGGLE_TELEGRAM_SYSTEM = "integration.telegram_system"
 
 SUPPORTED_TOGGLE_KEYS = (
     TOGGLE_PAYMENT_MONOBANK,
@@ -48,6 +52,10 @@ SUPPORTED_TOGGLE_KEYS = (
     TOGGLE_VCHASNO_KASA,
     TOGGLE_SEO,
     TOGGLE_EMAIL,
+    TOGGLE_TELEGRAM_MASTER,
+    TOGGLE_TELEGRAM_OPS,
+    TOGGLE_TELEGRAM_SUPPORT,
+    TOGGLE_TELEGRAM_SYSTEM,
 )
 
 
@@ -88,6 +96,7 @@ def _build_integration_center_state() -> dict[str, bool]:
     liqpay = get_liqpay_settings()
     email = get_email_delivery_settings()
     seo = get_seo_site_settings()
+    telegram = get_telegram_settings()
     gpl = get_supplier_integration_by_code(source_code="gpl")
     utr = get_supplier_integration_by_code(source_code="utr")
     vchasno_enabled = has_vchasno_kasa_settings_table() and bool(get_vchasno_kasa_settings().is_enabled)
@@ -105,6 +114,10 @@ def _build_integration_center_state() -> dict[str, bool]:
         TOGGLE_VCHASNO_KASA: bool(vchasno_enabled),
         TOGGLE_SEO: bool(seo.is_enabled),
         TOGGLE_EMAIL: bool(email.is_enabled),
+        TOGGLE_TELEGRAM_MASTER: bool(telegram.is_enabled),
+        TOGGLE_TELEGRAM_OPS: bool(telegram.ops_enabled),
+        TOGGLE_TELEGRAM_SUPPORT: bool(telegram.support_enabled),
+        TOGGLE_TELEGRAM_SYSTEM: bool(telegram.system_enabled),
     }
 
 
@@ -209,6 +222,10 @@ class BackofficeIntegrationCenterAPIView(BackofficeAPIView):
             TOGGLE_VCHASNO_KASA: lambda: self._update_vchasno_enabled(enabled=enabled),
             TOGGLE_SEO: lambda: self._update_seo_enabled(enabled=enabled),
             TOGGLE_EMAIL: lambda: self._update_email_enabled(enabled=enabled),
+            TOGGLE_TELEGRAM_MASTER: lambda: self._update_telegram_enabled(field="is_enabled", enabled=enabled),
+            TOGGLE_TELEGRAM_OPS: lambda: self._update_telegram_enabled(field="ops_enabled", enabled=enabled),
+            TOGGLE_TELEGRAM_SUPPORT: lambda: self._update_telegram_enabled(field="support_enabled", enabled=enabled),
+            TOGGLE_TELEGRAM_SYSTEM: lambda: self._update_telegram_enabled(field="system_enabled", enabled=enabled),
         }
 
         mutator = mutators.get(key)
@@ -262,3 +279,9 @@ class BackofficeIntegrationCenterAPIView(BackofficeAPIView):
         settings = get_email_delivery_settings()
         settings.is_enabled = enabled
         settings.save(update_fields=("is_enabled", "updated_at"))
+
+    @staticmethod
+    def _update_telegram_enabled(*, field: str, enabled: bool) -> None:
+        settings = get_telegram_settings()
+        setattr(settings, field, bool(enabled))
+        settings.save(update_fields=(field, "updated_at"))

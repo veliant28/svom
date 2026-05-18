@@ -9,6 +9,7 @@ from django.core.cache import cache
 from django.db import transaction
 
 from apps.commerce.models import LoyaltyPromoCode, NovaPoshtaSenderProfile, Order, OrderNovaPoshtaWaybill, OrderNovaPoshtaWaybillEvent
+from apps.core.services import send_ops_waybill_notification
 
 from .client import NovaPoshtaApiClient
 from .constants import WAYBILL_ADDITIONAL_INFO_TEMPLATE, WAYBILL_DESCRIPTION
@@ -183,6 +184,13 @@ class NovaPoshtaWaybillService:
                     warning_codes=response.context.warning_codes,
                     info_codes=response.context.info_codes,
                 )
+                transaction.on_commit(
+                    lambda: send_ops_waybill_notification(
+                        action="created",
+                        order_number=waybill.order.order_number,
+                        waybill_number=waybill.np_number,
+                    )
+                )
 
             self._safe_sync(waybill=waybill, actor=actor)
             return waybill
@@ -285,6 +293,13 @@ class NovaPoshtaWaybillService:
                     warning_codes=response.context.warning_codes,
                     info_codes=response.context.info_codes,
                 )
+                transaction.on_commit(
+                    lambda: send_ops_waybill_notification(
+                        action="updated",
+                        order_number=waybill.order.order_number,
+                        waybill_number=waybill.np_number,
+                    )
+                )
 
             self._safe_sync(waybill=waybill, actor=actor)
             return waybill
@@ -331,6 +346,13 @@ class NovaPoshtaWaybillService:
                 error_codes=response.context.error_codes,
                 warning_codes=response.context.warning_codes,
                 info_codes=response.context.info_codes,
+            )
+            transaction.on_commit(
+                lambda: send_ops_waybill_notification(
+                    action="deleted",
+                    order_number=waybill.order.order_number,
+                    waybill_number=waybill.np_number,
+                )
             )
 
         return waybill

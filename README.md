@@ -26,7 +26,7 @@ SVOM is a monorepo for an automotive e-commerce platform with:
 - `supplier_imports`: supplier file ingestion, matching, publishing, mapped-offer workflows
 - `pricing`: product repricing, overrides, price history
 - `commerce`: cart, checkout, payments, orders
-- `backoffice`: operations UI/API, dashboards, imports, pricing control, marketing settings
+- `backoffice`: operations UI/API, dashboards, imports, pricing control, Integration Center, Telegram settings
 - `marketing`: hero block, promo banners, footer settings
 - `search`: DB/Elasticsearch-backed search
 - `support`: realtime support presence and wallboard flows
@@ -104,6 +104,34 @@ Frontend is exposed at:
 - `http://localhost:3000`
 
 Frontend runs inside Docker. Browser API calls use `NEXT_PUBLIC_API_BASE_URL` and server-side frontend requests use `NEXT_SERVER_API_BASE_URL`, which defaults to `http://backend:8000/api` inside the Compose network.
+
+## Backoffice integrations and notifications
+
+Integration Center supports runtime toggles for:
+
+- payment providers (`Monobank`, `LiqPay`, `NovaPay`)
+- delivery channels (`Nova Poshta`, `Courier`)
+- supplier integrations (`UTR`, `GPL`)
+- operational integrations (`Vchasno.Kasa`, `SEO`, `Email`)
+- Telegram master and channel-level toggles (`ops`, `support`, `system`)
+
+Telegram management is implemented as a dedicated backoffice section with RBAC capability `telegram.manage`:
+
+- frontend route: `/backoffice/telegram`
+- API:
+  - `GET/PATCH /api/backoffice/telegram/settings/`
+  - `POST /api/backoffice/telegram/test/`
+
+Telegram settings persist in DB (`core.TelegramSettings`) and provide separate bot token/chat-id pairs and event switches for:
+
+- `ops`: order status and Nova Poshta waybill lifecycle notifications
+- `support`: support thread/message notifications
+- `system`: backup/import status notifications
+
+Operational notifications are emitted from backend services:
+
+- order status transitions (`OrderOperationsService`)
+- Nova Poshta waybill create/update/delete (`NovaPoshtaWaybillService`)
 
 ## Development commands
 
