@@ -30,12 +30,18 @@
           "source": "Source breakdown"
         },
         "funnelStages": {
+          "selected": "Відібрано",
+          "processed": "Оброблено",
           "new": "Нові",
           "local_found": "Знайдено локально",
           "remote_found": "Знайдено віддалено",
           "clone_synced": "Клон синхронізовано",
           "safe_link_candidate": "Кандидат",
-          "linked": "Звʼязано"
+          "linked": "Звʼязано",
+          "errors": "Помилки",
+          "needs_review": "Потрібна перевірка",
+          "skipped_non_tecdoc": "Не TecDoc",
+          "skipped_bad_article_source": "Поганий артикул"
         },
         "latestRun": "Latest run",
         "latest": {
@@ -423,6 +429,8 @@
         "batchStateStopped": "TecDoc batch зупинено",
         "batchStateCompleted": "TecDoc batch завершено",
         "batchStateCompletedWithIssues": "TecDoc batch завершено з помилками: {count}",
+        "batchLinkedCount": "Звʼязано: {count}",
+        "batchErrorsCount": "Помилки: {count}",
         "bulkNothingSelected": "Оберіть товари для масового запуску",
         "candidatesFound": "Знайдено збігів: {count}",
         "exportDownloaded": "CSV скопійовано",

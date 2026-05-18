@@ -115,6 +115,7 @@ export function AutoDbMatchingProductsTab({
       if (response.status === "already_running") {
         showWarning(t("toasts.batchAlreadyRunning"));
       } else {
+        setSelectedSet(new Set());
         showSuccess(t("toasts.batchQueued"));
       }
       await Promise.all([refetchBatchState(), refetch()]);

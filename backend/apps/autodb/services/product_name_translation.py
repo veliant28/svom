@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import html
 import json
 from pathlib import Path
 import re
@@ -188,6 +189,26 @@ class ProductNameTranslationService:
         source_lang: str,
         protected_tokens: list[str],
     ) -> tuple[str, str, str] | None:
+        provider = str(getattr(settings, "AUTODB_OFFLINE_TRANSLATE_PROVIDER", "libretranslate") or "libretranslate").strip().lower()
+        if provider == "google":
+            return self._translate_via_google_api(
+                source_text=source_text,
+                source_lang=source_lang,
+                protected_tokens=protected_tokens,
+            )
+        return self._translate_via_libretranslate_api(
+            source_text=source_text,
+            source_lang=source_lang,
+            protected_tokens=protected_tokens,
+        )
+
+    def _translate_via_libretranslate_api(
+        self,
+        *,
+        source_text: str,
+        source_lang: str,
+        protected_tokens: list[str],
+    ) -> tuple[str, str, str] | None:
         base_url = str(getattr(settings, "AUTODB_OFFLINE_TRANSLATE_URL", "http://libretranslate:5000")).strip().rstrip("/")
         if not base_url:
             return None
@@ -204,6 +225,55 @@ class ProductNameTranslationService:
                 translated_values[target] = source_text
                 continue
             translated = self._offline_translate_text(
+                base_url=base_url,
+                api_key=api_key,
+                source=source_code,
+                target=target,
+                text=masked_source,
+                timeout_s=timeout_s,
+            )
+            if not translated:
+                return None
+            translated_values[target] = self._restore_placeholders(translated_text=translated, placeholders=placeholders)
+
+        uk = sanitize_product_name(translated_values.get("uk") or source_text)
+        ru = sanitize_product_name(translated_values.get("ru") or source_text)
+        en = sanitize_product_name(translated_values.get("en") or source_text)
+        if not uk or not ru or not en:
+            return None
+        return uk, ru, en
+
+    def _translate_via_google_api(
+        self,
+        *,
+        source_text: str,
+        source_lang: str,
+        protected_tokens: list[str],
+    ) -> tuple[str, str, str] | None:
+        base_url = str(
+            getattr(
+                settings,
+                "AUTODB_GOOGLE_TRANSLATE_URL",
+                "https://translation.googleapis.com/language/translate/v2",
+            )
+            or ""
+        ).strip()
+        if not base_url:
+            return None
+        api_key = str(getattr(settings, "AUTODB_GOOGLE_TRANSLATE_API_KEY", "") or "").strip()
+        if not api_key:
+            return None
+        timeout_ms = int(getattr(settings, "AUTODB_OFFLINE_TRANSLATE_TIMEOUT_MS", 4000) or 4000)
+        timeout_s = max(timeout_ms, 500) / 1000.0
+
+        source_code = source_lang if source_lang in {"ru", "uk", "en"} else "auto"
+        masked_source, placeholders = self._mask_protected_tokens(source_text=source_text, protected_tokens=protected_tokens)
+        translated_values: dict[str, str] = {}
+        for target in ("uk", "ru", "en"):
+            if source_code == target:
+                translated_values[target] = source_text
+                continue
+            translated = self._google_translate_text(
                 base_url=base_url,
                 api_key=api_key,
                 source=source_code,
@@ -259,6 +329,48 @@ class ProductNameTranslationService:
         except ValueError:
             return ""
         translated = sanitize_product_name(str(data.get("translatedText") or ""))
+        return translated[:255]
+
+    def _google_translate_text(
+        self,
+        *,
+        base_url: str,
+        api_key: str,
+        source: str,
+        target: str,
+        text: str,
+        timeout_s: float,
+    ) -> str:
+        payload: dict[str, str] = {
+            "q": text,
+            "target": target,
+            "format": "text",
+        }
+        if source != "auto":
+            payload["source"] = source
+
+        delimiter = "&" if "?" in base_url else "?"
+        request = urllib_request.Request(
+            url=f"{base_url}{delimiter}key={api_key}",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib_request.urlopen(request, timeout=timeout_s) as response:  # noqa: S310
+                body = response.read().decode("utf-8")
+        except (urllib_error.URLError, TimeoutError, OSError):
+            return ""
+
+        try:
+            data = json.loads(body)
+        except ValueError:
+            return ""
+        items = data.get("data", {}).get("translations", [])
+        if not isinstance(items, list) or not items:
+            return ""
+        translated_raw = str((items[0] or {}).get("translatedText") or "")
+        translated = sanitize_product_name(html.unescape(translated_raw))
         return translated[:255]
 
     def _extract_protected_tokens(self, value: str) -> list[str]:

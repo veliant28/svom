@@ -167,6 +167,34 @@ export function useAutoDbBatchMonitor({
     showSuccess(t("toasts.batchStateCompleted"));
   }, [batchState?.running, isHistoryModalOpen, run?.summary, showInfo, showSuccess, showWarning, t]);
 
+  const previousCountersRef = useRef<{ runId: string; linked: number; failed: number } | null>(null);
+  useEffect(() => {
+    if (!run) {
+      previousCountersRef.current = null;
+      return;
+    }
+
+    const summary = run.summary ?? {};
+    const current = {
+      runId: run.id,
+      linked: toCount(summary.bound),
+      failed: toCount(summary.failed),
+    };
+    const previous = previousCountersRef.current;
+    previousCountersRef.current = current;
+
+    if (!previous || previous.runId !== current.runId) {
+      return;
+    }
+
+    if (current.linked > previous.linked) {
+      showInfo(t("toasts.batchLinkedCount", { count: current.linked }));
+    }
+    if (current.failed > previous.failed) {
+      showWarning(t("toasts.batchErrorsCount", { count: current.failed }));
+    }
+  }, [run, showInfo, showWarning, t]);
+
   return {
     token,
     run,

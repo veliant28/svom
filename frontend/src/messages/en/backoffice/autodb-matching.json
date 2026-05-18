@@ -30,12 +30,18 @@
           "source": "Source breakdown"
         },
         "funnelStages": {
+          "selected": "Selected",
+          "processed": "Processed",
           "new": "New",
           "local_found": "Local found",
           "remote_found": "Remote found",
           "clone_synced": "Clone synced",
           "safe_link_candidate": "Safe link candidate",
-          "linked": "Linked"
+          "linked": "Linked",
+          "errors": "Errors",
+          "needs_review": "Needs review",
+          "skipped_non_tecdoc": "Non-TecDoc",
+          "skipped_bad_article_source": "Bad article source"
         },
         "latestRun": "Latest run",
         "latest": {
@@ -423,6 +429,8 @@
         "batchStateStopped": "TecDoc batch stopped",
         "batchStateCompleted": "TecDoc batch completed",
         "batchStateCompletedWithIssues": "TecDoc batch completed with issues: {count}",
+        "batchLinkedCount": "Linked: {count}",
+        "batchErrorsCount": "Errors: {count}",
         "bulkNothingSelected": "Select products for bulk batch run",
         "candidatesFound": "Matches found: {count}",
         "exportDownloaded": "CSV copied",

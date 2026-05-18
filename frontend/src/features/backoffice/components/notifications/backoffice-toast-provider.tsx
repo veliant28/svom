@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { AlertTriangle, CheckCircle2, CircleAlert, Info, X } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 export type BackofficeToastVariant = "success" | "error" | "warning" | "info";
 
@@ -209,53 +210,60 @@ export function BackofficeToastProvider({ children }: { children: ReactNode }) {
     [dismiss, show],
   );
 
+  const toastLayer =
+    typeof document === "undefined"
+      ? null
+      : createPortal(
+          <div
+            aria-live="polite"
+            aria-relevant="additions removals"
+            className="pointer-events-none fixed bottom-4 right-4 z-[3200] flex w-[min(92vw,24rem)] flex-col gap-2"
+          >
+            {toasts.map((toast) => {
+              const palette = TOAST_COLORS[toast.variant];
+              const Icon = TOAST_ICONS[toast.variant];
+              return (
+                <div
+                  key={toast.id}
+                  role={toast.variant === "error" ? "alert" : "status"}
+                  className="pointer-events-auto rounded-xl border p-3 shadow-lg transition-all duration-200"
+                  style={{
+                    borderColor: palette.border,
+                    background: palette.background,
+                    color: palette.text,
+                    opacity: toast.closing ? 0 : 1,
+                    transform: toast.closing ? "translateY(8px) scale(0.98)" : "translateY(0) scale(1)",
+                  }}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
+                      style={{ backgroundColor: palette.iconBg, color: palette.iconColor }}
+                    >
+                      <Icon size={18} />
+                    </span>
+                    <p className="flex-1 text-sm leading-snug">{toast.message}</p>
+                    <button
+                      type="button"
+                      className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border"
+                      style={{ borderColor: palette.border, color: palette.text }}
+                      aria-label="Dismiss notification"
+                      onClick={() => dismiss(toast.id)}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>,
+          document.body,
+        );
+
   return (
     <BackofficeToastContext.Provider value={value}>
       {children}
-
-      <div
-        aria-live="polite"
-        aria-relevant="additions removals"
-        className="pointer-events-none fixed bottom-4 right-4 z-[2200] flex w-[min(92vw,24rem)] flex-col gap-2"
-      >
-        {toasts.map((toast) => {
-          const palette = TOAST_COLORS[toast.variant];
-          const Icon = TOAST_ICONS[toast.variant];
-          return (
-            <div
-              key={toast.id}
-              role={toast.variant === "error" ? "alert" : "status"}
-              className="pointer-events-auto rounded-xl border p-3 shadow-lg transition-all duration-200"
-              style={{
-                borderColor: palette.border,
-                background: palette.background,
-                color: palette.text,
-                opacity: toast.closing ? 0 : 1,
-                transform: toast.closing ? "translateY(8px) scale(0.98)" : "translateY(0) scale(1)",
-              }}
-            >
-              <div className="flex items-center gap-2.5">
-                <span
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
-                  style={{ backgroundColor: palette.iconBg, color: palette.iconColor }}
-                >
-                  <Icon size={18} />
-                </span>
-                <p className="flex-1 text-sm leading-snug">{toast.message}</p>
-                <button
-                  type="button"
-                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border"
-                  style={{ borderColor: palette.border, color: palette.text }}
-                  aria-label="Dismiss notification"
-                  onClick={() => dismiss(toast.id)}
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {toastLayer}
     </BackofficeToastContext.Provider>
   );
 }

@@ -1043,5 +1043,285 @@
     "aliases": [
       "Датчик Лямбда-зонд Direct Fit"
     ]
+  },
+  {
+    "uk": "Середній глушник вихлопної системи",
+    "ru": "Средний глушитель выхлопных газов",
+    "en": "Middle exhaust silencer",
+    "aliases": [
+      "Амортизатор Средний глушитель выхлопных газов"
+    ]
+  },
+  {
+    "uk": "Кінцевий глушник вихлопної системи",
+    "ru": "Конечный глушитель выхлопных газов",
+    "en": "Rear exhaust silencer",
+    "aliases": [
+      "Амортизатор Глушитель выхлопных газов конечный"
+    ]
+  },
+  {
+    "uk": "Свічки запалювання Iridium Premium+ P39",
+    "ru": "Свечи зажигания Iridium Premium+ P39",
+    "en": "Spark plugs Iridium Premium+ P39",
+    "aliases": [
+      "Manual lock: 000000004483143"
+    ]
+  },
+  {
+    "uk": "Свічки запалювання Iridium Premium+ P41",
+    "ru": "Свечи зажигания Iridium Premium+ P41",
+    "en": "Spark plugs Iridium Premium+ P41",
+    "aliases": [
+      "Manual lock: 000000004483144"
+    ]
+  },
+  {
+    "uk": "Свічки запалювання Iridium Premium+ P51",
+    "ru": "Свечи зажигания Iridium Premium+ P51",
+    "en": "Spark plugs Iridium Premium+ P51",
+    "aliases": [
+      "Manual lock: 000000004483148"
+    ]
+  },
+  {
+    "uk": "Свічки запалювання Iridium Premium+ P53",
+    "ru": "Свечи зажигания Iridium Premium+ P53",
+    "en": "Spark plugs Iridium Premium+ P53",
+    "aliases": [
+      "Manual lock: 000000004493466"
+    ]
+  },
+  {
+    "uk": "Свічки запалювання Silver NR15S ГАЗ 402, УАЗ, коротка різьба, 1 шт",
+    "ru": "Свечи зажигания Silver NR15S ГАЗ 402, УАЗ, короткая резьба, 1 шт",
+    "en": "Spark plugs Silver NR15S GAZ 402, UAZ, short thread, 1 pc",
+    "aliases": [
+      "Свічки запалювання Silver NR15S ГАЗ 402, УАЗ коротка різьба 1 шт"
+    ]
+  },
+  {
+    "uk": "Акумулятор 12V 106AH 950A R[+] 392*175*190 AGM",
+    "ru": "Аккумулятор 12V 106AH 950A R[+] 392*175*190 AGM",
+    "en": "Battery 12V 106AH 950A R[+] 392*175*190 AGM",
+    "aliases": [
+      "Manual lock: 000000004474751"
+    ]
+  },
+  {
+    "uk": "Акумулятор 12V 82AH 800A R[+] 315*175*190 AGM",
+    "ru": "Аккумулятор 12V 82AH 800A R[+] 315*175*190 AGM",
+    "en": "Battery 12V 82AH 800A R[+] 315*175*190 AGM",
+    "aliases": [
+      "Manual lock: 000000004474753"
+    ]
+  },
+  {
+    "uk": "Акумулятор 12V 62AH 680A R[+] 242*175*190 AGM",
+    "ru": "Аккумулятор 12V 62AH 680A R[+] 242*175*190 AGM",
+    "en": "Battery 12V 62AH 680A R[+] 242*175*190 AGM",
+    "aliases": [
+      "Manual lock: 000000004493436"
+    ]
+  },
+  {
+    "uk": "Акумулятор 12V 72AH 760A R[+] 278*175*190 AGM",
+    "ru": "Аккумулятор 12V 72AH 760A R[+] 278*175*190 AGM",
+    "en": "Battery 12V 72AH 760A R[+] 278*175*190 AGM",
+    "aliases": [
+      "Manual lock: 000000004493437"
+    ]
+  },
+  {
+    "uk": "Акумулятор 12V 96AH 850A R[+] 353*175*190 AGM",
+    "ru": "Аккумулятор 12V 96AH 850A R[+] 353*175*190 AGM",
+    "en": "Battery 12V 96AH 850A R[+] 353*175*190 AGM",
+    "aliases": [
+      "Manual lock: 000000004493438"
+    ]
+  },
+  {
+    "uk": "Олива моторна Magnatec Professional E 5W-20, 1 л",
+    "ru": "Моторное масло Magnatec Professional E 5W-20, 1 л",
+    "en": "Engine oil Magnatec Professional E 5W-20, 1 L",
+    "aliases": [
+      "Олива моторна Magnatec Professional E 5W-20 1 л"
+    ]
+  },
+  {
+    "uk": "Олива моторна Power 1 Scooter 4T 5W-40, 1 л",
+    "ru": "Моторное масло Power 1 Scooter 4T 5W-40, 1 л",
+    "en": "Engine oil Power 1 Scooter 4T 5W-40, 1 L",
+    "aliases": [
+      "Олива моторна Power 1 Scooter 4T 5W-40 1 л"
+    ]
+  },
+  {
+    "uk": "Олива моторна Power RS 4T 20W-50, 1 л",
+    "ru": "Моторное масло Power RS 4T 20W-50, 1 л",
+    "en": "Engine oil Power RS 4T 20W-50, 1 L",
+    "aliases": [
+      "Олива моторна Power RS 4T 20W-50 1 л"
+    ]
+  },
+  {
+    "uk": "Гофра 55 × 250, алюмінізована сталь",
+    "ru": "Гофра 55 × 250, алюминизированная сталь",
+    "en": "Exhaust flex pipe 55 × 250, aluminized steel",
+    "aliases": [
+      "Гофра 55 × 250 Алюмінізована сталь"
+    ]
+  },
+  {
+    "uk": "Глушник ВАЗ 2101, чорний метал",
+    "ru": "Глушитель ВАЗ 2101, черный металл",
+    "en": "Muffler VAZ 2101, black steel",
+    "aliases": [
+      "Глушник ВАЗ 2101 чорний метал"
+    ]
+  },
+  {
+    "uk": "Глушник Daewoo Lanos, Sens седан, під хомут, трикутний, чорний метал",
+    "ru": "Глушитель Daewoo Lanos, Sens седан, под хомут, треугольный, черный металл",
+    "en": "Muffler Daewoo Lanos, Sens sedan, clamp connection, triangular, black steel",
+    "aliases": [
+      "Глушник Daewoo Lanos, Sens седан під хомут, трикутний чорний метал"
+    ]
+  },
+  {
+    "uk": "Глушник Daewoo Lanos, Sens седан, під фланець, трикутний, чорний метал",
+    "ru": "Глушитель Daewoo Lanos, Sens седан, под фланец, треугольный, черный металл",
+    "en": "Muffler Daewoo Lanos, Sens sedan, flange connection, triangular, black steel",
+    "aliases": [
+      "Глушник Daewoo Lanos, Sens седан під флянець, трикутний чорний метал"
+    ]
+  },
+  {
+    "uk": "Електромагнітна муфта компресора кондиціонера THERMOTEC (зламаний конектор) (KTT040171)",
+    "ru": "Электромагнитная муфта компрессора кондиционера THERMOTEC (сломанный коннектор) (KTT040171)",
+    "en": "A/C compressor electromagnetic clutch THERMOTEC (broken connector) (KTT040171)",
+    "aliases": [
+      "Електромагнітна муфта компресора кондиціонера THERMOTEC (поломаний конектор) (KTT040171)"
+    ]
+  },
+  {
+    "uk": "Глушник Honda Civic 2.0i 16V Type R, алюмінізована сталь",
+    "ru": "Глушитель Honda Civic 2.0i 16V Type R, алюминизированная сталь",
+    "en": "Muffler Honda Civic 2.0i 16V Type R, aluminized steel",
+    "aliases": [
+      "Глушник Honda Civic 2.0i 16V Type R алюмінізована сталь"
+    ]
+  },
+  {
+    "uk": "Датчик увімкнення вентилятора",
+    "ru": "Датчик включения вентилятора",
+    "en": "Cooling fan switch sensor",
+    "aliases": [
+      "Датчик вмикання вентилятора"
+    ]
+  },
+  {
+    "uk": "Присадка для моторної оливи",
+    "ru": "Присадка для моторного масла",
+    "en": "Engine oil additive",
+    "aliases": [
+      "Присадки Присадка для моторного масла"
+    ]
+  },
+  {
+    "uk": "Глушник Skoda Superb 1.8 TSi 03/08-05/15, алюмінізована сталь",
+    "ru": "Глушитель Skoda Superb 1.8 TSi 03/08-05/15, алюминизированная сталь",
+    "en": "Muffler Skoda Superb 1.8 TSi 03/08-05/15, aluminized steel",
+    "aliases": [
+      "Глушник Skoda Superb 1.8 TSi 03/08-05/15 алюмінізована сталь"
+    ]
+  },
+  {
+    "uk": "Глушник ВАЗ 2121, алюмінізована сталь",
+    "ru": "Глушитель ВАЗ 2121, алюминизированная сталь",
+    "en": "Muffler VAZ 2121, aluminized steel",
+    "aliases": [
+      "Глушник ВАЗ 2121 алюмінізована сталь"
+    ]
+  },
+  {
+    "uk": "Гофра DAF XF, алюмінізована сталь",
+    "ru": "Гофра DAF XF, алюминизированная сталь",
+    "en": "Exhaust flex pipe DAF XF, aluminized steel",
+    "aliases": [
+      "Гофра DAF XF Алюмінізована сталь"
+    ]
+  },
+  {
+    "uk": "Автомобільна лампа 12V W21/5W W3x16D",
+    "ru": "Автомобильная лампа 12V W21/5W W3x16D",
+    "en": "Automotive bulb 12V W21/5W W3x16D",
+    "aliases": [
+      "Лампа автомобільна 12V W21/5W W3x16D"
+    ]
+  },
+  {
+    "uk": "Свічки запалювання Classik N17 ГАЗ 402 дв. (коротка), комплект, коротка різьба",
+    "ru": "Свечи зажигания Classik N17 ГАЗ 402 дв. (короткая), комплект, короткая резьба",
+    "en": "Spark plugs Classik N17 GAZ 402 engine (short), set, short thread",
+    "aliases": [
+      "Свічки запалювання Classik N17 ГАЗ 402дв. (коротка) комплект коротка різьба"
+    ]
+  },
+  {
+    "uk": "Мастило для ланцюгів MOTORBIKE KETTENSPRAY OFFROAD, 0,4 л",
+    "ru": "Смазка для цепей MOTORBIKE KETTENSPRAY OFFROAD, 0,4 л",
+    "en": "Chain lubricant MOTORBIKE KETTENSPRAY OFFROAD, 0.4 L",
+    "aliases": [
+      "Мастило для ланцюгів MOTORBIKE KETTENSPRAY OFFROAD 0,4 л"
+    ]
+  },
+  {
+    "uk": "Емаль для дисків Wheel Spray, біла глянцева, аерозоль 500 мл",
+    "ru": "Эмаль для дисков Wheel Spray, белая глянцевая, аэрозоль 500 мл",
+    "en": "Wheel paint Wheel Spray, white gloss, aerosol 500 ml",
+    "aliases": [
+      "Емаль для дисків Wheel Spray біла глянцева аерозоль 500 мл"
+    ]
+  },
+  {
+    "uk": "Комплект роликових підшипників маточини з монтажними елементами",
+    "ru": "Комплект роликовых подшипников ступицы с монтажными элементами",
+    "en": "Wheel hub tapered bearing kit with fitting components",
+    "aliases": [
+      "Комплект підшипників призначених для монтажу на маточину, роликові, з елементами монтажу"
+    ]
+  },
+  {
+    "uk": "Засіб для догляду за гумою RUBBER CARE STICK, флакон з аплікатором 0,075 л",
+    "ru": "Средство для ухода за резиной RUBBER CARE STICK, флакон с аппликатором 0,075 л",
+    "en": "Rubber care product RUBBER CARE STICK, bottle with applicator 0.075 L",
+    "aliases": [
+      "Засіб для догляду за гумою RUBBER CARE STICK пляшка з аплікатором 0,075 л"
+    ]
+  },
+  {
+    "uk": "Труба приймальна ВАЗ 2121, алюмінізована сталь",
+    "ru": "Труба приемная ВАЗ 2121, алюминизированная сталь",
+    "en": "Front pipe VAZ 2121, aluminized steel",
+    "aliases": [
+      "Труба приймальна ВАЗ 2121 Алюмінізована сталь"
+    ]
+  },
+  {
+    "uk": "Емаль для бампера Bumper Spray, антрацит, аерозоль 400 мл",
+    "ru": "Эмаль для бампера Bumper Spray, антрацит, аэрозоль 400 мл",
+    "en": "Bumper paint Bumper Spray, anthracite, aerosol 400 ml",
+    "aliases": [
+      "Емаль для бампера Bumper Spray антрацит аерозоль 400 мл"
+    ]
+  },
+  {
+    "uk": "Ремонтна трубка, каталізатор",
+    "ru": "Ремонтная трубка, катализатор",
+    "en": "Repair tube, catalyst",
+    "aliases": [
+      "Ремонтная трубка, катализатор"
+    ]
   }
 ]

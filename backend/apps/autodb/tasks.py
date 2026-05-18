@@ -445,6 +445,10 @@ def run_backoffice_tecdoc_batch_bind_task(
                                     supplier_brand=bind_supplier_name,
                                     reason="batch_brand_match_ok_article_not_found_for_brand",
                                 )
+                                _apply_fallback_name_translation_for_product(
+                                    product_id=str(item.product_id),
+                                    reason="brand_matched_article_missing",
+                                )
                                 processed += 1
                                 failed += 1
                                 results.append(
@@ -467,6 +471,10 @@ def run_backoffice_tecdoc_batch_bind_task(
                                 raw_brand=raw_offer_brand,
                                 supplier_brand=bind_supplier_name,
                                 reason="batch_brand_mismatch_raw_offer_vs_supplier",
+                            )
+                            _apply_fallback_name_translation_for_product(
+                                product_id=str(item.product_id),
+                                reason="brand_mismatch_needs_manual_review",
                             )
                             processed += 1
                             failed += 1
@@ -502,6 +510,10 @@ def run_backoffice_tecdoc_batch_bind_task(
                         article_number=bind_article,
                         reason="batch_clone_data_missing_before_bind",
                     )
+                    _apply_fallback_name_translation_for_product(
+                        product_id=str(item.product_id),
+                        reason="remote_or_clone_rows_not_found_for_article",
+                    )
                     processed += 1
                     failed += 1
                     results.append(
@@ -531,6 +543,10 @@ def run_backoffice_tecdoc_batch_bind_task(
             if status_value == "bound":
                 bound += 1
             else:
+                _apply_fallback_name_translation_for_product(
+                    product_id=str(item.product_id),
+                    reason=f"bind_status_{status_value or 'error'}",
+                )
                 failed += 1
             results.append(
                 {
@@ -546,6 +562,10 @@ def run_backoffice_tecdoc_batch_bind_task(
             processed += 1
             failed += 1
             error_text = str(exc)
+            _apply_fallback_name_translation_for_product(
+                product_id=str(item.product_id),
+                reason=error_text[:120] or "batch_exception",
+            )
             if isinstance(exc, _BatchItemTimeoutError):
                 _mark_link_clone_data_missing_needs_review(
                     product_id=item.product_id,
@@ -758,6 +778,48 @@ def _mark_link_clone_data_missing_needs_review(
             "updated_at",
         ]
     )
+
+
+def _apply_fallback_name_translation_for_product(*, product_id: str, reason: str) -> None:
+    product = Product.objects.filter(pk=product_id).first()
+    if product is None or bool(getattr(product, "name_manually_locked", False)):
+        return
+
+    source_text = (
+        str(getattr(product, "name_source_text", "") or "").strip()
+        or str(getattr(product, "name_uk", "") or "").strip()
+        or str(getattr(product, "name_ru", "") or "").strip()
+        or str(getattr(product, "name_en", "") or "").strip()
+        or str(getattr(product, "name", "") or "").strip()
+    )[:255]
+    if not source_text:
+        return
+
+    translation = ProductNameTranslationService().translate_product_name(source_text=source_text)
+    update_fields: list[str] = []
+    for field, value in (
+        ("name_uk", str(translation.uk or source_text).strip()[:255]),
+        ("name_ru", str(translation.ru or source_text).strip()[:255]),
+        ("name_en", str(translation.en or source_text).strip()[:255]),
+    ):
+        current = str(getattr(product, field, "") or "")
+        if value and current != value:
+            setattr(product, field, value)
+            update_fields.append(field)
+
+    status_value = str(translation.status or "").strip() or Product.NAME_TRANSLATION_PENDING
+    if str(getattr(product, "name_translation_status", "") or "") != status_value:
+        product.name_translation_status = status_value
+        update_fields.append("name_translation_status")
+    error_value = str(translation.error or "").strip()
+    if not error_value and reason:
+        error_value = f"fallback:{reason[:80]}"
+    if str(getattr(product, "name_translation_error", "") or "") != error_value:
+        product.name_translation_error = error_value
+        update_fields.append("name_translation_error")
+
+    if update_fields:
+        product.save(update_fields=[*update_fields, "updated_at"])
 
 
 def _resolve_supplier_by_brand(*, matcher: SupplierBrandMatcher, raw_brand: str) -> tuple[int | None, str, str]:

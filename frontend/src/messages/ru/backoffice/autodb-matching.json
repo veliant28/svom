@@ -30,12 +30,18 @@
           "source": "Источники"
         },
         "funnelStages": {
+          "selected": "Выбрано",
+          "processed": "Обработано",
           "new": "Новые",
           "local_found": "Найдено локально",
           "remote_found": "Найдено удаленно",
           "clone_synced": "Клон синхронизирован",
           "safe_link_candidate": "Кандидат",
-          "linked": "Связано"
+          "linked": "Связано",
+          "errors": "Ошибки",
+          "needs_review": "Нужна проверка",
+          "skipped_non_tecdoc": "Не TecDoc",
+          "skipped_bad_article_source": "Плохой артикул"
         },
         "latestRun": "Последний запуск",
         "latest": {
@@ -423,6 +429,8 @@
         "batchStateStopped": "TecDoc batch остановлен",
         "batchStateCompleted": "TecDoc batch завершен",
         "batchStateCompletedWithIssues": "TecDoc batch завершен с ошибками: {count}",
+        "batchLinkedCount": "Связано: {count}",
+        "batchErrorsCount": "Ошибки: {count}",
         "bulkNothingSelected": "Выберите товары для массового запуска",
         "candidatesFound": "Найдено совпадений: {count}",
         "exportDownloaded": "CSV скопирован",
