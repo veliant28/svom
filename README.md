@@ -1,139 +1,151 @@
 # SVOM
 
-SVOM is a monorepo for an automotive e-commerce platform with:
+Монорепозиторий e-commerce платформы автозапчастей.
 
-- Django 6 backend API
-- Next.js 16 frontend storefront and backoffice
-- PostgreSQL, Redis, Elasticsearch
-- Celery background jobs
-- supplier import pipelines for `UTR` and `GPL`
-- product pricing, search, marketing, orders, users and support modules
+В проекте объединены:
+- backend API и бизнес-логика (Django + DRF + Celery + Channels)
+- frontend storefront и backoffice (Next.js + React + TypeScript)
+- локальная инфраструктура (PostgreSQL, Redis, Elasticsearch, LibreTranslate)
+- интеграции поставщиков, Auto_DB_Pro, платежей, логистики, поддержки и уведомлений
 
-## Repository layout
+## Что внутри
+
+- Каталог: бренды, категории, товары, fitment/compatibility, поисковая выдача, sellable snapshots
+- Коммерция: корзина, wishlist, checkout, заказы, promo-коды, loyalty
+- Backoffice: операционный UI/API для каталога, прайсов, импорта, заказов, безопасности, SEO, маркетинга
+- Supplier imports: UTR/GPL потоки, валидация, quality, публикация офферов, reprice/reindex
+- Auto_DB_Pro: локальный clone DB + remote lookup/gate + matching/tecdoc batch
+- Интеграции: Monobank, LiqPay, NovaPay, Nova Poshta, Vchasno.Kasa, Telegram
+- Support: треды, очередь, counters, wallboard, presence reconciliation
+
+## Структура репозитория
 
 ```text
 .
-├── backend/                Django API, Celery, supplier imports, pricing, commerce
-├── frontend/               Next.js storefront + backoffice
-├── infra/docker/           Dockerfiles
-├── compose.yaml            Local infrastructure and backend containers
-└── .env.example            Local environment template
+├── backend/                 Django backend (apps, API, Celery, management commands)
+├── frontend/                Next.js storefront + backoffice
+├── infra/docker/            Dockerfiles backend/frontend
+├── compose.yaml             Локальный docker-compose стек
+├── .env.example             Шаблон переменных окружения
+├── docs/                    Технические аудиты и внутренние заметки
+├── UTR/                     Локальные справочники API UTR
+└── Довідник Нова Пошта/     Локальные справочники API Nova Poshta
 ```
 
-## Main modules
+## Backend: домены и модули
 
-- `catalog` / `autocatalog`: catalog entities, automotive fitment and TecDoc-style vehicle data
-- `supplier_imports`: supplier file ingestion, matching, publishing, mapped-offer workflows
-- `pricing`: product repricing, overrides, price history
-- `commerce`: cart, checkout, payments, orders
-- `backoffice`: operations UI/API, dashboards, imports, pricing control, Integration Center, Telegram settings
-- `marketing`: hero block, promo banners, footer settings
-- `search`: DB/Elasticsearch-backed search
-- `support`: realtime support presence and wallboard flows
+`backend/apps`:
+- `autodb`: работа с Auto_DB_Pro, clone sync, matching, enrichment, диагностика
+- `autocatalog`: UTR/autocatalog импорты и справочники применяемости
+- `backoffice`: основной операционный API (imports, pricing, orders, support, integrations)
+- `catalog`: товарный каталог, карточка товара, навигация, fitment
+- `commerce`: корзина, checkout, заказы, платежные webhooks
+- `compatibility`: совместимость продуктов
+- `core`: health, общие настройки, backup, системные сервисы
+- `marketing`: hero/promo/footer контент
+- `pricing`: репрайсинг, правила и сервисы расчета
+- `search`: поисковый backend и индексирование
+- `security`: контур блокировок/аудита/акторов
+- `seo`: SEO-конфиги, шаблоны, overrides, sitemap/robots
+- `supplier_imports`: пайплайн прайсов и сопоставления поставщиков
+- `support`: поддержка, realtime-presence, wallboard
+- `users`: auth/profile/garage/RBAC
+- `vehicles`: автомобильная таксономия
 
-## Tech stack
+### Основные API-префиксы backend
 
-### Backend
+- `/api/backoffice/`
+- `/api/autodb/`
+- `/api/core/`
+- `/api/catalog/`
+- `/api/marketing/`
+- `/api/seo/`
+- `/api/users/`
+- `/api/commerce/`
 
-- Python
+### Выделенные операционные зоны Backoffice API
+
+- `autodb-matching/*` (включая `tecdoc-batch/run|state|stop` и `remote-quota`)
+- `suppliers/*`, `import-runs/*`, `import-quality/*`, `import-errors/*`
+- `pricing/*`, `product-prices/*`
+- `orders/*`, waybill lifecycle, procurement suggestions
+- `support/*`, `security/*`
+- `payments/*`, `nova-poshta/*`, `vchasno-kasa/*`
+- `settings/*` (hero, promo, footer, email)
+- `telegram/settings`, `telegram/test`
+- `rbac/meta`, `users/*`, `groups/*`
+
+## Frontend: зоны функциональности
+
+`frontend/src/features`:
+- storefront: `catalog`, `product`, `search`, `cart`, `checkout`, `wishlist`, `account`, `garage`, `support`
+- backoffice: imports, suppliers, products/categories/brands, pricing, orders, payments
+- integrations/security/support/telegram: отдельные страницы и API-клиенты в `backoffice/*`
+- marketing/seo: публичные и backoffice-экраны
+
+Примеры backoffice-страниц:
+- `autodb-matching-page.tsx`
+- `supplier-import*.tsx` / `suppliers-page.tsx`
+- `orders-page.tsx` / `order-detail-page.tsx`
+- `integration-center-page.tsx`
+- `telegram-settings-page.tsx`
+- `support-page.tsx` / `support-wallboard-page.tsx`
+- `pricing-page.tsx`, `payments-page.tsx`, `seo-page.tsx`
+
+## Технологический стек
+
+Backend:
+- Python 3.13
 - Django 6
 - Django REST Framework
-- Celery
+- Celery + Redis
 - Channels + Daphne
-- PostgreSQL
-- Redis
+- PostgreSQL (primary + Auto_DB_Pro clone)
 - Elasticsearch
 
-### Frontend
-
+Frontend:
 - Next.js 16
 - React 19
-- TypeScript
+- TypeScript 5
 - Tailwind CSS 4
-- `next-intl`
-- `echarts`
+- next-intl
+- ECharts
 
-## Local setup
+## Локальный запуск через Docker (рекомендуется)
 
-### 1. Environment
-
-Create local env file from the template:
+### 1) Подготовка env
 
 ```bash
 cp .env.example .env
 ```
 
-Important variables from `.env.example`:
-
-- `DJANGO_SETTINGS_MODULE=config.settings.dev`
-- `POSTGRES_*`
-- `REDIS_*`
-- `ELASTICSEARCH_HOSTS`
-- `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api`
-- `NEXT_PUBLIC_AUTODB_PRO_VEHICLE_CATALOG_ENABLED=1`
-- `UTR_*` safety and rate-limit settings
-
-### 2. Start the Docker stack
+### 2) Запуск
 
 ```bash
 docker compose up --build
 ```
 
-This starts:
-
+Поднимаются сервисы:
 - `svom_postgres`
 - `svom_auto_db_pro_postgres`
 - `svom_redis`
 - `svom_elasticsearch`
+- `svom_libretranslate`
 - `svom_backend`
 - `svom_frontend`
 - `svom_celery_worker`
 - `svom_celery_beat`
 
-Backend is exposed at:
+Endpoints:
+- Backend: `http://localhost:8000`
+- Frontend: `http://localhost:3000`
+- Elasticsearch: `http://localhost:9200`
 
-- `http://localhost:8000`
-- API root under `http://localhost:8000/api/...`
+Важно:
+- backend контейнер выполняет `migrate` при старте
+- frontend в compose запускается в production-режиме (`build + start`)
 
-The backend container runs migrations on startup.
-
-Auto_DB_Pro local clone DB is provided by `svom_auto_db_pro_postgres` and is wired to Django alias `auto_db_pro`.
-
-Frontend is exposed at:
-
-- `http://localhost:3000`
-
-Frontend runs inside Docker. Browser API calls use `NEXT_PUBLIC_API_BASE_URL` and server-side frontend requests use `NEXT_SERVER_API_BASE_URL`, which defaults to `http://backend:8000/api` inside the Compose network.
-
-## Backoffice integrations and notifications
-
-Integration Center supports runtime toggles for:
-
-- payment providers (`Monobank`, `LiqPay`, `NovaPay`)
-- delivery channels (`Nova Poshta`, `Courier`)
-- supplier integrations (`UTR`, `GPL`)
-- operational integrations (`Vchasno.Kasa`, `SEO`, `Email`)
-- Telegram master and channel-level toggles (`ops`, `support`, `system`)
-
-Telegram management is implemented as a dedicated backoffice section with RBAC capability `telegram.manage`:
-
-- frontend route: `/backoffice/telegram`
-- API:
-  - `GET/PATCH /api/backoffice/telegram/settings/`
-  - `POST /api/backoffice/telegram/test/`
-
-Telegram settings persist in DB (`core.TelegramSettings`) and provide separate bot token/chat-id pairs and event switches for:
-
-- `ops`: order status and Nova Poshta waybill lifecycle notifications
-- `support`: support thread/message notifications
-- `system`: backup/import status notifications
-
-Operational notifications are emitted from backend services:
-
-- order status transitions (`OrderOperationsService`)
-- Nova Poshta waybill create/update/delete (`NovaPoshtaWaybillService`)
-
-## Development commands
+## Локальный запуск без Docker (частично)
 
 ### Backend
 
@@ -141,143 +153,172 @@ Operational notifications are emitted from backend services:
 cd backend
 ../.venv/bin/python manage.py migrate
 ../.venv/bin/python manage.py createsuperuser
-../.venv/bin/python manage.py test
-```
-
-If you work inside Docker:
-
-```bash
-docker compose exec backend python manage.py migrate
-docker compose exec backend python manage.py test
-docker compose exec backend python manage.py createsuperuser
+../.venv/bin/python manage.py runserver 0.0.0.0:8000
 ```
 
 ### Frontend
 
 ```bash
 cd frontend
+npm install
 npm run dev
-npm run build
-npm run lint
-npm exec tsc --noEmit
 ```
 
-## Supplier imports
+## Ключевые переменные окружения
 
-The project contains import and publishing flows for supplier data:
+### Базовые
+- `DJANGO_SETTINGS_MODULE` (`config.settings.dev` локально)
+- `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`
+- `POSTGRES_*`
+- `REDIS_CACHE_URL`, `REDIS_CELERY_URL`
+- `ELASTICSEARCH_HOSTS`, `SEARCH_BACKEND`
 
-- `UTR`
-- `GPL`
+### Auto_DB_Pro
+- local clone DB: `AUTODB_PRO_LOCAL_DATABASE_*`, `AUTODB_PRO_LOCAL_DATABASE_URL`
+- remote source: `AUTODB_PRO_REMOTE_*`
+- gate/quota: `AUTODB_PRO_REMOTE_LIMIT_PER_HOUR`, `AUTODB_PRO_REMOTE_STRICT_QUOTA_GATE_ENABLED`, `AUTODB_PRO_REMOTE_ENFORCE_GATEWAY_ONLY`
+- API toggle: `AUTODB_PRO_VEHICLE_CATALOG_API_ENABLED`
 
-Relevant areas:
+### Supplier imports / retention
+- `SUPPLIER_PRICE_LIST_FILE_RETENTION_HOURS`
+- `SUPPLIER_IMPORT_SCHEDULE_DISPATCH_LOCK_SECONDS`
+- `AUTODB_PRO_SUPPLIER_IMPORT_ENRICHMENT_ENABLED`
+- `AUTODB_PRO_SUPPLIER_IMPORT_NAME_UPDATE_ENABLED`
+- `AUTODB_PRO_SUPPLIER_IMPORT_REMOTE_LOOKUP_ENABLED`
 
-- `backend/apps/supplier_imports/`
-- `backend/apps/backoffice/services/supplier_workspace/`
-- `backend/apps/backoffice/services/supplier_price_workflow/`
-- `backend/apps/supplier_imports/services/mapped_offer_publish/`
+### UTR safety profile
+- `UTR_ENABLED`
+- `UTR_RATE_LIMIT_PER_MINUTE`, `UTR_CONCURRENCY`
+- `UTR_MAX_RETRIES`, `UTR_BACKOFF_BASE_SECONDS`
+- `UTR_CIRCUIT_BREAKER_THRESHOLD`, `UTR_CIRCUIT_BREAKER_COOLDOWN_SECONDS`
+- `UTR_BATCH_SIZE`, `UTR_RESOLVE_BATCH_SIZE`
+- `UTR_APPLICABILITY_ENABLED`, `UTR_FORCE_REFRESH`
 
-UTR integration includes conservative anti-ban defaults in `.env.example`, for example:
+### Frontend/API
+- `NEXT_PUBLIC_API_BASE_URL`
+- `NEXT_SERVER_API_BASE_URL`
+- `NEXT_PUBLIC_AUTODB_PRO_VEHICLE_CATALOG_ENABLED`
 
-- `UTR_RATE_LIMIT_PER_MINUTE=6`
-- `UTR_CONCURRENCY=1`
+### Контент/переводы AutoDB
+- `AUTODB_LIVE_CONTENT_ENABLED`
+- `AUTODB_OFFLINE_TRANSLATE_ENABLED`
+- `AUTODB_OFFLINE_TRANSLATE_PROVIDER`
+- `AUTODB_OFFLINE_TRANSLATE_URL`
+- `AUTODB_GOOGLE_TRANSLATE_*`
 
-Auto_DB_Pro post-processing in supplier imports is feature-flagged:
+## Celery и периодические задачи
 
-- `AUTODB_PRO_SUPPLIER_IMPORT_ENRICHMENT_ENABLED=0|1`
-- `AUTODB_PRO_SUPPLIER_IMPORT_NAME_UPDATE_ENABLED=0|1`
+`CELERY_BEAT_SCHEDULE` включает:
+- `supplier_imports.run_scheduled_imports` (каждую минуту)
+- `core.dispatch_scheduled_database_backup` (каждую минуту)
+- `supplier_imports.cleanup_price_list_files` (по расписанию cleanup)
+- `commerce.sync_nova_poshta_waybill_statuses` (каждые 20 минут)
+- `support.reconcile_presence` (каждую минуту)
+- `support.rebuild_wallboard_snapshots` (каждые 5 минут)
+- `pricing.sync_products_activity_by_price_freshness` (каждые 15 минут)
 
-Manual overrides for `import_supplier_data`:
+## Auto_DB_Pro: практические команды
+
+Проверка подключения:
 
 ```bash
 cd backend
-../.venv/bin/python manage.py import_supplier_data --source gpl --autodb-enrich --update-product-names --limit 500
+../.venv/bin/python manage.py autodb_check
 ```
 
-## Auto_DB_Pro clone sync
-
-Vehicle catalog raw clone (remote Auto-DB Pro -> local Auto_DB_Pro with same table/column names):
+Синхронизация clone (примеры):
 
 ```bash
 cd backend
 ../.venv/bin/python manage.py autodb_clone_sync --vehicle-catalog --schema-only
 ../.venv/bin/python manage.py autodb_clone_sync --only manufacturers --limit 100
 ../.venv/bin/python manage.py autodb_clone_sync --vehicle-catalog --batch-size 1000 --resume
-../.venv/bin/python manage.py autodb_check
 ```
 
-Remote Auto-DB Pro checks (explicit env load):
+Диагностика/обслуживание:
+- `autodb_clone_ensure_indexes`
+- `autodb_matching_*`
+- `autodb_update_product_*`
+- `autodb_diagnose_*`
+
+## Supplier import pipeline
+
+Основной flow:
+1. request/download price list
+2. import raw offers
+3. match/review/category mapping
+4. publish mapped products/offers
+5. reprice + reindex
+
+Ключевые области кода:
+- `backend/apps/supplier_imports/services/`
+- `backend/apps/backoffice/services/supplier_workspace/`
+- `backend/apps/backoffice/services/supplier_price_workflow/`
+- `backend/apps/supplier_imports/services/mapped_offer_publish/`
+
+См. аудит производительности:
+- `docs/supplier_import_performance_audit.md`
+
+## Интеграции
+
+Платежи:
+- Monobank
+- LiqPay
+- NovaPay
+
+Доставка:
+- Nova Poshta (sender profiles, lookups, waybill lifecycle, sync/print/history)
+
+Касса:
+- Vchasno.Kasa (settings, shift, receipts, issue/sync/open чека)
+
+Уведомления:
+- Telegram settings в backoffice (`telegram.manage` capability)
+- Каналы `ops`, `support`, `system`
+- События отправляются из сервисов заказов и waybill
+
+## RBAC и безопасность
+
+- Backoffice RBAC метаданные: `/api/backoffice/rbac/meta/`
+- Capability-ориентированная проверка доступа в backoffice страницах и API
+- Security контур: actors, blocks, audit, timeseries, false-positive flow
+
+## Поиск и SEO
+
+Поиск:
+- `SEARCH_BACKEND=db|elasticsearch`
+- индексатор: `manage.py reindex_products`
+
+SEO API:
+- public config/google/site/resolve-meta
+- backoffice settings/templates/overrides/dashboard/sitemap/robots-preview
+
+## Тесты и проверка качества
+
+Backend:
 
 ```bash
 cd backend
-set -a
-source ../.env
-set +a
-../.venv/bin/python manage.py autodb_check
+../.venv/bin/python manage.py test
 ```
 
-Recommended exact flow:
+Frontend:
 
 ```bash
-cd /Users/vs/Django/svom/backend
-set -a
-source ../.env
-set +a
-../.venv/bin/python manage.py autodb_check
+cd frontend
+npm run lint
+npm run test:unit
+npm run build
 ```
 
-Important:
-- use `AUTODB_PRO_REMOTE_USER` (or legacy `AUTODB_SOURCE_MYSQL_USER`)
-- do not use `AUTODB_SOURCE_MYSQL_USERNAME` as the only source unless you also map it to `AUTODB_PRO_REMOTE_USER`
-- `UTR_CIRCUIT_BREAKER_THRESHOLD=5`
-- `UTR_CIRCUIT_BREAKER_COOLDOWN_SECONDS=300`
+## Полезные документы в репозитории
 
-## After power outage or Docker restart
+- `docs/utr_audit.md`
+- `docs/supplier_import_performance_audit.md`
+- `docs/backoffice_admin_migration_audit.md`
 
-If host power was cut, PostgreSQL may stay in recovery for several minutes. During this window Auto_DB_Pro commands must not be treated as business-logic failures.
+## Примечания по эксплуатации
 
-Run checks in this order:
-
-```bash
-docker compose ps
-docker logs --tail=200 svom_auto_db_pro_postgres
-docker exec svom_auto_db_pro_postgres pg_isready -U svom -d Auto_DB_Pro
-cd backend
-../.venv/bin/python manage.py autodb_check
-../.venv/bin/python manage.py autodb_update_product_images --only-linked --limit 100 --wait-for-autodb 300 --dry-run
-```
-
-Notes:
-
-- local Auto_DB_Pro readiness is now checked before Auto_DB_Pro management commands start.
-- `--wait-for-autodb N` waits up to `N` seconds for local DB readiness and then exits with a clear message if still recovering.
-- do not treat `database system is starting up` / `consistent recovery state has not been yet reached` as enrichment logic errors.
-
-## Marketing and storefront content
-
-Storefront marketing content is managed from backoffice and backend APIs:
-
-- Hero block
-- Promo banners
-- Footer settings
-
-Relevant paths:
-
-- `backend/apps/marketing/`
-- `frontend/src/features/marketing/`
-- `frontend/src/features/backoffice/pages/hero-block-page.tsx`
-- `frontend/src/features/backoffice/pages/promo-banners-page.tsx`
-
-## Search
-
-Search backend is configurable:
-
-- `SEARCH_BACKEND=db`
-- `SEARCH_BACKEND=elasticsearch`
-
-Elasticsearch is available locally through `compose.yaml`.
-
-## Notes
-
-- The repository can contain active in-progress local changes during development.
-- The backend uses `Europe/Kyiv` timezone.
-- Frontend and backend are developed together and share the same API contract inside this monorepo.
+- Таймзона backend: `Europe/Kyiv`
+- После внезапного рестарта хоста PostgreSQL может быть в recovery, это нужно учитывать при Auto_DB_Pro задачах
+- Репозиторий активно развивается, возможны локальные незакоммиченные изменения в рабочем дереве
