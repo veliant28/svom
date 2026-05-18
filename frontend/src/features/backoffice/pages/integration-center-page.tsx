@@ -207,8 +207,8 @@ export function IntegrationCenterPage() {
       remote_host: autodbRemote.remote_host || "",
       remote_port: String(autodbRemote.remote_port || 3306),
       remote_database: autodbRemote.remote_database || "",
-      remote_user: "",
-      remote_password: "",
+      remote_user: autodbRemote.remote_user || "",
+      remote_password: autodbRemote.remote_password || "",
       image_base_url: autodbRemote.image_base_url || "",
     });
     setAutodbDirty({
@@ -341,9 +341,6 @@ export function IntegrationCenterPage() {
       setTranslator(response.translator);
       setAutodbRemote(response.autodb_remote);
       setAutodbDirty((prev) => ({ ...prev, [field]: false }));
-      if (field === "remote_user" || field === "remote_password") {
-        setAutodbDraft((prev) => ({ ...prev, [field]: "" }));
-      }
       showSuccess(t("integrationCenter.messages.autodbRemoteUpdated"));
     } catch (patchError) {
       showApiError(patchError, t("integrationCenter.messages.autodbRemoteUpdateFailed"));
@@ -355,10 +352,26 @@ export function IntegrationCenterPage() {
   async function handleCopyField(field: AutoDbRemoteField | "google_api_key", value: string) {
     const clean = String(value || "").trim();
     if (!clean) {
+      showApiError(new Error("empty_value"), t("integrationCenter.messages.copyEmpty"));
       return;
     }
     try {
-      await navigator.clipboard.writeText(clean);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(clean);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = clean;
+        textarea.setAttribute("readonly", "true");
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        const copied = document.execCommand("copy");
+        document.body.removeChild(textarea);
+        if (!copied) {
+          throw new Error("copy_fallback_failed");
+        }
+      }
       setCopiedField(field);
       showSuccess(t("integrationCenter.messages.copySuccess"));
       setTimeout(() => setCopiedField((current) => (current === field ? null : current)), 1200);

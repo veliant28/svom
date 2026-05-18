@@ -212,6 +212,8 @@ def _build_autodb_remote_state() -> dict[str, object]:
         "remote_host": str(settings.remote_host or "").strip(),
         "remote_port": int(settings.remote_port or 3306),
         "remote_database": str(settings.remote_database or "").strip(),
+        "remote_user": remote_user,
+        "remote_password": remote_password,
         "remote_user_masked": _mask_secret_value(remote_user),
         "remote_password_masked": _mask_secret_value(remote_password),
         "has_remote_user": bool(remote_user),

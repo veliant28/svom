@@ -288,6 +288,7 @@
           "autodbRemoteConnectionOk": "AutoDB remote connection is successful.",
           "autodbRemoteConnectionFailed": "Failed to test AutoDB remote connection.",
           "copySuccess": "Copied to clipboard.",
+          "copyEmpty": "Nothing to copy.",
           "copyFailed": "Failed to copy value.",
           "empty": "No toggles available."
         }

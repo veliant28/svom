@@ -31,6 +31,8 @@ export type BackofficeAutoDbRemoteState = {
   remote_host: string;
   remote_port: number;
   remote_database: string;
+  remote_user: string;
+  remote_password: string;
   remote_user_masked: string;
   remote_password_masked: string;
   has_remote_user: boolean;

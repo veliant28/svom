@@ -288,6 +288,7 @@
           "autodbRemoteConnectionOk": "Підключення до AutoDB remote успішне.",
           "autodbRemoteConnectionFailed": "Не вдалося перевірити підключення до AutoDB remote.",
           "copySuccess": "Скопійовано в буфер обміну.",
+          "copyEmpty": "Немає що копіювати.",
           "copyFailed": "Не вдалося скопіювати значення.",
           "empty": "Немає доступних перемикачів."
         }
