@@ -57,6 +57,26 @@ class ProductNameSourceDiagnostics:
 class AutoDbProductNameEnrichmentService:
     _letter_re = re.compile(r"[A-Za-zА-Яа-яІіЇїЄєҐґ]")
     _placeholder_artifact_re = re.compile(r"(?:auto\s*db|autodb|автодб)", re.IGNORECASE)
+    _conflicting_name_families: tuple[tuple[tuple[str, ...], tuple[str, ...]], ...] = (
+        (
+            (
+                "амортиз",
+                "shock absorber",
+            ),
+            (
+                "предглуш",
+                "глушител",
+                "глушник",
+                "выхлоп",
+                "вихлоп",
+                "выпуск",
+                "резонатор",
+                "silencer",
+                "muffler",
+                "exhaust",
+            ),
+        ),
+    )
 
     def __init__(
         self,
@@ -663,6 +683,8 @@ class AutoDbProductNameEnrichmentService:
             return description_clean
         if self._looks_like_duplicate_prefix(base_clean=base_clean, description_clean=description_clean):
             return description_clean
+        if self._looks_like_conflicting_headwords(base_clean=base_clean, description_clean=description_clean):
+            return description_clean
         return sanitize_product_name(f"{base_clean} {description_clean}")[:255]
 
     def _looks_like_duplicate_prefix(self, *, base_clean: str, description_clean: str) -> bool:
@@ -677,6 +699,8 @@ class AutoDbProductNameEnrichmentService:
         normalized_head = self._normalize_compare_text(head)
         if not normalized_base or not normalized_head:
             return False
+        if len(normalized_head) >= 10 and normalized_base.startswith(f"{normalized_head} "):
+            return True
         if normalized_base == normalized_head:
             return True
         ratio = SequenceMatcher(None, normalized_base, normalized_head).ratio()
@@ -689,6 +713,18 @@ class AutoDbProductNameEnrichmentService:
         normalized = re.sub(r"[^a-zа-я0-9 ]+", " ", normalized)
         normalized = sanitize_product_name(normalized)
         return normalized
+
+    def _looks_like_conflicting_headwords(self, *, base_clean: str, description_clean: str) -> bool:
+        base_lower = sanitize_product_name(base_clean).lower()
+        description_lower = sanitize_product_name(description_clean).lower()
+        if not base_lower or not description_lower:
+            return False
+        for base_markers, description_markers in self._conflicting_name_families:
+            if any(marker in base_lower for marker in base_markers) and any(
+                marker in description_lower for marker in description_markers
+            ):
+                return True
+        return False
 
     def build_queryset(
         self,

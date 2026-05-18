@@ -122,6 +122,22 @@ class AutoDbProductNameEnrichmentServiceTests(SimpleTestCase):
         )
         self.assertEqual(combined, "Комплект пылника, приводной вал")
 
+    def test_combine_base_and_description_drops_conflicting_shock_absorber_prefix_for_exhaust(self):
+        service = AutoDbProductNameEnrichmentService()
+        combined = service._combine_base_and_description(
+            base="Амортизатор",
+            description="Предглушитель выхлопных газов",
+        )
+        self.assertEqual(combined, "Предглушитель выхлопных газов")
+
+    def test_combine_base_and_description_deduplicates_repeated_headword_with_qualifier(self):
+        service = AutoDbProductNameEnrichmentService()
+        combined = service._combine_base_and_description(
+            base="Соединительные элементы трубопровода",
+            description="Соединительные элементы, система выпуска",
+        )
+        self.assertEqual(combined, "Соединительные элементы, система выпуска")
+
     def test_cleaned_title_translates_to_uk_ru_en(self):
         service = AutoDbProductNameEnrichmentService()
         service._resolve_supplier_raw_name = Mock(return_value="")

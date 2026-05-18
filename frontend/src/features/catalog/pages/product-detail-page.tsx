@@ -203,13 +203,15 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   }, [fitmentOptions, productFitments]);
 
   const availableModels = useMemo(() => {
+    if (!selectedMake) {
+      return [];
+    }
+
     if (fitmentOptions?.models.length) {
       return fitmentOptions.models.map((option) => option.value);
     }
 
-    const filtered = selectedMake
-      ? productFitments.filter((fitment) => (fitment.make || "").trim() === selectedMake)
-      : productFitments;
+    const filtered = productFitments.filter((fitment) => (fitment.make || "").trim() === selectedMake);
     return Array.from(new Set(filtered.map((fitment) => (fitment.model || "").trim()).filter(Boolean))).sort((a, b) =>
       a.localeCompare(b),
     );
@@ -384,6 +386,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
                       onChange={(event) => {
                         setSelectedModel(event.target.value || "");
                       }}
+                      disabled={!selectedMake}
                       className="h-9 rounded-md border px-2 text-sm"
                       style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
                     >
