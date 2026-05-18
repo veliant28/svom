@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Callable
+from urllib.parse import urlparse
 
 from django.conf import settings as django_settings
 from django.db import transaction
@@ -9,7 +10,14 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from apps.autodb.models import AutoDbTranslationSettings
-from apps.autodb.selectors import get_autodb_translation_settings, has_autodb_translation_settings_table
+from apps.autodb.selectors import (
+    get_autodb_remote_settings,
+    get_autodb_translation_settings,
+    has_autodb_remote_settings_table,
+    has_autodb_translation_settings_table,
+)
+from apps.autodb.services.remote_client import AutoDbProRemoteClient, AutoDbProRemoteClientError
+from apps.autodb.services.remote_config import AutoDbRemoteConfigError
 from apps.backoffice.api.serializers import CheckoutMethodSettingsSerializer
 from apps.backoffice.api.views._base import BackofficeAPIView
 from apps.commerce.services import get_checkout_method_settings
@@ -62,9 +70,11 @@ SUPPORTED_TOGGLE_KEYS = (
 class IntegrationCenterPatchSerializer(serializers.Serializer):
     ACTION_TOGGLE = "toggle"
     ACTION_TRANSLATOR = "translator"
+    ACTION_AUTODB_REMOTE = "autodb_remote"
     ACTION_CHOICES = (
         (ACTION_TOGGLE, ACTION_TOGGLE),
         (ACTION_TRANSLATOR, ACTION_TRANSLATOR),
+        (ACTION_AUTODB_REMOTE, ACTION_AUTODB_REMOTE),
     )
 
     action = serializers.ChoiceField(choices=ACTION_CHOICES, default=ACTION_TOGGLE)
@@ -75,6 +85,12 @@ class IntegrationCenterPatchSerializer(serializers.Serializer):
         required=False,
     )
     google_api_key = serializers.CharField(required=False, allow_blank=False, trim_whitespace=True)
+    remote_host = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
+    remote_port = serializers.IntegerField(required=False, min_value=1, max_value=65535)
+    remote_database = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
+    remote_user = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
+    remote_password = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
+    image_base_url = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
 
     def validate(self, attrs: dict) -> dict:
         action = str(attrs.get("action") or self.ACTION_TOGGLE).strip().lower()
@@ -86,7 +102,25 @@ class IntegrationCenterPatchSerializer(serializers.Serializer):
             if "provider" not in attrs and "google_api_key" not in attrs:
                 raise serializers.ValidationError({"detail": "Translator action requires `provider` or `google_api_key`."})
             return attrs
+        if action == self.ACTION_AUTODB_REMOTE:
+            mutable_keys = {"remote_host", "remote_port", "remote_database", "remote_user", "remote_password", "image_base_url"}
+            if not (mutable_keys & set(attrs.keys())):
+                raise serializers.ValidationError(
+                    {"detail": "Auto_DB remote action requires one of: remote_host, remote_port, remote_database, remote_user, remote_password, image_base_url."}
+                )
+            if "image_base_url" in attrs:
+                image_base_url = str(attrs["image_base_url"] or "").strip()
+                if image_base_url and not _is_valid_http_url(image_base_url):
+                    raise serializers.ValidationError({"image_base_url": "Image Base URL must start with http:// or https://"})
+            return attrs
         raise serializers.ValidationError({"detail": "Unsupported action."})
+
+
+def _is_valid_http_url(value: str) -> bool:
+    parsed = urlparse(str(value or "").strip())
+    if parsed.scheme not in {"http", "https"}:
+        return False
+    return bool(parsed.netloc)
 
 
 def _build_integration_center_state() -> dict[str, bool]:
@@ -157,10 +191,40 @@ def _build_translator_state() -> dict[str, str | bool]:
     }
 
 
+def _build_autodb_remote_state() -> dict[str, object]:
+    if not has_autodb_remote_settings_table():
+        return {
+            "has_schema": False,
+            "remote_host": "",
+            "remote_port": 3306,
+            "remote_database": "",
+            "remote_user_masked": "",
+            "remote_password_masked": "",
+            "has_remote_user": False,
+            "has_remote_password": False,
+            "image_base_url": "",
+        }
+    settings = get_autodb_remote_settings()
+    remote_user = str(settings.remote_user or "").strip()
+    remote_password = str(settings.remote_password or "").strip()
+    return {
+        "has_schema": True,
+        "remote_host": str(settings.remote_host or "").strip(),
+        "remote_port": int(settings.remote_port or 3306),
+        "remote_database": str(settings.remote_database or "").strip(),
+        "remote_user_masked": _mask_secret_value(remote_user),
+        "remote_password_masked": _mask_secret_value(remote_password),
+        "has_remote_user": bool(remote_user),
+        "has_remote_password": bool(remote_password),
+        "image_base_url": str(settings.image_base_url or "").strip(),
+    }
+
+
 def _build_integration_center_payload() -> dict[str, object]:
     return {
         "state": _build_integration_center_state(),
         "translator": _build_translator_state(),
+        "autodb_remote": _build_autodb_remote_state(),
     }
 
 
@@ -179,6 +243,8 @@ class BackofficeIntegrationCenterAPIView(BackofficeAPIView):
             self._patch_toggle(serializer.validated_data)
         elif action == IntegrationCenterPatchSerializer.ACTION_TRANSLATOR:
             self._patch_translator(serializer.validated_data)
+        elif action == IntegrationCenterPatchSerializer.ACTION_AUTODB_REMOTE:
+            self._patch_autodb_remote(serializer.validated_data)
         else:
             raise ValidationError({"action": "Unsupported action."})
 
@@ -249,6 +315,47 @@ class BackofficeIntegrationCenterAPIView(BackofficeAPIView):
             settings.save(update_fields=tuple(dict.fromkeys([*update_fields, "updated_at"])))
 
     @staticmethod
+    def _patch_autodb_remote(payload: dict[str, object]) -> None:
+        if not has_autodb_remote_settings_table():
+            raise ValidationError({"detail": "Auto_DB remote settings table is missing. Apply migrations first."})
+        settings = get_autodb_remote_settings()
+        next_host = str(payload.get("remote_host", settings.remote_host) or "").strip()
+        next_database = str(payload.get("remote_database", settings.remote_database) or "").strip()
+        next_user = str(payload.get("remote_user", settings.remote_user) or "").strip()
+        next_image_base_url = str(payload.get("image_base_url", settings.image_base_url) or "").strip()
+        if not next_host:
+            raise ValidationError({"remote_host": "Host is required."})
+        if not next_database:
+            raise ValidationError({"remote_database": "Database is required."})
+        if not next_user:
+            raise ValidationError({"remote_user": "User is required."})
+        if next_image_base_url and not _is_valid_http_url(next_image_base_url):
+            raise ValidationError({"image_base_url": "Image Base URL must start with http:// or https://"})
+
+        update_fields: list[str] = []
+        if "remote_host" in payload:
+            settings.remote_host = next_host
+            update_fields.append("remote_host")
+        if "remote_port" in payload:
+            settings.remote_port = max(int(payload["remote_port"] or 3306), 1)
+            update_fields.append("remote_port")
+        if "remote_database" in payload:
+            settings.remote_database = next_database
+            update_fields.append("remote_database")
+        if "remote_user" in payload:
+            settings.remote_user = next_user
+            update_fields.append("remote_user")
+        if "remote_password" in payload:
+            settings.remote_password = str(payload["remote_password"] or "").strip()
+            update_fields.append("remote_password")
+        if "image_base_url" in payload:
+            settings.image_base_url = next_image_base_url
+            update_fields.append("image_base_url")
+        if update_fields:
+            settings.save(update_fields=tuple(dict.fromkeys([*update_fields, "updated_at"])))
+
+
+    @staticmethod
     def _update_payment_with_checkout(*, enabled: bool, payment_model, checkout_field: str, update_checkout: Callable[[str, bool], None]) -> None:
         payment_model.is_enabled = enabled
         payment_model.save(update_fields=("is_enabled", "updated_at"))
@@ -285,3 +392,41 @@ class BackofficeIntegrationCenterAPIView(BackofficeAPIView):
         settings = get_telegram_settings()
         setattr(settings, field, bool(enabled))
         settings.save(update_fields=(field, "updated_at"))
+
+
+class BackofficeAutoDbRemoteConnectionTestAPIView(BackofficeAPIView):
+    required_capability = "integrations.manage"
+
+    def post(self, request):
+        if not has_autodb_remote_settings_table():
+            raise ValidationError({"detail": "Auto_DB remote settings table is missing. Apply migrations first."})
+
+        settings = get_autodb_remote_settings()
+        host = str(settings.remote_host or "").strip()
+        database = str(settings.remote_database or "").strip()
+        user = str(settings.remote_user or "").strip()
+        password = str(settings.remote_password or "").strip()
+        image_base_url = str(settings.image_base_url or "").strip()
+        port = int(settings.remote_port or 0)
+
+        if not host:
+            raise ValidationError({"remote_host": "Host is required."})
+        if not database:
+            raise ValidationError({"remote_database": "Database is required."})
+        if not user:
+            raise ValidationError({"remote_user": "User is required."})
+        if not password:
+            raise ValidationError({"remote_password": "Password is required."})
+        if port < 1 or port > 65535:
+            raise ValidationError({"remote_port": "Port must be in range 1..65535."})
+        if image_base_url and not _is_valid_http_url(image_base_url):
+            raise ValidationError({"image_base_url": "Image Base URL must start with http:// or https://"})
+
+        try:
+            ok = AutoDbProRemoteClient.from_settings().check_connection()
+        except (AutoDbProRemoteClientError, AutoDbRemoteConfigError) as exc:
+            return Response({"ok": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not ok:
+            return Response({"ok": False, "message": "Auto_DB remote connection failed."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"ok": True, "message": "Auto_DB remote connection successful."}, status=status.HTTP_200_OK)

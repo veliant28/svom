@@ -155,7 +155,13 @@
           "suppliers": "Поставщики",
           "system": "Системные",
           "telegram": "Telegram",
-          "translator": "Переводчик"
+          "translator": "Переводчик",
+          "autodbRemote": "AutoDB Remote"
+        },
+        "actions": {
+          "copy": "Копировать",
+          "testConnection": "Проверить подключение",
+          "toggleSecret": "Показать или скрыть"
         },
         "items": {
           "paymentMonobank": {
@@ -242,6 +248,33 @@
             "empty": "Ключ не сохранён"
           }
         },
+        "autodbRemote": {
+          "schemaMissing": "Схема настроек Auto_DB remote отсутствует. Сначала примените миграции.",
+          "fields": {
+            "remoteHost": "Хост",
+            "remotePort": "Порт",
+            "remoteDatabase": "База данных",
+            "remoteUser": "Пользователь",
+            "remotePassword": "Пароль",
+            "imageBaseUrl": "Image BASE URL"
+          },
+          "placeholders": {
+            "remoteHost": "db.auto-db.pro",
+            "remotePort": "3306",
+            "remoteDatabase": "db",
+            "remoteUser": "Введите нового пользователя",
+            "remotePassword": "Введите новый пароль",
+            "imageBaseUrl": "https://image.auto-db.pro/images/"
+          },
+          "masked": {
+            "remoteUser": "Сохранённый пользователь: {value}",
+            "remotePassword": "Сохранённый пароль: {value}"
+          },
+          "empty": {
+            "remoteUser": "Пользователь не сохранён",
+            "remotePassword": "Пароль не сохранён"
+          }
+        },
         "messages": {
           "loadFailed": "Не удалось загрузить настройки Центра интеграций.",
           "updateFailed": "Не удалось обновить переключатель.",
@@ -249,6 +282,13 @@
           "translatorUpdateFailed": "Не удалось обновить настройки переводчика.",
           "translatorProviderUpdated": "Провайдер переводчика обновлён.",
           "translatorTokenUpdated": "Google API key обновлён.",
+          "autodbRemoteUpdateFailed": "Не удалось обновить настройки AutoDB remote.",
+          "autodbRemoteUpdated": "Настройки AutoDB remote обновлены.",
+          "autodbRemoteInvalidPort": "Порт должен быть положительным целым числом.",
+          "autodbRemoteConnectionOk": "Подключение к AutoDB remote успешно.",
+          "autodbRemoteConnectionFailed": "Не удалось проверить подключение к AutoDB remote.",
+          "copySuccess": "Скопировано в буфер обмена.",
+          "copyFailed": "Не удалось скопировать значение.",
           "empty": "Нет доступных переключателей."
         }
       },

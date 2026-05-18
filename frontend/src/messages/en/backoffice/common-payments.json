@@ -155,7 +155,13 @@
           "suppliers": "Suppliers",
           "system": "System",
           "telegram": "Telegram",
-          "translator": "Translator"
+          "translator": "Translator",
+          "autodbRemote": "AutoDB Remote"
+        },
+        "actions": {
+          "copy": "Copy",
+          "testConnection": "Test connection",
+          "toggleSecret": "Show or hide"
         },
         "items": {
           "paymentMonobank": {
@@ -242,6 +248,33 @@
             "empty": "No key stored"
           }
         },
+        "autodbRemote": {
+          "schemaMissing": "Auto_DB remote settings schema is missing. Apply migrations first.",
+          "fields": {
+            "remoteHost": "Host",
+            "remotePort": "Port",
+            "remoteDatabase": "Database",
+            "remoteUser": "User",
+            "remotePassword": "Password",
+            "imageBaseUrl": "Image BASE URL"
+          },
+          "placeholders": {
+            "remoteHost": "db.auto-db.pro",
+            "remotePort": "3306",
+            "remoteDatabase": "db",
+            "remoteUser": "Enter new user",
+            "remotePassword": "Enter new password",
+            "imageBaseUrl": "https://image.auto-db.pro/images/"
+          },
+          "masked": {
+            "remoteUser": "Stored user: {value}",
+            "remotePassword": "Stored password: {value}"
+          },
+          "empty": {
+            "remoteUser": "User not set",
+            "remotePassword": "Password not set"
+          }
+        },
         "messages": {
           "loadFailed": "Failed to load Integration Center settings.",
           "updateFailed": "Failed to update toggle.",
@@ -249,6 +282,13 @@
           "translatorUpdateFailed": "Failed to update translator settings.",
           "translatorProviderUpdated": "Translator provider updated.",
           "translatorTokenUpdated": "Google API key updated.",
+          "autodbRemoteUpdateFailed": "Failed to update AutoDB remote settings.",
+          "autodbRemoteUpdated": "AutoDB remote settings updated.",
+          "autodbRemoteInvalidPort": "Port must be a positive integer.",
+          "autodbRemoteConnectionOk": "AutoDB remote connection is successful.",
+          "autodbRemoteConnectionFailed": "Failed to test AutoDB remote connection.",
+          "copySuccess": "Copied to clipboard.",
+          "copyFailed": "Failed to copy value.",
           "empty": "No toggles available."
         }
       },

@@ -7,6 +7,7 @@ class AutoDbRouter:
         "autodbmatchingrun",
         "autodbmatchjob",
         "autodbremotequotastate",
+        "autodbremotesettings",
     }
 
     def _is_state_model(self, model) -> bool:

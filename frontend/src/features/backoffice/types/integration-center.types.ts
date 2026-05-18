@@ -26,7 +26,20 @@ export type BackofficeIntegrationTranslatorState = {
   has_google_api_key: boolean;
 };
 
+export type BackofficeAutoDbRemoteState = {
+  has_schema: boolean;
+  remote_host: string;
+  remote_port: number;
+  remote_database: string;
+  remote_user_masked: string;
+  remote_password_masked: string;
+  has_remote_user: boolean;
+  has_remote_password: boolean;
+  image_base_url: string;
+};
+
 export type BackofficeIntegrationCenterResponse = {
   state: BackofficeIntegrationCenterState;
   translator: BackofficeIntegrationTranslatorState;
+  autodb_remote: BackofficeAutoDbRemoteState;
 };

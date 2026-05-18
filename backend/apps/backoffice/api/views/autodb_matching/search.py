@@ -4,9 +4,9 @@ import re
 from typing import Any
 from urllib.parse import urlsplit
 
-from django.conf import settings
 from django.db import DatabaseError, connections, transaction
 
+from apps.autodb.selectors import get_autodb_image_base_url
 from apps.autodb.services.article_number_normalizer import ArticleNumberNormalizer
 from apps.autodb.services.column_helpers import find_column_name
 from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
@@ -707,9 +707,7 @@ class ManualAutoDbSearch:
         if value.startswith(("http://", "https://")):
             return value
 
-        base_url = str(getattr(settings, "AUTODB_PRO_IMAGE_BASE_URL", "") or "").strip().rstrip("/")
-        if not base_url:
-            base_url = str(getattr(settings, "AUTODB_IMAGE_BASE_URL", "") or "").strip().rstrip("/")
+        base_url = get_autodb_image_base_url()
         if not base_url:
             return ""
 

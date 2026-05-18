@@ -15,6 +15,7 @@ from .passenger_car_engine import AutoDbPassengerCarEngine
 from .passenger_car_tree import AutoDbPassengerCarTree
 from .prd import AutoDbPrd
 from .product_group import AutoDbProductGroup
+from .remote_settings import AutoDbRemoteSettings
 from .supplier import AutoDbSupplier
 from .supplier_brand import AutoDbSupplierBrand
 from .supplier_brand_alias import AutoDbSupplierBrandAlias
@@ -48,6 +49,7 @@ __all__ = [
     "AutoDbPrd",
     "AutoDbArticleProductGroup",
     "AutoDbSyncState",
+    "AutoDbRemoteSettings",
     "AutoDbTranslationSettings",
     "AutoDbMatchingRun",
     "AutoDbMatchJob",

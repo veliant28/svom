@@ -155,7 +155,13 @@
           "suppliers": "Постачальники",
           "system": "Системні",
           "telegram": "Telegram",
-          "translator": "Перекладач"
+          "translator": "Перекладач",
+          "autodbRemote": "AutoDB Remote"
+        },
+        "actions": {
+          "copy": "Копіювати",
+          "testConnection": "Перевірити підключення",
+          "toggleSecret": "Показати або приховати"
         },
         "items": {
           "paymentMonobank": {
@@ -242,6 +248,33 @@
             "empty": "Ключ не збережено"
           }
         },
+        "autodbRemote": {
+          "schemaMissing": "Схема налаштувань Auto_DB remote відсутня. Спочатку застосуйте міграції.",
+          "fields": {
+            "remoteHost": "Хост",
+            "remotePort": "Порт",
+            "remoteDatabase": "База даних",
+            "remoteUser": "Користувач",
+            "remotePassword": "Пароль",
+            "imageBaseUrl": "Image BASE URL"
+          },
+          "placeholders": {
+            "remoteHost": "db.auto-db.pro",
+            "remotePort": "3306",
+            "remoteDatabase": "db",
+            "remoteUser": "Введіть нового користувача",
+            "remotePassword": "Введіть новий пароль",
+            "imageBaseUrl": "https://image.auto-db.pro/images/"
+          },
+          "masked": {
+            "remoteUser": "Збережений користувач: {value}",
+            "remotePassword": "Збережений пароль: {value}"
+          },
+          "empty": {
+            "remoteUser": "Користувача не збережено",
+            "remotePassword": "Пароль не збережено"
+          }
+        },
         "messages": {
           "loadFailed": "Не вдалося завантажити налаштування Центру інтеграцій.",
           "updateFailed": "Не вдалося оновити перемикач.",
@@ -249,6 +282,13 @@
           "translatorUpdateFailed": "Не вдалося оновити налаштування перекладача.",
           "translatorProviderUpdated": "Провайдера перекладача оновлено.",
           "translatorTokenUpdated": "Google API key оновлено.",
+          "autodbRemoteUpdateFailed": "Не вдалося оновити налаштування AutoDB remote.",
+          "autodbRemoteUpdated": "Налаштування AutoDB remote оновлено.",
+          "autodbRemoteInvalidPort": "Порт має бути додатним цілим числом.",
+          "autodbRemoteConnectionOk": "Підключення до AutoDB remote успішне.",
+          "autodbRemoteConnectionFailed": "Не вдалося перевірити підключення до AutoDB remote.",
+          "copySuccess": "Скопійовано в буфер обміну.",
+          "copyFailed": "Не вдалося скопіювати значення.",
           "empty": "Немає доступних перемикачів."
         }
       },

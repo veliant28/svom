@@ -22,12 +22,25 @@ class AutoDbRawCloneStorage:
         schema_service: AutoDbCloneSchemaService | None = None,
         db_alias: str = "auto_db_pro",
     ):
-        self.remote_client = remote_client or AutoDbProRemoteClient.from_settings()
-        self.schema_service = schema_service or AutoDbCloneSchemaService(remote_client=self.remote_client, db_alias=db_alias)
+        self.remote_client = remote_client
+        self.schema_service = schema_service
         self.db_alias = db_alias
         self._schema_cache: dict[str, CloneSchemaInfo] = {}
         self._remote_columns_cache: dict[str, list[str]] = {}
         self._local_columns_cache: dict[str, set[str]] = {}
+
+    def _ensure_remote_client(self) -> AutoDbProRemoteClient:
+        if self.remote_client is None:
+            self.remote_client = AutoDbProRemoteClient.from_settings()
+        return self.remote_client
+
+    def _ensure_schema_service(self) -> AutoDbCloneSchemaService:
+        if self.schema_service is None:
+            self.schema_service = AutoDbCloneSchemaService(
+                remote_client=self._ensure_remote_client(),
+                db_alias=self.db_alias,
+            )
+        return self.schema_service
 
     def ensure_table(self, table: str) -> CloneSchemaInfo:
         cached = self._schema_cache.get(table)
@@ -58,7 +71,7 @@ class AutoDbRawCloneStorage:
             self._schema_cache[table] = info
             self._local_columns_cache[table] = set(local_columns)
             return info
-        info = self.schema_service.ensure_table(table)
+        info = self._ensure_schema_service().ensure_table(table)
         self._schema_cache[table] = info
         self._remote_columns_cache[table] = [item.name for item in info.columns]
         self._local_columns_cache.pop(table, None)
@@ -68,7 +81,7 @@ class AutoDbRawCloneStorage:
         cached = self._remote_columns_cache.get(table)
         if cached is not None:
             return list(cached)
-        info = self.schema_service.introspect_table(table)
+        info = self._ensure_schema_service().introspect_table(table)
         columns = [item.name for item in info.columns]
         self._remote_columns_cache[table] = columns
         return list(columns)
@@ -231,7 +244,7 @@ class AutoDbRawCloneStorage:
             f"FROM {self._quote_mysql_identifier(table)} "
             f"WHERE {' AND '.join(where_parts)} LIMIT {max(int(limit), 1)}"
         )
-        return self.remote_client.select(sql, tuple(params))
+        return self._ensure_remote_client().select(sql, tuple(params))
 
     def fetch_remote_rows_in(
         self,
@@ -277,7 +290,7 @@ class AutoDbRawCloneStorage:
             f"FROM {self._quote_mysql_identifier(table)} "
             f"WHERE {' AND '.join(where_parts)} LIMIT {max(int(limit), 1)}"
         )
-        return self.remote_client.select(sql, tuple(params))
+        return self._ensure_remote_client().select(sql, tuple(params))
 
     def fetch_remote_rows_by_composite_keys(
         self,
@@ -323,7 +336,7 @@ class AutoDbRawCloneStorage:
             f"FROM {self._quote_mysql_identifier(table)} "
             f"WHERE {' OR '.join(parts)} LIMIT {max(int(limit), 1)}"
         )
-        return self.remote_client.select(sql, tuple(params))
+        return self._ensure_remote_client().select(sql, tuple(params))
 
     def fetch_remote_rows_like(
         self,
@@ -355,7 +368,7 @@ class AutoDbRawCloneStorage:
             f"WHERE CAST({self._quote_mysql_identifier(column)} AS CHAR) LIKE %s "
             f"LIMIT {max(int(limit), 1)}"
         )
-        return self.remote_client.select(sql, (f"%{needle}%",))
+        return self._ensure_remote_client().select(sql, (f"%{needle}%",))
 
     def upsert_rows(self, *, table: str, rows: list[dict[str, Any]], sync_batch_id: str | None = None) -> int:
         if not rows:

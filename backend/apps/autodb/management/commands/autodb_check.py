@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 import re
 
-from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import connections
 
@@ -273,7 +272,10 @@ class Command(BaseCommand):
             return lines
 
     def _sanitize_message(self, message: str) -> str:
-        password = str(getattr(settings, "AUTODB_PRO_REMOTE_PASSWORD", "") or "")
+        try:
+            password = str(AutoDbRemoteConfigValidator.snapshot().password or "")
+        except Exception:  # noqa: BLE001
+            password = ""
         if password:
             message = message.replace(password, "***")
         return message

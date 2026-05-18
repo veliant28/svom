@@ -1,4 +1,4 @@
-import { getJson, patchJson } from "@/shared/api/http-client";
+import { getJson, patchJson, postJson } from "@/shared/api/http-client";
 
 import type {
   BackofficeIntegrationCenterResponse,
@@ -33,6 +33,46 @@ export async function patchBackofficeIntegrationCenterTranslator(
   >(
     "/backoffice/integrations-center/",
     { action: "translator", ...payload },
+    undefined,
+    { token },
+  );
+}
+
+export type AutoDbRemotePatchPayload = Partial<{
+  remote_host: string;
+  remote_port: number;
+  remote_database: string;
+  remote_user: string;
+  remote_password: string;
+  image_base_url: string;
+}>;
+
+export async function patchBackofficeIntegrationCenterAutoDbRemote(
+  token: string,
+  payload: AutoDbRemotePatchPayload,
+): Promise<BackofficeIntegrationCenterResponse> {
+  return patchJson<
+    BackofficeIntegrationCenterResponse,
+    { action: "autodb_remote" } & AutoDbRemotePatchPayload
+  >(
+    "/backoffice/integrations-center/",
+    { action: "autodb_remote", ...payload },
+    undefined,
+    { token },
+  );
+}
+
+export type AutoDbRemoteConnectionTestResponse = {
+  ok: boolean;
+  message: string;
+};
+
+export async function postBackofficeIntegrationCenterAutoDbRemoteTestConnection(
+  token: string,
+): Promise<AutoDbRemoteConnectionTestResponse> {
+  return postJson<AutoDbRemoteConnectionTestResponse, Record<string, never>>(
+    "/backoffice/integrations-center/autodb-remote/test-connection/",
+    {},
     undefined,
     { token },
   );

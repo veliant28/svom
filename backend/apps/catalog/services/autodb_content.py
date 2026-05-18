@@ -14,6 +14,7 @@ from apps.autodb.models import (
     AutoDbProductGroup,
     AutoDbSupplier,
 )
+from apps.autodb.selectors import get_autodb_image_base_url
 from apps.autodb.services.remote_client import AutoDbProRemoteClient, AutoDbProRemoteClientError
 from apps.autodb.services.column_helpers import find_column_name, find_value
 from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
@@ -21,13 +22,6 @@ from apps.catalog.models import Product
 from apps.catalog.services.category_management import normalized_category_name
 from apps.supplier_imports.models import SupplierRawOffer
 from apps.supplier_imports.parsers.utils import normalize_article, normalize_brand
-
-try:
-    import mysql.connector
-except Exception:  # noqa: BLE001
-    mysql = None
-else:
-    mysql = mysql.connector
 
 logger = logging.getLogger(__name__)
 
@@ -411,110 +405,13 @@ def _fetch_clone_rows(
 
 
 def _refresh_cache_from_live(*, supplier_ids: set[int], articles: set[str]) -> None:
-    if mysql is None:
-        return
-
-    cfg = {
-        "host": str(getattr(settings, "AUTODB_SOURCE_MYSQL_HOST", "")).strip(),
-        "database": str(getattr(settings, "AUTODB_SOURCE_MYSQL_DATABASE", "")).strip(),
-        "user": str(getattr(settings, "AUTODB_SOURCE_MYSQL_USER", "")).strip(),
-        "password": str(getattr(settings, "AUTODB_SOURCE_MYSQL_PASSWORD", "") or ""),
-        "connection_timeout": int(getattr(settings, "AUTODB_SOURCE_MYSQL_TIMEOUT_SECONDS", 10)),
-        "charset": "utf8mb4",
-        "use_unicode": True,
-    }
-    if not cfg["host"] or not cfg["database"] or not cfg["user"]:
-        return
-
-    source = mysql.connect(**cfg)
-    try:
-        columns_by_table = {
-            "article_images": _table_columns(source=source, table="article_images"),
-            "article_attributes": _table_columns(source=source, table="article_attributes"),
-            "article_prd": _table_columns(source=source, table="article_prd"),
-            "prd": _table_columns(source=source, table="prd"),
-        }
-
-        _refresh_images_from_live(
-            source=source,
-            supplier_ids=supplier_ids,
-            articles=articles,
-            columns=columns_by_table["article_images"],
-        )
-        _refresh_attributes_from_live(
-            source=source,
-            supplier_ids=supplier_ids,
-            articles=articles,
-            columns=columns_by_table["article_attributes"],
-        )
-        _refresh_groups_from_live(
-            source=source,
-            supplier_ids=supplier_ids,
-            articles=articles,
-            article_prd_columns=columns_by_table["article_prd"],
-            prd_columns=columns_by_table["prd"],
-        )
-    finally:
-        source.close()
+    # Remote refresh is intentionally disabled in this module.
+    # Runtime remote access must go only through AutoDbProRemoteClient gateway.
+    return
 
 
 def _load_article_name_from_live(*, article_candidates: set[str], normalized_brand: str) -> str:
-    if mysql is None:
-        return ""
-
-    cfg = {
-        "host": str(getattr(settings, "AUTODB_SOURCE_MYSQL_HOST", "")).strip(),
-        "database": str(getattr(settings, "AUTODB_SOURCE_MYSQL_DATABASE", "")).strip(),
-        "user": str(getattr(settings, "AUTODB_SOURCE_MYSQL_USER", "")).strip(),
-        "password": str(getattr(settings, "AUTODB_SOURCE_MYSQL_PASSWORD", "") or ""),
-        "connection_timeout": int(getattr(settings, "AUTODB_SOURCE_MYSQL_TIMEOUT_SECONDS", 10)),
-        "charset": "utf8mb4",
-        "use_unicode": True,
-    }
-    if not cfg["host"] or not cfg["database"] or not cfg["user"]:
-        return ""
-
-    source = mysql.connect(**cfg)
-    try:
-        supplier_ids = _fetch_supplier_ids_from_live(source=source, normalized_brand=normalized_brand)
-        if not supplier_ids or not article_candidates:
-            return ""
-
-        supplier_placeholders = ", ".join(["%s"] * len(supplier_ids))
-        article_placeholders = ", ".join(["%s"] * len(article_candidates))
-        sql = (
-            "SELECT InformationText, InformationType "
-            "FROM article_inf "
-            f"WHERE supplierId IN ({supplier_placeholders}) "
-            f"AND DataSupplierArticleNumber IN ({article_placeholders})"
-        )
-        params = (*sorted(supplier_ids), *sorted(article_candidates))
-        cursor = source.cursor()
-        try:
-            cursor.execute(sql, params)
-            rows = cursor.fetchall()
-        finally:
-            cursor.close()
-        best = _pick_best_article_name(rows)
-        if best:
-            return best
-
-        sql_prd = (
-            "SELECT p.description, p.normalizeddescription "
-            "FROM article_prd ap "
-            "LEFT JOIN prd p ON p.id = ap.productId "
-            f"WHERE ap.supplierid IN ({supplier_placeholders}) "
-            f"AND ap.datasupplierarticlenumber IN ({article_placeholders})"
-        )
-        cursor = source.cursor()
-        try:
-            cursor.execute(sql_prd, params)
-            prd_rows = cursor.fetchall()
-        finally:
-            cursor.close()
-        return _pick_best_prd_fallback_name(prd_rows)
-    finally:
-        source.close()
+    return ""
 
 
 def _load_article_name_from_remote_gateway(*, article_candidates: set[str], normalized_brand: str) -> str:
@@ -937,7 +834,9 @@ def _normalize_image_url(*, image_url: Any, image_path: Any) -> str:
     if not raw_path:
         return ""
 
-    base_url = str(getattr(settings, "AUTODB_IMAGE_BASE_URL", "https://image.auto-db.pro/images/")).strip().rstrip("/")
+    base_url = get_autodb_image_base_url()
+    if not base_url:
+        return ""
     if raw_path.startswith("http://") or raw_path.startswith("https://"):
         return raw_path
     if not raw_path.startswith("/"):

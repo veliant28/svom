@@ -1,7 +1,10 @@
 from django.urls import path
 
 from apps.backoffice.api.views.footer_settings_view import BackofficeFooterSettingsAPIView
-from apps.backoffice.api.views.integration_center_views import BackofficeIntegrationCenterAPIView
+from apps.backoffice.api.views.integration_center_views import (
+    BackofficeAutoDbRemoteConnectionTestAPIView,
+    BackofficeIntegrationCenterAPIView,
+)
 from apps.backoffice.api.views.autodb_matching import (
     BackofficeAutoDbMatchingAuditLinkAPIView,
     BackofficeAutoDbMatchingBrandCoverageAPIView,
@@ -198,6 +201,11 @@ app_name = "backoffice_api"
 
 urlpatterns = [
     path("integrations-center/", BackofficeIntegrationCenterAPIView.as_view(), name="integrations-center"),
+    path(
+        "integrations-center/autodb-remote/test-connection/",
+        BackofficeAutoDbRemoteConnectionTestAPIView.as_view(),
+        name="integrations-center-autodb-remote-test-connection",
+    ),
     path("summary/", BackofficeSummaryAPIView.as_view(), name="summary"),
     path("summary/staff/", BackofficeStaffActivityAPIView.as_view(), name="summary-staff-activity"),
     path("security/summary/", SecuritySummaryAPIView.as_view(), name="security-summary"),

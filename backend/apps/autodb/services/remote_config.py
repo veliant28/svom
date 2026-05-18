@@ -5,6 +5,8 @@ import getpass
 
 from django.conf import settings
 
+from apps.autodb.selectors.remote_settings import get_autodb_remote_settings, has_autodb_remote_settings_table
+
 
 class AutoDbRemoteConfigError(RuntimeError):
     """Raised when remote Auto_DB_Pro config is required but invalid."""
@@ -66,13 +68,26 @@ class AutoDbRemoteConfigSnapshot:
 class AutoDbRemoteConfigValidator:
     @classmethod
     def snapshot(cls) -> AutoDbRemoteConfigSnapshot:
+        host = ""
+        port = 3306
+        database = ""
+        user = ""
+        password = ""
+        if has_autodb_remote_settings_table():
+            db_settings = get_autodb_remote_settings()
+            host = str(db_settings.remote_host or "").strip()
+            port = max(int(db_settings.remote_port or 3306), 1)
+            database = str(db_settings.remote_database or "").strip()
+            user = str(db_settings.remote_user or "").strip()
+            password = str(db_settings.remote_password or "")
+
         return AutoDbRemoteConfigSnapshot(
             enabled=bool(getattr(settings, "AUTODB_PRO_REMOTE_ENABLED", False)),
-            host=str(getattr(settings, "AUTODB_PRO_REMOTE_HOST", "") or "").strip(),
-            port=max(int(getattr(settings, "AUTODB_PRO_REMOTE_PORT", 3306) or 3306), 1),
-            database=str(getattr(settings, "AUTODB_PRO_REMOTE_DATABASE", "") or "").strip(),
-            user=str(getattr(settings, "AUTODB_PRO_REMOTE_USER", "") or "").strip(),
-            password=str(getattr(settings, "AUTODB_PRO_REMOTE_PASSWORD", "") or ""),
+            host=host,
+            port=port,
+            database=database,
+            user=user,
+            password=password,
             connect_timeout=max(int(getattr(settings, "AUTODB_PRO_REMOTE_CONNECT_TIMEOUT", 10) or 10), 1),
             read_timeout=max(int(getattr(settings, "AUTODB_PRO_REMOTE_READ_TIMEOUT", 30) or 30), 1),
             batch_size=max(int(getattr(settings, "AUTODB_PRO_REMOTE_BATCH_SIZE", 100) or 100), 1),
