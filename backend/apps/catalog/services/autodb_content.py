@@ -937,7 +937,7 @@ def _normalize_image_url(*, image_url: Any, image_path: Any) -> str:
     if not raw_path:
         return ""
 
-    base_url = str(getattr(settings, "AUTODB_IMAGE_BASE_URL", "https://order24-file.utr.ua/")).strip().rstrip("/")
+    base_url = str(getattr(settings, "AUTODB_IMAGE_BASE_URL", "https://image.auto-db.pro/images/")).strip().rstrip("/")
     if raw_path.startswith("http://") or raw_path.startswith("https://"):
         return raw_path
     if not raw_path.startswith("/"):
