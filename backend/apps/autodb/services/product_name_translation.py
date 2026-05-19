@@ -52,7 +52,7 @@ class ProductNameTranslationService:
         "en": "Wiper blade",
     }
     _legacy_placeholder_re = re.compile(r"__AUTODB_TOKEN_(\d+)__", re.IGNORECASE)
-    _translated_placeholder_token_re = r"(?:auto\s*db|autodb|автодб)(?:[ _-]*token)?"
+    _translated_placeholder_token_re = r"(?:auto\s*db|autodb|автодб|автод)(?:[\W_]*(?:token|токен|тоен))?"
     _cyrillic_re = re.compile(r"[А-Яа-яЁёІіЇїЄєҐґ]")
     _english_cyrillic_term_replacements: tuple[tuple[str, str], ...] = (
         (r"\bВАЗ\b", "VAZ"),
@@ -236,7 +236,8 @@ class ProductNameTranslationService:
             )
             if not translated:
                 return None
-            translated_values[target] = self._restore_placeholders(translated_text=translated, placeholders=placeholders)
+            restored = self._restore_placeholders(translated_text=translated, placeholders=placeholders)
+            translated_values[target] = source_text if self._has_placeholder_artifact(restored) else restored
 
         uk = sanitize_product_name(translated_values.get("uk") or source_text)
         ru = sanitize_product_name(translated_values.get("ru") or source_text)
@@ -285,7 +286,8 @@ class ProductNameTranslationService:
             )
             if not translated:
                 return None
-            translated_values[target] = self._restore_placeholders(translated_text=translated, placeholders=placeholders)
+            restored = self._restore_placeholders(translated_text=translated, placeholders=placeholders)
+            translated_values[target] = source_text if self._has_placeholder_artifact(restored) else restored
 
         uk = sanitize_product_name(translated_values.get("uk") or source_text)
         ru = sanitize_product_name(translated_values.get("ru") or source_text)
@@ -461,19 +463,19 @@ class ProductNameTranslationService:
 
         for index, token in ordered_tokens:
             compact_placeholder_pattern = re.compile(
-                rf"@*\s*(?:auto\s*db|autodb|автодб)\s*(?:token\s*)?{index}(?:st|nd|rd|th)?\s*@*",
+                rf"@*\s*(?:auto\s*db|autodb|автодб|автод)[\W_]*(?:token|токен|тоен)?[\W_]*{index}(?:st|nd|rd|th)?\s*@*",
                 flags=re.IGNORECASE,
             )
             text = compact_placeholder_pattern.sub(token, text)
             translated_pattern = re.compile(
-                rf"\b{self._translated_placeholder_token_re}[ _-]*{index}(?:st|nd|rd|th)?\b",
+                rf"\b{self._translated_placeholder_token_re}[\W_]*{index}(?:st|nd|rd|th)?\b",
                 flags=re.IGNORECASE,
             )
             text = translated_pattern.sub(token, text)
 
         # If placeholder artifacts survive translation, drop them.
         text = re.sub(
-            rf"\b{self._translated_placeholder_token_re}[ _-]*\d+(?:st|nd|rd|th)?\b",
+            rf"\b{self._translated_placeholder_token_re}[\W_]*\d+(?:st|nd|rd|th)?\b",
             "",
             text,
             flags=re.IGNORECASE,
@@ -522,6 +524,15 @@ class ProductNameTranslationService:
                 normalized = normalized[:half]
 
         return sanitize_product_name(normalized)
+
+    def _has_placeholder_artifact(self, value: str) -> bool:
+        return bool(
+            re.search(
+                rf"\b{self._translated_placeholder_token_re}[\W_]*\d+\b",
+                str(value or ""),
+                flags=re.IGNORECASE,
+            )
+        )
 
     def _apply_headword_translation_for_latin_suffix(
         self,

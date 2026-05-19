@@ -56,7 +56,7 @@ class ProductNameSourceDiagnostics:
 
 class AutoDbProductNameEnrichmentService:
     _letter_re = re.compile(r"[A-Za-zА-Яа-яІіЇїЄєҐґ]")
-    _placeholder_artifact_re = re.compile(r"(?:auto\s*db|autodb|автодб)", re.IGNORECASE)
+    _placeholder_artifact_re = re.compile(r"(?:auto\s*db|autodb|автодб|автод)", re.IGNORECASE)
     _conflicting_name_families: tuple[tuple[tuple[str, ...], tuple[str, ...]], ...] = (
         (
             (
