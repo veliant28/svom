@@ -12,6 +12,7 @@
 
 - Каталог: бренды, категории, товары, fitment/compatibility, поисковая выдача, sellable snapshots
 - Коммерция: корзина, wishlist, checkout, заказы, promo-коды, loyalty
+- Возвраты: клиентский/админский контур возвратов, статусы, ТТН, RBAC, интеграция с заказами
 - Backoffice: операционный UI/API для каталога, прайсов, импорта, заказов, безопасности, SEO, маркетинга
 - Supplier imports: UTR/GPL потоки, валидация, quality, публикация офферов, reprice/reindex
 - Auto_DB_Pro: локальный clone DB + remote lookup/gate + matching/tecdoc batch
@@ -69,6 +70,7 @@
 - `suppliers/*`, `import-runs/*`, `import-quality/*`, `import-errors/*`
 - `pricing/*`, `product-prices/*`
 - `orders/*`, waybill lifecycle, procurement suggestions
+- `returns/*` (операционный список/деталь/смена статусов возврата)
 - `support/*`, `security/*`
 - `payments/*`, `nova-poshta/*`, `vchasno-kasa/*`
 - `settings/*` (hero, promo, footer, email)
@@ -177,6 +179,7 @@ npm run dev
 - local clone DB: `AUTODB_PRO_LOCAL_DATABASE_*`, `AUTODB_PRO_LOCAL_DATABASE_URL`
 - remote source: `AUTODB_PRO_REMOTE_*`
 - gate/quota: `AUTODB_PRO_REMOTE_LIMIT_PER_HOUR`, `AUTODB_PRO_REMOTE_STRICT_QUOTA_GATE_ENABLED`, `AUTODB_PRO_REMOTE_ENFORCE_GATEWAY_ONLY`
+- backoffice batch timeout: `AUTODB_BACKOFFICE_BATCH_ITEM_TIMEOUT_SECONDS` (по умолчанию 90; можно увеличить при тяжёлых пакетах)
 - API toggle: `AUTODB_PRO_VEHICLE_CATALOG_API_ENABLED`
 
 ### Supplier imports / retention
@@ -216,6 +219,20 @@ npm run dev
 - `support.reconcile_presence` (каждую минуту)
 - `support.rebuild_wallboard_snapshots` (каждые 5 минут)
 - `pricing.sync_products_activity_by_price_freshness` (каждые 15 минут)
+
+## Realtime обновления (Orders/Returns)
+
+- Для клиентских `orders` и `returns` используется WebSocket push (`/ws/commerce/user/`) как основной канал.
+- Polling сохранён как fallback при недоступном сокете.
+- События:
+  - `commerce.order.updated`
+  - `commerce.return.updated`
+
+### Статусы возврата: важное
+
+- Статус `refund_processing` физически удалён из активного workflow.
+- Финальный денежный статус возврата — единый `refunded` (в UI отображается как `Возврат`).
+- Миграция `commerce.0024_unify_return_refund_status` переводит legacy-записи `refund_processing -> refunded`.
 
 ## Auto_DB_Pro: практические команды
 
