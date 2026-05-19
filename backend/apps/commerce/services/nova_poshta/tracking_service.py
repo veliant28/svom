@@ -7,6 +7,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.commerce.models import OrderNovaPoshtaWaybill, OrderNovaPoshtaWaybillEvent
+from apps.commerce.services.returns_service import ensure_order_received_from_tracking
 
 from .client import NovaPoshtaApiClient
 from .constants import FINAL_STATUS_CODES
@@ -77,6 +78,12 @@ class NovaPoshtaTrackingService:
                 warning_codes=response.context.warning_codes,
                 info_codes=response.context.info_codes,
                 created_by=actor,
+            )
+            ensure_order_received_from_tracking(
+                order=waybill.order,
+                status_code=status_code,
+                status_payload=status_data if isinstance(status_data, dict) else {},
+                synced_at=waybill.status_synced_at,
             )
 
         return TrackingSyncResult(status_code=status_code, status_text=status_text, raw_payload=response.payload)

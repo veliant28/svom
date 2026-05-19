@@ -7,6 +7,7 @@ import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/b
 import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import type { BackofficeOrderOperational } from "@/features/backoffice/types/orders.types";
+import { formatFooterPhoneDisplay } from "@/shared/lib/footer-phone";
 
 import { formatOrderDate, formatOrderTotalWithCurrency } from "./order-formatters";
 
@@ -209,7 +210,7 @@ export function createOrderColumns({
         <div className="min-w-0">
           <p className="truncate font-medium">{compactPersonName(item.contact_full_name || "")}</p>
           <p className="truncate text-xs" style={{ color: "var(--muted)" }}>
-            {item.contact_phone || "-"}
+            {formatFooterPhoneDisplay(item.contact_phone || "") || "-"}
           </p>
           <p className="truncate text-xs" style={{ color: "var(--muted)" }}>
             {item.contact_email || item.user_email || "-"}

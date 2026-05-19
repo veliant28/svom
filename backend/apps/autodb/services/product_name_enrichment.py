@@ -76,6 +76,44 @@ class AutoDbProductNameEnrichmentService:
                 "exhaust",
             ),
         ),
+        (
+            (
+                "присадк",
+                "additive",
+            ),
+            (
+                "присадк",
+                "additive",
+            ),
+        ),
+        (
+            (
+                "уплотняющ",
+                "уплотнит",
+                "sealing ring",
+                "seal ring",
+            ),
+            (
+                "уплотняющ",
+                "уплотнит",
+                "sealing ring",
+                "seal ring",
+            ),
+        ),
+        (
+            (
+                "электропроводк",
+                "wire set",
+                "wiring",
+            ),
+            (
+                "проводов зажиган",
+                "высоковольт",
+                "ignition wire",
+                "ignition cable",
+                "spark plug wire",
+            ),
+        ),
     )
 
     def __init__(

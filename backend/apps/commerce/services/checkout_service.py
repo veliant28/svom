@@ -187,25 +187,8 @@ def submit_checkout(
                 }
             )
 
-        if item.last_known_unit_price and Decimal(item.last_known_unit_price) != snapshot.current_sell_price:
-            validation_errors.append(
-                {
-                    "product_id": str(item.product_id),
-                    "product_sku": item.product.sku,
-                    "code": "price_stale",
-                    "message": _("Price changed since the item was added to cart."),
-                }
-            )
-
-        if item.last_known_availability_status and item.last_known_availability_status != snapshot.availability_status:
-            validation_errors.append(
-                {
-                    "product_id": str(item.product_id),
-                    "product_sku": item.product.sku,
-                    "code": "availability_stale",
-                    "message": _("Availability changed since the item was added to cart."),
-                }
-            )
+        # Do not block checkout on stale cart snapshots (price/availability drift):
+        # preview already shows warnings, and submit should proceed with current sellable state.
 
     if validation_errors:
         raise ValidationError(
@@ -321,8 +304,10 @@ def submit_checkout(
                 webhook_url=monobank_webhook_url,
                 redirect_url=monobank_redirect_url,
             )
-        except MonobankApiError as exc:
-            raise ValidationError({"payment_method": str(exc)}) from exc
+        except (MonobankApiError, ValidationError):
+            # Keep checkout successful even when Monobank invoice creation failed:
+            # order is created, payment row already contains failure details.
+            pass
     elif payment_method == Order.PAYMENT_LIQPAY:
         payment.provider = payment.PROVIDER_LIQPAY
         payment.method = payment.METHOD_LIQPAY

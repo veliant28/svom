@@ -7,6 +7,7 @@ from django.db import connection
 from django.db.utils import DatabaseError, OperationalError, ProgrammingError
 from rest_framework import serializers
 
+from apps.catalog.services.product_management import get_product_display_name
 from apps.commerce.models import Order, OrderItem
 from apps.commerce.services.delivery_snapshot import resolve_delivery_display, resolve_waybill_seed
 from apps.commerce.services.nova_poshta.tracking_status_catalog import resolve_tracking_status_text
@@ -16,6 +17,8 @@ from apps.users.rbac import get_user_system_role
 
 class BackofficeOrderItemOperationalSerializer(serializers.ModelSerializer):
     product_id = serializers.CharField(source="product.id", read_only=True)
+    product_name = serializers.SerializerMethodField()
+    product_svom_sku = serializers.SerializerMethodField()
     recommended_supplier_offer_id = serializers.CharField(read_only=True, allow_null=True)
     recommended_supplier_name = serializers.CharField(source="recommended_supplier_offer.supplier.name", read_only=True, default="")
     selected_supplier_offer_id = serializers.CharField(read_only=True, allow_null=True)
@@ -28,6 +31,7 @@ class BackofficeOrderItemOperationalSerializer(serializers.ModelSerializer):
             "product_id",
             "product_name",
             "product_sku",
+            "product_svom_sku",
             "quantity",
             "unit_price",
             "line_total",
@@ -46,6 +50,30 @@ class BackofficeOrderItemOperationalSerializer(serializers.ModelSerializer):
             "snapshot_currency",
             "snapshot_sell_price",
         )
+
+    def _resolve_locale(self) -> str | None:
+        request = self.context.get("request")
+        if request is None:
+            return None
+        language_code = getattr(request, "LANGUAGE_CODE", "")
+        if language_code:
+            return str(language_code)
+        accept_language = str(request.headers.get("Accept-Language", "")).strip()
+        if not accept_language:
+            return None
+        return accept_language.split(",", 1)[0]
+
+    def get_product_name(self, obj: OrderItem) -> str:
+        product = getattr(obj, "product", None)
+        if product is None:
+            return str(getattr(obj, "product_name", "") or "").strip()
+        return get_product_display_name(product, self._resolve_locale())
+
+    def get_product_svom_sku(self, obj: OrderItem) -> str:
+        svom_sku = str(getattr(getattr(obj, "product", None), "svom_sku", "") or "").strip()
+        if svom_sku:
+            return svom_sku
+        return str(getattr(obj, "product_sku", "") or "").strip()
 
 
 class BackofficeOrderOperationalListSerializer(serializers.ModelSerializer):

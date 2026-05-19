@@ -66,7 +66,15 @@
         "waiting_for_support": "Waiting for support",
         "waiting_for_client": "Waiting for client",
         "resolved": "Resolved",
-        "closed": "Closed"
+        "closed": "Closed",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "awaiting_ttn": "Awaiting TTN",
+        "in_transit": "In transit",
+        "received": "Received",
+        "accepted": "Accepted",
+        "refund_processing": "Refund processing",
+        "refunded": "Refunded"
       }
     }
   }

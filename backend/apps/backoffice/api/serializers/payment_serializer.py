@@ -226,7 +226,7 @@ class BackofficeOrderPaymentSerializer(serializers.ModelSerializer):
 
 
 class BackofficeMonobankPaymentActionSerializer(serializers.Serializer):
-    action = serializers.ChoiceField(choices=("refresh", "cancel", "remove", "finalize", "fiscal_checks"))
+    action = serializers.ChoiceField(choices=("create_invoice", "refresh", "cancel", "remove", "finalize", "fiscal_checks"))
     amount = serializers.IntegerField(required=False, min_value=1)
 
     def validate(self, attrs: dict) -> dict:

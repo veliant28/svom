@@ -25,6 +25,7 @@ from apps.autodb.models import (
     AutoDbVehicleModel,
 )
 from apps.autodb.services.intervals import parse_construction_interval
+from apps.autodb.services.remote_config import AutoDbRemoteConfigValidator
 from apps.catalog.services.category_management import normalized_category_name
 from apps.supplier_imports.parsers.utils import normalize_article, normalize_brand
 
@@ -193,13 +194,14 @@ class Command(BaseCommand):
         )
 
     def _mysql_config(self) -> dict:
-        host = str(getattr(settings, "AUTODB_SOURCE_MYSQL_HOST", "")).strip()
-        database = str(getattr(settings, "AUTODB_SOURCE_MYSQL_DATABASE", "")).strip()
-        user = str(getattr(settings, "AUTODB_SOURCE_MYSQL_USER", "")).strip()
-        password = str(getattr(settings, "AUTODB_SOURCE_MYSQL_PASSWORD", "")).strip()
+        snapshot = AutoDbRemoteConfigValidator.snapshot()
+        host = str(snapshot.host or "").strip()
+        database = str(snapshot.database or "").strip()
+        user = str(snapshot.user or "").strip()
+        password = str(snapshot.password or "").strip()
         if not host or not database or not user:
             raise CommandError(
-                "AUTODB_SOURCE_MYSQL_HOST / AUTODB_SOURCE_MYSQL_DATABASE / AUTODB_SOURCE_MYSQL_USER обязательны."
+                "AutoDB remote settings in DB are incomplete: host/database/user are required."
             )
 
         return {
@@ -207,7 +209,7 @@ class Command(BaseCommand):
             "database": database,
             "user": user,
             "password": password,
-            "connection_timeout": int(getattr(settings, "AUTODB_SOURCE_MYSQL_TIMEOUT_SECONDS", 30)),
+            "connection_timeout": int(getattr(settings, "AUTODB_SOURCE_MYSQL_TIMEOUT_SECONDS", snapshot.connect_timeout)),
             "charset": "utf8mb4",
             "use_unicode": True,
         }

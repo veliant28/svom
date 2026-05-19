@@ -85,6 +85,7 @@ from .payment_views import (
 )
 from .orders_detail_view import OrderOperationalDetailAPIView
 from .orders_list_view import OrderOperationalListAPIView
+from .returns_views import BackofficeReturnDetailAPIView, BackofficeReturnListAPIView, BackofficeReturnStatusUpdateAPIView
 from .pricing_actions_views import ReindexProductsActionAPIView
 from .product_actions_view import BulkMoveProductsCategoryActionAPIView
 from .pricing_control_views import (
@@ -220,6 +221,9 @@ __all__ = [
     "SupplierRawOfferListAPIView",
     "OrderOperationalListAPIView",
     "OrderOperationalDetailAPIView",
+    "BackofficeReturnListAPIView",
+    "BackofficeReturnDetailAPIView",
+    "BackofficeReturnStatusUpdateAPIView",
     "NovaPoshtaSenderProfileListCreateAPIView",
     "NovaPoshtaSenderProfileRetrieveUpdateDestroyAPIView",
     "NovaPoshtaSenderProfileValidateAPIView",

@@ -12,6 +12,14 @@ from .checkout_serializer import (
 from .order_serializer import OrderSerializer
 from .order_payment_serializer import OrderPaymentSerializer
 from .loyalty_serializer import LoyaltyPromoCodeSerializer
+from .returns_serializer import (
+    CreateReturnRequestInputSerializer,
+    EligibleOrderListSerializer,
+    EligibleOrderItemSerializer,
+    ReturnRequestDetailSerializer,
+    ReturnRequestListSerializer,
+    SubmitReturnTrackingInputSerializer,
+)
 from .wishlist_serializer import WishlistAddSerializer, WishlistItemSerializer
 
 __all__ = [
@@ -31,4 +39,10 @@ __all__ = [
     "OrderSerializer",
     "OrderPaymentSerializer",
     "LoyaltyPromoCodeSerializer",
+    "ReturnRequestListSerializer",
+    "ReturnRequestDetailSerializer",
+    "EligibleOrderListSerializer",
+    "EligibleOrderItemSerializer",
+    "CreateReturnRequestInputSerializer",
+    "SubmitReturnTrackingInputSerializer",
 ]

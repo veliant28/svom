@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from apps.commerce.services import get_returns_settings
 from apps.users.models import User
 from apps.users.rbac import get_backoffice_capabilities_for_user, get_user_system_role
 
@@ -15,6 +16,7 @@ class UserSummarySerializer(serializers.ModelSerializer):
     backoffice_capabilities = serializers.SerializerMethodField()
     backoffice_capabilities_map = serializers.SerializerMethodField()
     has_backoffice_access = serializers.SerializerMethodField()
+    returns_enabled = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -33,6 +35,7 @@ class UserSummarySerializer(serializers.ModelSerializer):
             "backoffice_capabilities",
             "backoffice_capabilities_map",
             "has_backoffice_access",
+            "returns_enabled",
         )
 
     def get_groups(self, obj: User):
@@ -50,3 +53,6 @@ class UserSummarySerializer(serializers.ModelSerializer):
 
     def get_has_backoffice_access(self, obj: User) -> bool:
         return "backoffice.access" in get_backoffice_capabilities_for_user(obj)
+
+    def get_returns_enabled(self, obj: User) -> bool:
+        return bool(get_returns_settings().returns_enabled)

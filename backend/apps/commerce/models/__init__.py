@@ -11,6 +11,7 @@ from .order_receipt import OrderReceipt
 from .monobank_settings import MonobankSettings
 from .order_item import OrderItem
 from .order_nova_poshta_waybill import OrderNovaPoshtaWaybill, OrderNovaPoshtaWaybillEvent
+from .return_request import ReturnEvent, ReturnRequest, ReturnRequestItem, ReturnRequestNumberSequence
 from .vchasno_kasa_settings import VchasnoKasaSettings
 from .wishlist_item import WishlistItem
 
@@ -31,6 +32,10 @@ __all__ = [
     "NovaPoshtaSenderProfile",
     "OrderNovaPoshtaWaybill",
     "OrderNovaPoshtaWaybillEvent",
+    "ReturnRequest",
+    "ReturnRequestNumberSequence",
+    "ReturnRequestItem",
+    "ReturnEvent",
     "LoyaltyPromoCode",
     "LoyaltyPromoRedemption",
     "LoyaltyPromoEvent",

@@ -75,26 +75,25 @@ class CommerceServicesTests(TestCase):
         self.assertEqual(order.items.count(), 1)
         self.assertEqual(cart.items.count(), 0)
 
-    def test_checkout_validation_rejects_stale_price(self):
+    def test_checkout_allows_stale_price_and_uses_current_price(self):
         add_product_to_cart(user=self.user, product=self.product, quantity=1)
         ProductPrice.objects.filter(product=self.product).update(final_price=Decimal("250.00"))
 
-        with self.assertRaises(ValidationError) as exc:
-            submit_checkout(
-                user=self.user,
-                payload={
-                    "contact_full_name": "Service Demo",
-                    "contact_phone": "+380001112233",
-                    "contact_email": "service@test.local",
-                    "delivery_method": Order.DELIVERY_PICKUP,
-                    "delivery_address": "",
-                    "payment_method": Order.PAYMENT_CASH_ON_DELIVERY,
-                    "customer_comment": "",
-                },
-            )
+        order = submit_checkout(
+            user=self.user,
+            payload={
+                "contact_full_name": "Service Demo",
+                "contact_phone": "+380001112233",
+                "contact_email": "service@test.local",
+                "delivery_method": Order.DELIVERY_PICKUP,
+                "delivery_address": "",
+                "payment_method": Order.PAYMENT_CASH_ON_DELIVERY,
+                "customer_comment": "",
+            },
+        )
 
-        self.assertIn("cart", exc.exception.message_dict)
-        self.assertIn("items", exc.exception.message_dict)
+        self.assertEqual(order.total, Decimal("250.00"))
+        self.assertEqual(order.items.count(), 1)
 
     def test_checkout_validation_rejects_unavailable_item(self):
         add_product_to_cart(user=self.user, product=self.product, quantity=1)

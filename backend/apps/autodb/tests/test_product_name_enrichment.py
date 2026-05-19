@@ -138,6 +138,30 @@ class AutoDbProductNameEnrichmentServiceTests(SimpleTestCase):
         )
         self.assertEqual(combined, "Соединительные элементы, система выпуска")
 
+    def test_combine_base_and_description_drops_plural_additives_prefix(self):
+        service = AutoDbProductNameEnrichmentService()
+        combined = service._combine_base_and_description(
+            base="Присадки",
+            description="Присадка для топлива Pro-Line JetClean Diesel-System-Reiniger",
+        )
+        self.assertEqual(combined, "Присадка для топлива Pro-Line JetClean Diesel-System-Reiniger")
+
+    def test_combine_base_and_description_drops_sealing_ring_duplicate_family(self):
+        service = AutoDbProductNameEnrichmentService()
+        combined = service._combine_base_and_description(
+            base="Уплотняющее кольцо",
+            description="Уплотнительное кольцо, стержень клапана",
+        )
+        self.assertEqual(combined, "Уплотнительное кольцо, стержень клапана")
+
+    def test_combine_base_and_description_drops_electrical_wiring_prefix_for_ignition_wires(self):
+        service = AutoDbProductNameEnrichmentService()
+        combined = service._combine_base_and_description(
+            base="Комплект электропроводки",
+            description="Комплект проводов зажигания",
+        )
+        self.assertEqual(combined, "Комплект проводов зажигания")
+
     def test_cleaned_title_translates_to_uk_ru_en(self):
         service = AutoDbProductNameEnrichmentService()
         service._resolve_supplier_raw_name = Mock(return_value="")

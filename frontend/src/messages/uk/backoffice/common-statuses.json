@@ -66,7 +66,15 @@
         "waiting_for_support": "Очікує підтримку",
         "waiting_for_client": "Очікує клієнта",
         "resolved": "Вирішене",
-        "closed": "Закрите"
+        "closed": "Закрите",
+        "approved": "Схвалено",
+        "rejected": "Відхилено",
+        "awaiting_ttn": "Очікуємо ТТН",
+        "in_transit": "У дорозі",
+        "received": "Отримано",
+        "accepted": "Прийнято",
+        "refund_processing": "Повернення коштів",
+        "refunded": "Кошти повернено"
       }
     }
   }

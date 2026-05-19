@@ -24,6 +24,7 @@ import { StatusChip } from "@/features/backoffice/components/widgets/status-chip
 import { useBackofficeQuery } from "@/features/backoffice/hooks/use-backoffice-query";
 import type { BackofficeOrderOperational, BackofficeProcurementRecommendation } from "@/features/backoffice/types/backoffice";
 import { Link } from "@/i18n/navigation";
+import { formatFooterPhoneDisplay } from "@/shared/lib/footer-phone";
 
 export function OrderDetailPage({ orderId }: { orderId: string }) {
   const t = useTranslations("backoffice.common");
@@ -260,7 +261,7 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
                   </p>
                   <p className="text-sm font-semibold">{data.contact_full_name}</p>
                   <p className="text-xs" style={{ color: "var(--muted)" }}>
-                    {data.contact_phone} · {data.contact_email}
+                    {formatFooterPhoneDisplay(data.contact_phone || "") || "-"} · {data.contact_email}
                   </p>
                 </div>
                 <div>

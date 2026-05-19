@@ -30,6 +30,8 @@ type BotCardConfig = {
   eventKeys: Array<{
     field:
       | "ops_notify_order_status"
+      | "ops_notify_return_created"
+      | "ops_notify_return_status"
       | "ops_notify_waybill_created"
       | "ops_notify_waybill_updated"
       | "ops_notify_waybill_deleted"
@@ -52,6 +54,8 @@ const BOT_CARDS: BotCardConfig[] = [
     testDefaultTextKey: "telegramSettings.bots.ops.testText",
     eventKeys: [
       { field: "ops_notify_order_status", labelKey: "telegramSettings.bots.ops.events.orderStatus" },
+      { field: "ops_notify_return_created", labelKey: "telegramSettings.bots.ops.events.returnCreate" },
+      { field: "ops_notify_return_status", labelKey: "telegramSettings.bots.ops.events.returnStatus" },
       { field: "ops_notify_waybill_created", labelKey: "telegramSettings.bots.ops.events.waybillCreate" },
       { field: "ops_notify_waybill_updated", labelKey: "telegramSettings.bots.ops.events.waybillUpdate" },
       { field: "ops_notify_waybill_deleted", labelKey: "telegramSettings.bots.ops.events.waybillDelete" },

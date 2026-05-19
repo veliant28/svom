@@ -67,6 +67,25 @@ from .vchasno_kasa import (
     test_vchasno_kasa_connection,
 )
 from .sellable_state import build_cart_item_warning, get_cart_item_sellable_snapshot, get_product_sellable_snapshot
+from .returns_service import (
+    RETURN_TTN_EDIT_WINDOW,
+    RETURN_TTN_DIGITS,
+    RETURN_WINDOW_DAYS,
+    build_return_address_snapshot,
+    build_return_day_label,
+    build_returnable_order_items,
+    ensure_order_received_from_completed_fallback,
+    ensure_order_received_from_tracking,
+    format_tracking_number,
+    generate_return_number,
+    get_returns_settings,
+    is_order_return_window_open,
+    is_tracking_edit_window_open,
+    normalize_tracking_number,
+    normalize_ua_phone,
+    sum_refund_amount,
+    validate_returns_settings_for_enable,
+)
 
 __all__ = [
     "CartTotals",
@@ -137,4 +156,21 @@ __all__ = [
     "get_product_sellable_snapshot",
     "get_cart_item_sellable_snapshot",
     "build_cart_item_warning",
+    "RETURN_WINDOW_DAYS",
+    "RETURN_TTN_EDIT_WINDOW",
+    "RETURN_TTN_DIGITS",
+    "generate_return_number",
+    "get_returns_settings",
+    "normalize_ua_phone",
+    "normalize_tracking_number",
+    "format_tracking_number",
+    "is_order_return_window_open",
+    "is_tracking_edit_window_open",
+    "build_return_day_label",
+    "build_returnable_order_items",
+    "validate_returns_settings_for_enable",
+    "build_return_address_snapshot",
+    "sum_refund_amount",
+    "ensure_order_received_from_tracking",
+    "ensure_order_received_from_completed_fallback",
 ]

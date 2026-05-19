@@ -62,6 +62,13 @@ class Order(UUIDPrimaryKeyMixin, TimestampedMixin):
         (PAYMENT_CARD_PLACEHOLDER, _("Оплата картой (legacy)")),
     )
 
+    RECEIVED_SOURCE_NOVA_POSHTA_TRACKING = "nova_poshta_tracking"
+    RECEIVED_SOURCE_ORDER_COMPLETED_FALLBACK = "order_completed_fallback"
+    RECEIVED_SOURCE_CHOICES = (
+        (RECEIVED_SOURCE_NOVA_POSHTA_TRACKING, _("Отслеживание Новой Почты")),
+        (RECEIVED_SOURCE_ORDER_COMPLETED_FALLBACK, _("Переход в завершен (fallback)")),
+    )
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
@@ -101,6 +108,9 @@ class Order(UUIDPrimaryKeyMixin, TimestampedMixin):
     operator_notes = models.TextField(_("Заметки оператора"), blank=True)
     cancellation_reason_code = models.CharField(_("Причина отмены"), max_length=32, choices=CANCELLATION_REASON_CHOICES, blank=True)
     cancellation_reason_note = models.TextField(_("Комментарий к отмене"), blank=True)
+    received_at = models.DateTimeField(_("Дата получения заказа"), blank=True, null=True)
+    received_at_source = models.CharField(_("Источник даты получения"), max_length=64, choices=RECEIVED_SOURCE_CHOICES, blank=True, default="")
+    return_eligible_until = models.DateTimeField(_("Доступен возврат до"), blank=True, null=True)
     placed_at = models.DateTimeField(_("Дата оформления"), auto_now_add=True)
 
     class Meta:

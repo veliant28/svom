@@ -189,6 +189,7 @@
           "senderDeleteFailed": "Unable to delete sender profile.",
           "paymentRefreshed": "Payment status refreshed.",
           "paymentRefreshFailed": "Failed to refresh payment status.",
+          "paymentInvoiceCreated": "New Monobank invoice created.",
           "paymentCancelled": "Monobank payment cancelled.",
           "paymentFinalized": "Monobank hold finalized.",
           "paymentInvoiceRemoved": "Monobank invoice invalidated.",
@@ -607,12 +608,14 @@
             "amountMinorHint": "e.g. 4200",
             "amountMinorInvalid": "Enter an integer value greater than zero.",
             "actions": {
+              "createInvoice": "Create invoice",
               "finalize": "Finalize hold",
               "cancel": "Cancel payment",
               "remove": "Invalidate invoice",
               "fiscalChecks": "Fiscal checks"
             },
             "tooltips": {
+              "createInvoice": "Create a new order invoice and update the payment link",
               "finalize": "Capture the hold and complete the payment",
               "cancel": "Cancel the payment fully or for the amount from the field above",
               "remove": "Disable the payment link so this invoice can no longer be paid",
@@ -648,6 +651,105 @@
               "cancelled": "Cancelled"
             }
           }
+        }
+      },
+      "returns": {
+        "title": "Returns",
+        "subtitle": "Returns operational workflow.",
+        "switch": {
+          "orders": "Orders",
+          "returns": "Returns"
+        },
+        "filters": {
+          "search": "Search by return, order, customer, SKU, TTN",
+          "allStatuses": "All statuses"
+        },
+        "table": {
+          "columns": {
+            "returnOrder": "Return / order",
+            "customer": "Customer",
+            "date": "Date",
+            "status": "Status",
+            "amount": "Amount",
+            "tracking": "TTN",
+            "actions": "Actions"
+          }
+        },
+        "labels": {
+          "order": "Order: {value}",
+          "awaitingTtn": "Awaiting TTN",
+          "noTtn": "No TTN",
+          "customer": "Customer",
+          "phone": "Phone",
+          "email": "Email",
+          "date": "Date",
+          "returnDay": "Term",
+          "amount": "Amount",
+          "total": "Total",
+          "tracking": "TTN",
+          "customerReason": "Customer reason",
+          "rejectionReason": "Rejection reason",
+          "items": "Return items",
+          "positions": "Items",
+          "quantity": "Qty",
+          "qty": "Requested: {requested} Approved: {approved}",
+          "returnAddress": "Shipping details",
+          "recipient": "Recipient",
+          "region": "Region",
+          "city": "City",
+          "warehouse": "Nova Poshta / branch"
+        },
+        "tooltips": {
+          "selectAll": "Select all returns on page",
+          "selectOne": "Select return {returnNumber}"
+        },
+        "bulk": {
+          "selected": "Selected: {count}"
+        },
+        "actions": {
+          "refresh": "Refresh",
+          "bulkActions": "Bulk actions",
+          "clearSelection": "Clear selection",
+          "open": "Open return",
+          "close": "Close",
+          "changeStatus": "Change status",
+          "apply": "Apply",
+          "updating": "Updating...",
+          "excludeApprovalItem": "Exclude item from approval",
+          "restoreApprovalItem": "Restore item to approval",
+          "adminComment": "Admin comment",
+          "rejectionReason": "Rejection reason (required)",
+          "noTransitions": "No transitions available for current status."
+        },
+        "statusActions": {
+          "approve": "Approved",
+          "reject": "Rejected",
+          "received": "Received",
+          "accepted": "Accepted",
+          "refundProcessing": "Refund processing",
+          "refunded": "Refunded"
+        },
+        "states": {
+          "empty": "No returns found."
+        },
+        "pagination": {
+          "total": "Total returns: {count}",
+          "perPage": "Per page",
+          "prev": "Prev",
+          "next": "Next",
+          "page": "Page {current} of {total}"
+        },
+        "messages": {
+          "loadFailed": "Failed to load returns.",
+          "detailFailed": "Failed to load return.",
+          "statusUpdated": "Return status updated.",
+          "statusUpdateFailed": "Failed to update return status.",
+          "approved": "Return approved.",
+          "rejected": "Return rejected.",
+          "received": "Item marked as received.",
+          "accepted": "Return accepted.",
+          "refundProcessing": "Refund status updated.",
+          "refunded": "Funds refunded."
         }
       },
       "orderDetail": {

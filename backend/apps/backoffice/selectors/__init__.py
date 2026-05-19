@@ -17,6 +17,7 @@ from .order_selectors import (
     get_operational_orders_queryset,
     get_procurement_supplier_offers_queryset,
 )
+from .return_selectors import apply_operational_return_filters, get_operational_returns_queryset
 from .pricing_selectors import get_operational_product_prices_queryset, get_operational_supplier_offers_queryset
 from .pricing_control_selectors import get_pricing_category_impact, get_pricing_control_panel_payload, resolve_category_scope_ids
 from .quality_selectors import (
@@ -59,6 +60,8 @@ __all__ = [
     "get_operational_orders_queryset",
     "apply_operational_order_filters",
     "get_procurement_supplier_offers_queryset",
+    "get_operational_returns_queryset",
+    "apply_operational_return_filters",
     "get_supplier_workspace_sources_queryset",
     "get_supplier_source_by_code",
     "get_supplier_prices_queryset",

@@ -85,6 +85,28 @@
               "description": "Allows performing order operations in backoffice."
             }
           },
+          "returns": {
+            "view": {
+              "title": "View returns",
+              "description": "Allows reading returns and return details."
+            },
+            "manage": {
+              "title": "Manage returns",
+              "description": "Allows performing return workflow status actions."
+            },
+            "approve": {
+              "title": "Approve returns",
+              "description": "Allows approving return requests."
+            },
+            "reject": {
+              "title": "Reject returns",
+              "description": "Allows rejecting return requests."
+            },
+            "refund": {
+              "title": "Refund returns",
+              "description": "Allows marking returns as refunded."
+            }
+          },
           "customers": {
             "support": {
               "title": "Customer support actions",

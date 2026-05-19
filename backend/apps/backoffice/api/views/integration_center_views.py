@@ -20,7 +20,12 @@ from apps.autodb.services.remote_client import AutoDbProRemoteClient, AutoDbProR
 from apps.autodb.services.remote_config import AutoDbRemoteConfigError
 from apps.backoffice.api.serializers import CheckoutMethodSettingsSerializer
 from apps.backoffice.api.views._base import BackofficeAPIView
-from apps.commerce.services import get_checkout_method_settings
+from apps.commerce.services import (
+    get_checkout_method_settings,
+    get_returns_settings,
+    normalize_ua_phone,
+    validate_returns_settings_for_enable,
+)
 from apps.commerce.services.liqpay import get_liqpay_settings
 from apps.commerce.services.monobank import get_monobank_settings
 from apps.commerce.services.novapay import get_novapay_settings
@@ -46,6 +51,7 @@ TOGGLE_TELEGRAM_MASTER = "integration.telegram"
 TOGGLE_TELEGRAM_OPS = "integration.telegram_ops"
 TOGGLE_TELEGRAM_SUPPORT = "integration.telegram_support"
 TOGGLE_TELEGRAM_SYSTEM = "integration.telegram_system"
+TOGGLE_RETURNS = "returns.enabled"
 
 SUPPORTED_TOGGLE_KEYS = (
     TOGGLE_PAYMENT_MONOBANK,
@@ -64,6 +70,7 @@ SUPPORTED_TOGGLE_KEYS = (
     TOGGLE_TELEGRAM_OPS,
     TOGGLE_TELEGRAM_SUPPORT,
     TOGGLE_TELEGRAM_SYSTEM,
+    TOGGLE_RETURNS,
 )
 
 
@@ -71,10 +78,12 @@ class IntegrationCenterPatchSerializer(serializers.Serializer):
     ACTION_TOGGLE = "toggle"
     ACTION_TRANSLATOR = "translator"
     ACTION_AUTODB_REMOTE = "autodb_remote"
+    ACTION_RETURNS_SETTINGS = "returns_settings"
     ACTION_CHOICES = (
         (ACTION_TOGGLE, ACTION_TOGGLE),
         (ACTION_TRANSLATOR, ACTION_TRANSLATOR),
         (ACTION_AUTODB_REMOTE, ACTION_AUTODB_REMOTE),
+        (ACTION_RETURNS_SETTINGS, ACTION_RETURNS_SETTINGS),
     )
 
     action = serializers.ChoiceField(choices=ACTION_CHOICES, default=ACTION_TOGGLE)
@@ -91,6 +100,15 @@ class IntegrationCenterPatchSerializer(serializers.Serializer):
     remote_user = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
     remote_password = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
     image_base_url = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
+    returns_recipient_full_name = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
+    returns_recipient_phone = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
+    returns_region_ref = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
+    returns_region_label = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
+    returns_city_ref = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
+    returns_city_label = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
+    returns_np_warehouse_text = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
+    returns_non_returnable_category_ids = serializers.ListField(child=serializers.CharField(), required=False)
+    returns_include_subcategories = serializers.BooleanField(required=False)
 
     def validate(self, attrs: dict) -> dict:
         action = str(attrs.get("action") or self.ACTION_TOGGLE).strip().lower()
@@ -113,6 +131,25 @@ class IntegrationCenterPatchSerializer(serializers.Serializer):
                 if image_base_url and not _is_valid_http_url(image_base_url):
                     raise serializers.ValidationError({"image_base_url": "Image Base URL must start with http:// or https://"})
             return attrs
+        if action == self.ACTION_RETURNS_SETTINGS:
+            mutable_keys = {
+                "returns_recipient_full_name",
+                "returns_recipient_phone",
+                "returns_region_ref",
+                "returns_region_label",
+                "returns_city_ref",
+                "returns_city_label",
+                "returns_np_warehouse_text",
+                "returns_non_returnable_category_ids",
+                "returns_include_subcategories",
+            }
+            if not (mutable_keys & set(attrs.keys())):
+                raise serializers.ValidationError(
+                    {
+                        "detail": "Returns settings action requires at least one mutable returns field."
+                    }
+                )
+            return attrs
         raise serializers.ValidationError({"detail": "Unsupported action."})
 
 
@@ -134,6 +171,7 @@ def _build_integration_center_state() -> dict[str, bool]:
     gpl = get_supplier_integration_by_code(source_code="gpl")
     utr = get_supplier_integration_by_code(source_code="utr")
     vchasno_enabled = has_vchasno_kasa_settings_table() and bool(get_vchasno_kasa_settings().is_enabled)
+    returns_settings = get_returns_settings()
 
     return {
         TOGGLE_PAYMENT_MONOBANK: bool(monobank.is_enabled),
@@ -152,6 +190,7 @@ def _build_integration_center_state() -> dict[str, bool]:
         TOGGLE_TELEGRAM_OPS: bool(telegram.ops_enabled),
         TOGGLE_TELEGRAM_SUPPORT: bool(telegram.support_enabled),
         TOGGLE_TELEGRAM_SYSTEM: bool(telegram.system_enabled),
+        TOGGLE_RETURNS: bool(returns_settings.returns_enabled),
     }
 
 
@@ -222,11 +261,28 @@ def _build_autodb_remote_state() -> dict[str, object]:
     }
 
 
+def _build_returns_state() -> dict[str, object]:
+    settings = get_returns_settings()
+    return {
+        "returns_enabled": bool(settings.returns_enabled),
+        "returns_recipient_full_name": str(settings.returns_recipient_full_name or "").strip(),
+        "returns_recipient_phone": str(settings.returns_recipient_phone or "").strip(),
+        "returns_region_ref": str(settings.returns_region_ref or "").strip(),
+        "returns_region_label": str(settings.returns_region_label or "").strip(),
+        "returns_city_ref": str(settings.returns_city_ref or "").strip(),
+        "returns_city_label": str(settings.returns_city_label or "").strip(),
+        "returns_np_warehouse_text": str(settings.returns_np_warehouse_text or "").strip(),
+        "returns_non_returnable_category_ids": [str(value).strip() for value in (settings.returns_non_returnable_category_ids or []) if str(value).strip()],
+        "returns_include_subcategories": bool(settings.returns_include_subcategories),
+    }
+
+
 def _build_integration_center_payload() -> dict[str, object]:
     return {
         "state": _build_integration_center_state(),
         "translator": _build_translator_state(),
         "autodb_remote": _build_autodb_remote_state(),
+        "returns": _build_returns_state(),
     }
 
 
@@ -247,6 +303,8 @@ class BackofficeIntegrationCenterAPIView(BackofficeAPIView):
             self._patch_translator(serializer.validated_data)
         elif action == IntegrationCenterPatchSerializer.ACTION_AUTODB_REMOTE:
             self._patch_autodb_remote(serializer.validated_data)
+        elif action == IntegrationCenterPatchSerializer.ACTION_RETURNS_SETTINGS:
+            self._patch_returns_settings(serializer.validated_data)
         else:
             raise ValidationError({"action": "Unsupported action."})
 
@@ -294,6 +352,7 @@ class BackofficeIntegrationCenterAPIView(BackofficeAPIView):
             TOGGLE_TELEGRAM_OPS: lambda: self._update_telegram_enabled(field="ops_enabled", enabled=enabled),
             TOGGLE_TELEGRAM_SUPPORT: lambda: self._update_telegram_enabled(field="support_enabled", enabled=enabled),
             TOGGLE_TELEGRAM_SYSTEM: lambda: self._update_telegram_enabled(field="system_enabled", enabled=enabled),
+            TOGGLE_RETURNS: lambda: self._update_returns_enabled(enabled=enabled),
         }
 
         mutator = mutators.get(key)
@@ -313,6 +372,51 @@ class BackofficeIntegrationCenterAPIView(BackofficeAPIView):
         if "google_api_key" in payload:
             settings.google_api_key = str(payload["google_api_key"] or "").strip()
             update_fields.append("google_api_key")
+        if update_fields:
+            settings.save(update_fields=tuple(dict.fromkeys([*update_fields, "updated_at"])))
+
+    @staticmethod
+    def _patch_returns_settings(payload: dict[str, object]) -> None:
+        settings = get_returns_settings()
+        update_fields: list[str] = []
+
+        str_fields = (
+            "returns_recipient_full_name",
+            "returns_region_ref",
+            "returns_region_label",
+            "returns_city_ref",
+            "returns_city_label",
+            "returns_np_warehouse_text",
+        )
+        for field in str_fields:
+            if field in payload:
+                setattr(settings, field, str(payload.get(field) or "").strip())
+                update_fields.append(field)
+
+        if "returns_recipient_phone" in payload:
+            normalized_phone = normalize_ua_phone(str(payload.get("returns_recipient_phone") or "").strip())
+            if str(payload.get("returns_recipient_phone") or "").strip() and not normalized_phone:
+                raise ValidationError({"returns_recipient_phone": "Некорректный номер телефона"})
+            settings.returns_recipient_phone = normalized_phone
+            update_fields.append("returns_recipient_phone")
+
+        if "returns_non_returnable_category_ids" in payload:
+            raw_list = payload.get("returns_non_returnable_category_ids") or []
+            normalized_categories: list[str] = []
+            seen: set[str] = set()
+            for raw_value in raw_list:
+                value = str(raw_value or "").strip()
+                if not value or value in seen:
+                    continue
+                seen.add(value)
+                normalized_categories.append(value)
+            settings.returns_non_returnable_category_ids = normalized_categories
+            update_fields.append("returns_non_returnable_category_ids")
+
+        if "returns_include_subcategories" in payload:
+            settings.returns_include_subcategories = bool(payload.get("returns_include_subcategories"))
+            update_fields.append("returns_include_subcategories")
+
         if update_fields:
             settings.save(update_fields=tuple(dict.fromkeys([*update_fields, "updated_at"])))
 
@@ -394,6 +498,18 @@ class BackofficeIntegrationCenterAPIView(BackofficeAPIView):
         settings = get_telegram_settings()
         setattr(settings, field, bool(enabled))
         settings.save(update_fields=(field, "updated_at"))
+
+    @staticmethod
+    def _update_returns_enabled(*, enabled: bool) -> None:
+        settings = get_returns_settings()
+        if enabled:
+            is_valid, reason = validate_returns_settings_for_enable(settings)
+            if not is_valid:
+                if reason == "invalid_phone":
+                    raise ValidationError({"detail": "Некорректный номер телефона"})
+                raise ValidationError({"detail": "Заполните данные для возврата перед включением сервиса"})
+        settings.returns_enabled = enabled
+        settings.save(update_fields=("returns_enabled", "updated_at"))
 
 
 class BackofficeAutoDbRemoteConnectionTestAPIView(BackofficeAPIView):

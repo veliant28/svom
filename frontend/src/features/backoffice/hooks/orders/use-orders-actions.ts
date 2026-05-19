@@ -415,6 +415,8 @@ export function useOrdersActions({
       if (action === "fiscal_checks") {
         setViewMonobankFiscalChecks(result.fiscal_checks || []);
         feedback.showInfo?.(t("orders.messages.paymentFiscalChecksLoaded", { count: result.fiscal_checks.length }));
+      } else if (action === "create_invoice") {
+        feedback.showSuccess(t("orders.messages.paymentInvoiceCreated"));
       } else if (action === "cancel") {
         feedback.showSuccess(t("orders.messages.paymentCancelled"));
       } else if (action === "remove") {

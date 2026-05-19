@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import { useLocale, useTranslations } from "next-intl";
-import { LoaderCircle, Receipt } from "lucide-react";
+import { ArrowLeft, LoaderCircle, Receipt } from "lucide-react";
 
 import { AccountAuthRequired } from "@/features/account/components/account-auth-required";
 import { formatDateTime, formatMoney, resolveOrderStatusChipIcon, resolveOrderStatusChipTone } from "@/features/account/lib/account-formatters";
@@ -20,6 +20,7 @@ import type { Order } from "@/features/commerce/types";
 import { Link } from "@/i18n/navigation";
 import { useTheme } from "@/shared/components/theme/theme-provider";
 import { useStorefrontFeedback } from "@/shared/hooks/use-storefront-feedback";
+import { formatFooterPhoneDisplay } from "@/shared/lib/footer-phone";
 
 type MonoPayInitResult = {
   button?: HTMLElement;
@@ -393,8 +394,13 @@ export function AccountOrderDetailPage({ orderId }: { orderId: string }) {
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-8">
-      <Link href="/account/orders" className="text-sm" style={{ color: "var(--muted)" }}>
-        ← {t("title")}
+      <Link
+        href="/account/orders"
+        className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium transition hover:opacity-80"
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", color: "var(--accent)" }}
+      >
+        <ArrowLeft size={14} />
+        <span>{t("title")}</span>
       </Link>
 
       <article
@@ -420,7 +426,7 @@ export function AccountOrderDetailPage({ orderId }: { orderId: string }) {
             <div className="mt-3 grid gap-2">
               <ValueField label="Email" value={order.contact_email || "-"} />
               <ValueField label="ФИО" value={order.contact_full_name || "-"} />
-              <ValueField label="Телефон" value={order.contact_phone || "-"} />
+              <ValueField label="Телефон" value={formatFooterPhoneDisplay(order.contact_phone || "") || "-"} />
               <ValueField label="Позиций" value={String(order.items.length)} bold />
             </div>
           </section>
@@ -483,7 +489,9 @@ export function AccountOrderDetailPage({ orderId }: { orderId: string }) {
                 <thead style={{ backgroundColor: "var(--surface-2)", color: "var(--muted)" }}>
                   <tr>
                     <th className="px-3 py-2 text-left font-medium">{t("table.sku")}</th>
-                    <th className="px-3 py-2 text-left font-medium">{t("table.product")}</th>
+                    <th className="px-3 py-2 text-left font-medium">{t("table.brand")}</th>
+                    <th className="px-3 py-2 text-left font-medium">{t("table.article")}</th>
+                    <th className="px-3 py-2 text-left font-medium">{t("table.name")}</th>
                     <th className="px-3 py-2 text-right font-medium">{t("table.qty")}</th>
                     <th className="px-3 py-2 text-right font-medium">{t("table.total")}</th>
                   </tr>
@@ -491,8 +499,10 @@ export function AccountOrderDetailPage({ orderId }: { orderId: string }) {
                 <tbody>
                   {order.items.map((item) => (
                     <tr key={item.id} style={{ borderTop: "1px solid var(--border)" }}>
+                      <td className="px-3 py-2">{item.product?.sku || "-"}</td>
+                      <td className="px-3 py-2">{item.product?.brand_name || "-"}</td>
                       <td className="px-3 py-2">{item.product_sku || "-"}</td>
-                      <td className="px-3 py-2">{item.product_name}</td>
+                      <td className="px-3 py-2">{item.product?.name || item.product_name || "-"}</td>
                       <td className="px-3 py-2 text-right">{item.quantity}</td>
                       <td className="px-3 py-2 text-right">{formatMoney(item.line_total, order.currency, locale)}</td>
                     </tr>

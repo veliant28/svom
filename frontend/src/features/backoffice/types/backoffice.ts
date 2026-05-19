@@ -5,6 +5,7 @@ export type * from "./imports.types";
 export type * from "./suppliers.types";
 export type * from "./pricing.types";
 export type * from "./orders.types";
+export type * from "./returns.types";
 export type * from "./payment.types";
 export type * from "./footer-settings.types";
 export type * from "./email-settings.types";

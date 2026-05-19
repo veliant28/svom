@@ -3,6 +3,7 @@ export type BackofficeOrderOperationalItem = {
   product_id: string;
   product_name: string;
   product_sku: string;
+  product_svom_sku?: string;
   quantity: number;
   unit_price: string;
   line_total: string;
@@ -72,7 +73,7 @@ export type BackofficeOrderHistoryEvent = {
   actor: BackofficeStaffActor | null;
 };
 
-export type BackofficeMonobankPaymentAction = "refresh" | "cancel" | "remove" | "finalize" | "fiscal_checks";
+export type BackofficeMonobankPaymentAction = "create_invoice" | "refresh" | "cancel" | "remove" | "finalize" | "fiscal_checks";
 
 export type BackofficeMonobankFiscalCheck = {
   id: string;

@@ -1,14 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
+
 import { OrderDeleteModal } from "@/features/backoffice/components/orders/order-delete-modal";
 import { OrderHistoryModal } from "@/features/backoffice/components/orders/order-history-modal";
 import { OrdersFilters } from "@/features/backoffice/components/orders/orders-filters";
 import { OrdersTable } from "@/features/backoffice/components/orders/orders-table";
-import { OrdersToolbar } from "@/features/backoffice/components/orders/orders-toolbar";
 import { OrderSupplierModal } from "@/features/backoffice/components/orders/order-supplier-modal";
 import { OrderWaybillModal } from "@/features/backoffice/components/orders/order-waybill-modal";
 import { OrderViewModal } from "@/features/backoffice/components/orders/order-view-modal";
+import { ReturnsOperationsPanel } from "@/features/backoffice/components/orders/returns-operations-panel";
+import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
 import { useOrdersPage } from "@/features/backoffice/hooks/use-orders-page";
+import { BACKOFFICE_CAPABILITIES, hasBackofficeCapability } from "@/features/backoffice/lib/capabilities";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 
 export function OrdersPage() {
   const {
@@ -86,59 +92,133 @@ export function OrdersPage() {
     runSingleDelete,
     refreshAll,
   } = useOrdersPage();
+  const { user } = useAuth();
+  const [mode, setMode] = useState<"orders" | "returns">("orders");
+  const [returnsRefreshNonce, setReturnsRefreshNonce] = useState(0);
+  const canViewReturns = hasBackofficeCapability(user, BACKOFFICE_CAPABILITIES.returnsView);
+
+  useEffect(() => {
+    if (!canViewReturns && mode === "returns") {
+      setMode("orders");
+    }
+  }, [canViewReturns, mode]);
+
+  const switcher = (
+    <div
+      className="inline-flex items-center gap-2 rounded-xl border p-1"
+      style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+      role="tablist"
+      aria-label={t("returns.title")}
+    >
+      <button
+        type="button"
+        role="tab"
+        aria-selected={mode === "orders"}
+        className="inline-flex h-10 items-center rounded-lg border px-4 text-sm font-semibold transition-colors"
+        style={{
+          borderColor: mode === "orders" ? "#16a34a" : "var(--border)",
+          backgroundColor: mode === "orders" ? "#16a34a" : "var(--surface-2)",
+          color: mode === "orders" ? "#ffffff" : "var(--text)",
+        }}
+        onClick={() => setMode("orders")}
+      >
+        {t("returns.switch.orders")}
+      </button>
+      {canViewReturns ? (
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "returns"}
+          className="inline-flex h-10 items-center rounded-lg border px-4 text-sm font-semibold transition-colors"
+          style={{
+            borderColor: mode === "returns" ? "#ea580c" : "var(--border)",
+            backgroundColor: mode === "returns" ? "#ea580c" : "var(--surface-2)",
+            color: mode === "returns" ? "#ffffff" : "var(--text)",
+          }}
+          onClick={() => setMode("returns")}
+        >
+          {t("returns.switch.returns")}
+        </button>
+      ) : null}
+    </div>
+  );
 
   return (
     <section>
-      <OrdersToolbar t={t} onRefresh={refreshAll} />
-
-      <OrdersFilters
-        t={t}
-        q={filters.q}
-        status={filters.status}
-        pageSize={filters.pageSize}
-        pageSizeOptions={filters.pageSizeOptions}
-        onSearchChange={filters.onSearchChange}
-        onStatusChange={filters.onStatusChange}
-        onPageSizeChange={filters.onPageSizeChange}
-        bulkActionsRef={bulkActions.bulkActionsRef}
-        bulkActionsOpen={bulkActions.bulkActionsOpen}
-        selectedCount={bulkActions.selectedSet.size}
-        bulkRunning={bulkActions.runningDelete}
-        onToggleBulkActions={() => {
-          bulkActions.setBulkActionsOpen((prev) => !prev);
-        }}
-        onBulkDelete={() => {
-          bulkActions.setBulkActionsOpen(false);
-          bulkActions.setBulkDeleteOpen(true);
-        }}
+      <PageHeader
+        title={mode === "orders" ? t("orders.title") : t("returns.title")}
+        description={mode === "orders" ? t("orders.subtitle") : t("returns.subtitle")}
+        switcher={switcher}
+        actionsBeforeLogout={(
+          <button
+            type="button"
+            className="inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold transition-colors"
+            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+            onClick={() => {
+              if (mode === "orders") {
+                refreshAll();
+              } else {
+                setReturnsRefreshNonce((value) => value + 1);
+              }
+            }}
+          >
+            <RefreshCw size={16} className="animate-spin" style={{ animationDuration: "2.2s" }} />
+            {t("orders.actions.refresh")}
+          </button>
+        )}
       />
 
-      <OrdersTable
-        t={t}
-        locale={locale}
-        rows={rows}
-        isLoading={isLoading}
-        error={error}
-        selectedSet={bulkActions.selectedSet}
-        allPageSelected={bulkActions.allPageSelected}
-        somePageSelected={bulkActions.somePageSelected}
-        deletingId={deletingId}
-        openingId={openingId}
-        waybillLoadingId={waybillLoadingId}
-        supplierLoadingId={supplierLoadingId}
-        page={filters.page}
-        pagesCount={pagesCount}
-        totalCount={totalCount}
-        onToggleSelectAllPage={bulkActions.toggleSelectAllPage}
-        onToggleSelected={bulkActions.toggleSelected}
-        onOpen={openOrderView}
-        onWaybill={openWaybillModalFromRow}
-        onOpenOrderHistory={openOrderHistoryFromRow}
-        onOpenWaybillHistory={openWaybillHistoryFromRow}
-        onSupplierOrder={openSupplierModalFromRow}
-        onDelete={requestDelete}
-        onPageChange={filters.setPage}
-      />
+      {mode === "returns" && canViewReturns ? <ReturnsOperationsPanel t={t} refreshNonce={returnsRefreshNonce} /> : null}
+      {mode !== "orders" ? null : (
+        <>
+          <OrdersFilters
+            t={t}
+            q={filters.q}
+            status={filters.status}
+            pageSize={filters.pageSize}
+            pageSizeOptions={filters.pageSizeOptions}
+            onSearchChange={filters.onSearchChange}
+            onStatusChange={filters.onStatusChange}
+            onPageSizeChange={filters.onPageSizeChange}
+            bulkActionsRef={bulkActions.bulkActionsRef}
+            bulkActionsOpen={bulkActions.bulkActionsOpen}
+            selectedCount={bulkActions.selectedSet.size}
+            bulkRunning={bulkActions.runningDelete}
+            onToggleBulkActions={() => {
+              bulkActions.setBulkActionsOpen((prev) => !prev);
+            }}
+            onBulkDelete={() => {
+              bulkActions.setBulkActionsOpen(false);
+              bulkActions.setBulkDeleteOpen(true);
+            }}
+          />
+
+          <OrdersTable
+            t={t}
+            locale={locale}
+            rows={rows}
+            isLoading={isLoading}
+            error={error}
+            selectedSet={bulkActions.selectedSet}
+            allPageSelected={bulkActions.allPageSelected}
+            somePageSelected={bulkActions.somePageSelected}
+            deletingId={deletingId}
+            openingId={openingId}
+            waybillLoadingId={waybillLoadingId}
+            supplierLoadingId={supplierLoadingId}
+            page={filters.page}
+            pagesCount={pagesCount}
+            totalCount={totalCount}
+            onToggleSelectAllPage={bulkActions.toggleSelectAllPage}
+            onToggleSelected={bulkActions.toggleSelected}
+            onOpen={openOrderView}
+            onWaybill={openWaybillModalFromRow}
+            onOpenOrderHistory={openOrderHistoryFromRow}
+            onOpenWaybillHistory={openWaybillHistoryFromRow}
+            onSupplierOrder={openSupplierModalFromRow}
+            onDelete={requestDelete}
+            onPageChange={filters.setPage}
+          />
 
       <OrderHistoryModal
         isOpen={orderHistoryOpen}
@@ -260,22 +340,24 @@ export function OrdersPage() {
         t={t}
       />
 
-      <OrderDeleteModal
-        isOpen={bulkActions.bulkDeleteOpen}
-        isSubmitting={bulkActions.runningDelete}
-        title={t("orders.modals.delete.bulkTitle")}
-        message={t("orders.modals.delete.bulkMessage", { count: bulkActions.selectedSet.size })}
-        confirmLabel={t("orders.actions.bulkDelete")}
-        onClose={() => {
-          if (!bulkActions.runningDelete) {
-            bulkActions.setBulkDeleteOpen(false);
-          }
-        }}
-        onConfirm={() => {
-          void bulkActions.runBulkDelete();
-        }}
-        t={t}
-      />
+          <OrderDeleteModal
+            isOpen={bulkActions.bulkDeleteOpen}
+            isSubmitting={bulkActions.runningDelete}
+            title={t("orders.modals.delete.bulkTitle")}
+            message={t("orders.modals.delete.bulkMessage", { count: bulkActions.selectedSet.size })}
+            confirmLabel={t("orders.actions.bulkDelete")}
+            onClose={() => {
+              if (!bulkActions.runningDelete) {
+                bulkActions.setBulkDeleteOpen(false);
+              }
+            }}
+            onConfirm={() => {
+              void bulkActions.runBulkDelete();
+            }}
+            t={t}
+          />
+        </>
+      )}
     </section>
   );
 }

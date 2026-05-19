@@ -30,6 +30,8 @@ class TelegramSettingsSerializer(serializers.ModelSerializer):
             "system_bot_token_masked",
             "system_chat_id",
             "ops_notify_order_status",
+            "ops_notify_return_created",
+            "ops_notify_return_status",
             "ops_notify_waybill_created",
             "ops_notify_waybill_updated",
             "ops_notify_waybill_deleted",

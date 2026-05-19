@@ -14,7 +14,8 @@ export type IntegrationCenterToggleKey =
   | "integration.telegram"
   | "integration.telegram_ops"
   | "integration.telegram_support"
-  | "integration.telegram_system";
+  | "integration.telegram_system"
+  | "returns.enabled";
 
 export type BackofficeIntegrationCenterState = Record<IntegrationCenterToggleKey, boolean>;
 
@@ -44,4 +45,18 @@ export type BackofficeIntegrationCenterResponse = {
   state: BackofficeIntegrationCenterState;
   translator: BackofficeIntegrationTranslatorState;
   autodb_remote: BackofficeAutoDbRemoteState;
+  returns: BackofficeReturnsSettingsState;
+};
+
+export type BackofficeReturnsSettingsState = {
+  returns_enabled: boolean;
+  returns_recipient_full_name: string;
+  returns_recipient_phone: string;
+  returns_region_ref: string;
+  returns_region_label: string;
+  returns_city_ref: string;
+  returns_city_label: string;
+  returns_np_warehouse_text: string;
+  returns_non_returnable_category_ids: string[];
+  returns_include_subcategories: boolean;
 };

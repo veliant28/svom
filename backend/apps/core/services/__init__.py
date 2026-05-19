@@ -10,6 +10,8 @@ from .telegram_notifications import (
     send_ops_order_created_notification,
     send_ops_order_deleted_notification,
     send_ops_order_status_notification,
+    send_ops_return_created_notification,
+    send_ops_return_status_notification,
     send_ops_waybill_notification,
     send_telegram_test_message,
 )
@@ -26,6 +28,8 @@ __all__ = [
     "send_ops_order_created_notification",
     "send_ops_order_deleted_notification",
     "send_ops_order_status_notification",
+    "send_ops_return_created_notification",
+    "send_ops_return_status_notification",
     "send_ops_waybill_notification",
     "send_telegram_test_message",
 ]

@@ -29,6 +29,8 @@ def build_invoice_create_payload(
     webhook_url: str,
     redirect_url: str = "",
 ) -> dict[str, Any]:
+    basket_order = _build_basket_order(order=order)
+
     payload: dict[str, Any] = {
         "amount": amount_to_minor_units(order.total),
         "ccy": resolve_ccy(order.currency),
@@ -36,6 +38,7 @@ def build_invoice_create_payload(
             "reference": order.order_number,
             "destination": f"Order {order.order_number}",
             "comment": order.customer_comment or f"Order {order.order_number}",
+            "basketOrder": basket_order,
         },
         "webHookUrl": webhook_url,
         "paymentType": "debit",
@@ -45,3 +48,40 @@ def build_invoice_create_payload(
         payload["redirectUrl"] = redirect_url
 
     return payload
+
+
+def _build_basket_order(*, order: Order) -> list[dict[str, Any]]:
+    basket_order: list[dict[str, Any]] = []
+
+    for item in order.items.all():
+        quantity = int(item.quantity or 1)
+        if quantity <= 0:
+            quantity = 1
+
+        unit_price_minor = amount_to_minor_units(item.unit_price)
+        if unit_price_minor < 0:
+            unit_price_minor = 0
+
+        basket_order.append(
+            {
+                "name": (str(item.product_name or "").strip() or str(item.product_sku or "").strip() or "Item")[:128],
+                "qty": quantity,
+                "sum": unit_price_minor,
+                "code": str(item.product_sku or "").strip()[:64],
+                "tax": [0],
+            }
+        )
+
+    if basket_order:
+        return basket_order
+
+    # Required by Monobank for fiscalization/split payments: basketOrder must be non-empty.
+    return [
+        {
+            "name": f"Order {order.order_number}"[:128],
+            "qty": 1,
+            "sum": amount_to_minor_units(order.total),
+            "code": str(order.order_number or "").strip()[:64],
+            "tax": [0],
+        }
+    ]

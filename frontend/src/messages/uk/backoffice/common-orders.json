@@ -189,6 +189,7 @@
           "senderDeleteFailed": "Не вдалося видалити профіль відправника.",
           "paymentRefreshed": "Статус оплати оновлено.",
           "paymentRefreshFailed": "Не вдалося оновити статус оплати.",
+          "paymentInvoiceCreated": "Новий інвойс Monobank створено.",
           "paymentCancelled": "Оплату Monobank скасовано.",
           "paymentFinalized": "Холд Monobank фіналізовано.",
           "paymentInvoiceRemoved": "Інвойс Monobank інвалідовано.",
@@ -607,12 +608,14 @@
             "amountMinorHint": "наприклад 4200",
             "amountMinorInvalid": "Вкажіть ціле число більше нуля.",
             "actions": {
+              "createInvoice": "Створити інвойс",
               "finalize": "Фіналізувати холд",
               "cancel": "Скасувати оплату",
               "remove": "Інвалідовати інвойс",
               "fiscalChecks": "Фіскальні чеки"
             },
             "tooltips": {
+              "createInvoice": "Створити новий інвойс для замовлення та оновити посилання на оплату",
               "finalize": "Списати холд і завершити оплату",
               "cancel": "Скасувати оплату повністю або на суму з поля вище",
               "remove": "Вимкнути посилання на оплату, щоб за цим інвойсом більше не можна було оплатити",
@@ -648,6 +651,105 @@
               "cancelled": "Скасовано"
             }
           }
+        }
+      },
+      "returns": {
+        "title": "Повернення",
+        "subtitle": "Операційний контур повернень.",
+        "switch": {
+          "orders": "Замовлення",
+          "returns": "Повернення"
+        },
+        "filters": {
+          "search": "Пошук за поверненням, замовленням, клієнтом, SKU, ТТН",
+          "allStatuses": "Усі статуси"
+        },
+        "table": {
+          "columns": {
+            "returnOrder": "Повернення / замовлення",
+            "customer": "Клієнт",
+            "date": "Дата",
+            "status": "Статус",
+            "amount": "Сума",
+            "tracking": "ТТН",
+            "actions": "Дії"
+          }
+        },
+        "labels": {
+          "order": "Замовлення: {value}",
+          "awaitingTtn": "Очікуємо ТТН",
+          "noTtn": "Немає ТТН",
+          "customer": "Клієнт",
+          "phone": "Телефон",
+          "email": "Email",
+          "date": "Дата",
+          "returnDay": "Термін",
+          "amount": "Сума",
+          "total": "Разом",
+          "tracking": "ТТН",
+          "customerReason": "Причина клієнта",
+          "rejectionReason": "Причина відмови",
+          "items": "Товари до повернення",
+          "positions": "Позицій",
+          "quantity": "К-сть",
+          "qty": "Запитано: {requested} Схвалено: {approved}",
+          "returnAddress": "Дані відправки",
+          "recipient": "Отримувач",
+          "region": "Область",
+          "city": "Місто",
+          "warehouse": "Нова Пошта / відділення"
+        },
+        "tooltips": {
+          "selectAll": "Вибрати всі повернення на сторінці",
+          "selectOne": "Вибрати повернення {returnNumber}"
+        },
+        "bulk": {
+          "selected": "Вибрано: {count}"
+        },
+        "actions": {
+          "refresh": "Оновити",
+          "bulkActions": "Масові дії",
+          "clearSelection": "Зняти виділення",
+          "open": "Відкрити повернення",
+          "close": "Закрити",
+          "changeStatus": "Змінити статус",
+          "apply": "Застосувати",
+          "updating": "Оновлюємо...",
+          "excludeApprovalItem": "Виключити позицію зі схвалення",
+          "restoreApprovalItem": "Повернути позицію до схвалення",
+          "adminComment": "Коментар адміністратора",
+          "rejectionReason": "Причина відмови (обов'язково)",
+          "noTransitions": "Для поточного статусу немає доступних переходів."
+        },
+        "statusActions": {
+          "approve": "Схвалено",
+          "reject": "Відхилено",
+          "received": "Отримано",
+          "accepted": "Прийнято",
+          "refundProcessing": "Повернення коштів",
+          "refunded": "Кошти повернено"
+        },
+        "states": {
+          "empty": "Повернення не знайдено."
+        },
+        "pagination": {
+          "total": "Усього повернень: {count}",
+          "perPage": "На сторінці",
+          "prev": "Назад",
+          "next": "Вперед",
+          "page": "Сторінка {current} з {total}"
+        },
+        "messages": {
+          "loadFailed": "Не вдалося завантажити повернення.",
+          "detailFailed": "Не вдалося завантажити повернення.",
+          "statusUpdated": "Статус повернення оновлено.",
+          "statusUpdateFailed": "Не вдалося оновити статус повернення.",
+          "approved": "Повернення схвалено.",
+          "rejected": "У поверненні відмовлено.",
+          "received": "Товар позначено як отриманий.",
+          "accepted": "Повернення прийнято.",
+          "refundProcessing": "Статус повернення коштів оновлено.",
+          "refunded": "Кошти повернено."
         }
       },
       "orderDetail": {

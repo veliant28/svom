@@ -1,4 +1,4 @@
-import { Ban, Check, FileX, Receipt, RefreshCw, X } from "lucide-react";
+import { Ban, Check, CirclePlus, FileX, Receipt, RefreshCw, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 
@@ -25,6 +25,7 @@ import type {
   BackofficeMonobankPaymentAction,
   BackofficeOrderOperational,
 } from "@/features/backoffice/types/orders.types";
+import { formatFooterPhoneDisplay } from "@/shared/lib/footer-phone";
 
 export function OrderViewModal({
   isOpen,
@@ -205,7 +206,9 @@ export function OrderViewModal({
                         <div className="flex items-start gap-2">
                           <div className="min-w-0">
                             <p className="truncate text-sm font-semibold">{item.product_name}</p>
-                            <p className="mt-0.5 text-xs" style={{ color: "var(--muted)" }}>{item.product_sku}</p>
+                            <p className="mt-0.5 text-xs" style={{ color: "var(--muted)" }}>
+                              {item.product_svom_sku || item.product_sku || "-"}
+                            </p>
                           </div>
                         </div>
 
@@ -301,6 +304,18 @@ export function OrderViewModal({
                       ) : null}
 
                       <div className="mt-2 flex items-center justify-center gap-2">
+                        <BackofficeTooltip content={t("orders.payment.monobank.tooltips.createInvoice")} placement="top" align="center" wrapperClassName="inline-flex">
+                          <button
+                            type="button"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-md border disabled:cursor-not-allowed disabled:opacity-60"
+                            style={{ borderColor: "#16a34a", backgroundColor: "#16a34a", color: "#ffffff" }}
+                            onClick={() => onRunMonobankAction("create_invoice")}
+                            disabled={Boolean(monobankActionLoading)}
+                            aria-label={t("orders.payment.monobank.tooltips.createInvoice")}
+                          >
+                            <CirclePlus className="h-4 w-4" />
+                          </button>
+                        </BackofficeTooltip>
                         <BackofficeTooltip content={t("orders.payment.monobank.tooltips.finalize")} placement="top" align="center" wrapperClassName="inline-flex">
                           <button
                             type="button"
@@ -381,7 +396,7 @@ export function OrderViewModal({
                   <div className="mt-3 grid gap-2">
                     <OrderViewValueField label={t("orders.modals.view.summary.fullName")} value={order.contact_full_name || "-"} bold />
                     <OrderViewValueField label="Email" value={order.contact_email || order.user_email || "-"} />
-                    <OrderViewValueField label={t("orders.modals.view.summary.phone")} value={order.contact_phone || "-"} />
+                    <OrderViewValueField label={t("orders.modals.view.summary.phone")} value={formatFooterPhoneDisplay(order.contact_phone || "") || "-"} />
                     <OrderViewValueField label={t("orders.modals.view.summary.deliveryCity")} value={deliveryAddressParts.city} />
                     <OrderViewValueField label={t("orders.modals.view.summary.deliveryDestination")} value={deliveryAddressParts.destination} />
                   </div>

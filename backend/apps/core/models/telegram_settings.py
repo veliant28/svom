@@ -24,6 +24,8 @@ class TelegramSettings(UUIDPrimaryKeyMixin, TimestampedMixin):
     system_chat_id = models.CharField(_("System chat ID"), max_length=64, blank=True, default="")
 
     ops_notify_order_status = models.BooleanField(_("Ops: уведомления о статусах заказа"), default=True)
+    ops_notify_return_created = models.BooleanField(_("Ops: уведомления о новых возвратах"), default=True)
+    ops_notify_return_status = models.BooleanField(_("Ops: уведомления о статусах возвратов"), default=True)
     ops_notify_waybill_created = models.BooleanField(_("Ops: уведомления о создании ТТН"), default=True)
     ops_notify_waybill_updated = models.BooleanField(_("Ops: уведомления о редактировании ТТН"), default=True)
     ops_notify_waybill_deleted = models.BooleanField(_("Ops: уведомления об удалении ТТН"), default=True)

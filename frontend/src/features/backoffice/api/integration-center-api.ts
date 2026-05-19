@@ -4,6 +4,7 @@ import type {
   BackofficeIntegrationCenterResponse,
   IntegrationTranslatorProvider,
   IntegrationCenterToggleKey,
+  BackofficeReturnsSettingsState,
 } from "@/features/backoffice/types/integration-center.types";
 
 export async function getBackofficeIntegrationCenterState(token: string): Promise<BackofficeIntegrationCenterResponse> {
@@ -57,6 +58,23 @@ export async function patchBackofficeIntegrationCenterAutoDbRemote(
   >(
     "/backoffice/integrations-center/",
     { action: "autodb_remote", ...payload },
+    undefined,
+    { token },
+  );
+}
+
+export type ReturnsSettingsPatchPayload = Partial<Omit<BackofficeReturnsSettingsState, "returns_enabled">>;
+
+export async function patchBackofficeIntegrationCenterReturnsSettings(
+  token: string,
+  payload: ReturnsSettingsPatchPayload,
+): Promise<BackofficeIntegrationCenterResponse> {
+  return patchJson<
+    BackofficeIntegrationCenterResponse,
+    { action: "returns_settings" } & ReturnsSettingsPatchPayload
+  >(
+    "/backoffice/integrations-center/",
+    { action: "returns_settings", ...payload },
     undefined,
     { token },
   );

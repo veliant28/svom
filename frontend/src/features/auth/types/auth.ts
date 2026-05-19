@@ -15,6 +15,7 @@ export type AuthUser = {
   backoffice_capabilities: BackofficeCapabilityCode[];
   backoffice_capabilities_map: Record<string, boolean>;
   has_backoffice_access: boolean;
+  returns_enabled: boolean;
 };
 
 export type LoginResponse = {

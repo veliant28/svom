@@ -9,6 +9,7 @@ from rest_framework.exceptions import ValidationError as DRFValidationError
 
 from apps.backoffice.services.procurement_service import ProcurementService
 from apps.commerce.models import Order, OrderEvent, OrderItem
+from apps.commerce.services.returns_service import ensure_order_received_from_completed_fallback
 from apps.core.services import send_ops_order_deleted_notification, send_ops_order_status_notification
 from apps.pricing.models import SupplierOffer
 from apps.users.rbac import get_user_system_role
@@ -272,6 +273,7 @@ class OrderOperationsService:
 
         receipt_notice_code = ""
         if target_status == Order.STATUS_COMPLETED:
+            ensure_order_received_from_completed_fallback(order=order)
             receipt_notice_code = self._schedule_vchasno_receipt_after_completion(order=order)
 
         self._create_order_event(

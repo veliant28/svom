@@ -16,6 +16,14 @@ from .checkout_views import (
 from .order_views import OrderDetailAPIView, OrderListAPIView
 from .order_receipt_views import AccountOrderReceiptOpenAPIView
 from .loyalty_views import LoyaltyMyPromoCodesAPIView
+from .returns_views import (
+    EligibleReturnOrderDetailAPIView,
+    EligibleReturnOrdersAPIView,
+    ReturnRequestCreateAPIView,
+    ReturnRequestDetailAPIView,
+    ReturnRequestListAPIView,
+    ReturnRequestTrackingSubmitAPIView,
+)
 from .support_views import (
     SupportBootstrapAPIView,
     SupportThreadDetailAPIView,
@@ -48,6 +56,12 @@ __all__ = [
     "OrderDetailAPIView",
     "AccountOrderReceiptOpenAPIView",
     "LoyaltyMyPromoCodesAPIView",
+    "ReturnRequestListAPIView",
+    "ReturnRequestDetailAPIView",
+    "EligibleReturnOrdersAPIView",
+    "EligibleReturnOrderDetailAPIView",
+    "ReturnRequestCreateAPIView",
+    "ReturnRequestTrackingSubmitAPIView",
     "SupportBootstrapAPIView",
     "SupportThreadListCreateAPIView",
     "SupportThreadDetailAPIView",

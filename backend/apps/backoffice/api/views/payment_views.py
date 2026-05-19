@@ -23,6 +23,7 @@ from apps.commerce.models import Order
 from apps.commerce.services.monobank import (
     MonobankApiError,
     cancel_invoice_payment,
+    create_invoice_for_order,
     finalize_invoice_hold,
     get_invoice_fiscal_checks,
     get_currency_rates,
@@ -163,7 +164,19 @@ class BackofficeOrderPaymentMonobankActionAPIView(BackofficeAPIView):
         fiscal_checks: list[dict] = []
 
         try:
-            if action == "refresh":
+            if action == "create_invoice":
+                urls = get_monobank_urls_for_request(request=request)
+                created = create_invoice_for_order(
+                    order=order,
+                    webhook_url=urls["webhook_url"],
+                    redirect_url=urls["redirect_url"],
+                )
+                provider_result = {
+                    "invoice_id": created.invoice_id,
+                    "page_url": created.page_url,
+                }
+                payment.refresh_from_db()
+            elif action == "refresh":
                 refresh_invoice_status(payment=payment)
                 payment.refresh_from_db()
             elif action == "cancel":

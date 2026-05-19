@@ -29,6 +29,7 @@ RULES: tuple[BackofficeCapabilityRule, ...] = (
     BackofficeCapabilityRule("telegram/", ("telegram.manage",), ("telegram.manage",)),
     BackofficeCapabilityRule("procurement/", ("procurement.manage",), ("procurement.manage",)),
     BackofficeCapabilityRule("orders/", ("orders.view", "customers.support"), ("orders.manage", "customers.support")),
+    BackofficeCapabilityRule("returns/", ("returns.view",), ("returns.manage",)),
     BackofficeCapabilityRule("nova-poshta/senders/", ("nova_poshta.settings",), ("nova_poshta.settings",)),
     BackofficeCapabilityRule("suppliers/", ("suppliers.view",), ("suppliers.manage",)),
     BackofficeCapabilityRule("supplier-offers/", ("suppliers.view",), ("suppliers.manage",)),

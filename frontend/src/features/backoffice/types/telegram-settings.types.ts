@@ -12,6 +12,8 @@ export type BackofficeTelegramSettings = {
   system_bot_token_masked: string;
   system_chat_id: string;
   ops_notify_order_status: boolean;
+  ops_notify_return_created: boolean;
+  ops_notify_return_status: boolean;
   ops_notify_waybill_created: boolean;
   ops_notify_waybill_updated: boolean;
   ops_notify_waybill_deleted: boolean;
@@ -33,6 +35,8 @@ export type BackofficeTelegramSettingsPatch = Partial<{
   system_bot_token: string;
   system_chat_id: string;
   ops_notify_order_status: boolean;
+  ops_notify_return_created: boolean;
+  ops_notify_return_status: boolean;
   ops_notify_waybill_created: boolean;
   ops_notify_waybill_updated: boolean;
   ops_notify_waybill_deleted: boolean;

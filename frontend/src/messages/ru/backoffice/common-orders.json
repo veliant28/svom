@@ -189,6 +189,7 @@
           "senderDeleteFailed": "Не удалось удалить профиль отправителя.",
           "paymentRefreshed": "Статус оплаты обновлен.",
           "paymentRefreshFailed": "Не удалось обновить статус оплаты.",
+          "paymentInvoiceCreated": "Новый инвойс Monobank создан.",
           "paymentCancelled": "Оплата Monobank отменена.",
           "paymentFinalized": "Холд Monobank финализирован.",
           "paymentInvoiceRemoved": "Инвойс Monobank деактивирован.",
@@ -607,12 +608,14 @@
             "amountMinorHint": "например 4200",
             "amountMinorInvalid": "Укажите целое число больше нуля.",
             "actions": {
+              "createInvoice": "Создать инвойс",
               "finalize": "Финализировать холд",
               "cancel": "Отменить оплату",
               "remove": "Инвалидировать инвойс",
               "fiscalChecks": "Фискальные чеки"
             },
             "tooltips": {
+              "createInvoice": "Создать новый инвойс для заказа и обновить ссылку оплаты",
               "finalize": "Списать холд и завершить оплату",
               "cancel": "Отменить оплату полностью или на сумму из поля выше",
               "remove": "Отключить ссылку оплаты, чтобы клиент больше не смог оплатить по этому инвойсу",
@@ -648,6 +651,105 @@
               "cancelled": "Отменен"
             }
           }
+        }
+      },
+      "returns": {
+        "title": "Возвраты",
+        "subtitle": "Операционный контур возвратов.",
+        "switch": {
+          "orders": "Заказы",
+          "returns": "Возвраты"
+        },
+        "filters": {
+          "search": "Поиск по возврату, заказу, клиенту, SKU, ТТН",
+          "allStatuses": "Все статусы"
+        },
+        "table": {
+          "columns": {
+            "returnOrder": "Возврат / заказ",
+            "customer": "Клиент",
+            "date": "Дата",
+            "status": "Статус",
+            "amount": "Сумма",
+            "tracking": "ТТН",
+            "actions": "Действия"
+          }
+        },
+        "labels": {
+          "order": "Заказ: {value}",
+          "awaitingTtn": "Ожидаем ТТН",
+          "noTtn": "Нет ТТН",
+          "customer": "Клиент",
+          "phone": "Телефон",
+          "email": "Email",
+          "date": "Дата",
+          "returnDay": "Срок",
+          "amount": "Сумма",
+          "total": "Итого",
+          "tracking": "ТТН",
+          "customerReason": "Причина клиента",
+          "rejectionReason": "Причина отказа",
+          "items": "Товары к возврату",
+          "positions": "Позиций",
+          "quantity": "Кол-во",
+          "qty": "Запрошено: {requested} Одобрено: {approved}",
+          "returnAddress": "Данные отправки",
+          "recipient": "Получатель",
+          "region": "Область",
+          "city": "Город",
+          "warehouse": "Новая Почта / отделение"
+        },
+        "tooltips": {
+          "selectAll": "Выбрать все возвраты на странице",
+          "selectOne": "Выбрать возврат {returnNumber}"
+        },
+        "bulk": {
+          "selected": "Выбрано: {count}"
+        },
+        "actions": {
+          "refresh": "Обновить",
+          "bulkActions": "Массовые действия",
+          "clearSelection": "Снять выделение",
+          "open": "Открыть возврат",
+          "close": "Закрыть",
+          "changeStatus": "Изменить статус",
+          "apply": "Применить",
+          "updating": "Обновляем...",
+          "excludeApprovalItem": "Исключить позицию из одобрения",
+          "restoreApprovalItem": "Вернуть позицию в одобрение",
+          "adminComment": "Комментарий администратора",
+          "rejectionReason": "Причина отказа (обязательно)",
+          "noTransitions": "Для текущего статуса нет доступных переходов."
+        },
+        "statusActions": {
+          "approve": "Одобрено",
+          "reject": "Отказано",
+          "received": "Получено",
+          "accepted": "Принято",
+          "refundProcessing": "Возврат средств",
+          "refunded": "Средства возвращены"
+        },
+        "states": {
+          "empty": "Возвраты не найдены."
+        },
+        "pagination": {
+          "total": "Всего возвратов: {count}",
+          "perPage": "На странице",
+          "prev": "Назад",
+          "next": "Вперед",
+          "page": "Страница {current} из {total}"
+        },
+        "messages": {
+          "loadFailed": "Не удалось загрузить возвраты.",
+          "detailFailed": "Не удалось загрузить возврат.",
+          "statusUpdated": "Статус возврата обновлён.",
+          "statusUpdateFailed": "Не удалось обновить статус возврата.",
+          "approved": "Возврат одобрен.",
+          "rejected": "В возврате отказано.",
+          "received": "Товар отмечен как полученный.",
+          "accepted": "Возврат принят.",
+          "refundProcessing": "Статус возврата средств обновлён.",
+          "refunded": "Средства возвращены."
         }
       },
       "orderDetail": {

@@ -55,6 +55,22 @@ def _status_label_ru(status: str) -> str:
     return labels.get(str(status or "").strip(), str(status or "").strip())
 
 
+def _return_status_label_ru(status: str) -> str:
+    labels = {
+        "new": "Новая заявка",
+        "approved": "Одобрено",
+        "rejected": "Отказано",
+        "awaiting_ttn": "Ожидаем ТТН",
+        "in_transit": "В пути",
+        "received": "Получено",
+        "accepted": "Принято",
+        "refund_processing": "Возврат средств в обработке",
+        "refunded": "Средства возвращены",
+        "cancelled": "Отменено",
+    }
+    return labels.get(str(status or "").strip(), str(status or "").strip())
+
+
 def send_ops_order_status_notification(*, order_number: str, from_status: str, to_status: str, actor_name: str) -> None:
     settings = get_telegram_settings()
     if not settings.is_enabled or not settings.ops_enabled or not settings.ops_notify_order_status:
@@ -142,6 +158,45 @@ def send_ops_order_deleted_notification(*, order_number: str, actor_name: str) -
         _send_telegram_message(token=token, chat_id=chat_id, text=text)
     except TelegramDispatchError as exc:
         logger.warning("Telegram ops order deleted notification failed: %s", exc)
+
+
+def send_ops_return_created_notification(*, return_number: str, order_number: str, actor_name: str) -> None:
+    settings = get_telegram_settings()
+    if not settings.is_enabled or not settings.ops_enabled or not settings.ops_notify_return_created:
+        return
+    token = str(settings.ops_bot_token or "").strip()
+    chat_id = str(settings.ops_chat_id or "").strip()
+    if not token or not chat_id:
+        return
+    text = (
+        "Новый возврат\n"
+        f"Возврат: {return_number}\n"
+        f"Заказ: #{order_number}\n"
+        f"Клиент: {actor_name or '-'}"
+    )
+    try:
+        _send_telegram_message(token=token, chat_id=chat_id, text=text)
+    except TelegramDispatchError as exc:
+        logger.warning("Telegram ops return created notification failed: %s", exc)
+
+
+def send_ops_return_status_notification(*, return_number: str, from_status: str, to_status: str, actor_name: str) -> None:
+    settings = get_telegram_settings()
+    if not settings.is_enabled or not settings.ops_enabled or not settings.ops_notify_return_status:
+        return
+    token = str(settings.ops_bot_token or "").strip()
+    chat_id = str(settings.ops_chat_id or "").strip()
+    if not token or not chat_id:
+        return
+    text = (
+        f"Возврат {return_number}\n"
+        f"Статус: {_return_status_label_ru(from_status)} -> {_return_status_label_ru(to_status)}\n"
+        f"Сотрудник: {actor_name or '-'}"
+    )
+    try:
+        _send_telegram_message(token=token, chat_id=chat_id, text=text)
+    except TelegramDispatchError as exc:
+        logger.warning("Telegram ops return status notification failed: %s", exc)
 
 
 def send_telegram_test_message(*, bot_kind: str, text: str) -> dict[str, object]:

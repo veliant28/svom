@@ -41,7 +41,8 @@
         "items": "Items: {count}"
       },
       "labels": {
-        "eta": " · ETA {days}d"
+        "eta": " · ETA {days}d",
+        "skuLine": "SKU: {sku} · {brand} · Article: {article}"
       },
       "warnings": {
         "availabilityOrPriceChanged": "Availability or price changed for one or more items. Review before checkout.",
@@ -177,6 +178,8 @@
       "success": "Order created: {orderNumber}",
       "phoneFormatError": "Enter phone in format 38(0XX)XXX-XX-XX.",
       "errors": {
+        "contactNameRequired": "Enter first name and last name.",
+        "contactEmailRequired": "Set an email in your profile to place the order.",
         "deliveryCityRequired": "Select Nova Poshta delivery city.",
         "deliveryDestinationRequired": "Select Nova Poshta branch or parcel locker.",
         "deliveryStreetRequired": "Select street and enter house number for courier delivery.",
@@ -246,6 +249,9 @@
       },
       "table": {
         "sku": "SKU",
+        "brand": "Brand",
+        "article": "Article",
+        "name": "Name",
         "product": "Product",
         "qty": "Qty",
         "receipt": "Receipt",
@@ -265,6 +271,103 @@
         "shipped": "Shipped",
         "completed": "Completed",
         "cancelled": "Cancelled"
+      }
+    },
+    "returns": {
+      "title": "Returns",
+      "subtitle": "Return requests history and statuses.",
+      "authRequired": "Authorization is required for returns.",
+      "goToLogin": "Go to login",
+      "createHint": "Available for orders up to 14 days after delivery.",
+      "createTitle": "Create Return",
+      "createSubtitle": "Choose an order eligible for return.",
+      "createByOrder": {
+        "title": "Create Return",
+        "orderLabel": "Order: {order} · {day}"
+      },
+      "actions": {
+        "create": "+ Create",
+        "submit": "Submit request",
+        "submitting": "Submitting...",
+        "removeItem": "Remove item",
+        "saveTracking": "Save TTN",
+        "saving": "Saving...",
+        "backToReturns": "← Back to returns",
+        "backToOrders": "← Back to orders",
+        "closePolicy": "Close"
+      },
+      "states": {
+        "loading": "Loading returns...",
+        "empty": "You have no returns yet.",
+        "error": "Failed to load returns.",
+        "eligibleLoadFailed": "Failed to load eligible orders.",
+        "noEligible": "No eligible orders for return.",
+        "detailLoadFailed": "Failed to load return request."
+      },
+      "labels": {
+        "orderNumber": "Order: {value}",
+        "awaitingTtn": "Awaiting TTN",
+        "noTtn": "No TTN",
+        "refundAmount": "Refund amount: {value}",
+        "createdAt": "Created: {value}",
+        "returnDay": "Term: {value}",
+        "tracking": "TTN",
+        "trackingNumber": "TTN number",
+        "nonReturnable": "Not returnable",
+        "items": "Return items",
+        "itemQty": "Requested: {requested}, approved: {approved}",
+        "rejectionReason": "Rejection reason"
+      },
+      "table": {
+        "sku": "SKU",
+        "brand": "Brand",
+        "article": "Article",
+        "name": "Name",
+        "qty": "Qty",
+        "total": "Total"
+      },
+      "fields": {
+        "reason": "Return reason",
+        "reasonPlaceholder": "Describe the return reason",
+        "reasonMinHint": "Minimum {min} characters ({current}/{min})",
+        "recipient": "Recipient",
+        "phone": "Phone",
+        "region": "Region",
+        "city": "City",
+        "warehouse": "Nova Poshta / branch"
+      },
+      "summary": {
+        "items": "Items: {count}",
+        "total": "Amount: {value}"
+      },
+      "messages": {
+        "new": "Request created. We are reviewing return eligibility.",
+        "rejected": "Return request rejected.",
+        "approved": "Send the item by Nova Poshta at your own expense and provide TTN.",
+        "trackingHint": "Without TTN we cannot track your shipment and accept the return."
+      },
+      "toasts": {
+        "created": "Return request created",
+        "ttnSaved": "TTN saved",
+        "invalidTtn": "TTN must contain exactly 14 digits",
+        "ttnSaveFailed": "Failed to save TTN",
+        "notApproved": "Some positions were not approved: {count}.",
+        "notApprovedWithComment": "Some positions were not approved: {count}. Admin comment: {comment}",
+        "reasonRequired": "Specify return reason",
+        "selectItem": "Select at least one item",
+        "someItemsNonReturnable": "Some order items are not returnable and unavailable for selection.",
+        "createFailed": "Failed to create return request"
+      },
+      "policy": {
+        "title": "Return policy",
+        "items": {
+          "window": "Returns are possible within 14 days after delivery.",
+          "condition": "Item must not be used and should keep merchantable condition.",
+          "nonReturnable": "Some item categories are non-returnable.",
+          "shipping": "Return shipping is paid by customer.",
+          "tracking": "After approval, TTN is mandatory.",
+          "refund": "Refund is processed after receiving and inspection."
+        }
       }
     },
     "support": {

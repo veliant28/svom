@@ -1,0 +1,186 @@
+{
+  "backoffice": {
+    "common": {
+      "integrationCenter": {
+        "title": "Центр интеграций",
+        "subtitle": "Единое управление включением интеграций, оплаты и доставки без кнопки сохранения.",
+        "groups": {
+          "payments": "Оплата",
+          "delivery": "Доставка",
+          "suppliers": "Поставщики",
+          "system": "Системные",
+          "telegram": "Telegram",
+          "translator": "Переводчик",
+          "autodbRemote": "AutoDB Remote"
+        },
+        "actions": {
+          "copy": "Копировать",
+          "testConnection": "Проверить подключение",
+          "toggleSecret": "Показать или скрыть"
+        },
+        "items": {
+          "paymentMonobank": {
+            "label": "Monobank",
+            "hint": "Включает/выключает интеграцию Monobank и одновременно показ способа оплаты в checkout."
+          },
+          "paymentNovaPay": {
+            "label": "Nova Pay",
+            "hint": "Включает/выключает интеграцию Nova Pay и одновременно показ способа оплаты в checkout."
+          },
+          "paymentLiqPay": {
+            "label": "LiqPay",
+            "hint": "Включает/выключает интеграцию LiqPay и одновременно показ способа оплаты в checkout."
+          },
+          "paymentCod": {
+            "label": "Наложенный платеж",
+            "hint": "Показывает/скрывает наложенный платеж в checkout."
+          },
+          "deliveryPickup": {
+            "label": "Самовывоз",
+            "hint": "Показывает/скрывает самовывоз в checkout."
+          },
+          "deliveryNovaPoshta": {
+            "label": "Новая Почта",
+            "hint": "Показывает/скрывает доставку Новой Почтой в checkout."
+          },
+          "deliveryCourier": {
+            "label": "Курьер",
+            "hint": "Показывает/скрывает курьерскую доставку в checkout."
+          },
+          "supplierUtr": {
+            "label": "UTR",
+            "hint": "Включает/выключает интеграцию поставщика UTR."
+          },
+          "supplierGpl": {
+            "label": "GPL",
+            "hint": "Включает/выключает интеграцию поставщика GPL."
+          },
+          "integrationVchasno": {
+            "label": "Вчасно.Каса",
+            "hint": "Включает/выключает интеграцию Вчасно.Каса."
+          },
+          "integrationSeo": {
+            "label": "SEO",
+            "hint": "Включает/выключает глобальную SEO-интеграцию."
+          },
+          "integrationEmail": {
+            "label": "Email",
+            "hint": "Включает/выключает реальную отправку email."
+          },
+          "integrationTelegram": {
+            "label": "Telegram (master)",
+            "hint": "Глобально включает/выключает Telegram-уведомления."
+          },
+          "integrationTelegramOps": {
+            "label": "Telegram Ops",
+            "hint": "Уведомления по заказам и ТТН для сотрудников."
+          },
+          "integrationTelegramSupport": {
+            "label": "Telegram Support",
+            "hint": "Уведомления по чату поддержки."
+          },
+          "integrationTelegramSystem": {
+            "label": "Telegram System",
+            "hint": "Уведомления по бэкапам, импортам и системным событиям."
+          }
+        },
+        "translator": {
+          "providers": {
+            "google": {
+              "label": "Google Translate",
+              "hint": "Использовать Google Translate для перевода названий товаров."
+            },
+            "libretranslate": {
+              "label": "LibreTranslate",
+              "hint": "Использовать LibreTranslate для перевода названий товаров."
+            }
+          },
+          "googleToken": {
+            "label": "Google API key",
+            "hint": "Токен нужен для запросов к Google Translate API. Применяется сразу при blur/Enter.",
+            "placeholder": "Введите новый ключ",
+            "masked": "Сохранённый ключ: {value}",
+            "empty": "Ключ не сохранён"
+          }
+        },
+        "autodbRemote": {
+          "schemaMissing": "Схема настроек Auto_DB remote отсутствует. Сначала примените миграции.",
+          "fields": {
+            "remoteHost": "Хост",
+            "remotePort": "Порт",
+            "remoteDatabase": "База данных",
+            "remoteUser": "Пользователь",
+            "remotePassword": "Пароль",
+            "imageBaseUrl": "Image BASE URL"
+          },
+          "placeholders": {
+            "remoteHost": "db.auto-db.pro",
+            "remotePort": "3306",
+            "remoteDatabase": "db",
+            "remoteUser": "Введите нового пользователя",
+            "remotePassword": "Введите новый пароль",
+            "imageBaseUrl": "https://image.auto-db.pro/images/"
+          },
+          "masked": {
+            "remoteUser": "Сохранённый пользователь: {value}",
+            "remotePassword": "Сохранённый пароль: {value}"
+          },
+          "empty": {
+            "remoteUser": "Пользователь не сохранён",
+            "remotePassword": "Пароль не сохранён"
+          }
+        },
+        "returns": {
+          "title": "Возвраты",
+          "subtitle": "Интерактивные настройки сервиса возвратов. Изменения применяются сразу.",
+          "enabledLabel": "Включить сервис возвратов",
+          "enabledHint": "При включении проверяются обязательные данные получателя возврата.",
+          "fields": {
+            "recipientFullName": "ФИО получателя",
+            "recipientPhone": "Телефон получателя",
+            "regionLabel": "Область",
+            "cityLabel": "Город",
+            "warehouseText": "Новая Почта / отделение",
+            "settlementLabel": "Населенные пункты",
+            "warehouseLookupLabel": "Отделения / почтоматы"
+          },
+          "nonReturnableTitle": "Невозвратные категории",
+          "nonReturnablePlaceholder": "Начните вводить название категории",
+          "addCategory": "Добавить",
+          "placeholders": {
+            "regionLabel": "Начните вводить область",
+            "cityLabel": "Начните вводить город",
+            "recipientPhone": "+38 (0XX) XXX-XX-XX",
+            "settlementLabel": "Начните вводить населенный пункт",
+            "warehouseLookupLabel": "Начните вводить отделение или почтомат"
+          },
+          "includeSubcategoriesBadge": "+ подкатегории",
+          "includeSubcategoriesSuffix": "подкатегории"
+        },
+        "messages": {
+          "loadFailed": "Не удалось загрузить настройки Центра интеграций.",
+          "updateFailed": "Не удалось обновить переключатель.",
+          "updated": "Настройка обновлена.",
+          "translatorUpdateFailed": "Не удалось обновить настройки переводчика.",
+          "translatorProviderUpdated": "Провайдер переводчика обновлён.",
+          "translatorTokenUpdated": "Google API key обновлён.",
+          "autodbRemoteUpdateFailed": "Не удалось обновить настройки AutoDB remote.",
+          "autodbRemoteUpdated": "Настройки AutoDB remote обновлены.",
+          "autodbRemoteInvalidPort": "Порт должен быть положительным целым числом.",
+          "autodbRemoteConnectionOk": "Подключение к AutoDB remote успешно.",
+          "autodbRemoteConnectionFailed": "Не удалось проверить подключение к AutoDB remote.",
+          "returnsSaved": "Данные для возврата сохранены.",
+          "returnsSaveFailed": "Не удалось сохранить настройки возвратов.",
+          "returnsCategoryAdded": "Категория добавлена.",
+          "returnsCategoryRemoved": "Категория удалена.",
+          "copySuccess": "Скопировано в буфер обмена.",
+          "copyEmpty": "Нечего копировать.",
+          "copyFailed": "Не удалось скопировать значение.",
+          "empty": "Нет доступных переключателей.",
+          "returnsServiceEnabled": "Сервис возвратов включён.",
+          "returnsServiceDisabled": "Сервис возвратов выключен."
+        }
+      }
+    }
+  }
+}

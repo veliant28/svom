@@ -1,11 +1,19 @@
 from rest_framework import serializers
 
 from apps.catalog.models import Product
-from apps.catalog.services.product_sku import get_product_display_sku
+from apps.catalog.services.product_management import get_product_display_name
+from apps.catalog.services.product_sku import (
+    get_product_catalog_article,
+    get_product_display_sku,
+    get_product_manufacturer_article,
+)
 
 
 class CommerceProductSummarySerializer(serializers.ModelSerializer):
     sku = serializers.SerializerMethodField()
+    article = serializers.SerializerMethodField()
+    manufacturer_article = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
     brand_name = serializers.SerializerMethodField()
     final_price = serializers.DecimalField(source="product_price.final_price", max_digits=12, decimal_places=2, read_only=True)
     currency = serializers.CharField(source="product_price.currency", read_only=True)
@@ -16,6 +24,8 @@ class CommerceProductSummarySerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "sku",
+            "article",
+            "manufacturer_article",
             "name",
             "slug",
             "brand_name",
@@ -26,6 +36,27 @@ class CommerceProductSummarySerializer(serializers.ModelSerializer):
 
     def get_sku(self, obj: Product) -> str:
         return get_product_display_sku(obj)
+
+    def get_article(self, obj: Product) -> str:
+        return get_product_catalog_article(obj)
+
+    def get_manufacturer_article(self, obj: Product) -> str:
+        return get_product_manufacturer_article(obj)
+
+    def _resolve_locale(self) -> str | None:
+        request = self.context.get("request")
+        if request is None:
+            return None
+        language_code = getattr(request, "LANGUAGE_CODE", "")
+        if language_code:
+            return str(language_code)
+        accept_language = str(request.headers.get("Accept-Language", "")).strip()
+        if not accept_language:
+            return None
+        return accept_language.split(",", 1)[0]
+
+    def get_name(self, obj: Product) -> str:
+        return get_product_display_name(obj, self._resolve_locale())
 
     def get_brand_name(self, obj: Product) -> str:
         return str(obj.display_brand_name or obj.autodb_supplier_name or "").strip()

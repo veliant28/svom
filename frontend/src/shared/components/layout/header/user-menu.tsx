@@ -1,6 +1,6 @@
 "use client";
 
-import { CarFront, Headset, Heart, LogIn, LogOut, PackageSearch, Shield, TicketPercent, UserRound } from "lucide-react";
+import { CarFront, Headset, Heart, LogIn, LogOut, PackageSearch, RotateCcw, Shield, TicketPercent, UserRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -171,6 +171,18 @@ export function HeaderUserMenu() {
             <TicketPercent size={15} />
             <span>{t("menu.loyalty")}</span>
           </Link>
+
+          {user?.returns_enabled ? (
+            <Link
+              href="/account/returns"
+              className="header-menu-item"
+              role="menuitem"
+              onClick={() => setIsOpen(false)}
+            >
+              <RotateCcw size={15} />
+              <span>{t("menu.returns")}</span>
+            </Link>
+          ) : null}
 
           <Link
             href="/account/support"

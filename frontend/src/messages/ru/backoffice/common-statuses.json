@@ -67,6 +67,15 @@
         "waiting_for_client": "Ожидает клиента",
         "resolved": "Решён",
         "closed": "Закрыт"
+        ,
+        "approved": "Одобрено",
+        "rejected": "Отказано",
+        "awaiting_ttn": "Ожидаем ТТН",
+        "in_transit": "В пути",
+        "received": "Получено",
+        "accepted": "Принято",
+        "refund_processing": "Возврат средств",
+        "refunded": "Средства возвращены"
       }
     }
   }

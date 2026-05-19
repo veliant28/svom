@@ -3,6 +3,8 @@ import type { CatalogProduct } from "@/features/catalog/types";
 export type CommerceProductSummary = {
   id: string;
   sku: string;
+  article?: string;
+  manufacturer_article?: string;
   name: string;
   slug: string;
   brand_name: string;
@@ -201,4 +203,118 @@ export type Order = {
   cancellation_reason_note?: string;
   placed_at: string;
   items: OrderItem[];
+};
+
+export type ReturnStatus =
+  | "new"
+  | "approved"
+  | "rejected"
+  | "awaiting_ttn"
+  | "in_transit"
+  | "received"
+  | "accepted"
+  | "refund_processing"
+  | "refunded"
+  | "cancelled";
+
+export type ReturnRequestListItem = {
+  id: string;
+  return_number: string;
+  order_number: string;
+  created_at: string;
+  return_day_label: string;
+  status: ReturnStatus;
+  refund_amount: string;
+  tracking_number: string;
+};
+
+export type ReturnRequestItem = {
+  id: string;
+  order_item: string;
+  product: string;
+  product_name_snapshot: string;
+  product_sku_snapshot: string;
+  quantity_ordered: number;
+  quantity_requested: number;
+  quantity_approved: number;
+  original_unit_price: string;
+  original_line_total: string;
+  refund_amount: string;
+  is_returnable_snapshot: boolean;
+  non_returnable_reason_snapshot: string;
+  display_sku: string;
+  display_brand: string;
+  display_article: string;
+  display_name: string;
+};
+
+export type ReturnShippingAddress = {
+  recipient_full_name: string;
+  recipient_phone: string;
+  region_ref: string;
+  region_label: string;
+  city_ref: string;
+  city_label: string;
+  np_warehouse_text: string;
+};
+
+export type ReturnRequestDetail = {
+  id: string;
+  return_number: string;
+  order: string;
+  order_number: string;
+  status: ReturnStatus;
+  reason_comment: string;
+  admin_comment: string;
+  rejection_reason: string;
+  refund_amount: string;
+  refund_status: string;
+  refund_method: string;
+  tracking_number: string;
+  customer_return_tracking_submitted_at: string | null;
+  can_edit_tracking_number: boolean;
+  nova_poshta_return_status_code: string;
+  nova_poshta_return_status_text: string;
+  nova_poshta_return_status_synced_at: string | null;
+  shipping_address: ReturnShippingAddress;
+  received_at: string | null;
+  approved_at: string | null;
+  rejected_at: string | null;
+  accepted_at: string | null;
+  refund_processing_at: string | null;
+  refunded_at: string | null;
+  created_at: string;
+  updated_at: string;
+  return_day_label: string;
+  items: ReturnRequestItem[];
+};
+
+export type EligibleReturnOrder = {
+  id: string;
+  order_number: string;
+  total: string;
+  currency: string;
+  status: string;
+  placed_at: string;
+  return_day_label: string;
+  items_count: number;
+};
+
+export type EligibleReturnOrderItem = {
+  order_item_id: string;
+  product_id: string;
+  product: CommerceProductSummary;
+  product_name: string;
+  product_sku: string;
+  quantity_ordered: number;
+  max_return_quantity: number;
+  unit_price: string;
+  line_total: string;
+  is_returnable: boolean;
+  non_returnable_reason: string;
+};
+
+export type EligibleReturnOrderDetail = {
+  order: EligibleReturnOrder;
+  items: EligibleReturnOrderItem[];
 };

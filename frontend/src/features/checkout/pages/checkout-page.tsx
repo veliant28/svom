@@ -627,6 +627,14 @@ export function CheckoutPage() {
               showError(t("phoneFormatError"));
               return;
             }
+            if (!lastName.trim() || !firstName.trim()) {
+              showError(t("errors.contactNameRequired"));
+              return;
+            }
+            if (!contactEmail.trim()) {
+              showError(t("errors.contactEmailRequired"));
+              return;
+            }
             if (deliveryOption !== "pickup" && !selectedCity) {
               showError(t("errors.deliveryCityRequired"));
               return;

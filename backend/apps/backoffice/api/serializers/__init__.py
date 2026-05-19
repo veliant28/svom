@@ -49,6 +49,16 @@ from .order_operational_serializer import (
     BackofficeOrderOperationalDetailSerializer,
     BackofficeOrderOperationalListSerializer,
 )
+from .return_operational_serializer import (
+    BackofficeReturnEventSerializer,
+    BackofficeReturnItemOperationalSerializer,
+    BackofficeReturnOperationalDetailSerializer,
+    BackofficeReturnOperationalListSerializer,
+    BackofficeReturnStatusUpdateSerializer,
+    BackofficeReturnsSettingsPatchSerializer,
+    BackofficeReturnsSettingsSerializer,
+    apply_return_status_transition,
+)
 from .order_operations_serializer import (
     OrderActionSerializer,
     OrderBulkActionSerializer,
@@ -182,6 +192,14 @@ __all__ = [
     "BackofficeOrderItemOperationalSerializer",
     "BackofficeOrderOperationalDetailSerializer",
     "BackofficeOrderOperationalListSerializer",
+    "BackofficeReturnEventSerializer",
+    "BackofficeReturnItemOperationalSerializer",
+    "BackofficeReturnOperationalDetailSerializer",
+    "BackofficeReturnOperationalListSerializer",
+    "BackofficeReturnStatusUpdateSerializer",
+    "BackofficeReturnsSettingsSerializer",
+    "BackofficeReturnsSettingsPatchSerializer",
+    "apply_return_status_transition",
     "OrderActionSerializer",
     "OrderReserveActionSerializer",
     "OrderCancelActionSerializer",

@@ -85,6 +85,36 @@ BACKOFFICE_CAPABILITIES: tuple[BackofficeCapabilityDefinition, ...] = (
         description="Perform order operations in backoffice.",
     ),
     BackofficeCapabilityDefinition(
+        code="returns.view",
+        permission_codename="bo_cap_returns_view",
+        title="Returns view",
+        description="Read returns and return details.",
+    ),
+    BackofficeCapabilityDefinition(
+        code="returns.manage",
+        permission_codename="bo_cap_returns_manage",
+        title="Returns manage",
+        description="Manage return workflow statuses in backoffice.",
+    ),
+    BackofficeCapabilityDefinition(
+        code="returns.approve",
+        permission_codename="bo_cap_returns_approve",
+        title="Returns approve",
+        description="Approve return requests.",
+    ),
+    BackofficeCapabilityDefinition(
+        code="returns.reject",
+        permission_codename="bo_cap_returns_reject",
+        title="Returns reject",
+        description="Reject return requests.",
+    ),
+    BackofficeCapabilityDefinition(
+        code="returns.refund",
+        permission_codename="bo_cap_returns_refund",
+        title="Returns refund",
+        description="Mark return requests as refunded.",
+    ),
+    BackofficeCapabilityDefinition(
         code="pricing.view",
         permission_codename="bo_cap_pricing_view",
         title="Pricing view",
