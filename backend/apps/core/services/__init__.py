@@ -7,6 +7,8 @@ from .email_delivery import (
 )
 from .telegram_notifications import (
     TelegramDispatchError,
+    send_ops_order_created_notification,
+    send_ops_order_deleted_notification,
     send_ops_order_status_notification,
     send_ops_waybill_notification,
     send_telegram_test_message,
@@ -21,6 +23,8 @@ __all__ = [
     "send_configured_mail",
     "send_email_settings_test_message",
     "TelegramDispatchError",
+    "send_ops_order_created_notification",
+    "send_ops_order_deleted_notification",
     "send_ops_order_status_notification",
     "send_ops_waybill_notification",
     "send_telegram_test_message",

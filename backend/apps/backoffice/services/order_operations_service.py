@@ -9,7 +9,7 @@ from rest_framework.exceptions import ValidationError as DRFValidationError
 
 from apps.backoffice.services.procurement_service import ProcurementService
 from apps.commerce.models import Order, OrderEvent, OrderItem
-from apps.core.services import send_ops_order_status_notification
+from apps.core.services import send_ops_order_deleted_notification, send_ops_order_status_notification
 from apps.pricing.models import SupplierOffer
 from apps.users.rbac import get_user_system_role
 
@@ -312,6 +312,12 @@ class OrderOperationsService:
         order_id = str(order.id)
         order_number = order.order_number
         order.delete()
+        transaction.on_commit(
+            lambda: send_ops_order_deleted_notification(
+                order_number=order_number,
+                actor_name=self._actor_label(actor),
+            )
+        )
         return {"order_id": order_id, "order_number": order_number}
 
     @transaction.atomic

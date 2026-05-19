@@ -107,6 +107,43 @@ def send_ops_waybill_notification(*, action: str, order_number: str, waybill_num
         logger.warning("Telegram ops waybill notification failed: %s", exc)
 
 
+def send_ops_order_created_notification(*, order_number: str) -> None:
+    settings = get_telegram_settings()
+    if not settings.is_enabled or not settings.ops_enabled:
+        return
+    token = str(settings.ops_bot_token or "").strip()
+    chat_id = str(settings.ops_chat_id or "").strip()
+    if not token or not chat_id:
+        return
+    text = (
+        "Новый заказ\n"
+        f"Заказ: #{order_number}"
+    )
+    try:
+        _send_telegram_message(token=token, chat_id=chat_id, text=text)
+    except TelegramDispatchError as exc:
+        logger.warning("Telegram ops order created notification failed: %s", exc)
+
+
+def send_ops_order_deleted_notification(*, order_number: str, actor_name: str) -> None:
+    settings = get_telegram_settings()
+    if not settings.is_enabled or not settings.ops_enabled:
+        return
+    token = str(settings.ops_bot_token or "").strip()
+    chat_id = str(settings.ops_chat_id or "").strip()
+    if not token or not chat_id:
+        return
+    text = (
+        "Заказ удален\n"
+        f"Заказ: #{order_number}\n"
+        f"Сотрудник: {actor_name or '-'}"
+    )
+    try:
+        _send_telegram_message(token=token, chat_id=chat_id, text=text)
+    except TelegramDispatchError as exc:
+        logger.warning("Telegram ops order deleted notification failed: %s", exc)
+
+
 def send_telegram_test_message(*, bot_kind: str, text: str) -> dict[str, object]:
     settings = get_telegram_settings()
     kind = str(bot_kind or "").strip().lower()

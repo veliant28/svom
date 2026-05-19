@@ -29,6 +29,7 @@ from apps.commerce.services.monobank.invoice_service import create_invoice_for_o
 from apps.commerce.services.sellable_state import build_cart_item_warning, get_cart_item_sellable_snapshot
 from apps.commerce.services.order_number import generate_order_number
 from apps.pricing.models import SupplierOffer
+from apps.core.services import send_ops_order_created_notification
 from apps.users.models import User
 
 
@@ -424,5 +425,6 @@ def submit_checkout(
         )
 
     cart.items.all().delete()
+    transaction.on_commit(lambda: send_ops_order_created_notification(order_number=order.order_number))
 
     return order
