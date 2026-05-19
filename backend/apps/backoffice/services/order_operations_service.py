@@ -9,6 +9,7 @@ from rest_framework.exceptions import ValidationError as DRFValidationError
 
 from apps.backoffice.services.procurement_service import ProcurementService
 from apps.commerce.models import Order, OrderEvent, OrderItem
+from apps.commerce.realtime import publish_customer_order_updated
 from apps.commerce.services.returns_service import ensure_order_received_from_completed_fallback
 from apps.core.services import send_ops_order_deleted_notification, send_ops_order_status_notification
 from apps.pricing.models import SupplierOffer
@@ -297,6 +298,7 @@ class OrderOperationsService:
                 actor_name=self._actor_label(actor),
             )
         )
+        transaction.on_commit(lambda: publish_customer_order_updated(order=order))
 
         return OrderActionResult(order_id=str(order.id), status=order.status, receipt_notice_code=receipt_notice_code)
 
@@ -398,6 +400,7 @@ class OrderOperationsService:
                     actor_name=self._actor_label(actor),
                 )
             )
+            transaction.on_commit(lambda: publish_customer_order_updated(order=order))
 
     def _save_order_with_actor(self, *, order: Order, update_fields: tuple[str, ...], actor) -> None:
         fields = list(update_fields)

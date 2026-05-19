@@ -6,6 +6,7 @@ from hashlib import sha1
 from django.core.management.base import BaseCommand
 from django.db.models import Q
 
+from apps.autodb.services.product_name_lock import is_product_name_manual_locked
 from apps.autodb.services.product_name_translation import ProductNameTranslationService
 from apps.catalog.models import Product
 from apps.catalog.services.product_management import sanitize_product_name
@@ -87,7 +88,7 @@ class Command(BaseCommand):
         translator: ProductNameTranslationService,
         dry_run: bool,
     ) -> tuple[str, str]:
-        if bool(product.name_manually_locked):
+        if is_product_name_manual_locked(product):
             self.stdout.write(f"- product_id={product.id} status=skipped_manual_locked")
             return "skipped_manual_locked", Product.NAME_TRANSLATION_MANUAL_LOCKED
 

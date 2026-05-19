@@ -351,6 +351,7 @@
         "ttnSaved": "ТТН сохранена",
         "invalidTtn": "Номер ТТН должен содержать 14 цифр",
         "ttnSaveFailed": "Не удалось сохранить ТТН",
+        "adminComment": "Комментарий администратора: {comment}",
         "notApproved": "Не были одобрены позиции: {count}.",
         "notApprovedWithComment": "Не были одобрены позиции: {count}. Комментарий администратора: {comment}",
         "reasonRequired": "Укажите причину возврата",

@@ -351,6 +351,7 @@
         "ttnSaved": "TTN saved",
         "invalidTtn": "TTN must contain exactly 14 digits",
         "ttnSaveFailed": "Failed to save TTN",
+        "adminComment": "Admin comment: {comment}",
         "notApproved": "Some positions were not approved: {count}.",
         "notApprovedWithComment": "Some positions were not approved: {count}. Admin comment: {comment}",
         "reasonRequired": "Specify return reason",

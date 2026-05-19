@@ -18,7 +18,12 @@ def apply_operational_return_filters(queryset: QuerySet[ReturnRequest], *, param
     query = str(params.get("q", "") or "").strip()
 
     if status_value:
-        queryset = queryset.filter(status=status_value)
+        if status_value == ReturnRequest.STATUS_ACCEPTED:
+            queryset = queryset.filter(status__in=[ReturnRequest.STATUS_ACCEPTED, ReturnRequest.STATUS_RECEIVED])
+        elif status_value == "refund":
+            queryset = queryset.filter(status=ReturnRequest.STATUS_REFUNDED)
+        else:
+            queryset = queryset.filter(status=status_value)
 
     if query:
         queryset = queryset.filter(

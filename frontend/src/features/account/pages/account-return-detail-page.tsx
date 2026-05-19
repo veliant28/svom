@@ -10,7 +10,8 @@ import { BackofficeTooltip } from "@/features/backoffice/components/widgets/back
 import { ReturnStatusChip } from "@/features/backoffice/components/widgets/return-status-chip";
 import { formatReturnDate, formatReturnMoney, formatTrackingNumber, normalizeTrackingDigits } from "@/features/account/lib/returns-formatters";
 import { getReturnRequestDetail, submitReturnTrackingNumber } from "@/features/commerce/api/returns-api";
-import type { ReturnRequestDetail } from "@/features/commerce/types";
+import { useCommerceSocket } from "@/features/commerce/hooks/use-commerce-socket";
+import type { CommerceRealtimeEvent, ReturnRequestDetail } from "@/features/commerce/types";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useStorefrontFeedback } from "@/shared/hooks/use-storefront-feedback";
@@ -21,9 +22,9 @@ const SHIPPING_DATA_VISIBLE_STATUSES = new Set([
   "in_transit",
   "received",
   "accepted",
-  "refund_processing",
   "refunded",
 ]);
+const RETURNS_DETAIL_POLL_INTERVAL_MS = 15000;
 
 function ValueField({
   label,
@@ -80,11 +81,33 @@ export function AccountReturnDetailPage({ returnId }: { returnId: string }) {
   const { showApiError, showError, showInfo, showSuccess } = useStorefrontFeedback();
   const router = useRouter();
   const partialApprovalToastShownRef = useRef<Set<string>>(new Set());
+  const adminCommentToastShownRef = useRef<Set<string>>(new Set());
 
   const [data, setData] = useState<ReturnRequestDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [trackingInput, setTrackingInput] = useState("");
   const [isSavingTracking, setIsSavingTracking] = useState(false);
+  const commerceSocket = useCommerceSocket({
+    token,
+    path: "/ws/commerce/user/",
+    enabled: isAuthenticated,
+    onEvent: (event: CommerceRealtimeEvent) => {
+      if (event.type !== "commerce.return.updated") {
+        return;
+      }
+      setData((current) => {
+        if (!current || current.id !== event.payload.return_id) {
+          return current;
+        }
+        return {
+          ...current,
+          status: event.payload.status,
+          tracking_number: event.payload.tracking_number,
+          admin_comment: event.payload.admin_comment,
+        };
+      });
+    },
+  });
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -146,12 +169,58 @@ export function AccountReturnDetailPage({ returnId }: { returnId: string }) {
     }
     partialApprovalToastShownRef.current.add(data.id);
     const comment = String(data.admin_comment || "").trim();
+    if (comment) {
+      adminCommentToastShownRef.current.add(`${data.id}:${comment}`);
+    }
     showInfo(
       comment
         ? t("toasts.notApprovedWithComment", { count: notApprovedCount, comment })
         : t("toasts.notApproved", { count: notApprovedCount }),
     );
   }, [data, showInfo, t]);
+
+  useEffect(() => {
+    if (!data) {
+      return;
+    }
+    const comment = String(data.admin_comment || "").trim();
+    if (!comment || !SHIPPING_DATA_VISIBLE_STATUSES.has(data.status)) {
+      return;
+    }
+    const key = `${data.id}:${comment}`;
+    if (adminCommentToastShownRef.current.has(key)) {
+      return;
+    }
+    adminCommentToastShownRef.current.add(key);
+    showInfo(t("toasts.adminComment", { comment }));
+  }, [data, showInfo, t]);
+
+  useEffect(() => {
+    if (!token || !isAuthenticated || !user?.returns_enabled) {
+      return;
+    }
+    if (commerceSocket.isConnected) {
+      return;
+    }
+    const intervalId = window.setInterval(() => {
+      void getReturnRequestDetail(token, returnId)
+        .then((payload) => {
+          setData((current) => {
+            if (!current) {
+              return payload;
+            }
+            return payload;
+          });
+        })
+        .catch(() => {
+          // Silent background refresh. UI keeps last known values.
+        });
+    }, RETURNS_DETAIL_POLL_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [commerceSocket.isConnected, isAuthenticated, returnId, token, user?.returns_enabled]);
 
   const canEditTracking = useMemo(() => {
     if (!data) {
@@ -167,6 +236,17 @@ export function AccountReturnDetailPage({ returnId }: { returnId: string }) {
   }, [data]);
 
   const trackingDigits = normalizeTrackingDigits(trackingInput);
+
+  const serverTrackingNumber = data?.tracking_number || "";
+
+  useEffect(() => {
+    const normalizedCurrent = normalizeTrackingDigits(trackingInput);
+    const normalizedServer = normalizeTrackingDigits(serverTrackingNumber);
+    if (normalizedCurrent === normalizedServer) {
+      return;
+    }
+    setTrackingInput(formatTrackingNumber(serverTrackingNumber));
+  }, [serverTrackingNumber, trackingInput]);
 
   async function handleSaveTracking() {
     if (!token || !data || isSavingTracking) {

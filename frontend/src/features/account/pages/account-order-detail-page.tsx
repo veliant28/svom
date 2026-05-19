@@ -16,11 +16,14 @@ import { MONOBANK_OFFICIAL_WIDGETS_ENABLED } from "@/features/checkout/lib/monob
 import type { MonobankWidgetInit } from "@/features/checkout/types/payment";
 import { getOrder } from "@/features/commerce/api/get-order";
 import { getOrderReceiptOpenUrl } from "@/features/commerce/api/get-order-receipt-open-url";
-import type { Order } from "@/features/commerce/types";
+import { useCommerceSocket } from "@/features/commerce/hooks/use-commerce-socket";
+import type { CommerceRealtimeEvent, Order } from "@/features/commerce/types";
 import { Link } from "@/i18n/navigation";
 import { useTheme } from "@/shared/components/theme/theme-provider";
 import { useStorefrontFeedback } from "@/shared/hooks/use-storefront-feedback";
 import { formatFooterPhoneDisplay } from "@/shared/lib/footer-phone";
+
+const ORDER_DETAIL_POLL_INTERVAL_MS = 15000;
 
 type MonoPayInitResult = {
   button?: HTMLElement;
@@ -295,6 +298,22 @@ export function AccountOrderDetailPage({ orderId }: { orderId: string }) {
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [receiptOpening, setReceiptOpening] = useState(false);
+  const commerceSocket = useCommerceSocket({
+    token,
+    path: "/ws/commerce/user/",
+    enabled: isAuthenticated,
+    onEvent: (event: CommerceRealtimeEvent) => {
+      if (event.type !== "commerce.order.updated") {
+        return;
+      }
+      setOrder((current) => {
+        if (!current || current.id !== event.payload.order_id) {
+          return current;
+        }
+        return { ...current, status: event.payload.status };
+      });
+    },
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -332,6 +351,28 @@ export function AccountOrderDetailPage({ orderId }: { orderId: string }) {
       isMounted = false;
     };
   }, [isAuthenticated, orderId, showApiError, t, token]);
+
+  useEffect(() => {
+    if (!token || !isAuthenticated) {
+      return;
+    }
+    if (commerceSocket.isConnected) {
+      return;
+    }
+    const intervalId = window.setInterval(() => {
+      void getOrder(token, orderId)
+        .then((response) => {
+          setOrder(response);
+        })
+        .catch(() => {
+          // Silent background refresh. Keep current snapshot.
+        });
+    }, ORDER_DETAIL_POLL_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [commerceSocket.isConnected, isAuthenticated, orderId, token]);
 
   if (!isAuthenticated) {
     return <AccountAuthRequired title={t("title")} message={t("authRequired")} loginLabel={t("goToLogin")} />;

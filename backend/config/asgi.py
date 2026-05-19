@@ -9,8 +9,14 @@ django_asgi_application = get_asgi_application()
 try:
     from channels.routing import ProtocolTypeRouter, URLRouter
 
+    from apps.commerce.realtime.routing import websocket_urlpatterns as commerce_websocket_urlpatterns
     from apps.support.realtime.auth import TokenQueryAuthMiddleware
-    from apps.support.realtime.routing import websocket_urlpatterns
+    from apps.support.realtime.routing import websocket_urlpatterns as support_websocket_urlpatterns
+
+    websocket_urlpatterns = [
+        *support_websocket_urlpatterns,
+        *commerce_websocket_urlpatterns,
+    ]
 
     application = ProtocolTypeRouter(
         {

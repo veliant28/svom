@@ -6,9 +6,12 @@ import { useTranslations } from "next-intl";
 import { AccountAuthRequired } from "@/features/account/components/account-auth-required";
 import { AccountOrdersList } from "@/features/account/components/orders/account-orders-list";
 import { getOrders } from "@/features/commerce/api/get-orders";
-import type { Order } from "@/features/commerce/types";
+import { useCommerceSocket } from "@/features/commerce/hooks/use-commerce-socket";
+import type { CommerceRealtimeEvent, Order } from "@/features/commerce/types";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useStorefrontFeedback } from "@/shared/hooks/use-storefront-feedback";
+
+const ORDERS_POLL_INTERVAL_MS = 15000;
 
 export function AccountOrdersPage() {
   const t = useTranslations("commerce.orders");
@@ -16,6 +19,23 @@ export function AccountOrdersPage() {
   const { showApiError } = useStorefrontFeedback();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const commerceSocket = useCommerceSocket({
+    token,
+    path: "/ws/commerce/user/",
+    enabled: isAuthenticated,
+    onEvent: (event: CommerceRealtimeEvent) => {
+      if (event.type !== "commerce.order.updated") {
+        return;
+      }
+      setOrders((current) =>
+        current.map((row) => (
+          row.id === event.payload.order_id
+            ? { ...row, status: event.payload.status }
+            : row
+        )),
+      );
+    },
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -53,6 +73,28 @@ export function AccountOrdersPage() {
       isMounted = false;
     };
   }, [isAuthenticated, showApiError, t, token]);
+
+  useEffect(() => {
+    if (!token || !isAuthenticated) {
+      return;
+    }
+    if (commerceSocket.isConnected) {
+      return;
+    }
+    const intervalId = window.setInterval(() => {
+      void getOrders(token)
+        .then((response) => {
+          setOrders(response);
+        })
+        .catch(() => {
+          // Silent background refresh. Keep current snapshot.
+        });
+    }, ORDERS_POLL_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [commerceSocket.isConnected, isAuthenticated, token]);
 
   if (!isAuthenticated) {
     return <AccountAuthRequired title={t("title")} message={t("authRequired")} loginLabel={t("goToLogin")} />;

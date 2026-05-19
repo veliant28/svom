@@ -9,6 +9,7 @@ from typing import Any
 from django.db.models import Q, QuerySet
 
 from apps.autodb.services.column_helpers import find_column_name, find_value
+from apps.autodb.services.product_name_lock import is_product_name_manual_locked
 from apps.autodb.services.product_name_translation import ProductNameTranslationService
 from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
 from apps.catalog.models import Product
@@ -114,6 +115,18 @@ class AutoDbProductNameEnrichmentService:
                 "spark plug wire",
             ),
         ),
+        (
+            (
+                "шлангопровод",
+                "трубопровод",
+                "hose line",
+                "pipe line",
+            ),
+            (
+                "шланг",
+                "hose",
+            ),
+        ),
     )
 
     def __init__(
@@ -133,7 +146,7 @@ class AutoDbProductNameEnrichmentService:
         only_missing_translations: bool = False,
     ) -> ProductNameEnrichmentResult:
         old_name = str(product.name or "")
-        if bool(product.name_manually_locked):
+        if is_product_name_manual_locked(product):
             return ProductNameEnrichmentResult(
                 product_id=str(product.id),
                 status="skipped_manual_locked",

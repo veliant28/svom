@@ -724,10 +724,10 @@
         "statusActions": {
           "approve": "Approved",
           "reject": "Rejected",
-          "received": "Received",
+          "noTtn": "No TTN",
           "accepted": "Accepted",
-          "refundProcessing": "Refund processing",
-          "refunded": "Refunded"
+          "refund": "Refund",
+          "cancelled": "Cancelled"
         },
         "states": {
           "empty": "No returns found."
@@ -743,13 +743,13 @@
           "loadFailed": "Failed to load returns.",
           "detailFailed": "Failed to load return.",
           "statusUpdated": "Return status updated.",
+          "adminCommentSaved": "Admin comment saved.",
           "statusUpdateFailed": "Failed to update return status.",
           "approved": "Return approved.",
           "rejected": "Return rejected.",
-          "received": "Item marked as received.",
           "accepted": "Return accepted.",
-          "refundProcessing": "Refund status updated.",
-          "refunded": "Funds refunded."
+          "refund": "Refund completed.",
+          "cancelled": "Return cancelled."
         }
       },
       "orderDetail": {

@@ -58,6 +58,20 @@ def _diag(*, source_kind: str, before: str, after: str, fallback: bool, reason: 
 
 
 class AutoDbProductNameEnrichmentServiceTests(SimpleTestCase):
+    def test_skips_when_name_translation_status_is_manual_locked(self):
+        translator = Mock()
+        service = AutoDbProductNameEnrichmentService(translator=translator)
+        product = _build_product(
+            name_manually_locked=False,
+            name_translation_status=Product.NAME_TRANSLATION_MANUAL_LOCKED,
+        )
+
+        result = service.enrich_product(product=product, dry_run=False)
+
+        self.assertEqual(result.status, "skipped_manual_locked")
+        translator.translate_product_name.assert_not_called()
+        product.save.assert_not_called()
+
     def test_linked_product_uses_autodb_source_not_fallback(self):
         translator = Mock()
         translator.translate_product_name.return_value = ProductNameTranslationResult(
@@ -161,6 +175,14 @@ class AutoDbProductNameEnrichmentServiceTests(SimpleTestCase):
             description="Комплект проводов зажигания",
         )
         self.assertEqual(combined, "Комплект проводов зажигания")
+
+    def test_combine_base_and_description_drops_pipe_prefix_for_brake_hose(self):
+        service = AutoDbProductNameEnrichmentService()
+        combined = service._combine_base_and_description(
+            base="Шлангопровод",
+            description="Тормозной шланг",
+        )
+        self.assertEqual(combined, "Тормозной шланг")
 
     def test_cleaned_title_translates_to_uk_ru_en(self):
         service = AutoDbProductNameEnrichmentService()

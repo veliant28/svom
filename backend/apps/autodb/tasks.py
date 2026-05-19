@@ -16,6 +16,7 @@ from apps.autodb.services.supplier_brand_matcher import SupplierBrandMatcher, no
 from apps.autodb.services.article_enrichment import AutoDbArticleEnrichmentService
 from apps.autodb.services.product_fitment_enrichment import AutoDbProductFitmentEnrichmentService
 from apps.autodb.services.product_image_enrichment import AutoDbProductImageEnrichmentService
+from apps.autodb.services.product_name_lock import is_product_name_manual_locked
 from apps.autodb.services.product_name_enrichment import AutoDbProductNameEnrichmentService
 from apps.autodb.services.product_name_translation import ProductNameTranslationService
 from apps.catalog.models import AutoDbArticleManualMapping, AutoDbProductLinkQuality, Product
@@ -103,7 +104,7 @@ def manual_bind_product_to_autodb_task(
             product.catalog_source = Product.CATALOG_SOURCE_AUTODB_PRO
             update_fields.append("catalog_source")
 
-        if not bool(getattr(product, "name_manually_locked", False)):
+        if not is_product_name_manual_locked(product):
             previous_name = str(getattr(product, "name", "") or "")
             previous_source_text = str(getattr(product, "name_source_text", "") or "")
             article_name = resolve_autodb_article_name(
@@ -782,7 +783,7 @@ def _mark_link_clone_data_missing_needs_review(
 
 def _apply_fallback_name_translation_for_product(*, product_id: str, reason: str) -> None:
     product = Product.objects.filter(pk=product_id).first()
-    if product is None or bool(getattr(product, "name_manually_locked", False)):
+    if product is None or is_product_name_manual_locked(product):
         return
 
     source_text = (

@@ -17,7 +17,6 @@ class ReturnRequest(UUIDPrimaryKeyMixin, TimestampedMixin):
     STATUS_IN_TRANSIT = "in_transit"
     STATUS_RECEIVED = "received"
     STATUS_ACCEPTED = "accepted"
-    STATUS_REFUND_PROCESSING = "refund_processing"
     STATUS_REFUNDED = "refunded"
     STATUS_CANCELLED = "cancelled"
 
@@ -29,8 +28,7 @@ class ReturnRequest(UUIDPrimaryKeyMixin, TimestampedMixin):
         (STATUS_IN_TRANSIT, _("В пути")),
         (STATUS_RECEIVED, _("Получено")),
         (STATUS_ACCEPTED, _("Принято")),
-        (STATUS_REFUND_PROCESSING, _("Возврат средств в обработке")),
-        (STATUS_REFUNDED, _("Средства возвращены")),
+        (STATUS_REFUNDED, _("Возврат")),
         (STATUS_CANCELLED, _("Отменено")),
     )
 

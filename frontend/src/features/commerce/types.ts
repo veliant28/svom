@@ -213,7 +213,6 @@ export type ReturnStatus =
   | "in_transit"
   | "received"
   | "accepted"
-  | "refund_processing"
   | "refunded"
   | "cancelled";
 
@@ -318,3 +317,29 @@ export type EligibleReturnOrderDetail = {
   order: EligibleReturnOrder;
   items: EligibleReturnOrderItem[];
 };
+
+export type CommerceOrderUpdatedEvent = {
+  type: "commerce.order.updated";
+  payload: {
+    order_id: string;
+    order_number: string;
+    status: Order["status"];
+  };
+};
+
+export type CommerceReturnUpdatedEvent = {
+  type: "commerce.return.updated";
+  payload: {
+    return_id: string;
+    return_number: string;
+    order_number: string;
+    status: ReturnStatus;
+    tracking_number: string;
+    admin_comment: string;
+  };
+};
+
+export type CommerceRealtimeEvent =
+  | { type: "commerce.connection.ready"; payload: { user_id: string } }
+  | CommerceOrderUpdatedEvent
+  | CommerceReturnUpdatedEvent;

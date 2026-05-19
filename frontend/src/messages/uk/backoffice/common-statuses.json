@@ -69,12 +69,14 @@
         "closed": "Закрите",
         "approved": "Схвалено",
         "rejected": "Відхилено",
-        "awaiting_ttn": "Очікуємо ТТН",
+        "awaiting_ttn": "Немає ТТН",
+        "no_ttn": "Немає ТТН",
         "in_transit": "У дорозі",
-        "received": "Отримано",
+        "received": "Прийнято",
         "accepted": "Прийнято",
-        "refund_processing": "Повернення коштів",
-        "refunded": "Кошти повернено"
+        "refund_processing": "Повернення",
+        "refunded": "Повернення",
+        "refund": "Повернення"
       }
     }
   }

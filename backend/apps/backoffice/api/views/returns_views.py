@@ -21,7 +21,8 @@ from apps.backoffice.api.serializers import (
 )
 from apps.backoffice.permissions import IsStaffOrSuperuser
 from apps.backoffice.selectors import apply_operational_return_filters, get_operational_returns_queryset
-from apps.commerce.models import ReturnRequest
+from apps.commerce.models import ReturnEvent, ReturnRequest
+from apps.commerce.realtime import publish_customer_return_updated
 from apps.commerce.services import build_return_address_snapshot
 from apps.core.services import send_ops_return_status_notification
 from apps.users.rbac import user_has_capability
@@ -31,10 +32,9 @@ ALLOWED_STATUS_TRANSITIONS: dict[str, set[str]] = {
     ReturnRequest.STATUS_NEW: {ReturnRequest.STATUS_APPROVED, ReturnRequest.STATUS_REJECTED, ReturnRequest.STATUS_CANCELLED},
     ReturnRequest.STATUS_APPROVED: {ReturnRequest.STATUS_AWAITING_TTN, ReturnRequest.STATUS_CANCELLED},
     ReturnRequest.STATUS_AWAITING_TTN: {ReturnRequest.STATUS_CANCELLED},
-    ReturnRequest.STATUS_IN_TRANSIT: {ReturnRequest.STATUS_RECEIVED, ReturnRequest.STATUS_CANCELLED},
+    ReturnRequest.STATUS_IN_TRANSIT: {ReturnRequest.STATUS_RECEIVED, ReturnRequest.STATUS_ACCEPTED, ReturnRequest.STATUS_CANCELLED},
     ReturnRequest.STATUS_RECEIVED: {ReturnRequest.STATUS_ACCEPTED},
-    ReturnRequest.STATUS_ACCEPTED: {ReturnRequest.STATUS_REFUND_PROCESSING},
-    ReturnRequest.STATUS_REFUND_PROCESSING: {ReturnRequest.STATUS_REFUNDED},
+    ReturnRequest.STATUS_ACCEPTED: {ReturnRequest.STATUS_REFUNDED, ReturnRequest.STATUS_CANCELLED},
 }
 
 
@@ -80,6 +80,20 @@ class BackofficeReturnStatusUpdateAPIView(APIView):
         approved_items_payload = serializer.validated_data.get("approved_items") or []
 
         if target_status == obj.status:
+            if "admin_comment" in serializer.validated_data:
+                next_comment = admin_comment
+                if str(obj.admin_comment or "").strip() != next_comment:
+                    obj.admin_comment = next_comment
+                    obj.save(update_fields=("admin_comment", "updated_at"))
+                    ReturnEvent.objects.create(
+                        return_request=obj,
+                        actor=request.user,
+                        from_status=obj.status,
+                        to_status=obj.status,
+                        comment=next_comment[:500],
+                        metadata={"admin_comment_updated": True},
+                    )
+                    transaction.on_commit(lambda: publish_customer_return_updated(return_request=obj))
             payload = BackofficeReturnOperationalDetailSerializer(obj, context={"request": request}).data
             return Response(payload, status=status.HTTP_200_OK)
 
@@ -127,6 +141,8 @@ class BackofficeReturnStatusUpdateAPIView(APIView):
 
         if target_status == ReturnRequest.STATUS_ACCEPTED:
             self._fill_accepted_quantities_for_legacy_returns(obj=obj)
+
+        transaction.on_commit(lambda: publish_customer_return_updated(return_request=obj))
 
         payload = BackofficeReturnOperationalDetailSerializer(
             get_operational_returns_queryset().get(id=obj.id),

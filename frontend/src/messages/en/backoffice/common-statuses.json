@@ -69,12 +69,14 @@
         "closed": "Closed",
         "approved": "Approved",
         "rejected": "Rejected",
-        "awaiting_ttn": "Awaiting TTN",
+        "awaiting_ttn": "No TTN",
+        "no_ttn": "No TTN",
         "in_transit": "In transit",
-        "received": "Received",
+        "received": "Accepted",
         "accepted": "Accepted",
-        "refund_processing": "Refund processing",
-        "refunded": "Refunded"
+        "refund_processing": "Refund",
+        "refunded": "Refund",
+        "refund": "Refund"
       }
     }
   }

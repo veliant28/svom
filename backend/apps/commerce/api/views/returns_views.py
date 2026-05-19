@@ -23,6 +23,7 @@ from apps.commerce.api.serializers import (
     SubmitReturnTrackingInputSerializer,
 )
 from apps.commerce.models import Order, OrderItem, ReturnEvent, ReturnRequest, ReturnRequestItem
+from apps.commerce.realtime import publish_customer_return_updated
 from apps.commerce.services import (
     build_returnable_order_items,
     format_tracking_number,
@@ -280,6 +281,7 @@ class ReturnRequestCreateAPIView(APIView):
                 actor_name=actor_name,
             )
         )
+        transaction.on_commit(lambda: publish_customer_return_updated(return_request=return_request))
 
         payload = ReturnRequestDetailSerializer(
             ReturnRequest.objects.select_related("order")
@@ -340,6 +342,7 @@ class ReturnRequestTrackingSubmitAPIView(APIView):
                 actor_name=actor_name,
             )
         )
+        transaction.on_commit(lambda: publish_customer_return_updated(return_request=obj))
 
         return Response(
             {

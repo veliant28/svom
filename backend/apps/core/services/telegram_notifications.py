@@ -64,8 +64,7 @@ def _return_status_label_ru(status: str) -> str:
         "in_transit": "В пути",
         "received": "Получено",
         "accepted": "Принято",
-        "refund_processing": "Возврат средств в обработке",
-        "refunded": "Средства возвращены",
+        "refunded": "Возврат",
         "cancelled": "Отменено",
     }
     return labels.get(str(status or "").strip(), str(status or "").strip())

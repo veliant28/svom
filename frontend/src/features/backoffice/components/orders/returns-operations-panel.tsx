@@ -41,6 +41,7 @@ export function ReturnsOperationsPanel({
   const [viewOpen, setViewOpen] = useState(false);
   const [viewLoading, setViewLoading] = useState(false);
   const [viewUpdating, setViewUpdating] = useState(false);
+  const [viewSavingComment, setViewSavingComment] = useState(false);
   const [viewItem, setViewItem] = useState<BackofficeReturnOperational | null>(null);
 
   const canRefund = hasBackofficeCapability(user, BACKOFFICE_CAPABILITIES.returnsRefund);
@@ -131,10 +132,9 @@ export function ReturnsOperationsPanel({
       const statusMessageMap: Record<string, string> = {
         approved: t("returns.messages.approved"),
         rejected: t("returns.messages.rejected"),
-        received: t("returns.messages.received"),
         accepted: t("returns.messages.accepted"),
-        refund_processing: t("returns.messages.refundProcessing"),
-        refunded: t("returns.messages.refunded"),
+        refunded: t("returns.messages.refund"),
+        cancelled: t("returns.messages.cancelled"),
       };
       showSuccess(statusMessageMap[payload.status] || t("returns.messages.statusUpdated"));
       void loadRows();
@@ -145,18 +145,36 @@ export function ReturnsOperationsPanel({
     }
   }
 
+  async function handleSaveAdminComment(nextComment: string) {
+    if (!token || !viewItem || viewSavingComment) {
+      return;
+    }
+    setViewSavingComment(true);
+    try {
+      const updated = await updateBackofficeReturnStatus(token, viewItem.id, {
+        status: viewItem.status,
+        admin_comment: nextComment,
+      });
+      setViewItem(updated);
+      setRows((current) => current.map((row) => (row.id === updated.id ? { ...row, ...updated } : row)));
+      showSuccess(t("returns.messages.adminCommentSaved"));
+    } catch (requestError) {
+      showApiError(requestError, t("returns.messages.statusUpdateFailed"));
+    } finally {
+      setViewSavingComment(false);
+    }
+  }
+
   const statusOptions = useMemo(
     () => [
       { value: "", label: t("returns.filters.allStatuses") },
       { value: "new", label: t("statuses.new") },
       { value: "approved", label: t("statuses.approved") },
       { value: "rejected", label: t("statuses.rejected") },
-      { value: "awaiting_ttn", label: t("statuses.awaiting_ttn") },
+      { value: "awaiting_ttn", label: t("statuses.no_ttn") },
       { value: "in_transit", label: t("statuses.in_transit") },
-      { value: "received", label: t("statuses.received") },
       { value: "accepted", label: t("statuses.accepted") },
-      { value: "refund_processing", label: t("statuses.refund_processing") },
-      { value: "refunded", label: t("statuses.refunded") },
+      { value: "refund", label: t("statuses.refund") },
       { value: "cancelled", label: t("statuses.cancelled") },
     ],
     [t],
@@ -297,9 +315,13 @@ export function ReturnsOperationsPanel({
         item={viewItem}
         isLoading={viewLoading}
         isUpdating={viewUpdating}
+        isSavingComment={viewSavingComment}
         canRefund={canRefund}
         onUpdateStatus={(payload) => {
           void handleUpdateStatus(payload);
+        }}
+        onSaveAdminComment={(nextComment) => {
+          void handleSaveAdminComment(nextComment);
         }}
         onClose={() => {
           setViewOpen(false);

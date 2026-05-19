@@ -4,7 +4,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 
 from apps.catalog.models import Brand, Category, Product
-from apps.commerce.models import Order, OrderItem, ReturnRequest
+from apps.commerce.models import Order, OrderItem, ReturnEvent, ReturnRequest
 from apps.core.selectors import get_return_service_settings
 from apps.users.models import User
 from apps.users.rbac import set_user_system_role
@@ -63,7 +63,7 @@ class BackofficeReturnsApiTests(APITestCase):
             user=self.customer,
             order=order,
             return_number="RET-999998",
-            status=ReturnRequest.STATUS_REFUND_PROCESSING,
+            status=ReturnRequest.STATUS_ACCEPTED,
             reason_comment="Need to return",
             refund_amount="1000.00",
             refund_status=ReturnRequest.REFUND_STATUS_PROCESSING,
@@ -136,3 +136,29 @@ class BackofficeReturnsApiTests(APITestCase):
         self.assertEqual(snapshot.get("region_label"), "Kyivska")
         self.assertEqual(snapshot.get("city_label"), "Kyiv")
         self.assertEqual(snapshot.get("np_warehouse_text"), "Branch 12")
+
+    def test_admin_comment_can_be_saved_without_status_change(self):
+        self.assertEqual(self.return_request.status, ReturnRequest.STATUS_ACCEPTED)
+
+        response = self.client.post(
+            reverse("backoffice_api:returns-operational-status", kwargs={"id": self.return_request.id}),
+            {
+                "status": ReturnRequest.STATUS_ACCEPTED,
+                "admin_comment": "Проверьте упаковку перед отправкой.",
+            },
+            format="json",
+            **self.manager_auth,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.return_request.refresh_from_db()
+        self.assertEqual(self.return_request.admin_comment, "Проверьте упаковку перед отправкой.")
+        self.assertEqual(self.return_request.status, ReturnRequest.STATUS_ACCEPTED)
+        self.assertTrue(
+            ReturnEvent.objects.filter(
+                return_request=self.return_request,
+                from_status=ReturnRequest.STATUS_ACCEPTED,
+                to_status=ReturnRequest.STATUS_ACCEPTED,
+                metadata__admin_comment_updated=True,
+            ).exists()
+        )

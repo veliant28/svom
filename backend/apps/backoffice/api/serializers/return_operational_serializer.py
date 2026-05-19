@@ -243,14 +243,12 @@ def apply_return_status_transition(*, obj: ReturnRequest, target_status: str, ac
     elif target_status == ReturnRequest.STATUS_ACCEPTED:
         obj.accepted_at = now_ts
         update_fields.add("accepted_at")
-    elif target_status == ReturnRequest.STATUS_REFUND_PROCESSING:
-        obj.refund_processing_at = now_ts
-        obj.refund_status = ReturnRequest.REFUND_STATUS_PROCESSING
-        update_fields.update({"refund_processing_at", "refund_status"})
     elif target_status == ReturnRequest.STATUS_REFUNDED:
+        if not obj.refund_processing_at:
+            obj.refund_processing_at = now_ts
         obj.refunded_at = now_ts
         obj.refund_status = ReturnRequest.REFUND_STATUS_DONE
-        update_fields.update({"refunded_at", "refund_status"})
+        update_fields.update({"refund_processing_at", "refunded_at", "refund_status"})
 
     obj.save(update_fields=tuple(sorted(update_fields)))
     ReturnEvent.objects.create(

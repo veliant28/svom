@@ -51,6 +51,31 @@ class AutoDbTranslateProductNamesCommandTests(SimpleTestCase):
         translator.translate_product_name.assert_not_called()
         product.save.assert_not_called()
 
+    def test_process_product_respects_manual_lock_status(self):
+        from apps.autodb.management.commands.autodb_translate_product_names import Command
+
+        command = Command()
+        translator = Mock()
+        product = Mock(
+            id="p1-status-lock",
+            name_manually_locked=False,
+            name_source_text="Амортизатор",
+            name_source="autodb_pro",
+            name_source_hash="",
+            name_translation_status=Product.NAME_TRANSLATION_MANUAL_LOCKED,
+            name_uk="",
+            name_ru="",
+            name_en="",
+            save=Mock(),
+        )
+
+        status, translation_status = command._process_product(product=product, translator=translator, dry_run=False)
+
+        self.assertEqual(status, "skipped_manual_locked")
+        self.assertEqual(translation_status, Product.NAME_TRANSLATION_MANUAL_LOCKED)
+        translator.translate_product_name.assert_not_called()
+        product.save.assert_not_called()
+
     def test_process_product_skips_when_hash_unchanged(self):
         from hashlib import sha1
 

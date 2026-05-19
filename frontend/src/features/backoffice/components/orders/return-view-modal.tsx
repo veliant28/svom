@@ -17,20 +17,19 @@ type Translator = (key: string, values?: Record<string, string | number>) => str
 const STATUS_ORDER: Array<{ value: BackofficeReturnOperational["status"]; key: string }> = [
   { value: "approved", key: "approve" },
   { value: "rejected", key: "reject" },
-  { value: "received", key: "received" },
+  { value: "awaiting_ttn", key: "noTtn" },
   { value: "accepted", key: "accepted" },
-  { value: "refund_processing", key: "refundProcessing" },
-  { value: "refunded", key: "refunded" },
+  { value: "refunded", key: "refund" },
+  { value: "cancelled", key: "cancelled" },
 ];
 
 const TRANSITIONS: Record<string, string[]> = {
   new: ["approved", "rejected", "cancelled"],
   approved: ["awaiting_ttn", "cancelled"],
   awaiting_ttn: ["cancelled"],
-  in_transit: ["received", "cancelled"],
-  received: ["accepted"],
-  accepted: ["refund_processing"],
-  refund_processing: ["refunded"],
+  in_transit: ["accepted", "cancelled"],
+  received: ["accepted", "cancelled"],
+  accepted: ["refunded", "cancelled"],
 };
 
 export function ReturnViewModal({
@@ -38,8 +37,10 @@ export function ReturnViewModal({
   item,
   isLoading,
   isUpdating,
+  isSavingComment,
   canRefund,
   onUpdateStatus,
+  onSaveAdminComment,
   onClose,
   t,
 }: {
@@ -47,6 +48,7 @@ export function ReturnViewModal({
   item: BackofficeReturnOperational | null;
   isLoading: boolean;
   isUpdating: boolean;
+  isSavingComment: boolean;
   canRefund: boolean;
   onUpdateStatus: (payload: {
     status: BackofficeReturnOperational["status"];
@@ -54,6 +56,7 @@ export function ReturnViewModal({
     rejection_reason?: string;
     approved_items?: Array<{ item_id: string; quantity_approved: number }>;
   }) => void;
+  onSaveAdminComment: (nextComment: string) => void;
   onClose: () => void;
   t: Translator;
 }) {
@@ -86,9 +89,9 @@ export function ReturnViewModal({
   }, [availableStatuses]);
 
   useEffect(() => {
-    setAdminComment("");
+    setAdminComment(String(item?.admin_comment || ""));
     setRejectionReason("");
-  }, [item?.id]);
+  }, [item?.id, item?.admin_comment]);
 
   useEffect(() => {
     if (!item) {
@@ -354,9 +357,21 @@ export function ReturnViewModal({
                       type="text"
                       value={adminComment}
                       onChange={(event) => setAdminComment(event.target.value)}
+                      onBlur={() => {
+                        if (!item || isSavingComment) {
+                          return;
+                        }
+                        const current = String(item.admin_comment || "").trim();
+                        const next = String(adminComment || "").trim();
+                        if (current === next) {
+                          return;
+                        }
+                        onSaveAdminComment(next);
+                      }}
                       placeholder={t("returns.actions.adminComment")}
                       className="h-9 rounded-md border px-3 text-sm"
                       style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                      disabled={isSavingComment}
                     />
 
                     {selectedStatus === "rejected" ? (

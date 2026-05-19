@@ -70,12 +70,14 @@
         ,
         "approved": "Одобрено",
         "rejected": "Отказано",
-        "awaiting_ttn": "Ожидаем ТТН",
+        "awaiting_ttn": "Нет ТТН",
+        "no_ttn": "Нет ТТН",
         "in_transit": "В пути",
-        "received": "Получено",
+        "received": "Принято",
         "accepted": "Принято",
-        "refund_processing": "Возврат средств",
-        "refunded": "Средства возвращены"
+        "refund_processing": "Возврат",
+        "refunded": "Возврат",
+        "refund": "Возврат"
       }
     }
   }
