@@ -1,4 +1,4 @@
-import { getJson, postJson } from "@/shared/api/http-client";
+import { deleteJson, getJson, postJson } from "@/shared/api/http-client";
 import { normalizePaginatedListResponse } from "@/shared/api/normalize-list-response";
 
 import type { BackofficeReturnOperational, BackofficeReturnStatusUpdatePayload } from "@/features/backoffice/types/returns.types";
@@ -28,4 +28,8 @@ export async function updateBackofficeReturnStatus(
     undefined,
     { token },
   );
+}
+
+export async function deleteBackofficeReturn(token: string, returnId: string): Promise<void> {
+  await deleteJson(`/backoffice/returns/${returnId}/delete/`, undefined, { token });
 }

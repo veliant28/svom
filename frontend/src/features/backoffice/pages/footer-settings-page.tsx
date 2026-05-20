@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
+import { ShortToggle } from "@/features/backoffice/components/widgets/short-toggle";
 import { useFooterSettings } from "@/features/backoffice/hooks/use-footer-settings";
 import {
+  type FooterPhoneFormat,
   formatFooterPhoneForInput,
   formatFooterPhoneForSave,
   normalizeFooterPhoneDigits,
@@ -22,14 +24,18 @@ type FooterForm = {
   selectedDays: WeekdayCode[];
   startTime: string;
   endTime: string;
-  phoneDigits: string;
+  phoneFormat: FooterPhoneFormat;
+  mobilePhoneDigits: string;
+  tollFreePhoneDigits: string;
 };
 
 const EMPTY_FORM: FooterForm = {
   selectedDays: DEFAULT_SELECTED_DAYS,
   startTime: DEFAULT_START_TIME,
   endTime: DEFAULT_END_TIME,
-  phoneDigits: "",
+  phoneFormat: "mobile",
+  mobilePhoneDigits: "",
+  tollFreePhoneDigits: "",
 };
 
 export function FooterSettingsPage() {
@@ -47,11 +53,15 @@ export function FooterSettingsPage() {
       return;
     }
     const parsedWorkingHours = parseWorkingHours(settings.working_hours || "");
+    const resolvedFormat: FooterPhoneFormat = settings.phone_format === "toll_free_0800" ? "toll_free_0800" : "mobile";
+    const normalizedFromSettings = normalizeFooterPhoneDigits(settings.phone || "", resolvedFormat);
     setForm({
       selectedDays: parsedWorkingHours.selectedDays,
       startTime: parsedWorkingHours.startTime,
       endTime: parsedWorkingHours.endTime,
-      phoneDigits: normalizeFooterPhoneDigits(settings.phone || ""),
+      phoneFormat: resolvedFormat,
+      mobilePhoneDigits: resolvedFormat === "mobile" ? normalizedFromSettings : "",
+      tollFreePhoneDigits: resolvedFormat === "toll_free_0800" ? normalizedFromSettings : "",
     });
   }, [settings]);
 
@@ -65,16 +75,36 @@ export function FooterSettingsPage() {
     ВС: t("footerSettings.days.sun"),
   };
 
+  const activePhoneDigits = form.phoneFormat === "mobile" ? form.mobilePhoneDigits : form.tollFreePhoneDigits;
   const serializedWorkingHours = useMemo(
     () => buildWorkingHours(form.selectedDays, form.startTime, form.endTime),
     [form.endTime, form.selectedDays, form.startTime],
   );
-  const serializedPhone = useMemo(() => formatFooterPhoneForSave(form.phoneDigits), [form.phoneDigits]);
-  const maskedPhone = useMemo(() => formatFooterPhoneForInput(form.phoneDigits), [form.phoneDigits]);
-  const initialPhoneDigits = useMemo(() => normalizeFooterPhoneDigits(settings?.phone || ""), [settings?.phone]);
-  const isDirty = (settings?.working_hours || "").trim() !== serializedWorkingHours || initialPhoneDigits !== form.phoneDigits;
+  const serializedPhone = useMemo(
+    () => formatFooterPhoneForSave(activePhoneDigits, form.phoneFormat),
+    [activePhoneDigits, form.phoneFormat],
+  );
+  const maskedPhone = useMemo(
+    () => formatFooterPhoneForInput(activePhoneDigits, form.phoneFormat),
+    [activePhoneDigits, form.phoneFormat],
+  );
+  const initialPhoneFormat = useMemo(() => settings?.phone_format || "mobile", [settings?.phone_format]);
+  const initialMobilePhoneDigits = useMemo(
+    () => (initialPhoneFormat === "mobile" ? normalizeFooterPhoneDigits(settings?.phone || "", "mobile") : ""),
+    [initialPhoneFormat, settings?.phone],
+  );
+  const initialTollFreePhoneDigits = useMemo(
+    () => (initialPhoneFormat === "toll_free_0800" ? normalizeFooterPhoneDigits(settings?.phone || "", "toll_free_0800") : ""),
+    [initialPhoneFormat, settings?.phone],
+  );
+  const isDirty = (settings?.working_hours || "").trim() !== serializedWorkingHours
+    || initialMobilePhoneDigits !== form.mobilePhoneDigits
+    || initialTollFreePhoneDigits !== form.tollFreePhoneDigits
+    || initialPhoneFormat !== form.phoneFormat;
   const isWorkingHoursValid = form.selectedDays.length > 0 && isValidTime(form.startTime) && isValidTime(form.endTime);
-  const isPhoneValid = form.phoneDigits.length === 10;
+  const isPhoneValid = form.phoneFormat === "mobile"
+    ? form.mobilePhoneDigits.length === 10
+    : form.tollFreePhoneDigits.length === 10 && form.tollFreePhoneDigits.startsWith("0800");
   const isFormBusy = isLoading || isSaving;
   const inputDisabled = isClientMounted ? isFormBusy : undefined;
   const saveDisabled = isClientMounted ? isFormBusy || !isDirty || !isWorkingHoursValid || !isPhoneValid : undefined;
@@ -90,12 +120,12 @@ export function FooterSettingsPage() {
           backgroundColor: "var(--surface)",
         }}
       >
-        <div className="flex flex-wrap items-end gap-3 xl:flex-nowrap">
-          <div className="min-w-0 flex-1">
-            <span className="text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_170px_320px_auto]">
+          <div className="grid min-w-0 flex-1 grid-rows-[16px_40px]">
+            <span className="text-xs font-semibold uppercase leading-none tracking-[0.08em]" style={{ color: "var(--muted)" }}>
               {t("footerSettings.fields.workingHours")}
             </span>
-            <div className="mt-1 flex flex-wrap items-center gap-2 xl:flex-nowrap">
+            <div className="mt-1 flex h-10 flex-wrap items-center gap-2 xl:flex-nowrap">
               {WEEKDAY_CODES.map((code) => {
                 const isActive = form.selectedDays.includes(code);
                 const isWeekend = code === "СБ" || code === "ВС";
@@ -105,7 +135,7 @@ export function FooterSettingsPage() {
                     key={code}
                     type="button"
                     disabled={inputDisabled}
-                    className="inline-flex h-9 items-center rounded-md border px-3 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex h-10 items-center rounded-md border px-3 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60"
                     style={{
                       borderColor: isActive ? activeColor : "var(--border)",
                       backgroundColor: isActive ? activeColor : "var(--surface-2)",
@@ -131,7 +161,7 @@ export function FooterSettingsPage() {
                 <input
                   type="time"
                   step={60}
-                  className="h-9 rounded-md border px-2 text-sm"
+                  className="h-10 rounded-md border px-2 text-sm"
                   style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
                   value={form.startTime}
                   onChange={(event) => {
@@ -145,7 +175,7 @@ export function FooterSettingsPage() {
                 <input
                   type="time"
                   step={60}
-                  className="h-9 rounded-md border px-2 text-sm"
+                  className="h-10 rounded-md border px-2 text-sm"
                   style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
                   value={form.endTime}
                   onChange={(event) => {
@@ -157,49 +187,84 @@ export function FooterSettingsPage() {
             </div>
           </div>
 
-          <label className="grid w-full gap-1 sm:w-[320px] xl:w-[320px]">
-            <span className="text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>
+          <div className="grid w-full grid-rows-[16px_40px] justify-items-center sm:w-[170px] xl:w-[170px]">
+            <span className="text-center text-xs font-semibold uppercase leading-none tracking-[0.08em]" style={{ color: "var(--muted)" }}>
+              {t("footerSettings.fields.phoneFormat")}
+            </span>
+            <div className="mt-1 flex h-10 w-full items-center justify-center">
+              <ShortToggle
+                value={form.phoneFormat}
+                ariaLabel={t("footerSettings.fields.phoneFormat")}
+                className="justify-center"
+                disabled={inputDisabled}
+                options={[
+                  { value: "mobile", label: t("footerSettings.phoneFormats.mobile"), activeColor: "#2563eb" },
+                  { value: "toll_free_0800", label: t("footerSettings.phoneFormats.tollFree"), activeColor: "#2563eb" },
+                ]}
+                onChange={(nextFormat) => {
+                  setForm((prev) => ({
+                    ...prev,
+                    phoneFormat: nextFormat,
+                  }));
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="grid w-full grid-rows-[16px_40px] sm:w-[320px] xl:w-[320px]">
+            <span className="text-xs font-semibold uppercase leading-none tracking-[0.08em]" style={{ color: "var(--muted)" }}>
               {t("footerSettings.fields.phone")}
             </span>
-            <input
-              className="h-10 rounded-md border px-3 text-sm"
-              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-              inputMode="numeric"
-              autoComplete="tel-national"
-              value={maskedPhone}
-              onChange={(event) => {
-                setForm((prev) => {
-                  const previousDigits = prev.phoneDigits;
-                  const previousMasked = formatFooterPhoneForInput(previousDigits);
-                  let nextDigits = normalizeFooterPhoneDigits(event.target.value);
-                  const removedOnlyMaskChar =
-                    nextDigits === previousDigits && event.target.value.length < previousMasked.length;
-                  if (removedOnlyMaskChar) {
-                    nextDigits = previousDigits.slice(0, -1);
-                  }
-                  return { ...prev, phoneDigits: nextDigits };
-                });
-              }}
-              disabled={inputDisabled}
-              placeholder={t("footerSettings.placeholders.phone")}
-            />
-          </label>
+            <div className="mt-1 flex h-10 items-center">
+              <input
+                className="h-10 w-full rounded-md border px-3 text-sm"
+                style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                inputMode="numeric"
+                autoComplete="tel-national"
+                value={maskedPhone}
+                onChange={(event) => {
+                  setForm((prev) => {
+                    const previousDigits = prev.phoneFormat === "mobile" ? prev.mobilePhoneDigits : prev.tollFreePhoneDigits;
+                    const previousMasked = formatFooterPhoneForInput(previousDigits, prev.phoneFormat);
+                    let nextDigits = normalizeFooterPhoneDigits(event.target.value, prev.phoneFormat);
+                    const removedOnlyMaskChar =
+                      nextDigits === previousDigits && event.target.value.length < previousMasked.length;
+                    if (removedOnlyMaskChar) {
+                      nextDigits = previousDigits.slice(0, -1);
+                    }
+                    if (prev.phoneFormat === "mobile") {
+                      return { ...prev, mobilePhoneDigits: nextDigits };
+                    }
+                    return { ...prev, tollFreePhoneDigits: nextDigits };
+                  });
+                }}
+                disabled={inputDisabled}
+                placeholder={form.phoneFormat === "mobile" ? t("footerSettings.placeholders.phone") : t("footerSettings.placeholders.phoneTollFree")}
+              />
+            </div>
+          </div>
 
-          <div className="flex w-full sm:w-auto xl:justify-end">
-            <button
-              type="button"
-              className="h-10 w-full rounded-md border px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
-              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
-              disabled={saveDisabled}
-              onClick={() => {
-                void save({
-                  working_hours: serializedWorkingHours,
-                  phone: serializedPhone,
-                });
-              }}
-            >
-              {isSaving ? t("footerSettings.actions.saving") : t("footerSettings.actions.save")}
-            </button>
+          <div className="grid w-full grid-rows-[16px_40px] sm:w-auto xl:justify-self-end">
+            <span className="invisible text-xs font-semibold uppercase leading-none tracking-[0.08em]">
+              .
+            </span>
+            <div className="mt-1 flex h-10 items-center">
+              <button
+                type="button"
+                className="h-10 w-full rounded-md border px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+                style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
+                disabled={saveDisabled}
+                onClick={() => {
+                  void save({
+                    working_hours: serializedWorkingHours,
+                    phone_format: form.phoneFormat,
+                    phone: serializedPhone,
+                  });
+                }}
+              >
+                {isSaving ? t("footerSettings.actions.saving") : t("footerSettings.actions.save")}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -208,7 +273,9 @@ export function FooterSettingsPage() {
             {!form.selectedDays.length
               ? t("footerSettings.validation.daysRequired")
               : !isPhoneValid
-                ? t("footerSettings.validation.phoneIncomplete")
+                ? form.phoneFormat === "mobile"
+                  ? t("footerSettings.validation.phoneIncomplete")
+                  : t("footerSettings.validation.phoneIncompleteTollFree")
                 : null}
           </div>
         </div>

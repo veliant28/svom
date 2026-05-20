@@ -70,7 +70,7 @@
 - `suppliers/*`, `import-runs/*`, `import-quality/*`, `import-errors/*`
 - `pricing/*`, `product-prices/*`
 - `orders/*`, waybill lifecycle, procurement suggestions
-- `returns/*` (операционный список/деталь/смена статусов возврата)
+- `returns/*` (операционный список/деталь/смена статусов возврата, удаление `DELETE /api/backoffice/returns/{id}/delete/`)
 - `support/*`, `security/*`
 - `payments/*`, `nova-poshta/*`, `vchasno-kasa/*`
 - `settings/*` (hero, promo, footer, email)
@@ -233,6 +233,18 @@ npm run dev
 - Статус `refund_processing` физически удалён из активного workflow.
 - Финальный денежный статус возврата — единый `refunded` (в UI отображается как `Возврат`).
 - Миграция `commerce.0024_unify_return_refund_status` переводит legacy-записи `refund_processing -> refunded`.
+- В backoffice-таблице возвратов доступны:
+  - удаление одного возврата из колонки действий;
+  - массовые действия по выбранным возвратам: `Одобрить`, `Отказать`, `Удалить`.
+
+## Footer: формат телефона (Backoffice + Storefront)
+
+- В `backoffice/footer` добавлен переключатель формата телефона:
+  - `Моб.` (маска мобильного номера);
+  - `0 800` (маска `0 (800) XXX-XXX`).
+- Формат сохраняется в `marketing.FooterSettings.phone_format`.
+- Отображение в storefront-футере и контактной плашке header синхронизировано с выбранным форматом.
+- Для форматов используются независимые input-state в UI (переключение не портит введённый номер другого формата).
 
 ## Auto_DB_Pro: практические команды
 

@@ -36,13 +36,15 @@ class BackofficeFooterSettingsAPITests(APITestCase):
         )
         self.assertEqual(get_response.status_code, status.HTTP_200_OK)
         self.assertIn("working_hours", get_response.data)
+        self.assertIn("phone_format", get_response.data)
         self.assertIn("phone", get_response.data)
 
         patch_response = self.client.patch(
             reverse("backoffice_api:settings-footer"),
             {
                 "working_hours": "ПН-ПТ 09:00-18:00",
-                "phone": "+38(067)111-22-33",
+                "phone_format": "toll_free_0800",
+                "phone": "0800123456",
             },
             format="json",
             HTTP_AUTHORIZATION=f"Token {self.admin_token.key}",
@@ -51,7 +53,8 @@ class BackofficeFooterSettingsAPITests(APITestCase):
 
         settings = FooterSettings.objects.get(code=FooterSettings.DEFAULT_CODE)
         self.assertEqual(settings.working_hours, "ПН-ПТ 09:00-18:00")
-        self.assertEqual(settings.phone, "38 (067) 111-22-33")
+        self.assertEqual(settings.phone_format, "toll_free_0800")
+        self.assertEqual(settings.phone, "0 (800) 123-456")
 
     def test_manager_without_capability_cannot_access_footer_settings(self):
         response = self.client.get(

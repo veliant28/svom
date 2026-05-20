@@ -86,7 +86,6 @@ SYSTEM_ROLE_DEFINITIONS: dict[str, BackofficeSystemRoleDefinition] = {
             "returns.view",
             "returns.manage",
             "returns.approve",
-            "returns.reject",
             "customers.support",
             "loyalty.issue",
             "autocatalog.view",

@@ -11,7 +11,7 @@ export function HeaderContactSticker() {
   const { settings } = useFooterSettings();
 
   const workingHoursValue = (settings?.working_hours || "").trim() || t("footer.workingHoursValue");
-  const phoneValue = formatFooterPhoneDisplay(settings?.phone || "") || t("footer.phoneValue");
+  const phoneValue = formatFooterPhoneDisplay(settings?.phone || "", settings?.phone_format || "mobile") || t("footer.phoneValue");
   const phoneHref = `tel:${phoneValue.replace(/[^\d+]/g, "")}`;
 
   return (

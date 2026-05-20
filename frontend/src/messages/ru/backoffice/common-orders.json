@@ -709,8 +709,13 @@
         "actions": {
           "refresh": "Обновить",
           "bulkActions": "Массовые действия",
+          "bulkApprove": "Одобрить",
+          "bulkReject": "Отказать",
+          "bulkDelete": "Удалить",
+          "bulkRejectReasonAuto": "Отклонено массовым действием",
           "clearSelection": "Снять выделение",
           "open": "Открыть возврат",
+          "delete": "Удалить возврат",
           "close": "Закрыть",
           "changeStatus": "Изменить статус",
           "apply": "Применить",
@@ -742,6 +747,9 @@
         "messages": {
           "loadFailed": "Не удалось загрузить возвраты.",
           "detailFailed": "Не удалось загрузить возврат.",
+          "deleted": "Возврат удален.",
+          "deleteFailed": "Не удалось удалить возврат.",
+          "bulkActionPartial": "Выполнено: {done}, ошибок: {failed}.",
           "statusUpdated": "Статус возврата обновлён.",
           "adminCommentSaved": "Комментарий администратора сохранён.",
           "statusUpdateFailed": "Не удалось обновить статус возврата.",

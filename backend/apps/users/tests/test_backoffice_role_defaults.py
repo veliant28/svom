@@ -41,6 +41,11 @@ class BackofficeRoleDefaultsTest(SimpleTestCase):
     def test_operator_defaults_include_loyalty_and_autocatalog_only(self):
         operator = SYSTEM_ROLE_DEFINITIONS["operator"]
         capabilities = set(operator.capability_codes)
+        self.assertIn("returns.view", capabilities)
+        self.assertIn("returns.manage", capabilities)
+        self.assertIn("returns.approve", capabilities)
+        self.assertNotIn("returns.reject", capabilities)
+        self.assertNotIn("returns.refund", capabilities)
         self.assertIn("loyalty.issue", capabilities)
         self.assertIn("autocatalog.view", capabilities)
         self.assertIn("customers.support", capabilities)

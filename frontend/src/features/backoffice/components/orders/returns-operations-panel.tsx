@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ListChecks } from "lucide-react";
 
-import { getBackofficeReturnDetail, getBackofficeReturns, updateBackofficeReturnStatus } from "@/features/backoffice/api/returns-api";
+import {
+  deleteBackofficeReturn,
+  getBackofficeReturnDetail,
+  getBackofficeReturns,
+  updateBackofficeReturnStatus,
+} from "@/features/backoffice/api/returns-api";
 import { ReturnViewModal } from "@/features/backoffice/components/orders/return-view-modal";
 import { ReturnsTable } from "@/features/backoffice/components/orders/returns-table";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
@@ -31,6 +36,7 @@ export function ReturnsOperationsPanel({
   const [selectedSet, setSelectedSet] = useState<Set<string>>(new Set());
   const [bulkActionsOpen, setBulkActionsOpen] = useState(false);
   const bulkActionsRef = useRef<HTMLDivElement | null>(null);
+  const [bulkRunning, setBulkRunning] = useState(false);
 
   const [rows, setRows] = useState<BackofficeReturnOperational[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -165,6 +171,29 @@ export function ReturnsOperationsPanel({
     }
   }
 
+  async function handleDelete(item: BackofficeReturnOperational) {
+    if (!token) {
+      return;
+    }
+    try {
+      await deleteBackofficeReturn(token, item.id);
+      setRows((current) => current.filter((row) => row.id !== item.id));
+      setSelectedSet((current) => {
+        const next = new Set(current);
+        next.delete(item.id);
+        return next;
+      });
+      if (viewItem?.id === item.id) {
+        setViewOpen(false);
+        setViewItem(null);
+      }
+      showSuccess(t("returns.messages.deleted"));
+      void loadRows();
+    } catch (requestError) {
+      showApiError(requestError, t("returns.messages.deleteFailed"));
+    }
+  }
+
   const statusOptions = useMemo(
     () => [
       { value: "", label: t("returns.filters.allStatuses") },
@@ -213,6 +242,64 @@ export function ReturnsOperationsPanel({
     setBulkActionsOpen(false);
   }
 
+  async function runBulkStatusAction(
+    targetStatus: BackofficeReturnOperational["status"],
+    options?: { rejectionReason?: string; successMessage?: string },
+  ) {
+    if (!token || selectedSet.size <= 0 || bulkRunning) {
+      return;
+    }
+    setBulkRunning(true);
+    let completed = 0;
+    let failed = 0;
+    for (const returnId of Array.from(selectedSet)) {
+      try {
+        await updateBackofficeReturnStatus(token, returnId, {
+          status: targetStatus,
+          rejection_reason: options?.rejectionReason,
+        });
+        completed += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    setBulkRunning(false);
+    setBulkActionsOpen(false);
+    if (completed > 0) {
+      showSuccess(options?.successMessage || t("returns.messages.statusUpdated"));
+    }
+    if (failed > 0) {
+      showApiError(new Error("bulk_action_failed"), t("returns.messages.bulkActionPartial", { done: completed, failed }));
+    }
+    void loadRows();
+  }
+
+  async function runBulkDeleteAction() {
+    if (!token || selectedSet.size <= 0 || bulkRunning) {
+      return;
+    }
+    setBulkRunning(true);
+    let completed = 0;
+    let failed = 0;
+    for (const returnId of Array.from(selectedSet)) {
+      try {
+        await deleteBackofficeReturn(token, returnId);
+        completed += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    setBulkRunning(false);
+    setBulkActionsOpen(false);
+    if (completed > 0) {
+      showSuccess(t("returns.messages.deleted"));
+    }
+    if (failed > 0) {
+      showApiError(new Error("bulk_delete_failed"), t("returns.messages.bulkActionPartial", { done: completed, failed }));
+    }
+    void loadRows();
+  }
+
   return (
     <section>
       <section className="mb-3 flex items-center gap-2">
@@ -240,7 +327,43 @@ export function ReturnsOperationsPanel({
               <button
                 type="button"
                 role="menuitem"
-                disabled={selectedSet.size <= 0}
+                disabled={bulkRunning || selectedSet.size <= 0}
+                className="flex h-10 w-full items-center rounded-md px-3 text-left text-sm font-normal leading-5 disabled:opacity-50"
+                onClick={() => {
+                  void runBulkStatusAction("approved", { successMessage: t("returns.messages.approved") });
+                }}
+              >
+                {bulkRunning ? t("loading") : t("returns.actions.bulkApprove")}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={bulkRunning || selectedSet.size <= 0}
+                className="flex h-10 w-full items-center rounded-md px-3 text-left text-sm font-normal leading-5 disabled:opacity-50"
+                onClick={() => {
+                  void runBulkStatusAction("rejected", {
+                    rejectionReason: t("returns.actions.bulkRejectReasonAuto"),
+                    successMessage: t("returns.messages.rejected"),
+                  });
+                }}
+              >
+                {bulkRunning ? t("loading") : t("returns.actions.bulkReject")}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={bulkRunning || selectedSet.size <= 0}
+                className="flex h-10 w-full items-center rounded-md px-3 text-left text-sm font-normal leading-5 text-slate-900 hover:bg-red-50 hover:text-red-700 dark:text-slate-100 dark:hover:bg-red-950/35 dark:hover:text-red-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 disabled:opacity-50"
+                onClick={() => {
+                  void runBulkDeleteAction();
+                }}
+              >
+                {bulkRunning ? t("loading") : t("returns.actions.bulkDelete")}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={bulkRunning || selectedSet.size <= 0}
                 className="flex h-10 w-full items-center rounded-md px-3 text-left text-sm font-normal leading-5 disabled:opacity-50"
                 onClick={clearSelection}
               >
@@ -306,6 +429,9 @@ export function ReturnsOperationsPanel({
         onToggleSelected={toggleSelected}
         onOpen={(item) => {
           void handleOpen(item);
+        }}
+        onDelete={(item) => {
+          void handleDelete(item);
         }}
         onPageChange={setPage}
       />

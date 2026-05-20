@@ -8,7 +8,12 @@
           "workingHours": "Время работы",
           "timeFrom": "С",
           "timeTo": "По",
+          "phoneFormat": "Формат",
           "phone": "Телефон"
+        },
+        "phoneFormats": {
+          "mobile": "Моб.",
+          "tollFree": "0 800"
         },
         "days": {
           "mon": "ПН",
@@ -21,14 +26,16 @@
         },
         "placeholders": {
           "workingHours": "ПН, ВТ, СР, ЧТ, ПТ, СБ 10:00-17:00",
-          "phone": "38 (0XX) XXX-XX-XX"
+          "phone": "38 (0XX) XXX-XX-XX",
+          "phoneTollFree": "0 (800) XXX-XXX"
         },
         "hints": {
           "phoneMask": "Формат: 38 (0XX) XXX-XX-XX. Если ввести 066..., автоматически подставится 38."
         },
         "validation": {
           "daysRequired": "Выберите хотя бы один день недели.",
-          "phoneIncomplete": "Введите полный номер телефона в формате 38 (0XX) XXX-XX-XX."
+          "phoneIncomplete": "Введите полный номер телефона в формате 38 (0XX) XXX-XX-XX.",
+          "phoneIncompleteTollFree": "Введите полный номер телефона в формате 0 (800) XXX-XXX."
         },
         "actions": {
           "save": "Сохранить",

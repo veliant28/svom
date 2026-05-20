@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, ScanBarcode, ScanLine } from "lucide-react";
+import { Eye, ScanBarcode, ScanLine, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 
 import { BackofficeTable, type BackofficeColumn } from "@/features/backoffice/components/table/backoffice-table";
@@ -59,6 +59,7 @@ export function ReturnsTable({
   onToggleSelectAllPage,
   onToggleSelected,
   onOpen,
+  onDelete,
   onPageChange,
 }: {
   t: Translator;
@@ -74,6 +75,7 @@ export function ReturnsTable({
   onToggleSelectAllPage: () => void;
   onToggleSelected: (id: string) => void;
   onOpen: (item: BackofficeReturnOperational) => void;
+  onDelete: (item: BackofficeReturnOperational) => void;
   onPageChange: (next: number) => void;
 }) {
   const columns = useMemo<Array<BackofficeColumn<BackofficeReturnOperational>>>(() => [
@@ -158,10 +160,13 @@ export function ReturnsTable({
       label: t("returns.table.columns.actions"),
       className: "w-[8%]",
       render: (item) => (
-        <ActionIconButton label={t("returns.actions.open")} icon={Eye} onClick={() => onOpen(item)} />
+        <div className="flex items-center justify-end gap-1">
+          <ActionIconButton label={t("returns.actions.open")} icon={Eye} align="end" onClick={() => onOpen(item)} />
+          <ActionIconButton label={t("returns.actions.delete")} icon={Trash2} align="end" tone="danger" onClick={() => onDelete(item)} />
+        </div>
       ),
     },
-  ], [allPageSelected, onOpen, onToggleSelectAllPage, onToggleSelected, selectedSet, somePageSelected, t]);
+  ], [allPageSelected, onDelete, onOpen, onToggleSelectAllPage, onToggleSelected, selectedSet, somePageSelected, t]);
 
   return (
     <AsyncState isLoading={isLoading} error={error} empty={!rows.length} emptyLabel={t("returns.states.empty")}>

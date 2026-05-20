@@ -59,5 +59,6 @@ export type PromoBannerConfig = {
 
 export type MarketingFooterSettings = {
   working_hours: string;
+  phone_format: "mobile" | "toll_free_0800";
   phone: string;
 };

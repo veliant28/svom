@@ -219,3 +219,15 @@ class BackofficeReturnStatusUpdateAPIView(APIView):
             total_refund += line_refund
         obj.refund_amount = total_refund.quantize(Decimal("0.01"))
         obj.save(update_fields=("refund_amount", "updated_at"))
+
+
+class BackofficeReturnDeleteAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, IsStaffOrSuperuser]
+    required_capability = "returns.manage"
+
+    @transaction.atomic
+    def delete(self, request, id):
+        obj = get_object_or_404(get_operational_returns_queryset(), id=id)
+        obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

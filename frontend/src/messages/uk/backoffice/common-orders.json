@@ -709,8 +709,13 @@
         "actions": {
           "refresh": "Оновити",
           "bulkActions": "Масові дії",
+          "bulkApprove": "Схвалити",
+          "bulkReject": "Відхилити",
+          "bulkDelete": "Видалити",
+          "bulkRejectReasonAuto": "Відхилено масовою дією",
           "clearSelection": "Зняти виділення",
           "open": "Відкрити повернення",
+          "delete": "Видалити повернення",
           "close": "Закрити",
           "changeStatus": "Змінити статус",
           "apply": "Застосувати",
@@ -742,6 +747,9 @@
         "messages": {
           "loadFailed": "Не вдалося завантажити повернення.",
           "detailFailed": "Не вдалося завантажити повернення.",
+          "deleted": "Повернення видалено.",
+          "deleteFailed": "Не вдалося видалити повернення.",
+          "bulkActionPartial": "Виконано: {done}, помилок: {failed}.",
           "statusUpdated": "Статус повернення оновлено.",
           "adminCommentSaved": "Коментар адміністратора збережено.",
           "statusUpdateFailed": "Не вдалося оновити статус повернення.",

@@ -709,8 +709,13 @@
         "actions": {
           "refresh": "Refresh",
           "bulkActions": "Bulk actions",
+          "bulkApprove": "Approve",
+          "bulkReject": "Reject",
+          "bulkDelete": "Delete",
+          "bulkRejectReasonAuto": "Rejected by bulk action",
           "clearSelection": "Clear selection",
           "open": "Open return",
+          "delete": "Delete return",
           "close": "Close",
           "changeStatus": "Change status",
           "apply": "Apply",
@@ -742,6 +747,9 @@
         "messages": {
           "loadFailed": "Failed to load returns.",
           "detailFailed": "Failed to load return.",
+          "deleted": "Return deleted.",
+          "deleteFailed": "Failed to delete return.",
+          "bulkActionPartial": "Completed: {done}, failed: {failed}.",
           "statusUpdated": "Return status updated.",
           "adminCommentSaved": "Admin comment saved.",
           "statusUpdateFailed": "Failed to update return status.",

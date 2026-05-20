@@ -8,9 +8,21 @@ from apps.core.db.mixins import TimestampedMixin, UUIDPrimaryKeyMixin
 
 class FooterSettings(UUIDPrimaryKeyMixin, TimestampedMixin):
     DEFAULT_CODE = "default"
+    PHONE_FORMAT_MOBILE = "mobile"
+    PHONE_FORMAT_TOLL_FREE_0800 = "toll_free_0800"
+    PHONE_FORMAT_CHOICES = (
+        (PHONE_FORMAT_MOBILE, _("Мобильный")),
+        (PHONE_FORMAT_TOLL_FREE_0800, _("0 (800) XXX-XXX")),
+    )
 
     code = models.CharField(_("Код"), max_length=32, unique=True, default=DEFAULT_CODE)
     working_hours = models.CharField(_("Время работы"), max_length=255, default="ПН, ВТ, СР, ЧТ, ПТ, СБ 10:00-17:00")
+    phone_format = models.CharField(
+        _("Формат телефона"),
+        max_length=24,
+        choices=PHONE_FORMAT_CHOICES,
+        default=PHONE_FORMAT_MOBILE,
+    )
     phone = models.CharField(_("Телефон"), max_length=64, default="+38(099)897-94-67")
 
     class Meta:

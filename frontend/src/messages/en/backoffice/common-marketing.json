@@ -8,7 +8,12 @@
           "workingHours": "Working hours",
           "timeFrom": "From",
           "timeTo": "To",
+          "phoneFormat": "Format",
           "phone": "Phone"
+        },
+        "phoneFormats": {
+          "mobile": "Mobile",
+          "tollFree": "0 800"
         },
         "days": {
           "mon": "Mon",
@@ -21,14 +26,16 @@
         },
         "placeholders": {
           "workingHours": "Mon, Tue, Wed, Thu, Fri, Sat 10:00-17:00",
-          "phone": "38 (0XX) XXX-XX-XX"
+          "phone": "38 (0XX) XXX-XX-XX",
+          "phoneTollFree": "0 (800) XXX-XXX"
         },
         "hints": {
           "phoneMask": "Format: 38 (0XX) XXX-XX-XX. If you type 066..., the 38 prefix is added automatically."
         },
         "validation": {
           "daysRequired": "Select at least one weekday.",
-          "phoneIncomplete": "Enter full phone number in format 38 (0XX) XXX-XX-XX."
+          "phoneIncomplete": "Enter full phone number in format 38 (0XX) XXX-XX-XX.",
+          "phoneIncompleteTollFree": "Enter full phone number in format 0 (800) XXX-XXX."
         },
         "actions": {
           "save": "Save",
