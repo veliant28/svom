@@ -187,7 +187,8 @@
             "testText": "SVOM test: System notifications",
             "events": {
               "backupStatus": "Статусы бэкапа",
-              "importStatus": "Статусы импорта"
+              "importStatus": "Статусы импорта",
+              "autodbBatchStatus": "Статусы AutoDB batch"
             }
           }
         },

@@ -21,6 +21,7 @@ export type BackofficeTelegramSettings = {
   support_notify_new_message: boolean;
   system_notify_backup_status: boolean;
   system_notify_import_status: boolean;
+  system_notify_autodb_batch_status: boolean;
 };
 
 export type BackofficeTelegramSettingsPatch = Partial<{
@@ -44,6 +45,7 @@ export type BackofficeTelegramSettingsPatch = Partial<{
   support_notify_new_message: boolean;
   system_notify_backup_status: boolean;
   system_notify_import_status: boolean;
+  system_notify_autodb_batch_status: boolean;
 }>;
 
 export type BackofficeTelegramTestResponse = {

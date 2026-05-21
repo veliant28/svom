@@ -55,7 +55,7 @@ export function manualAutoDbSearchRemote(token: string, body: Record<string, unk
     `${BASE}/manual-search/remote/`,
     body,
     undefined,
-    { token, timeoutMs: 120000 },
+    { token, timeoutMs: 180000 },
   );
 }
 

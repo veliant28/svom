@@ -3,15 +3,52 @@ from __future__ import annotations
 from datetime import timedelta
 
 from celery import current_app
+from django.conf import settings
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
 from apps.autodb.models import AutoDbMatchingRun
 from apps.autodb.tasks import BACKOFFICE_TECDOC_BATCH_RUN_TYPE, run_backoffice_tecdoc_batch_bind_task
+from apps.core.services import (
+    send_system_autodb_batch_started_notification,
+    send_system_autodb_batch_stopped_notification,
+)
 
 from .._base import BackofficeAPIView
 from .utils import parse_positive_int, safe_str
+
+
+def _actor_label(user) -> str:
+    if user is None:
+        return "-"
+    full_name = str((user.get_full_name() or "")).strip()
+    if full_name:
+        return full_name
+    email = str(getattr(user, "email", "") or "").strip()
+    if email:
+        return email
+    return str(getattr(user, "id", "") or "-")
+
+
+def _resolve_batch_task_limits(batch_size: int) -> tuple[int, int]:
+    normalized_size = max(int(batch_size or 0), 1)
+    soft_base = max(int(getattr(settings, "AUTODB_BACKOFFICE_BATCH_SOFT_TIME_LIMIT_BASE_SECONDS", 60 * 15) or 0), 300)
+    per_item = max(int(getattr(settings, "AUTODB_BACKOFFICE_BATCH_SOFT_TIME_LIMIT_PER_ITEM_SECONDS", 55) or 0), 30)
+    hard_grace = max(int(getattr(settings, "AUTODB_BACKOFFICE_BATCH_TIME_LIMIT_GRACE_SECONDS", 60 * 15) or 0), 60)
+    max_hard_limit = max(
+        int(getattr(settings, "AUTODB_BACKOFFICE_BATCH_MAX_TIME_LIMIT_SECONDS", 60 * 60 * 10) or 0),
+        soft_base + hard_grace,
+    )
+
+    soft_limit = soft_base + (normalized_size * per_item)
+    hard_limit = soft_limit + hard_grace
+    if max_hard_limit > 0:
+        hard_limit = min(hard_limit, max_hard_limit)
+        soft_limit = min(soft_limit, max(hard_limit - 60, 60))
+    if soft_limit >= hard_limit:
+        soft_limit = max(60, hard_limit - 60)
+    return soft_limit, hard_limit
 
 
 class BackofficeAutoDbMatchingTecdocBatchRunAPIView(BackofficeAPIView):
@@ -52,17 +89,30 @@ class BackofficeAutoDbMatchingTecdocBatchRunAPIView(BackofficeAPIView):
                 "last_error": "",
             },
         )
-        task = run_backoffice_tecdoc_batch_bind_task.delay(
-            run_id=str(run.id),
-            limit=int(batch_size),
-            actor_id=actor,
-            product_ids=product_ids or None,
+        soft_time_limit, time_limit = _resolve_batch_task_limits(int(batch_size))
+        task = run_backoffice_tecdoc_batch_bind_task.apply_async(
+            kwargs={
+                "run_id": str(run.id),
+                "limit": int(batch_size),
+                "actor_id": actor,
+                "product_ids": product_ids or None,
+            },
+            soft_time_limit=soft_time_limit,
+            time_limit=time_limit,
         )
         run.summary_json = {
             **(run.summary_json or {}),
             "task_id": str(task.id),
+            "task_soft_time_limit_seconds": int(soft_time_limit),
+            "task_time_limit_seconds": int(time_limit),
         }
         run.save(update_fields=["summary_json", "updated_at"])
+        send_system_autodb_batch_started_notification(
+            run_id=str(run.id),
+            actor_name=_actor_label(getattr(request, "user", None)),
+            requested_limit=int(batch_size),
+            selected_products_count=len(product_ids),
+        )
         return Response(
             {
                 "dry_run": False,
@@ -81,7 +131,6 @@ class BackofficeAutoDbMatchingTecdocBatchStopAPIView(BackofficeAPIView):
     required_capability = "autocatalog.view"
 
     def post(self, request):
-        del request
         active = _active_batch_run()
         if active is None:
             return Response(
@@ -111,6 +160,15 @@ class BackofficeAutoDbMatchingTecdocBatchStopAPIView(BackofficeAPIView):
         active.finished_at = now
         active.error = "manual stop requested"
         active.save(update_fields=["summary_json", "status", "finished_at", "error", "updated_at"])
+        send_system_autodb_batch_stopped_notification(
+            run_id=str(active.id),
+            actor_name=_actor_label(getattr(request, "user", None)),
+            processed=int(summary.get("processed") or 0),
+            found=int(summary.get("bound") or 0),
+            linked=int(summary.get("bound") or 0),
+            not_found=int(summary.get("failed") or 0),
+            stop_reason=str(summary.get("stopped_reason") or "manual_stop"),
+        )
         return Response(
             {
                 "dry_run": False,

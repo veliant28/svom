@@ -4,16 +4,19 @@ import re
 from typing import Any
 from urllib.parse import urlsplit
 
+from django.conf import settings
 from django.db import DatabaseError, connections, transaction
 
 from apps.autodb.selectors import get_autodb_image_base_url
 from apps.autodb.services.article_number_normalizer import ArticleNumberNormalizer
 from apps.autodb.services.column_helpers import find_column_name
+from apps.autodb.services.public_api import AutoDbPublicApiClient
 from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
 
 from .utils import safe_str, supplier_display_name
 
 ARTICLE_TABLES = ("article_numbers", "articles")
+EXTENDED_ARTICLE_TABLES = ("article_numbers", "articles", "article_oe", "article_cross", "article_nn")
 IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp")
 HTTP_URL_RE = re.compile(r"https?://[^\\s'\"<>]+", re.IGNORECASE)
 
@@ -49,9 +52,9 @@ class ManualAutoDbSearch:
         matched_row: dict[str, Any] = {}
         local_hits = 0
 
-        for table in ARTICLE_TABLES:
+        for table in EXTENDED_ARTICLE_TABLES:
             columns = self.storage.get_local_columns(table)
-            supplier_col, article_col = self._supplier_article_columns(columns)
+            supplier_col, article_col = self._supplier_article_columns(table=table, columns=columns)
             if not supplier_col or not article_col:
                 continue
             for variant in variants[:8]:
@@ -72,7 +75,7 @@ class ManualAutoDbSearch:
             if matched_table:
                 break
 
-        article_for_linkage = matched_article or normalized.normalized or normalized.canonical
+        article_for_linkage = self._resolve_linkage_article(row=matched_row, fallback=matched_article or normalized.normalized or normalized.canonical)
         article_prd_rows, article_links_rows, prd_rows, prd_ids = self._linkage_counts(
             supplier_id=supplier_id,
             article_number=article_for_linkage,
@@ -141,46 +144,172 @@ class ManualAutoDbSearch:
         self._ensure_connection_ready()
         variants = self.variants(article)
         candidates: dict[tuple[int, str], dict[str, Any]] = {}
-        for table in ARTICLE_TABLES:
+        for table in EXTENDED_ARTICLE_TABLES:
             columns = self.storage.get_local_columns(table)
-            supplier_col, article_col = self._supplier_article_columns(columns)
+            supplier_col, article_col = self._supplier_article_columns(table=table, columns=columns)
             if not supplier_col or not article_col:
                 continue
+            candidate_article_columns = self._candidate_article_columns(table=table, columns=columns, primary=article_col)
             for variant in variants[:8]:
-                rows = self._safe_fetch_local_rows(
-                    table=table,
-                    filters={article_col: variant},
-                    columns=[supplier_col, article_col],
-                    limit=500,
-                )
-                for row in rows:
-                    supplier_id = self._safe_int(row.get(supplier_col))
-                    article_value = safe_str(row.get(article_col) or variant).upper()
-                    if supplier_id is None or not article_value:
+                for active_article_col in candidate_article_columns:
+                    rows = self._safe_fetch_local_rows(
+                        table=table,
+                        filters={active_article_col: variant},
+                        columns=[supplier_col, active_article_col],
+                        limit=500,
+                    )
+                    for row in rows:
+                        supplier_id = self._safe_int(row.get(supplier_col))
+                        article_value = safe_str(row.get(active_article_col) or variant).upper()
+                        if supplier_id is None or not article_value:
+                            continue
+                        key = (supplier_id, article_value)
+                        if key not in candidates:
+                            candidates[key] = {
+                                "supplier_id": supplier_id,
+                                "supplier_name": supplier_display_name(supplier_id),
+                                "matched_stored_article": article_value,
+                                "hits": 0,
+                                "matched_table": table,
+                            }
+                        candidates[key]["hits"] = int(candidates[key]["hits"]) + 1
+
+        if not candidates:
+            contains_needles = [safe_str(item).upper() for item in variants if safe_str(item)]
+            seen_needles: set[str] = set()
+            for needle in contains_needles[:4]:
+                if needle in seen_needles or len(needle) < 3:
+                    continue
+                seen_needles.add(needle)
+                for table in EXTENDED_ARTICLE_TABLES:
+                    columns = self.storage.get_local_columns(table)
+                    supplier_col, article_col = self._supplier_article_columns(table=table, columns=columns)
+                    if not supplier_col or not article_col:
                         continue
-                    key = (supplier_id, article_value)
-                    if key not in candidates:
-                        candidates[key] = {
-                            "supplier_id": supplier_id,
-                            "supplier_name": supplier_display_name(supplier_id),
-                            "matched_stored_article": article_value,
-                            "hits": 0,
-                            "matched_table": table,
-                        }
-                    candidates[key]["hits"] = int(candidates[key]["hits"]) + 1
+                    candidate_article_columns = self._candidate_article_columns(table=table, columns=columns, primary=article_col)
+                    for active_article_col in candidate_article_columns:
+                        rows = self._safe_fetch_local_rows_contains(
+                            table=table,
+                            supplier_column=supplier_col,
+                            article_column=active_article_col,
+                            needle=needle,
+                            limit=300,
+                        )
+                        for row in rows:
+                            supplier_id = self._safe_int(row.get(supplier_col))
+                            article_value = safe_str(row.get(active_article_col) or "").upper()
+                            if supplier_id is None or not article_value:
+                                continue
+                            key = (supplier_id, article_value)
+                            if key not in candidates:
+                                candidates[key] = {
+                                    "supplier_id": supplier_id,
+                                    "supplier_name": supplier_display_name(supplier_id),
+                                    "matched_stored_article": article_value,
+                                    "hits": 0,
+                                    "matched_table": table,
+                                }
+                            candidates[key]["hits"] = int(candidates[key]["hits"]) + 1
         ordered = sorted(
             candidates.values(),
             key=lambda item: (-int(item["hits"]), safe_str(item["supplier_name"]), int(item["supplier_id"])),
         )
         return ordered[: max(int(limit), 1)]
 
-    def _supplier_article_columns(self, columns: set[str] | list[str]) -> tuple[str | None, str | None]:
-        supplier_col = find_column_name(columns, ["supplierId", "supplierid", "SupplierId", "supplier_id", "supplier"])
-        article_col = find_column_name(
-            columns,
-            ["DataSupplierArticleNumber", "datasupplierarticlenumber", "articleNumber", "articlenumber", "article", "number"],
+    def remote_candidates(self, *, article: str, limit: int = 80) -> list[dict[str, Any]]:
+        if bool(getattr(settings, "AUTODB_MANUAL_SEARCH_REMOTE_API_ENABLED", False)):
+            return self._remote_candidates_via_public_api(article=article, limit=limit)
+
+        variants = self.variants(article)
+        candidates: dict[tuple[int, str], dict[str, Any]] = {}
+        for table in EXTENDED_ARTICLE_TABLES:
+            try:
+                columns = self.storage.get_remote_columns(table)
+            except Exception:  # noqa: BLE001
+                continue
+            supplier_col, article_col = self._supplier_article_columns(table=table, columns=columns)
+            if not supplier_col or not article_col:
+                continue
+            candidate_article_columns = self._candidate_article_columns(table=table, columns=columns, primary=article_col)
+            for variant in variants[:8]:
+                for active_article_col in candidate_article_columns:
+                    rows = self._safe_fetch_remote_rows_exact(
+                        table=table,
+                        filters={active_article_col: variant},
+                        columns=[supplier_col, active_article_col],
+                        limit=400,
+                    )
+                    for row in rows:
+                        supplier_id = self._safe_int(row.get(supplier_col))
+                        article_value = safe_str(row.get(active_article_col) or variant).upper()
+                        if supplier_id is None or not article_value:
+                            continue
+                        key = (supplier_id, article_value)
+                        if key not in candidates:
+                            candidates[key] = {
+                                "supplier_id": supplier_id,
+                                "supplier_name": supplier_display_name(supplier_id),
+                                "matched_stored_article": article_value,
+                                "hits": 0,
+                                "matched_table": table,
+                            }
+                        candidates[key]["hits"] = int(candidates[key]["hits"]) + 1
+
+        ordered = sorted(
+            candidates.values(),
+            key=lambda item: (-int(item["hits"]), safe_str(item["supplier_name"]), int(item["supplier_id"])),
         )
+        return ordered[: max(int(limit), 1)]
+
+    def _remote_candidates_via_public_api(self, *, article: str, limit: int) -> list[dict[str, Any]]:
+        query = safe_str(article)
+        if not query:
+            return []
+        rows = AutoDbPublicApiClient().search_candidates(article=query, limit=limit)
+        out: list[dict[str, Any]] = []
+        for row in rows:
+            supplier_id = self._safe_int(row.get("supplier_id"))
+            if supplier_id is None:
+                continue
+            out.append(
+                {
+                    "supplier_id": supplier_id,
+                    "supplier_name": supplier_display_name(supplier_id),
+                    "matched_stored_article": safe_str(row.get("matched_stored_article")).upper(),
+                    "hits": int(row.get("hits") or 0),
+                    "matched_table": safe_str(row.get("matched_table")) or "auto-db.pro:search",
+                }
+            )
+        return out
+
+    def _supplier_article_columns(self, *, table: str, columns: set[str] | list[str]) -> tuple[str | None, str | None]:
+        supplier_candidates = ["supplierId", "supplierid", "SupplierId", "supplier_id", "supplier"]
+        article_candidates = ["DataSupplierArticleNumber", "datasupplierarticlenumber", "articleNumber", "articlenumber", "article", "number"]
+
+        if table == "article_nn":
+            supplier_candidates = [*supplier_candidates, "newsupplierid", "newSupplierId"]
+            article_candidates = [*article_candidates, "newdatasupplierarticlenumber", "newnbr", "newNbr"]
+        if table == "article_cross":
+            article_candidates = [*article_candidates, "PartsDataSupplierArticleNumber", "partsdatasupplierarticlenumber", "OENbr", "oenbr"]
+        if table == "article_oe":
+            article_candidates = [*article_candidates, "OENbr", "oenbr"]
+
+        supplier_col = find_column_name(columns, supplier_candidates)
+        article_col = find_column_name(columns, article_candidates)
         return supplier_col, article_col
+
+    def _candidate_article_columns(self, *, table: str, columns: set[str] | list[str], primary: str) -> list[str]:
+        candidates: list[str] = [primary]
+        optional_map: dict[str, list[str]] = {
+            "article_oe": ["OENbr", "oenbr", "DataSupplierArticleNumber", "datasupplierarticlenumber"],
+            "article_cross": ["PartsDataSupplierArticleNumber", "partsdatasupplierarticlenumber", "OENbr", "oenbr"],
+            "article_nn": ["newdatasupplierarticlenumber", "newnbr", "newNbr", "datasupplierarticlenumber"],
+        }
+        for key in optional_map.get(table, []):
+            resolved = find_column_name(columns, [key])
+            if resolved and resolved not in candidates:
+                candidates.append(resolved)
+        return candidates
 
     def _selected_columns(self, columns: set[str]) -> list[str]:
         lower = {col.lower() for col in columns}
@@ -195,6 +324,13 @@ class ManualAutoDbSearch:
             "datasupplierarticlenumber",
             "articleNumber",
             "articlenumber",
+            "PartsDataSupplierArticleNumber",
+            "partsdatasupplierarticlenumber",
+            "newdatasupplierarticlenumber",
+            "newnbr",
+            "newNbr",
+            "OENbr",
+            "oenbr",
             "description",
             "genericArticleId",
             "genericarticleid",
@@ -207,6 +343,26 @@ class ManualAutoDbSearch:
             if row.get(key) not in (None, ""):
                 return safe_str(row.get(key))
         return ""
+
+    def _resolve_linkage_article(self, *, row: dict[str, Any], fallback: str) -> str:
+        priority_fields = (
+            "PartsDataSupplierArticleNumber",
+            "partsdatasupplierarticlenumber",
+            "newdatasupplierarticlenumber",
+            "DataSupplierArticleNumber",
+            "datasupplierarticlenumber",
+            "articleNumber",
+            "articlenumber",
+            "newnbr",
+            "newNbr",
+            "OENbr",
+            "oenbr",
+        )
+        for key in priority_fields:
+            value = safe_str(row.get(key))
+            if value:
+                return value
+        return safe_str(fallback)
 
     def _linkage_counts(self, *, supplier_id: int, article_number: str) -> tuple[int, int, int, list[int]]:
         product_ids: list[int] = []
@@ -241,7 +397,7 @@ class ManualAutoDbSearch:
 
     def _linkage_table_rows(self, *, table: str, supplier_id: int, article_number: str, product_ids: list[int]) -> int:
         columns = self.storage.get_local_columns(table)
-        supplier_col, article_col = self._supplier_article_columns(columns)
+        supplier_col, article_col = self._supplier_article_columns(table=table, columns=columns)
         product_col = find_column_name(columns, ["productId", "productid", "ProductId", "prdId", "prdid", "id"])
         if not supplier_col or not article_col or not product_col:
             return 0
@@ -260,7 +416,7 @@ class ManualAutoDbSearch:
 
     def _count_rows(self, *, table: str, supplier_id: int, article_number: str) -> int:
         columns = self.storage.get_local_columns(table)
-        supplier_col, article_col = self._supplier_article_columns(columns)
+        supplier_col, article_col = self._supplier_article_columns(table=table, columns=columns)
         if not supplier_col or not article_col:
             return 0
         rows = self._safe_fetch_local_rows(
@@ -274,6 +430,9 @@ class ManualAutoDbSearch:
     def build_remote_previews(self, *, supplier_id: int, article_number: str) -> dict[str, Any]:
         return self._build_previews(supplier_id=supplier_id, article_number=article_number, source="remote")
 
+    def build_local_previews(self, *, supplier_id: int, article_number: str) -> dict[str, Any]:
+        return self._build_previews(supplier_id=supplier_id, article_number=article_number, source="local")
+
     def _safe_fetch_local_rows(self, **kwargs) -> list[dict[str, Any]]:
         try:
             with transaction.atomic(using=self.storage.db_alias):
@@ -285,6 +444,38 @@ class ManualAutoDbSearch:
         try:
             with transaction.atomic(using=self.storage.db_alias):
                 return self.storage.fetch_local_rows_in(**kwargs)
+        except DatabaseError:
+            return []
+
+    def _safe_fetch_local_rows_contains(
+        self,
+        *,
+        table: str,
+        supplier_column: str,
+        article_column: str,
+        needle: str,
+        limit: int = 300,
+    ) -> list[dict[str, Any]]:
+        if not needle:
+            return []
+        try:
+            with connections[self.storage.db_alias].cursor() as cursor:
+                cursor.execute(
+                    (
+                        f"SELECT {self.storage._q(supplier_column)} AS supplier_col, {self.storage._q(article_column)} AS article_col "
+                        f"FROM {self.storage._q(table)} "
+                        f"WHERE CAST({self.storage._q(article_column)} AS text) ILIKE %s "
+                        f"LIMIT %s"
+                    ),
+                    [f"%{needle}%", max(int(limit), 1)],
+                )
+                return [
+                    {
+                        supplier_column: row[0],
+                        article_column: row[1],
+                    }
+                    for row in cursor.fetchall()
+                ]
         except DatabaseError:
             return []
 
@@ -465,7 +656,7 @@ class ManualAutoDbSearch:
 
     def _fetch_local_rows(self, *, table: str, supplier_id: int, article_number: str, limit: int) -> list[dict[str, Any]]:
         columns = self.storage.get_local_columns(table)
-        supplier_col, article_col = self._supplier_article_columns(columns)
+        supplier_col, article_col = self._supplier_article_columns(table=table, columns=columns)
         if not supplier_col or not article_col:
             return []
         selected = list(sorted(columns))[:40]
@@ -479,7 +670,7 @@ class ManualAutoDbSearch:
     def _fetch_remote_rows(self, *, table: str, supplier_id: int, article_number: str, limit: int) -> list[dict[str, Any]]:
         try:
             columns = self.storage.get_remote_columns(table)
-            supplier_col, article_col = self._supplier_article_columns(columns)
+            supplier_col, article_col = self._supplier_article_columns(table=table, columns=columns)
             if not supplier_col or not article_col:
                 return []
             selected = list(columns)[:40]
@@ -489,6 +680,56 @@ class ManualAutoDbSearch:
                 columns=selected,
                 limit=limit,
             )
+        except Exception:  # noqa: BLE001
+            return []
+
+    def _safe_fetch_remote_rows_exact(
+        self,
+        *,
+        table: str,
+        filters: dict[str, Any],
+        columns: list[str],
+        limit: int,
+    ) -> list[dict[str, Any]]:
+        try:
+            return self.storage.fetch_remote_rows_exact(
+                table=table,
+                filters=filters,
+                columns=columns,
+                limit=limit,
+            )
+        except Exception:  # noqa: BLE001
+            return []
+
+    def _safe_fetch_remote_rows_contains(
+        self,
+        *,
+        table: str,
+        supplier_column: str,
+        article_column: str,
+        needle: str,
+        limit: int = 120,
+    ) -> list[dict[str, Any]]:
+        if not needle:
+            return []
+        try:
+            table_name = self.storage._quote_mysql_identifier(table)
+            supplier_name = self.storage._quote_mysql_identifier(supplier_column)
+            article_name = self.storage._quote_mysql_identifier(article_column)
+            sql = (
+                f"SELECT {supplier_name} AS supplier_col, {article_name} AS article_col "
+                f"FROM {table_name} "
+                f"WHERE CAST({article_name} AS CHAR) LIKE %s "
+                f"LIMIT {max(int(limit), 1)}"
+            )
+            rows = self.storage._ensure_remote_client().select(sql, (f"%{needle}%",))
+            return [
+                {
+                    supplier_column: row.get("supplier_col"),
+                    article_column: row.get("article_col"),
+                }
+                for row in rows
+            ]
         except Exception:  # noqa: BLE001
             return []
 

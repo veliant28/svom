@@ -726,6 +726,14 @@
           "rejectionReason": "Причина отказа (обязательно)",
           "noTransitions": "Для текущего статуса нет доступных переходов."
         },
+        "modals": {
+          "delete": {
+            "title": "Удалить возврат",
+            "singleMessage": "Удалить возврат {returnNumber}?",
+            "bulkTitle": "Удалить возвраты",
+            "bulkMessage": "Удалить выбранные возвраты: {count}?"
+          }
+        },
         "statusActions": {
           "approve": "Одобрено",
           "reject": "Отказано",

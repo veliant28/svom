@@ -10,7 +10,7 @@
         "searchTitle": "Поиск в Auto-DB"
       },
       "common": { "yes": "Да", "no": "Нет", "prev": "Назад", "next": "Вперед" },
-      "states": { "empty": "Нет данных", "emptyProducts": "Нет несвязанных товаров", "emptySearch": "Результатов пока нет" },
+      "states": { "empty": "Нет данных", "emptyProducts": "Нет несвязанных товаров", "emptySearch": "Результатов пока нет", "loadingCandidates": "Загрузка..." },
       "dashboard": {
         "cards": {
           "totalJobs": "Всего задач",
@@ -349,7 +349,7 @@
         "noImage": "Нет фото Auto-DB",
         "productNameLabel": "Название товара",
         "attributesTitle": "Характеристики",
-        "fitmentTitle": "Применяемость",
+        "fitmentTitle": "Совместимость",
         "fitmentMakeLabel": "Марка",
         "fitmentModelLabel": "Модель",
         "fitmentAllMakes": "Все марки",

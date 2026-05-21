@@ -16,7 +16,7 @@ import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/b
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
-import { useBackofficeQuery } from "@/features/backoffice/hooks/use-backoffice-query";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import type {
   AutoDbProductJob,
   AutoDbRemoteQuota,
@@ -60,6 +60,7 @@ export function AutoDbMatchingSearchTab({
   const [article, setArticle] = useState("");
   const [source, setSource] = useState<SourceMode>("local");
   const [candidates, setCandidates] = useState<SearchCandidate[]>([]);
+  const [isLoadingCandidates, setIsLoadingCandidates] = useState(false);
   const [selectedCandidateKey, setSelectedCandidateKey] = useState("");
   const [result, setResult] = useState<AutoDbSearchResult | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
@@ -100,47 +101,43 @@ export function AutoDbMatchingSearchTab({
       return;
     }
     setSelectedCandidateKey(candidateKey(candidate));
+    setResult(null);
     setIsLoadingDetails(true);
     try {
       const body = {
         supplier_id: candidate.supplier_id,
         supplier_name: candidate.supplier_name,
         brand: candidate.supplier_name,
-        article,
+        article: candidate.matched_stored_article || article,
       };
       const details: AutoDbSearchResult[] = [];
-      let hasLocalRows = false;
       if (source === "local" || source === "both") {
         const localResponse = await manualAutoDbSearchLocal(quotaQuery.token, body);
         const localRows = localResponse.results ?? [];
-        if (localRows.length > 0) {
-          hasLocalRows = true;
-          details.push(...localRows);
-        }
+        details.push(...localRows);
       }
       if (source === "remote" || source === "both") {
-        try {
-          const remoteResponse = await manualAutoDbSearchRemote(quotaQuery.token, body);
-          details.push(...(remoteResponse.results ?? []));
-          await quotaQuery.refetch();
-        } catch (err) {
-          if (!hasLocalRows) {
-            throw err;
-          }
-          showWarning(t("toasts.apiError"));
-        }
+        const remoteResponse = await manualAutoDbSearchRemote(quotaQuery.token, body);
+        const remoteRows = remoteResponse.results ?? [];
+        details.push(...remoteRows);
+        await quotaQuery.refetch();
       }
       const first = details
         .slice()
         .sort((a, b) => scoreSearchResult(b) - scoreSearchResult(a))[0] ?? null;
-      setResult(first);
-      const foundStatus = first?.status.endsWith("_found") && first.status !== "not_found";
-      if (foundStatus) {
-        showSuccess(t("toasts.localResultFound"));
+      const hasFound = details.some((item) => isFoundStatus(item.status));
+      if (!first) {
+        showWarning(t("toasts.localResultNotFound"));
       } else {
+        setResult(first);
+      }
+      if (hasFound) {
+        showSuccess(t("toasts.localResultFound"));
+      } else if (first?.status === "not_found" || first?.status === "error") {
         showWarning(t("toasts.localResultNotFound"));
       }
     } catch (err) {
+      setResult(null);
       showApiError(err, t("toasts.apiError"));
     } finally {
       setIsLoadingDetails(false);
@@ -152,9 +149,41 @@ export function AutoDbMatchingSearchTab({
       showWarning(t("toasts.validationArticleRequired"));
       return;
     }
+    setIsLoadingCandidates(true);
     try {
-      const response = await manualAutoDbSearchLocal(quotaQuery.token, { article });
-      const rows = response.candidates ?? [];
+      let localRows: SearchCandidate[] = [];
+      let remoteRows: SearchCandidate[] = [];
+
+      if (source === "local" || source === "both") {
+        const localResponse = await manualAutoDbSearchLocal(quotaQuery.token, { article });
+        localRows = (localResponse.candidates ?? []) as SearchCandidate[];
+      }
+
+      if (source === "remote" || source === "both") {
+        if (quotaPaused) {
+          if (source === "remote") {
+            setCandidates([]);
+            setSelectedCandidateKey("");
+            setResult(null);
+            showWarning(t("quota.remoteDisabled"));
+            return;
+          }
+        } else {
+          const remoteResponse = await manualAutoDbSearchRemote(quotaQuery.token, { article });
+          remoteRows = (remoteResponse.candidates ?? []) as SearchCandidate[];
+          try {
+            await quotaQuery.refetch();
+          } catch {
+            // Candidate list is already loaded; quota refresh is optional.
+          }
+        }
+      }
+
+      const rows = source === "both"
+        ? mergeCandidates(localRows, remoteRows)
+        : source === "remote"
+          ? remoteRows
+          : localRows;
       setCandidates(rows);
       setResult(null);
       if (!rows.length) {
@@ -165,14 +194,21 @@ export function AutoDbMatchingSearchTab({
       setSelectedCandidateKey(candidateKey(rows[0]));
       showSuccess(t("toasts.candidatesFound", { count: rows.length }));
     } catch (err) {
+      setCandidates([]);
+      setSelectedCandidateKey("");
+      setResult(null);
       showApiError(err, t("toasts.apiError"));
+    } finally {
+      setIsLoadingCandidates(false);
     }
   }, [
     article,
-    quotaQuery.token,
+    quotaPaused,
+    quotaQuery,
     showApiError,
     showSuccess,
     showWarning,
+    source,
     t,
   ]);
 
@@ -264,6 +300,14 @@ export function AutoDbMatchingSearchTab({
     }
   }, [article, candidates, findCandidates, loadCandidateDetails, quotaQuery, refreshNonce, selectedCandidateKey]);
 
+  useEffect(() => {
+    setCandidates([]);
+    setSelectedCandidateKey("");
+    setResult(null);
+    setSelectedMake("");
+    setSelectedModel("");
+  }, [source]);
+
   return (
     <div className="grid h-[calc(100vh-11rem)] min-h-[560px] grid-cols-1 gap-3 overflow-hidden xl:grid-cols-[minmax(0,1.45fr)_560px]">
       <Panel className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3">
@@ -327,82 +371,126 @@ export function AutoDbMatchingSearchTab({
         </div>
 
         <div className="min-h-0 overflow-auto rounded-xl border" style={surfaceStyle}>
-          <table className="w-full border-collapse text-xs">
-            <thead style={{ backgroundColor: "var(--surface-2)" }}>
-              <tr className="border-b" style={{ borderColor: "var(--border)" }}>
-                <th className="px-2 py-2 text-left">{t("search.matchesColumns.brand")}</th>
-                <th className="px-2 py-2 text-left">{t("search.matchesColumns.article")}</th>
-                <th className="w-[72px] px-2 py-2 text-center">{t("search.matchesColumns.status")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {candidates.map((candidate) => {
-                const key = candidateKey(candidate);
-                const active = key === selectedCandidateKey;
-                return (
-                  <tr
-                    key={key}
-                    className="cursor-pointer border-b"
-                    style={{ borderColor: "var(--border)", backgroundColor: active ? "var(--surface-2)" : "transparent" }}
-                    onClick={() => void loadCandidateDetails(candidate)}
-                  >
-                    <td className="px-2 py-2"><BackofficeStatusChip tone={active ? "black" : "gray"}>{candidate.supplier_name}</BackofficeStatusChip></td>
-                    <td className="px-2 py-2 font-semibold">{candidate.matched_stored_article}</td>
-                    <td className="px-2 py-2 text-center">
-                      <BackofficeStatusChip
-                        tone="success"
-                        icon={CheckCircle2}
-                        className="h-6 w-6 justify-center gap-0 px-0 py-0 [&>span:last-child]:hidden"
-                      >
-                        {t("search.statusFound")}
-                      </BackofficeStatusChip>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          {isLoadingCandidates ? (
+            <div className="flex h-full min-h-[320px] items-center justify-center px-3 py-6 text-sm" style={{ color: "var(--muted)" }}>
+              {t("states.loadingCandidates")}
+            </div>
+          ) : (
+            <table className="w-full border-collapse text-xs">
+              <thead style={{ backgroundColor: "var(--surface-2)" }}>
+                <tr className="border-b" style={{ borderColor: "var(--border)" }}>
+                  <th className="px-2 py-2 text-left">{t("search.matchesColumns.brand")}</th>
+                  <th className="px-2 py-2 text-left">{t("search.matchesColumns.article")}</th>
+                  <th className="w-[72px] px-2 py-2 text-center">{t("search.matchesColumns.status")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {candidates.map((candidate) => {
+                  const key = candidateKey(candidate);
+                  const active = key === selectedCandidateKey;
+                  return (
+                    <tr
+                      key={key}
+                      className="cursor-pointer border-b"
+                      style={{ borderColor: "var(--border)", backgroundColor: active ? "var(--surface-2)" : "transparent" }}
+                      onClick={() => void loadCandidateDetails(candidate)}
+                    >
+                      <td className="px-2 py-2"><BackofficeStatusChip tone={active ? "black" : "gray"}>{candidate.supplier_name}</BackofficeStatusChip></td>
+                      <td className="px-2 py-2 font-semibold">{candidate.matched_stored_article}</td>
+                      <td className="px-2 py-2 text-center">
+                        <BackofficeStatusChip
+                          tone="success"
+                          icon={CheckCircle2}
+                          className="h-6 w-6 justify-center gap-0 px-0 py-0 [&>span:last-child]:hidden"
+                        >
+                          {t("search.statusFound")}
+                        </BackofficeStatusChip>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       </Panel>
 
       <Panel className="grid h-full min-h-0">
-        <AsyncState isLoading={isLoadingDetails} error={null} empty={!result} emptyLabel={t("states.emptySearch")}>
-          {result ? (
-            <ResultDetails
-              result={result}
-              selectedMake={selectedMake}
-              selectedModel={selectedModel}
-              onSelectedMake={setSelectedMake}
-              onSelectedModel={setSelectedModel}
-              skuQuery={skuQuery}
-              skuResults={skuResults}
-              selectedSku={selectedSku}
-              isSkuLookupLoading={isSkuLookupLoading}
-              isBindLoading={isBindLoading}
-              isSkuDropdownOpen={isSkuDropdownOpen}
-              skuActiveIndex={skuActiveIndex}
-              skuInputRef={skuInputRef}
-              onSkuQueryChange={setSkuQuery}
-              onSkuDropdownOpen={setIsSkuDropdownOpen}
-              onSkuActiveIndexChange={setSkuActiveIndex}
-              onSkuSelect={applySkuSelection}
-              onBind={runManualBind}
-            />
-          ) : null}
-        </AsyncState>
+        {isLoadingDetails ? (
+          <div className="rounded-xl border p-8 text-sm" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
+            <div className="flex min-h-[320px] items-center justify-center" style={{ color: "var(--muted)" }}>
+              {t("states.loadingCandidates")}
+            </div>
+          </div>
+        ) : (
+          <AsyncState isLoading={false} error={null} empty={!result} emptyLabel={t("states.emptySearch")}>
+            {result ? (
+              <ResultDetails
+                result={result}
+                selectedMake={selectedMake}
+                selectedModel={selectedModel}
+                onSelectedMake={setSelectedMake}
+                onSelectedModel={setSelectedModel}
+                skuQuery={skuQuery}
+                skuResults={skuResults}
+                selectedSku={selectedSku}
+                isSkuLookupLoading={isSkuLookupLoading}
+                isBindLoading={isBindLoading}
+                isSkuDropdownOpen={isSkuDropdownOpen}
+                skuActiveIndex={skuActiveIndex}
+                skuInputRef={skuInputRef}
+                onSkuQueryChange={setSkuQuery}
+                onSkuDropdownOpen={setIsSkuDropdownOpen}
+                onSkuActiveIndexChange={setSkuActiveIndex}
+                onSkuSelect={applySkuSelection}
+                onBind={runManualBind}
+              />
+            ) : null}
+          </AsyncState>
+        )}
       </Panel>
     </div>
   );
 }
 
 function useQuotaQuery() {
-  const queryFn = useCallback((token: string) => getAutoDbMatchingRemoteQuota(token), []);
-  const quotaQuery = useBackofficeQuery<AutoDbRemoteQuota>(queryFn);
+  const { token, isLoading: isAuthLoading } = useAuth();
+  const [data, setData] = useState<AutoDbRemoteQuota | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const refetch = useCallback(async () => {
+    if (!token) {
+      setData(null);
+      setIsLoading(false);
+      return;
+    }
+    try {
+      const payload = await getAutoDbMatchingRemoteQuota(token);
+      setData(payload);
+    } catch {
+      // Silent by design: quota polling should not spam API error toasts in search flow.
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token]);
+
   useEffect(() => {
-    const intervalId = window.setInterval(() => void quotaQuery.refetch(), 15_000);
+    if (isAuthLoading) return;
+    void refetch();
+  }, [isAuthLoading, refetch]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => void refetch(), 15_000);
     return () => window.clearInterval(intervalId);
-  }, [quotaQuery]);
-  return quotaQuery;
+  }, [refetch]);
+
+  return {
+    token,
+    data,
+    isLoading: isLoading || isAuthLoading,
+    error: null as string | null,
+    refetch,
+  };
 }
 
 function ResultDetails({
@@ -721,6 +809,28 @@ function candidateKey(candidate: SearchCandidate): string {
   return `${candidate.supplier_id}:${candidate.matched_stored_article}`;
 }
 
+function mergeCandidates(localRows: SearchCandidate[], remoteRows: SearchCandidate[]): SearchCandidate[] {
+  const map = new Map<string, SearchCandidate>();
+  for (const row of [...localRows, ...remoteRows]) {
+    const key = candidateKey(row);
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, { ...row });
+      continue;
+    }
+    map.set(key, {
+      ...existing,
+      hits: Number(existing.hits || 0) + Number(row.hits || 0),
+      matched_table: existing.matched_table || row.matched_table,
+    });
+  }
+  return [...map.values()].sort((a, b) => {
+    const byHits = Number(b.hits || 0) - Number(a.hits || 0);
+    if (byHits !== 0) return byHits;
+    return `${a.supplier_name}:${a.matched_stored_article}`.localeCompare(`${b.supplier_name}:${b.matched_stored_article}`);
+  });
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -781,10 +891,14 @@ function resolveArticleDescription(articleRow: Record<string, unknown>, productN
   return "";
 }
 function scoreSearchResult(result: AutoDbSearchResult): number {
-  const statusScore = result.status.includes("found") ? 50 : 0;
+  const statusScore = isFoundStatus(result.status) ? 100 : result.status === "not_found" ? -20 : result.status === "error" ? -40 : 0;
   const linkageScore = result.prd_linkage_present ? 30 : 0;
   const attributesScore = Number(result.attributes_available_count || 0);
   const fitmentScore = Math.min(Number(result.fitments_available_count || 0), 40);
   const imageScore = Number(result.images_available_count || 0) * 2;
   return statusScore + linkageScore + attributesScore + fitmentScore + imageScore;
+}
+
+function isFoundStatus(status: string): boolean {
+  return status.endsWith("_found") && status !== "not_found";
 }

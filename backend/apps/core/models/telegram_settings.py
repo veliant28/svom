@@ -33,6 +33,7 @@ class TelegramSettings(UUIDPrimaryKeyMixin, TimestampedMixin):
     support_notify_new_message = models.BooleanField(_("Support: новое сообщение от клиента"), default=True)
     system_notify_backup_status = models.BooleanField(_("System: бэкапы"), default=True)
     system_notify_import_status = models.BooleanField(_("System: импорты"), default=True)
+    system_notify_autodb_batch_status = models.BooleanField(_("System: AutoDB batch"), default=True)
 
     class Meta:
         verbose_name = _("Настройки Telegram")

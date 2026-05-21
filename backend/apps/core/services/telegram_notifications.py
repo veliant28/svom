@@ -70,6 +70,17 @@ def _return_status_label_ru(status: str) -> str:
     return labels.get(str(status or "").strip(), str(status or "").strip())
 
 
+def _batch_stop_reason_label_ru(stop_reason: str) -> str:
+    key = str(stop_reason or "").strip().lower()
+    if key == "quota_or_remote_error":
+        return "Квота исчерпана"
+    if key == "manual_stop":
+        return "Остановлен вручную"
+    if key == "stale_timeout":
+        return "Остановлен по таймауту"
+    return stop_reason or "-"
+
+
 def send_ops_order_status_notification(*, order_number: str, from_status: str, to_status: str, actor_name: str) -> None:
     settings = get_telegram_settings()
     if not settings.is_enabled or not settings.ops_enabled or not settings.ops_notify_order_status:
@@ -196,6 +207,150 @@ def send_ops_return_status_notification(*, return_number: str, from_status: str,
         _send_telegram_message(token=token, chat_id=chat_id, text=text)
     except TelegramDispatchError as exc:
         logger.warning("Telegram ops return status notification failed: %s", exc)
+
+
+def _get_system_channel_for_batch_notifications() -> tuple[str, str] | None:
+    settings = get_telegram_settings()
+    if not settings.is_enabled or not settings.system_enabled or not settings.system_notify_autodb_batch_status:
+        return None
+    token = str(settings.system_bot_token or "").strip()
+    chat_id = str(settings.system_chat_id or "").strip()
+    if not token or not chat_id:
+        return None
+    return token, chat_id
+
+
+def send_system_autodb_batch_started_notification(
+    *,
+    run_id: str,
+    actor_name: str,
+    requested_limit: int,
+    selected_products_count: int,
+) -> None:
+    channel = _get_system_channel_for_batch_notifications()
+    if channel is None:
+        return
+    token, chat_id = channel
+    text = (
+        "AutoDB batch запущен\n"
+        f"Run ID: {run_id}\n"
+        f"Сотрудник: {actor_name or '-'}\n"
+        f"Размер батча: {int(requested_limit)}"
+    )
+    try:
+        _send_telegram_message(token=token, chat_id=chat_id, text=text)
+    except TelegramDispatchError as exc:
+        logger.warning("Telegram system AutoDB batch started notification failed: %s", exc)
+
+
+def send_system_autodb_batch_progress_notification(
+    *,
+    run_id: str,
+    processed: int,
+    batch_size: int,
+    linked: int,
+    errors: int,
+    quota_used: int,
+    quota_limit: int,
+) -> None:
+    channel = _get_system_channel_for_batch_notifications()
+    if channel is None:
+        return
+    token, chat_id = channel
+    text = (
+        "🔄 AutoDB batch в работе\n"
+        f"Run ID: {run_id}\n"
+        f"Обработано: {int(processed)}/{max(int(batch_size or 0), 0)}\n"
+        f"Связано: {int(linked)}\n"
+        f"Ошибки: {int(errors)}\n"
+        f"Квота: {int(quota_used)}/{max(int(quota_limit or 0), 0)}"
+    )
+    try:
+        _send_telegram_message(token=token, chat_id=chat_id, text=text)
+    except TelegramDispatchError as exc:
+        logger.warning("Telegram system AutoDB batch progress notification failed: %s", exc)
+
+
+def send_system_autodb_batch_stopped_notification(
+    *,
+    run_id: str,
+    actor_name: str,
+    processed: int,
+    found: int,
+    linked: int,
+    not_found: int,
+    stop_reason: str,
+) -> None:
+    channel = _get_system_channel_for_batch_notifications()
+    if channel is None:
+        return
+    token, chat_id = channel
+    text = (
+        "AutoDB batch остановлен\n"
+        f"Run ID: {run_id}\n"
+        f"Сотрудник: {actor_name or '-'}\n"
+        f"Обработано: {int(processed)}\n"
+        f"Найдено: {int(found)}\n"
+        f"Связано: {int(linked)}\n"
+        f"Не найдено: {int(not_found)}\n"
+        f"Причина: {_batch_stop_reason_label_ru(stop_reason)}"
+    )
+    try:
+        _send_telegram_message(token=token, chat_id=chat_id, text=text)
+    except TelegramDispatchError as exc:
+        logger.warning("Telegram system AutoDB batch stopped notification failed: %s", exc)
+
+
+def send_system_autodb_batch_finished_notification(
+    *,
+    run_id: str,
+    final_status: str,
+    batch_size: int,
+    processed: int,
+    linked: int,
+    errors: int,
+    quota_used: int,
+    quota_limit: int,
+    stop_reason: str,
+    last_error: str,
+) -> None:
+    channel = _get_system_channel_for_batch_notifications()
+    if channel is None:
+        return
+    token, chat_id = channel
+    text = (
+        "AutoDB batch завершен\n"
+        f"Run ID: {run_id}\n"
+        f"Статус: {final_status or '-'}\n"
+        f"Обработано: {int(processed)}/{max(int(batch_size or 0), 0)}\n"
+        f"Связано: {int(linked)}\n"
+        f"Ошибки: {int(errors)}\n"
+        f"Квота: {int(quota_used)}/{max(int(quota_limit or 0), 0)}"
+    )
+    if stop_reason:
+        text += f"\nПричина остановки: {_batch_stop_reason_label_ru(stop_reason)}"
+    if last_error and str(stop_reason or "").strip().lower() != "quota_or_remote_error":
+        text += f"\nОшибка: {last_error}"
+    try:
+        _send_telegram_message(token=token, chat_id=chat_id, text=text)
+    except TelegramDispatchError as exc:
+        logger.warning("Telegram system AutoDB batch finished notification failed: %s", exc)
+
+
+def send_system_autodb_quota_recovered_notification(*, remote_key: str = "known") -> None:
+    channel = _get_system_channel_for_batch_notifications()
+    if channel is None:
+        return
+    token, chat_id = channel
+    text = (
+        "AutoDB квота восстановлена\n"
+        f"Источник: {remote_key or 'known'}\n"
+        "Статус: удаленный поиск снова доступен"
+    )
+    try:
+        _send_telegram_message(token=token, chat_id=chat_id, text=text)
+    except TelegramDispatchError as exc:
+        logger.warning("Telegram system AutoDB quota recovered notification failed: %s", exc)
 
 
 def send_telegram_test_message(*, bot_kind: str, text: str) -> dict[str, object]:

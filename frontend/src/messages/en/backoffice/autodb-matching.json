@@ -10,7 +10,7 @@
         "searchTitle": "Auto-DB Search"
       },
       "common": { "yes": "Yes", "no": "No", "prev": "Previous", "next": "Next" },
-      "states": { "empty": "No data", "emptyProducts": "No unlinked products", "emptySearch": "No results yet" },
+      "states": { "empty": "No data", "emptyProducts": "No unlinked products", "emptySearch": "No results yet", "loadingCandidates": "Loading..." },
       "dashboard": {
         "cards": {
           "totalJobs": "Total jobs",
@@ -349,7 +349,7 @@
         "noImage": "No Auto-DB image",
         "productNameLabel": "Product name",
         "attributesTitle": "Attributes",
-        "fitmentTitle": "Fitment",
+        "fitmentTitle": "Compatibility",
         "fitmentMakeLabel": "Make",
         "fitmentModelLabel": "Model",
         "fitmentAllMakes": "All makes",

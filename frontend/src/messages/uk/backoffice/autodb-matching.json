@@ -10,7 +10,7 @@
         "searchTitle": "Пошук в Auto-DB"
       },
       "common": { "yes": "Да", "no": "Нет", "prev": "Назад", "next": "Вперед" },
-      "states": { "empty": "Немає даних", "emptyProducts": "Немає незвʼязаних товарів", "emptySearch": "Результатів поки немає" },
+      "states": { "empty": "Немає даних", "emptyProducts": "Немає незвʼязаних товарів", "emptySearch": "Результатів поки немає", "loadingCandidates": "Завантаження..." },
       "dashboard": {
         "cards": {
           "totalJobs": "Total jobs",
@@ -349,7 +349,7 @@
         "noImage": "Немає фото Auto-DB",
         "productNameLabel": "Назва товару",
         "attributesTitle": "Характеристики",
-        "fitmentTitle": "Застосовність",
+        "fitmentTitle": "Сумісність",
         "fitmentMakeLabel": "Марка",
         "fitmentModelLabel": "Модель",
         "fitmentAllMakes": "Усі марки",

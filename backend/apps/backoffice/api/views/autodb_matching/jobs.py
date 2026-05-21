@@ -4,12 +4,12 @@ from dataclasses import asdict
 import re
 
 from django.core.paginator import Paginator
-from django.db.models import F, OuterRef, Q, Subquery
+from django.db.models import F, OuterRef, Prefetch, Q, Subquery
 from rest_framework import status
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
-from apps.autodb.models import AutoDbMatchJob
+from apps.autodb.models import AutoDbMatchEvidence, AutoDbMatchJob
 from apps.autodb.services.matching.constants import NON_TECDOC_BRAND_KEYS
 from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
 from apps.autodb.services.supplier_brand_matcher import normalize_brand_lookup_key
@@ -18,6 +18,7 @@ from apps.autodb.services.matching.brand_coverage import AutoDbBrandCoverageAudi
 
 from .._base import BackofficeAPIView
 from .serializers import (
+    serialize_job,
     serialize_fallback_product,
     serialize_fallback_product_detail,
     serialize_job_detail,
@@ -55,15 +56,59 @@ class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
         queryset = self._apply_linked_fresh_ordering(queryset, request=request, matching_status=matching_status).distinct()
         paginator = Paginator(queryset, page_size)
         page_obj = paginator.get_page(page)
-        results = [
-            serialize_fallback_product(
-                item,
-                matching_status=self._fallback_status_for_response(item=item, requested_status=matching_status),
-                tecdoc_state=self._fallback_tecdoc_status(item),
+        results = []
+        for item in page_obj.object_list:
+            status_value = self._fallback_status_for_response(item=item, requested_status=matching_status)
+            tecdoc_state = self._fallback_tecdoc_status(item)
+            reason = self._fallback_reason_for_response(item=item, resolved_status=status_value, tecdoc_state=tecdoc_state)
+            results.append(
+                serialize_fallback_product(
+                    item,
+                    matching_status=status_value,
+                    tecdoc_state=tecdoc_state,
+                    reason=reason,
+                )
             )
-            for item in page_obj.object_list
-        ]
         return Response({"count": paginator.count, "results": results})
+
+    def _jobs_queryset(self, request, *, matching_status: str):
+        tecdoc_filter = safe_str(request.query_params.get("tecdoc_status"))
+        q_value = safe_str(request.query_params.get("q"))
+        supplier_code = safe_str(request.query_params.get("supplier_code")).lower()
+
+        queryset = (
+            AutoDbMatchJob.objects
+            .select_related("product", "product__category", "product__product_price", "supplier_offer", "supplier_offer__supplier")
+            .prefetch_related(
+                "product__supplier_offers__supplier",
+                Prefetch("evidence", queryset=AutoDbMatchEvidence.objects.order_by("-created_at"), to_attr="backoffice_evidence"),
+            )
+            .order_by("-updated_at", "-created_at")
+        )
+
+        if matching_status:
+            queryset = queryset.filter(status=matching_status)
+        if supplier_code:
+            queryset = queryset.filter(supplier_code__iexact=supplier_code)
+        if q_value:
+            queryset = queryset.filter(
+                Q(product__sku__icontains=q_value)
+                | Q(product__svom_sku__icontains=q_value)
+                | Q(product__name__icontains=q_value)
+                | Q(raw_brand__icontains=q_value)
+                | Q(normalized_brand__icontains=q_value)
+                | Q(article_value__icontains=q_value)
+                | Q(canonical_article__icontains=q_value)
+            )
+
+        if tecdoc_filter == "tecdoc":
+            queryset = queryset.filter(resolved_supplier_id__isnull=False).exclude(status=AutoDbMatchJob.STATUS_SKIPPED_NON_TECDOC)
+        elif tecdoc_filter == "non_tecdoc":
+            queryset = queryset.filter(status=AutoDbMatchJob.STATUS_SKIPPED_NON_TECDOC)
+        elif tecdoc_filter == "unknown":
+            queryset = queryset.filter(resolved_supplier_id__isnull=True).exclude(status=AutoDbMatchJob.STATUS_SKIPPED_NON_TECDOC)
+
+        return queryset
 
     def _fallback_unlinked_products_queryset(self, request):
         matching_status = safe_str(request.query_params.get("matching_status"))
@@ -278,6 +323,40 @@ class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
             return requested_status
         return self._fallback_serialized_status(item=item, requested_status=requested_status)
 
+    def _fallback_reason_for_response(self, *, item: Product, resolved_status: str, tecdoc_state: str) -> str:
+        status_key = safe_str(resolved_status)
+        if status_key == AutoDbMatchJob.STATUS_LINKED:
+            return "trusted_link"
+        if status_key == AutoDbMatchJob.STATUS_LOCAL_FOUND:
+            return "local deterministic lookup found linked article"
+        if status_key == AutoDbMatchJob.STATUS_REMOTE_FOUND:
+            return "remote deterministic lookup found article"
+        if status_key == AutoDbMatchJob.STATUS_REMOTE_NOT_FOUND:
+            return "remote deterministic lookup missed"
+        if status_key == AutoDbMatchJob.STATUS_QUOTA_PAUSED:
+            return "remote quota cooldown active"
+        if status_key == AutoDbMatchJob.STATUS_CLONE_SYNC_READY:
+            return "clone sync plan ready; article_images excluded"
+        if status_key == AutoDbMatchJob.STATUS_CLONE_SYNCED:
+            return "clone sync plan ready; article_images excluded"
+        if status_key == AutoDbMatchJob.STATUS_SAFE_LINK_CANDIDATE:
+            return "safe_link_candidate can be applied by a later guarded linker"
+        if status_key == AutoDbMatchJob.STATUS_NEEDS_REVIEW:
+            return "needs_review"
+        if status_key == AutoDbMatchJob.STATUS_SKIPPED_BAD_ARTICLE_SOURCE:
+            return "missing_article"
+        if status_key == AutoDbMatchJob.STATUS_SKIPPED_BRAND_UNRESOLVED:
+            return "no deterministic supplier candidate in auto_db_pro.suppliers"
+        if status_key == AutoDbMatchJob.STATUS_SKIPPED_SPLIT_NEEDED:
+            return "skipped_split_product_candidate"
+        if status_key == AutoDbMatchJob.STATUS_SKIPPED_UNSAFE_AMBIGUOUS:
+            return "needs_review"
+        if status_key == AutoDbMatchJob.STATUS_SKIPPED_NON_TECDOC or tecdoc_state == "non_tecdoc":
+            return "brand in non-tecdoc blocked list"
+        if self._has_needs_review_quality(item):
+            return "needs_review"
+        return "job_not_created"
+
     def _apply_linked_fresh_ordering(self, queryset, *, request, matching_status: str):
         if matching_status in self.FALLBACK_LINKED_STATUS_ALIASES:
             trusted_checked = (
@@ -313,10 +392,14 @@ class BackofficeAutoDbMatchingJobsAPIView(BackofficeAPIView):
         return candidate.filter(Q(autodb_article_key__isnull=True) | Q(autodb_article_key=""))
 
     def _has_needs_review_quality(self, item: Product) -> bool:
-        return AutoDbProductLinkQuality.objects.filter(
+        current_key = safe_str(getattr(item, "autodb_article_key", ""))
+        queryset = AutoDbProductLinkQuality.objects.filter(
             product_id=item.id,
             status=AutoDbProductLinkQuality.STATUS_NEEDS_MANUAL_REVIEW,
-        ).exists()
+        )
+        if current_key:
+            queryset = queryset.filter(autodb_article_key=current_key)
+        return queryset.exists()
 
     def _linked_product_ids(self, queryset) -> list[str]:
         ids: list[str] = []
@@ -467,11 +550,13 @@ class BackofficeAutoDbMatchingJobDetailAPIView(BackofficeAPIView):
         if product is not None:
             status_guess = helper._fallback_serialized_status(item=product, requested_status="")
             tecdoc_state = helper._fallback_tecdoc_status(product)
+            reason = helper._fallback_reason_for_response(item=product, resolved_status=status_guess, tecdoc_state=tecdoc_state)
             return Response(
                 serialize_fallback_product_detail(
                     product,
                     matching_status=status_guess,
                     tecdoc_state=tecdoc_state,
+                    reason=reason,
                 )
             )
         job = (

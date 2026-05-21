@@ -184,6 +184,22 @@ class AutoDbProductNameEnrichmentServiceTests(SimpleTestCase):
         )
         self.assertEqual(combined, "Тормозной шланг")
 
+    def test_combine_base_and_description_drops_generic_cleaning_category_prefix(self):
+        service = AutoDbProductNameEnrichmentService()
+        combined = service._combine_base_and_description(
+            base="Средства для чистки",
+            description="Смесь для холодной очистки",
+        )
+        self.assertEqual(combined, "Смесь для холодной очистки")
+
+    def test_combine_base_and_description_drops_generic_chemical_products_prefix(self):
+        service = AutoDbProductNameEnrichmentService()
+        combined = service._combine_base_and_description(
+            base="Химические продукты",
+            description="Смесь для холодной очистки",
+        )
+        self.assertEqual(combined, "Смесь для холодной очистки")
+
     def test_cleaned_title_translates_to_uk_ru_en(self):
         service = AutoDbProductNameEnrichmentService()
         service._resolve_supplier_raw_name = Mock(return_value="")

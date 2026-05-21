@@ -114,7 +114,7 @@ class Command(BaseCommand):
         self.stdout.write("- UTR calls: 0")
 
     def _build_queryset(self, *, product_id: str, only_linked: bool, only_missing_translations: bool):
-        qs = Product.objects.select_related("brand", "category").order_by("id")
+        qs = Product.objects.select_related("category").order_by("id")
         if only_linked:
             qs = qs.filter(autodb_supplier_id__isnull=False).exclude(autodb_article_number="")
         if only_missing_translations:

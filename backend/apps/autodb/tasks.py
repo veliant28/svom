@@ -8,8 +8,11 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
-from apps.autodb.models import AutoDbMatchingRun, AutoDbSupplier
+from apps.autodb.models import AutoDbMatchingRun, AutoDbRemoteQuotaState, AutoDbSupplier
+from apps.autodb.services.matching.constants import REMOTE_QUOTA_KEY
+from apps.autodb.services.matching.quota_tracker import AutoDbRemoteQuotaTracker
 from apps.autodb.services.matching.backoffice_tecdoc_batch import BackofficeTecdocBatchSelector
+from apps.autodb.services.public_api import AutoDbPublicApiClient
 from apps.autodb.services.raw_clone_storage import AutoDbRawCloneStorage
 from apps.autodb.services.remote_client import AutoDbProRemoteClientError
 from apps.autodb.services.supplier_brand_matcher import SupplierBrandMatcher, normalize_brand_lookup_key
@@ -21,6 +24,10 @@ from apps.autodb.services.product_name_enrichment import AutoDbProductNameEnrich
 from apps.autodb.services.product_name_translation import ProductNameTranslationService
 from apps.catalog.models import AutoDbArticleManualMapping, AutoDbProductLinkQuality, Product
 from apps.catalog.services import resolve_autodb_article_name
+from apps.core.services import (
+    send_system_autodb_batch_finished_notification,
+    send_system_autodb_batch_progress_notification,
+)
 from apps.supplier_imports.models import SupplierRawOffer
 from apps.supplier_imports.parsers.utils import normalize_article, normalize_brand
 
@@ -55,6 +62,7 @@ def manual_bind_product_to_autodb_task(
     now = timezone.now()
     normalized_article = normalize_article(article_value)
     normalized_supplier = normalize_brand(supplier_display)
+    warnings: list[str] = []
 
     with transaction.atomic():
         product = Product.objects.filter(pk=product_id).first()
@@ -105,59 +113,62 @@ def manual_bind_product_to_autodb_task(
             update_fields.append("catalog_source")
 
         if not is_product_name_manual_locked(product):
-            previous_name = str(getattr(product, "name", "") or "")
-            previous_source_text = str(getattr(product, "name_source_text", "") or "")
-            article_name = resolve_autodb_article_name(
-                normalized_article=normalized_article,
-                normalized_brand=normalized_supplier,
-                prefer_live=True,
-            )
-            normalized_article_name = str(article_name or "").strip()[:255]
-            if normalized_article_name:
-                article_name = normalized_article_name
-            translation_source_text = str(article_name or previous_source_text or previous_name).strip()[:255]
-            if article_name and str(getattr(product, "name_source", "") or "") != Product.NAME_SOURCE_AUTODB_PRO:
-                product.name_source = Product.NAME_SOURCE_AUTODB_PRO
-                update_fields.append("name_source")
-            if article_name and str(getattr(product, "name_source_text", "") or "") != article_name:
-                product.name_source_text = article_name
-                update_fields.append("name_source_text")
-            if translation_source_text:
-                translation = ProductNameTranslationService().translate_product_name(source_text=translation_source_text)
-                translated_uk = str(translation.uk or article_name).strip()[:255]
-                translated_ru = str(translation.ru or article_name).strip()[:255]
-                translated_en = str(translation.en or article_name).strip()[:255]
+            try:
+                previous_name = str(getattr(product, "name", "") or "")
+                previous_source_text = str(getattr(product, "name_source_text", "") or "")
+                article_name = resolve_autodb_article_name(
+                    normalized_article=normalized_article,
+                    normalized_brand=normalized_supplier,
+                    prefer_live=False,
+                )
+                normalized_article_name = str(article_name or "").strip()[:255]
+                if normalized_article_name:
+                    article_name = normalized_article_name
+                translation_source_text = str(article_name or previous_source_text or previous_name).strip()[:255]
+                if article_name and str(getattr(product, "name_source", "") or "") != Product.NAME_SOURCE_AUTODB_PRO:
+                    product.name_source = Product.NAME_SOURCE_AUTODB_PRO
+                    update_fields.append("name_source")
+                if article_name and str(getattr(product, "name_source_text", "") or "") != article_name:
+                    product.name_source_text = article_name
+                    update_fields.append("name_source_text")
+                if translation_source_text:
+                    translation = ProductNameTranslationService().translate_product_name(source_text=translation_source_text)
+                    translated_uk = str(translation.uk or article_name).strip()[:255]
+                    translated_ru = str(translation.ru or article_name).strip()[:255]
+                    translated_en = str(translation.en or article_name).strip()[:255]
 
-                i18n_targets = {
-                    "name_uk": translated_uk,
-                    "name_ru": translated_ru,
-                    "name_en": translated_en,
-                }
-                for field, next_value in i18n_targets.items():
-                    current_value = str(getattr(product, field, "") or "")
-                    if (
-                        not current_value
-                        or current_value == previous_name
-                        or current_value == previous_source_text
-                        or str(getattr(product, "name_source", "") or "") == Product.NAME_SOURCE_AUTODB_PRO
-                    ):
-                        if current_value != next_value:
-                            setattr(product, field, next_value)
-                            update_fields.append(field)
+                    i18n_targets = {
+                        "name_uk": translated_uk,
+                        "name_ru": translated_ru,
+                        "name_en": translated_en,
+                    }
+                    for field, next_value in i18n_targets.items():
+                        current_value = str(getattr(product, field, "") or "")
+                        if (
+                            not current_value
+                            or current_value == previous_name
+                            or current_value == previous_source_text
+                            or str(getattr(product, "name_source", "") or "") == Product.NAME_SOURCE_AUTODB_PRO
+                        ):
+                            if current_value != next_value:
+                                setattr(product, field, next_value)
+                                update_fields.append(field)
 
-                base_name = translated_uk or translation_source_text
-                if base_name and str(getattr(product, "name", "") or "") != base_name:
-                    product.name = base_name
-                    update_fields.append("name")
+                    base_name = translated_uk or translation_source_text
+                    if base_name and str(getattr(product, "name", "") or "") != base_name:
+                        product.name = base_name
+                        update_fields.append("name")
 
-                translation_status = str(translation.status or "").strip() or Product.NAME_TRANSLATION_PENDING
-                if str(getattr(product, "name_translation_status", "") or "") != translation_status:
-                    product.name_translation_status = translation_status
-                    update_fields.append("name_translation_status")
-                translation_error = str(translation.error or "").strip()
-                if str(getattr(product, "name_translation_error", "") or "") != translation_error:
-                    product.name_translation_error = translation_error
-                    update_fields.append("name_translation_error")
+                    translation_status = str(translation.status or "").strip() or Product.NAME_TRANSLATION_PENDING
+                    if str(getattr(product, "name_translation_status", "") or "") != translation_status:
+                        product.name_translation_status = translation_status
+                        update_fields.append("name_translation_status")
+                    translation_error = str(translation.error or "").strip()
+                    if str(getattr(product, "name_translation_error", "") or "") != translation_error:
+                        product.name_translation_error = translation_error
+                        update_fields.append("name_translation_error")
+            except Exception as exc:  # noqa: BLE001
+                warnings.append(f"name_prepare_failed: {exc}")
 
         if update_fields:
             product.save(update_fields=[*update_fields, "updated_at"])
@@ -234,51 +245,73 @@ def manual_bind_product_to_autodb_task(
                 ]
             )
 
-        if skip_clone_enrichment:
-            clone_result = None
-        else:
+    clone_result = None
+    if not skip_clone_enrichment:
+        try:
             clone_result = AutoDbArticleEnrichmentService().enrich_article(
                 supplier_id=int(supplier_id),
                 article_number=article_value,
                 dry_run=False,
                 replace_local=clone_replace_local,
             )
+        except Exception as exc:  # noqa: BLE001
+            warnings.append(f"clone_enrichment_failed: {exc}")
+
+    product = Product.objects.filter(pk=product_id).first()
+    if product is None:
+        return {"status": "bound", "product_id": str(product_id), "autodb_article_key": article_key, "quality_created": bool(created), "warnings": warnings}
+
+    try:
         name_result = AutoDbProductNameEnrichmentService().enrich_product(
             product=product,
             dry_run=False,
             only_missing_translations=False,
         )
+    except Exception as exc:  # noqa: BLE001
+        warnings.append(f"name_enrichment_failed: {exc}")
+        name_result = None
+
+    try:
         fitment_result = AutoDbProductFitmentEnrichmentService().enrich_product(product=product, dry_run=False)
+    except Exception as exc:  # noqa: BLE001
+        warnings.append(f"fitment_enrichment_failed: {exc}")
+        fitment_result = None
+
+    try:
         image_result = AutoDbProductImageEnrichmentService().sync_product_images(
             product=product,
             dry_run=False,
             prefer_gpl=True,
         )
+    except Exception as exc:  # noqa: BLE001
+        warnings.append(f"image_enrichment_failed: {exc}")
+        image_result = None
 
     return {
         "status": "bound",
         "product_id": str(product_id),
         "autodb_article_key": article_key,
         "quality_created": bool(created),
+        "warnings": warnings,
         "clone": {
             "remote_queries": int(clone_result.remote_queries) if clone_result is not None else 0,
             "remote_hits": int(clone_result.remote_hits) if clone_result is not None else 0,
             "populated_tables": clone_result.populated_tables if clone_result is not None else {},
         },
         "name": {
-            "status": name_result.status,
-            "source_title": name_result.autodb_source_title,
-            "name_uk": name_result.new_name_uk,
-            "name_ru": name_result.new_name_ru,
-            "name_en": name_result.new_name_en,
-            "translation_status": name_result.translation_status,
-            "translation_error": name_result.translation_error,
+            "status": name_result.status if name_result is not None else "error",
+            "source_title": name_result.autodb_source_title if name_result is not None else "",
+            "name_uk": name_result.new_name_uk if name_result is not None else "",
+            "name_ru": name_result.new_name_ru if name_result is not None else "",
+            "name_en": name_result.new_name_en if name_result is not None else "",
+            "translation_status": name_result.translation_status if name_result is not None else "",
+            "translation_error": name_result.translation_error if name_result is not None else "",
         },
         "fitments": {
-            "status": fitment_result.status,
-            "created": int(fitment_result.fitments_created),
-            "updated": int(fitment_result.fitments_updated),
-            "stale_marked": int(fitment_result.stale_marked),
+            "status": fitment_result.status if fitment_result is not None else "error",
+            "created": int(fitment_result.fitments_created) if fitment_result is not None else 0,
+            "updated": int(fitment_result.fitments_updated) if fitment_result is not None else 0,
+            "stale_marked": int(fitment_result.stale_marked) if fitment_result is not None else 0,
         },
         "attributes": {
             "status": "clone_only_source",
@@ -286,9 +319,9 @@ def manual_bind_product_to_autodb_task(
             "updated": 0,
         },
         "images": {
-            "created": int(image_result.created),
-            "reused": int(image_result.reused),
-            "stale_marked": int(image_result.stale_marked),
+            "created": int(image_result.created) if image_result is not None else 0,
+            "reused": int(image_result.reused) if image_result is not None else 0,
+            "stale_marked": int(image_result.stale_marked) if image_result is not None else 0,
         },
     }
 
@@ -361,6 +394,9 @@ def run_backoffice_tecdoc_batch_bind_task(
     selector = BackofficeTecdocBatchSelector()
     brand_matcher = SupplierBrandMatcher()
     clone_storage = AutoDbRawCloneStorage()
+    use_public_search = bool(getattr(settings, "AUTODB_BATCH_PUBLIC_SEARCH_ENABLED", True))
+    public_api = AutoDbPublicApiClient() if use_public_search else None
+    supplier_display_cache: dict[int, str] = {}
     candidates = selector.select_candidates(
         limit=requested_limit,
         product_ids=product_ids,
@@ -414,10 +450,51 @@ def run_backoffice_tecdoc_batch_bind_task(
             bind_article = str(item.article or "")
             bind_supplier_name = str(item.supplier_name or "")
             relinked_by_brand_guard = False
+            resolved_by_public_search = False
             raw_offer_brand = ""
 
             with _batch_item_timeout(BACKOFFICE_TECDOC_BATCH_ITEM_TIMEOUT_SECONDS):
                 raw_offer_brand = _latest_raw_offer_brand_for_product(product_id=item.product_id)
+                if public_api is not None and bind_article:
+                    public_candidate = _resolve_batch_candidate_via_public_search(
+                        client=public_api,
+                        article=bind_article,
+                        preferred_supplier_id=bind_supplier_id,
+                        preferred_brand=raw_offer_brand or bind_supplier_name,
+                        supplier_display_cache=supplier_display_cache,
+                    )
+                    if public_candidate is not None:
+                        bind_supplier_id, bind_supplier_name, bind_article = public_candidate
+                        resolved_by_public_search = True
+                    elif bind_supplier_id <= 0:
+                        _mark_link_clone_data_missing_needs_review(
+                            product_id=item.product_id,
+                            supplier_id=0,
+                            article_number=bind_article,
+                            reason="batch_public_search_no_candidate",
+                        )
+                        _apply_fallback_name_translation_for_product(
+                            product_id=str(item.product_id),
+                            reason="batch_public_search_no_candidate",
+                        )
+                        processed += 1
+                        failed += 1
+                        results.append(
+                            {
+                                "product_id": item.product_id,
+                                "supplier_id": 0,
+                                "article": bind_article,
+                                "status": "remote_not_found",
+                                "reason": "batch_public_search_no_candidate",
+                            }
+                        )
+                        continue
+
+                if bind_supplier_id > 0 and not bind_supplier_name:
+                    bind_supplier_name = _supplier_display_name_from_autodb(
+                        supplier_id=bind_supplier_id,
+                        cache=supplier_display_cache,
+                    )
                 if raw_offer_brand:
                     raw_brand_norm = normalize_brand(raw_offer_brand)
                     supplier_brand_norm = normalize_brand(bind_supplier_name or str(bind_supplier_id))
@@ -504,30 +581,9 @@ def run_backoffice_tecdoc_batch_bind_task(
                 pre_clone_remote_hits = int(pre_clone.remote_hits or 0)
                 pre_clone_rows_total = sum(int(value or 0) for value in (pre_clone.populated_tables or {}).values())
                 pre_clone_has_data = pre_clone_remote_hits > 0 or pre_clone_rows_total > 0
+                clone_precheck_warning = ""
                 if not pre_clone_has_data:
-                    _mark_link_clone_data_missing_needs_review(
-                        product_id=item.product_id,
-                        supplier_id=bind_supplier_id,
-                        article_number=bind_article,
-                        reason="batch_clone_data_missing_before_bind",
-                    )
-                    _apply_fallback_name_translation_for_product(
-                        product_id=str(item.product_id),
-                        reason="remote_or_clone_rows_not_found_for_article",
-                    )
-                    processed += 1
-                    failed += 1
-                    results.append(
-                        {
-                            "product_id": item.product_id,
-                            "supplier_id": bind_supplier_id,
-                            "article": bind_article,
-                            "status": "clone_data_missing",
-                            "reason": "remote_or_clone_rows_not_found_for_article",
-                            "relinked_by_brand_guard": relinked_by_brand_guard,
-                        }
-                    )
-                    continue
+                    clone_precheck_warning = "remote_or_clone_rows_not_found_for_article"
 
                 bind_result = manual_bind_product_to_autodb_task(
                     product_id=item.product_id,
@@ -541,12 +597,19 @@ def run_backoffice_tecdoc_batch_bind_task(
                 status_value = str(bind_result.get("status") or "")
 
             processed += 1
-            if status_value == "bound":
+            if status_value == "bound" and not clone_precheck_warning:
                 bound += 1
             else:
+                if clone_precheck_warning:
+                    _mark_link_clone_data_missing_needs_review(
+                        product_id=item.product_id,
+                        supplier_id=bind_supplier_id,
+                        article_number=bind_article,
+                        reason="batch_clone_data_missing_after_bind",
+                    )
                 _apply_fallback_name_translation_for_product(
                     product_id=str(item.product_id),
-                    reason=f"bind_status_{status_value or 'error'}",
+                    reason=clone_precheck_warning or f"bind_status_{status_value or 'error'}",
                 )
                 failed += 1
             results.append(
@@ -554,8 +617,10 @@ def run_backoffice_tecdoc_batch_bind_task(
                     "product_id": item.product_id,
                     "supplier_id": bind_supplier_id,
                     "article": bind_article,
-                    "status": status_value or "error",
+                    "status": "needs_review" if clone_precheck_warning and status_value == "bound" else (status_value or "error"),
                     "relinked_by_brand_guard": relinked_by_brand_guard,
+                    "resolved_by_public_search": resolved_by_public_search,
+                    "warning": clone_precheck_warning,
                     "detail": bind_result,
                 }
             )
@@ -604,6 +669,13 @@ def run_backoffice_tecdoc_batch_bind_task(
             "last_heartbeat_at": loop_done.isoformat(),
         }
         run.save(update_fields=["summary_json", "updated_at"])
+        _maybe_send_batch_progress_notification(
+            run=run,
+            processed=processed,
+            linked=bound,
+            errors=failed,
+            batch_size=requested_limit,
+        )
 
     finished_at = timezone.now()
     final_status = AutoDbMatchingRun.STATUS_SUCCESS
@@ -629,6 +701,21 @@ def run_backoffice_tecdoc_batch_bind_task(
         "results_preview": results[:50],
     }
     run.save(update_fields=["status", "finished_at", "error", "summary_json", "updated_at"])
+    quota_state = AutoDbRemoteQuotaState.objects.filter(remote_key=REMOTE_QUOTA_KEY).first()
+    quota_used = int(getattr(quota_state, "estimated_queries_used", 0) or 0)
+    quota_limit = int(getattr(quota_state, "estimated_limit_per_hour", 0) or 0)
+    send_system_autodb_batch_finished_notification(
+        run_id=str(run.id),
+        final_status=run.status,
+        batch_size=requested_limit,
+        processed=processed,
+        linked=bound,
+        errors=failed,
+        quota_used=quota_used,
+        quota_limit=quota_limit,
+        stop_reason=stop_reason,
+        last_error=last_error,
+    )
 
     return {
         "status": "done",
@@ -642,6 +729,85 @@ def run_backoffice_tecdoc_batch_bind_task(
     }
 
 
+def _maybe_send_batch_progress_notification(
+    *,
+    run: AutoDbMatchingRun,
+    processed: int,
+    linked: int,
+    errors: int,
+    batch_size: int,
+) -> None:
+    if processed <= 0:
+        return
+    total = max(int(batch_size or 0), 0)
+    if total > 0 and processed >= total:
+        return
+
+    summary = dict(run.summary_json or {})
+    last_processed = int(summary.get("last_progress_notify_processed") or 0)
+    last_linked = int(summary.get("last_progress_notify_linked") or 0)
+    last_errors = int(summary.get("last_progress_notify_errors") or 0)
+    if processed == last_processed and linked == last_linked and errors == last_errors:
+        return
+
+    quota_state = AutoDbRemoteQuotaState.objects.filter(remote_key=REMOTE_QUOTA_KEY).first()
+    quota_used = int(getattr(quota_state, "estimated_queries_used", 0) or 0)
+    quota_limit = int(getattr(quota_state, "estimated_limit_per_hour", 0) or 0)
+    send_system_autodb_batch_progress_notification(
+        run_id=str(run.id),
+        processed=processed,
+        batch_size=total,
+        linked=linked,
+        errors=errors,
+        quota_used=quota_used,
+        quota_limit=quota_limit,
+    )
+    summary["last_progress_notify_processed"] = int(processed)
+    summary["last_progress_notify_linked"] = int(linked)
+    summary["last_progress_notify_errors"] = int(errors)
+    run.summary_json = summary
+    run.save(update_fields=["summary_json", "updated_at"])
+
+
+@shared_task(name="autodb.check_remote_quota_recovery")
+def check_remote_quota_recovery_task() -> dict[str, object]:
+    quota = AutoDbRemoteQuotaState.objects.filter(remote_key=REMOTE_QUOTA_KEY).first()
+    now = timezone.now()
+    if quota is None:
+        return {
+            "remote_key": REMOTE_QUOTA_KEY,
+            "status": "no_quota_state",
+            "cooldown_until": None,
+            "seconds_until_reset": 0,
+            "skipped": True,
+        }
+    if not quota.cooldown_until:
+        return {
+            "remote_key": REMOTE_QUOTA_KEY,
+            "status": "idle",
+            "cooldown_until": None,
+            "seconds_until_reset": 0,
+            "skipped": True,
+        }
+    if quota.cooldown_until > now:
+        seconds_left = max(int((quota.cooldown_until - now).total_seconds()), 0)
+        return {
+            "remote_key": REMOTE_QUOTA_KEY,
+            "status": "waiting",
+            "cooldown_until": quota.cooldown_until.isoformat(),
+            "seconds_until_reset": seconds_left,
+            "skipped": True,
+        }
+    payload = AutoDbRemoteQuotaTracker().serialize(quota)
+    return {
+        "remote_key": REMOTE_QUOTA_KEY,
+        "status": str(payload.get("status") or ""),
+        "cooldown_until": payload.get("cooldown_until"),
+        "seconds_until_reset": int(payload.get("seconds_until_reset") or 0),
+        "skipped": False,
+    }
+
+
 def _is_quota_or_remote_stop_error(exc: Exception) -> bool:
     if isinstance(exc, AutoDbProRemoteClientError):
         return True
@@ -649,6 +815,66 @@ def _is_quota_or_remote_stop_error(exc: Exception) -> bool:
     if "1226" in message or "max_questions" in message or "quota" in message:
         return True
     return "remote" in message and ("timeout" in message or "connection" in message or "unavailable" in message)
+
+
+def _resolve_batch_candidate_via_public_search(
+    *,
+    client: AutoDbPublicApiClient,
+    article: str,
+    preferred_supplier_id: int,
+    preferred_brand: str,
+    supplier_display_cache: dict[int, str],
+) -> tuple[int, str, str] | None:
+    article_value = str(article or "").strip()
+    if not article_value:
+        return None
+    try:
+        candidates = client.search_candidates(article=article_value, limit=120)
+    except Exception:  # noqa: BLE001
+        return None
+    if not candidates:
+        return None
+
+    preferred_supplier = int(preferred_supplier_id or 0)
+    if preferred_supplier > 0:
+        for item in candidates:
+            supplier_id = int(item.get("supplier_id") or 0)
+            if supplier_id != preferred_supplier:
+                continue
+            matched = str(item.get("matched_stored_article") or article_value).strip().upper()
+            supplier_name = _supplier_display_name_from_autodb(supplier_id=supplier_id, cache=supplier_display_cache)
+            if preferred_brand and (not supplier_name or supplier_name.isdigit()):
+                supplier_name = str(preferred_brand).strip()
+            return supplier_id, supplier_name, matched or article_value
+
+    preferred_brand_norm = normalize_brand_lookup_key(preferred_brand)
+    if preferred_brand_norm:
+        for item in candidates:
+            supplier_id = int(item.get("supplier_id") or 0)
+            if supplier_id <= 0:
+                continue
+            supplier_name = _supplier_display_name_from_autodb(supplier_id=supplier_id, cache=supplier_display_cache)
+            if normalize_brand_lookup_key(supplier_name) != preferred_brand_norm:
+                continue
+            matched = str(item.get("matched_stored_article") or article_value).strip().upper()
+            if preferred_brand and (not supplier_name or supplier_name.isdigit()):
+                supplier_name = str(preferred_brand).strip()
+            return supplier_id, supplier_name, matched or article_value
+
+    return None
+
+
+def _supplier_display_name_from_autodb(*, supplier_id: int, cache: dict[int, str]) -> str:
+    supplier_key = int(supplier_id or 0)
+    if supplier_key <= 0:
+        return ""
+    cached = cache.get(supplier_key)
+    if cached is not None:
+        return cached
+    supplier = AutoDbSupplier.objects.filter(id=supplier_key).first()
+    label = str(getattr(supplier, "name", "") or getattr(supplier, "matchcode", "") or "").strip() or str(supplier_key)
+    cache[supplier_key] = label
+    return label
 
 
 def _latest_raw_offer_brand_for_product(*, product_id: str) -> str:

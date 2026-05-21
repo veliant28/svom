@@ -17,6 +17,9 @@ function getBackendImageRemotePattern() {
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  experimental: {
+    proxyTimeout: 300_000,
+  },
   images: {
     remotePatterns: [getBackendImageRemotePattern()],
   },

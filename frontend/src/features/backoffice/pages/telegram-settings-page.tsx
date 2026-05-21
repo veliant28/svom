@@ -38,7 +38,8 @@ type BotCardConfig = {
       | "support_notify_new_thread"
       | "support_notify_new_message"
       | "system_notify_backup_status"
-      | "system_notify_import_status";
+      | "system_notify_import_status"
+      | "system_notify_autodb_batch_status";
     labelKey: string;
   }>;
 };
@@ -85,6 +86,7 @@ const BOT_CARDS: BotCardConfig[] = [
     eventKeys: [
       { field: "system_notify_backup_status", labelKey: "telegramSettings.bots.system.events.backupStatus" },
       { field: "system_notify_import_status", labelKey: "telegramSettings.bots.system.events.importStatus" },
+      { field: "system_notify_autodb_batch_status", labelKey: "telegramSettings.bots.system.events.autodbBatchStatus" },
     ],
   },
 ];

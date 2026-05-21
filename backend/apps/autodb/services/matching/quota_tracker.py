@@ -31,7 +31,7 @@ class AutoDbRemoteQuotaTracker:
         now = timezone.now()
         with transaction.atomic():
             locked = self._lock_quota(quota)
-            self._ensure_window(locked, now=now)
+            _window_reset_applied, quota_recovered = self._ensure_window(locked, now=now)
             count = max(int(query_count or 0), 0)
             locked.estimated_queries_used = int(locked.estimated_queries_used or 0) + count
             limit = max(int(locked.estimated_limit_per_hour or DEFAULT_LIMIT_PER_HOUR), 1)
@@ -71,6 +71,9 @@ class AutoDbRemoteQuotaTracker:
                     "updated_at",
                 ]
             )
+            if quota_recovered:
+                remote_key = str(locked.remote_key or "")
+                transaction.on_commit(lambda: self._notify_quota_recovered(remote_key=remote_key))
             return locked
 
     def record_quota_error(
@@ -123,7 +126,22 @@ class AutoDbRemoteQuotaTracker:
             limit = DEFAULT_LIMIT_PER_HOUR
             return self._payload(status="ok", limit=limit, used=0, now=now, recent_points=[])
 
-        self._ensure_window(quota, now=now)
+        window_reset_applied, quota_recovered = self._ensure_window(quota, now=now)
+        if window_reset_applied:
+            quota.save(
+                update_fields=[
+                    "estimated_limit_per_hour",
+                    "window_started_at",
+                    "expected_reset_at",
+                    "estimated_queries_used",
+                    "cooldown_until",
+                    "last_error",
+                    "recent_points_json",
+                    "updated_at",
+                ]
+            )
+        if quota_recovered:
+            self._notify_quota_recovered(remote_key=str(quota.remote_key or ""))
         paused = bool(quota.cooldown_until and quota.cooldown_until > now)
         status = "quota_paused" if paused else self._usage_status(quota)
         recent_points = self._recent_points(quota.recent_points_json, now=now)
@@ -136,10 +154,18 @@ class AutoDbRemoteQuotaTracker:
             quota=quota,
         )
 
-    def _ensure_window(self, quota: AutoDbRemoteQuotaState, *, now) -> None:
+    def _ensure_window(self, quota: AutoDbRemoteQuotaState, *, now) -> tuple[bool, bool]:
         configured_limit = max(int(getattr(settings, "AUTODB_PRO_REMOTE_LIMIT_PER_HOUR", DEFAULT_LIMIT_PER_HOUR) or DEFAULT_LIMIT_PER_HOUR), 1)
         quota.estimated_limit_per_hour = configured_limit
+        window_reset_applied = False
+        quota_recovered = False
         if not quota.window_started_at or not quota.expected_reset_at or now >= quota.expected_reset_at:
+            had_pending_quota_cooldown = bool(
+                quota.cooldown_until
+                and quota.expected_reset_at
+                and quota.last_quota_error_at
+                and now >= quota.expected_reset_at
+            )
             started = now.replace(second=0, microsecond=0)
             quota.window_started_at = started
             quota.expected_reset_at = started + timedelta(minutes=WINDOW_MINUTES)
@@ -147,6 +173,17 @@ class AutoDbRemoteQuotaTracker:
             quota.cooldown_until = None
             quota.last_error = ""
             quota.recent_points_json = self._recent_points(quota.recent_points_json, now=now)
+            window_reset_applied = True
+            quota_recovered = had_pending_quota_cooldown
+        return window_reset_applied, quota_recovered
+
+    def _notify_quota_recovered(self, *, remote_key: str) -> None:
+        try:
+            from apps.core.services import send_system_autodb_quota_recovered_notification
+
+            send_system_autodb_quota_recovered_notification(remote_key=remote_key)
+        except Exception:  # noqa: BLE001
+            return
 
     def _append_point(
         self,

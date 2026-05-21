@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+import re
 
 from django.db.models import Q
 from rest_framework import status
@@ -156,16 +157,45 @@ class BackofficeAutoDbMatchingManualSearchRemoteAPIView(BackofficeAPIView):
         article = safe_str(request.data.get("article"))
         supplier_id = parse_supplier_id(request.data.get("supplier_id") or request.data.get("autodb_supplier_id"))
         brand = safe_str(request.data.get("brand") or request.data.get("supplier_name"))
+        if not article:
+            return Response({"detail": "article is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        helper = ManualAutoDbSearch()
+        if supplier_id is None and not brand:
+            if quota["paused"]:
+                return Response({"dry_run": True, "source": "remote", "quota": quota, "candidates": [], "results": []})
+            try:
+                candidates = helper.remote_candidates(article=article)
+            except Exception as exc:  # noqa: BLE001
+                return Response(
+                    {
+                        "dry_run": True,
+                        "source": "remote",
+                        "quota": quota_payload(),
+                        "candidates": [],
+                        "results": [self._error_row(None, "", article, helper.variants(article), exc)],
+                    }
+                )
+            return Response(
+                {
+                    "dry_run": True,
+                    "source": "remote",
+                    "quota": quota_payload(),
+                    "candidates": candidates,
+                    "results": [],
+                }
+            )
+
         if supplier_id and not brand:
             brand = supplier_display_name(supplier_id)
-        if not article or not brand:
+        if not brand:
             return Response({"detail": "brand/supplier and article are required"}, status=status.HTTP_400_BAD_REQUEST)
 
         article_lookup = self._extract_article_from_brand_prefixed_input(article=article, brand=brand)
-        helper = ManualAutoDbSearch()
         variants = helper.variants(article_lookup)
         if quota["paused"]:
             return Response({"dry_run": True, "source": "remote", "quota": quota, "results": [self._quota_row(supplier_id, brand, article_lookup, variants)]})
+
         try:
             result = AutoDbLookupV3ReadOnlyService().lookup(brand=brand, article=article_lookup)
         except Exception as exc:  # noqa: BLE001
@@ -181,12 +211,15 @@ class BackofficeAutoDbMatchingManualSearchRemoteAPIView(BackofficeAPIView):
                 )
         except Exception:  # noqa: BLE001
             previews = None
+
+        payload = remote_result_payload(result, article=article_lookup, variants=variants, previews=previews)
+
         return Response(
             {
                 "dry_run": True,
                 "source": "remote",
                 "quota": quota_payload(),
-                "results": [remote_result_payload(result, article=article_lookup, variants=variants, previews=previews)],
+                "results": [payload],
             }
         )
 
@@ -219,15 +252,30 @@ class BackofficeAutoDbMatchingManualSearchRemoteAPIView(BackofficeAPIView):
         if not raw:
             return ""
         brand_norm = safe_str(brand).upper()
+        if not brand_norm:
+            return raw
+
+        def _strip_separators(value: str) -> str:
+            # UI/users often pass `BRISK · 1501` or `1501 - BRISK`.
+            cleaned = re.sub(r"^[\s·•|:;,\-_/\\]+", "", value)
+            cleaned = re.sub(r"[\s·•|:;,\-_/\\]+$", "", cleaned)
+            return " ".join(cleaned.split())
+
+        raw_upper = raw.upper()
+        if raw_upper.startswith(brand_norm):
+            return _strip_separators(raw[len(brand_norm):]) or raw
+        if raw_upper.endswith(brand_norm):
+            return _strip_separators(raw[: -len(brand_norm)]) or raw
+
         tokens = raw.split(" ")
-        if len(tokens) <= 1 or not brand_norm:
+        if len(tokens) <= 1:
             return raw
         first = safe_str(tokens[0]).upper()
         last = safe_str(tokens[-1]).upper()
         if first == brand_norm and len(tokens) > 1:
-            return " ".join(tokens[1:]).strip()
+            return _strip_separators(" ".join(tokens[1:])) or raw
         if last == brand_norm and len(tokens) > 1:
-            return " ".join(tokens[:-1]).strip()
+            return _strip_separators(" ".join(tokens[:-1])) or raw
         return raw
 
 class BackofficeAutoDbMatchingProductLookupAPIView(BackofficeAPIView):
@@ -296,6 +344,8 @@ class BackofficeAutoDbMatchingManualSearchCreateJobAPIView(BackofficeAPIView):
                 supplier_name=supplier_name,
                 article_id=None,
                 actor_id=str(getattr(request.user, "id", "") or ""),
+                skip_clone_enrichment=False,
+                clone_replace_local=True,
             )
             return Response(
                 {
@@ -321,6 +371,8 @@ class BackofficeAutoDbMatchingManualSearchCreateJobAPIView(BackofficeAPIView):
             supplier_name=supplier_name,
             article_id=None,
             actor_id=str(getattr(request.user, "id", "") or ""),
+            skip_clone_enrichment=False,
+            clone_replace_local=True,
         )
         status_value = safe_str(result.get("status")) if isinstance(result, dict) else ""
         response_status = status.HTTP_200_OK if status_value == "bound" else status.HTTP_422_UNPROCESSABLE_ENTITY

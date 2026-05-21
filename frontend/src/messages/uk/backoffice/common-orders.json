@@ -726,6 +726,14 @@
           "rejectionReason": "Причина відмови (обов'язково)",
           "noTransitions": "Для поточного статусу немає доступних переходів."
         },
+        "modals": {
+          "delete": {
+            "title": "Видалити повернення",
+            "singleMessage": "Видалити повернення {returnNumber}?",
+            "bulkTitle": "Видалити повернення",
+            "bulkMessage": "Видалити вибрані повернення: {count}?"
+          }
+        },
         "statusActions": {
           "approve": "Схвалено",
           "reject": "Відхилено",

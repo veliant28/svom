@@ -58,6 +58,50 @@ class ProductNameSourceDiagnostics:
 class AutoDbProductNameEnrichmentService:
     _letter_re = re.compile(r"[A-Za-zА-Яа-яІіЇїЄєҐґ]")
     _placeholder_artifact_re = re.compile(r"(?:auto\s*db|autodb|автодб|автод)", re.IGNORECASE)
+    _category_like_markers: tuple[str, ...] = (
+        "средств",
+        "засоб",
+        "продукт",
+        "элемент",
+        "елемент",
+        "компонент",
+        "принадлежност",
+        "аксессуар",
+        "аксесуар",
+        "материал",
+        "матеріал",
+        "химическ",
+        "хімічн",
+        "очистител",
+        "очисник",
+        "cleaning",
+        "chemical",
+        "products",
+        "materials",
+    )
+    _compare_stopwords: frozenset[str] = frozenset(
+        {
+            "для",
+            "for",
+            "and",
+            "the",
+            "der",
+            "die",
+            "das",
+            "und",
+            "та",
+            "и",
+            "й",
+            "of",
+            "de",
+            "del",
+            "da",
+            "do",
+            "di",
+            "la",
+            "le",
+        }
+    )
     _conflicting_name_families: tuple[tuple[tuple[str, ...], tuple[str, ...]], ...] = (
         (
             (
@@ -732,11 +776,34 @@ class AutoDbProductNameEnrichmentService:
             return base_clean
         if base_lower in description_lower:
             return description_clean
+        if self._looks_like_generic_category_prefix(base_clean=base_clean, description_clean=description_clean):
+            return description_clean
         if self._looks_like_duplicate_prefix(base_clean=base_clean, description_clean=description_clean):
             return description_clean
         if self._looks_like_conflicting_headwords(base_clean=base_clean, description_clean=description_clean):
             return description_clean
         return sanitize_product_name(f"{base_clean} {description_clean}")[:255]
+
+    def _looks_like_generic_category_prefix(self, *, base_clean: str, description_clean: str) -> bool:
+        base_lower = sanitize_product_name(base_clean).lower()
+        description_lower = sanitize_product_name(description_clean).lower()
+        if not base_lower or not description_lower:
+            return False
+        if len(base_lower.split()) < 2:
+            return False
+        if len(description_lower) <= len(base_lower):
+            return False
+        if not any(marker in base_lower for marker in self._category_like_markers):
+            return False
+
+        base_tokens = self._meaningful_compare_tokens(base_lower)
+        description_tokens = self._meaningful_compare_tokens(description_lower)
+        if len(base_tokens) < 2 or len(description_tokens) < 2:
+            return False
+
+        overlap = set(base_tokens) & set(description_tokens)
+        overlap_ratio = len(overlap) / max(1, min(len(base_tokens), len(description_tokens)))
+        return overlap_ratio < 0.5
 
     def _looks_like_duplicate_prefix(self, *, base_clean: str, description_clean: str) -> bool:
         head = description_clean
@@ -764,6 +831,17 @@ class AutoDbProductNameEnrichmentService:
         normalized = re.sub(r"[^a-zа-я0-9 ]+", " ", normalized)
         normalized = sanitize_product_name(normalized)
         return normalized
+
+    def _meaningful_compare_tokens(self, value: str) -> tuple[str, ...]:
+        normalized = self._normalize_compare_text(value)
+        if not normalized:
+            return ()
+        return tuple(
+            token
+            for token in normalized.split()
+            if len(token) >= 3 and token not in self._compare_stopwords
+        )
+
 
     def _looks_like_conflicting_headwords(self, *, base_clean: str, description_clean: str) -> bool:
         base_lower = sanitize_product_name(base_clean).lower()

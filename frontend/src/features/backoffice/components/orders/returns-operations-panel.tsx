@@ -9,6 +9,7 @@ import {
   getBackofficeReturns,
   updateBackofficeReturnStatus,
 } from "@/features/backoffice/api/returns-api";
+import { OrderDeleteModal } from "@/features/backoffice/components/orders/order-delete-modal";
 import { ReturnViewModal } from "@/features/backoffice/components/orders/return-view-modal";
 import { ReturnsTable } from "@/features/backoffice/components/orders/returns-table";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
@@ -37,6 +38,9 @@ export function ReturnsOperationsPanel({
   const [bulkActionsOpen, setBulkActionsOpen] = useState(false);
   const bulkActionsRef = useRef<HTMLDivElement | null>(null);
   const [bulkRunning, setBulkRunning] = useState(false);
+  const [deleteRunning, setDeleteRunning] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<BackofficeReturnOperational | null>(null);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const [rows, setRows] = useState<BackofficeReturnOperational[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -171,10 +175,18 @@ export function ReturnsOperationsPanel({
     }
   }
 
+  async function runSingleDelete() {
+    if (!deleteTarget) {
+      return;
+    }
+    await handleDelete(deleteTarget);
+  }
+
   async function handleDelete(item: BackofficeReturnOperational) {
     if (!token) {
       return;
     }
+    setDeleteRunning(true);
     try {
       await deleteBackofficeReturn(token, item.id);
       setRows((current) => current.filter((row) => row.id !== item.id));
@@ -188,9 +200,12 @@ export function ReturnsOperationsPanel({
         setViewItem(null);
       }
       showSuccess(t("returns.messages.deleted"));
+      setDeleteTarget(null);
       void loadRows();
     } catch (requestError) {
       showApiError(requestError, t("returns.messages.deleteFailed"));
+    } finally {
+      setDeleteRunning(false);
     }
   }
 
@@ -291,6 +306,7 @@ export function ReturnsOperationsPanel({
     }
     setBulkRunning(false);
     setBulkActionsOpen(false);
+    setBulkDeleteOpen(false);
     if (completed > 0) {
       showSuccess(t("returns.messages.deleted"));
     }
@@ -355,7 +371,7 @@ export function ReturnsOperationsPanel({
                 disabled={bulkRunning || selectedSet.size <= 0}
                 className="flex h-10 w-full items-center rounded-md px-3 text-left text-sm font-normal leading-5 text-slate-900 hover:bg-red-50 hover:text-red-700 dark:text-slate-100 dark:hover:bg-red-950/35 dark:hover:text-red-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 disabled:opacity-50"
                 onClick={() => {
-                  void runBulkDeleteAction();
+                  setBulkDeleteOpen(true);
                 }}
               >
                 {bulkRunning ? t("loading") : t("returns.actions.bulkDelete")}
@@ -431,7 +447,7 @@ export function ReturnsOperationsPanel({
           void handleOpen(item);
         }}
         onDelete={(item) => {
-          void handleDelete(item);
+          setDeleteTarget(item);
         }}
         onPageChange={setPage}
       />
@@ -452,6 +468,40 @@ export function ReturnsOperationsPanel({
         onClose={() => {
           setViewOpen(false);
           setViewItem(null);
+        }}
+        t={t}
+      />
+
+      <OrderDeleteModal
+        isOpen={Boolean(deleteTarget)}
+        isSubmitting={deleteRunning}
+        title={t("returns.modals.delete.title")}
+        message={t("returns.modals.delete.singleMessage", { returnNumber: deleteTarget?.return_number ?? "" })}
+        confirmLabel={t("returns.actions.delete")}
+        onClose={() => {
+          if (!deleteRunning) {
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={() => {
+          void runSingleDelete();
+        }}
+        t={t}
+      />
+
+      <OrderDeleteModal
+        isOpen={bulkDeleteOpen}
+        isSubmitting={bulkRunning}
+        title={t("returns.modals.delete.bulkTitle")}
+        message={t("returns.modals.delete.bulkMessage", { count: selectedSet.size })}
+        confirmLabel={t("returns.actions.bulkDelete")}
+        onClose={() => {
+          if (!bulkRunning) {
+            setBulkDeleteOpen(false);
+          }
+        }}
+        onConfirm={() => {
+          void runBulkDeleteAction();
         }}
         t={t}
       />

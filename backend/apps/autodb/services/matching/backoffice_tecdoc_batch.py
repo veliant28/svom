@@ -53,13 +53,15 @@ class BackofficeTecdocBatchSelector:
                 break
             supplier_id = int(getattr(product, "autodb_supplier_id", 0) or 0)
             article = _safe_str(getattr(product, "autodb_article_number", "")) or _safe_str(getattr(product, "article", ""))
-            if supplier_id <= 0 or not article:
+            supplier_name = _safe_str(getattr(product, "autodb_supplier_name", "")) or _safe_str(getattr(product, "display_brand_name", ""))
+            if not article:
+                continue
+            if supplier_id <= 0 and not supplier_name:
                 continue
             if self._has_trusted_link_quality(product):
                 continue
             if self._is_non_tecdoc(product):
                 continue
-            supplier_name = _safe_str(getattr(product, "autodb_supplier_name", "")) or _safe_str(getattr(product, "display_brand_name", ""))
             selected.append(
                 TecdocBatchCandidate(
                     product_id=str(product.id),
@@ -75,7 +77,6 @@ class BackofficeTecdocBatchSelector:
     def _base_queryset(self, *, product_ids: list[str] | None = None):
         queryset = (
             Product.objects
-            .filter(autodb_supplier_id__isnull=False)
             .filter(
                 (
                     Q(autodb_article_number__isnull=False)

@@ -726,6 +726,14 @@
           "rejectionReason": "Rejection reason (required)",
           "noTransitions": "No transitions available for current status."
         },
+        "modals": {
+          "delete": {
+            "title": "Delete return",
+            "singleMessage": "Delete return {returnNumber}?",
+            "bulkTitle": "Delete returns",
+            "bulkMessage": "Delete selected returns: {count}?"
+          }
+        },
         "statusActions": {
           "approve": "Approved",
           "reject": "Rejected",

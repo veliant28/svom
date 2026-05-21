@@ -39,6 +39,7 @@ class TelegramSettingsSerializer(serializers.ModelSerializer):
             "support_notify_new_message",
             "system_notify_backup_status",
             "system_notify_import_status",
+            "system_notify_autodb_batch_status",
         )
 
     def to_representation(self, instance: TelegramSettings) -> dict:

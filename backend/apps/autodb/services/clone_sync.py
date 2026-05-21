@@ -96,9 +96,27 @@ class AutoDbCloneSyncService:
                 )
             except AutoDbProRemoteClientError as exc:
                 status = "permission_denied" if self._is_permission_denied(exc) else "failed"
-                self._mark_state(table=table, status=status, error=str(exc), processed_rows=0, failed_rows=0)
+                existing_state = self._get_or_create_state(table)
+                self._mark_state(
+                    table=table,
+                    status=status,
+                    error=str(exc),
+                    processed_rows=int(existing_state.processed_rows or 0),
+                    failed_rows=int(existing_state.failed_rows or 0),
+                    total_rows=int(existing_state.total_rows or 0),
+                    last_pk=existing_state.last_pk,
+                    last_offset=int(existing_state.last_offset or 0),
+                    last_cursor=str(existing_state.last_cursor or ""),
+                    finished_at=timezone.now(),
+                )
                 logger.error("Auto_DB_Pro clone sync skipped table=%s error=%s", table, exc)
-                result = CloneTableResult(table=table, status=status, total_rows=0, processed_rows=0, failed_rows=0)
+                result = CloneTableResult(
+                    table=table,
+                    status=status,
+                    total_rows=int(existing_state.total_rows or 0),
+                    processed_rows=int(existing_state.processed_rows or 0),
+                    failed_rows=int(existing_state.failed_rows or 0),
+                )
             results.append(result)
         return results
 

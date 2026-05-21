@@ -229,8 +229,12 @@ class AutoDbLookupV3ReadOnlyService:
         return trimmed or compact
 
     def _endpoint_summary(self) -> str:
-        cfg = self.storage.remote_client.sanitized_config()
-        return f"mysql://{cfg.get('host')}:{cfg.get('port')}/{cfg.get('database')}"
+        try:
+            client = self.storage._ensure_remote_client()
+            cfg = client.sanitized_config()
+            return f"mysql://{cfg.get('host')}:{cfg.get('port')}/{cfg.get('database')}"
+        except Exception:  # noqa: BLE001
+            return "mysql://unknown"
 
     def _resolve_remote_columns(self, *, table: str, oe_mode: bool = False) -> tuple[str | None, str | None]:
         columns = self._safe_remote_columns(table)
