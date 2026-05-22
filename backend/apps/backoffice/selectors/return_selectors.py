@@ -1,14 +1,27 @@
 from __future__ import annotations
 
-from django.db.models import Q, QuerySet
+from django.db.models import Prefetch, Q, QuerySet
 
-from apps.commerce.models import ReturnRequest
+from apps.commerce.models import ReturnRequest, ReturnRequestItem
+
+
+RETURN_ITEM_PREFETCH = Prefetch(
+    "items",
+    queryset=ReturnRequestItem.objects.select_related(
+        "product",
+        "order_item",
+        "order_item__selected_supplier_offer",
+        "order_item__selected_supplier_offer__supplier",
+        "order_item__snapshot_selected_offer",
+        "order_item__snapshot_selected_offer__supplier",
+    ),
+)
 
 
 def get_operational_returns_queryset() -> QuerySet[ReturnRequest]:
     return (
         ReturnRequest.objects.select_related("order", "user")
-        .prefetch_related("items", "events", "events__actor")
+        .prefetch_related(RETURN_ITEM_PREFETCH, "events", "events__actor")
         .order_by("-created_at")
     )
 

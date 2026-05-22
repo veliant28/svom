@@ -9,6 +9,8 @@ export type BackofficeReturnItem = {
   product_svom_sku?: string;
   product_name_snapshot: string;
   product_sku_snapshot: string;
+  supplier_name?: string;
+  supplier_code?: string;
   quantity_ordered: number;
   quantity_requested: number;
   quantity_approved: number;

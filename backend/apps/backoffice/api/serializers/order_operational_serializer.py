@@ -22,7 +22,8 @@ class BackofficeOrderItemOperationalSerializer(serializers.ModelSerializer):
     recommended_supplier_offer_id = serializers.CharField(read_only=True, allow_null=True)
     recommended_supplier_name = serializers.CharField(source="recommended_supplier_offer.supplier.name", read_only=True, default="")
     selected_supplier_offer_id = serializers.CharField(read_only=True, allow_null=True)
-    selected_supplier_name = serializers.CharField(source="selected_supplier_offer.supplier.name", read_only=True, default="")
+    selected_supplier_name = serializers.SerializerMethodField()
+    selected_supplier_code = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderItem
@@ -40,6 +41,7 @@ class BackofficeOrderItemOperationalSerializer(serializers.ModelSerializer):
             "recommended_supplier_name",
             "selected_supplier_offer_id",
             "selected_supplier_name",
+            "selected_supplier_code",
             "shortage_reason_code",
             "shortage_reason_note",
             "operator_note",
@@ -74,6 +76,20 @@ class BackofficeOrderItemOperationalSerializer(serializers.ModelSerializer):
         if svom_sku:
             return svom_sku
         return str(getattr(obj, "product_sku", "") or "").strip()
+
+    @staticmethod
+    def _resolve_selected_offer(obj: OrderItem):
+        return getattr(obj, "selected_supplier_offer", None) or getattr(obj, "snapshot_selected_offer", None)
+
+    def get_selected_supplier_name(self, obj: OrderItem) -> str:
+        offer = self._resolve_selected_offer(obj)
+        supplier = getattr(offer, "supplier", None)
+        return str(getattr(supplier, "name", "") or "").strip()
+
+    def get_selected_supplier_code(self, obj: OrderItem) -> str:
+        offer = self._resolve_selected_offer(obj)
+        supplier = getattr(offer, "supplier", None)
+        return str(getattr(supplier, "code", "") or "").strip()
 
 
 class BackofficeOrderOperationalListSerializer(serializers.ModelSerializer):

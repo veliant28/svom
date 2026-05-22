@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.test import TestCase
 
-from apps.catalog.models import Brand, Category, Product
+from apps.catalog.models import Brand, Category, Product, ProductImage
 from apps.commerce.models import Order, OrderItem
 from apps.commerce.services.monobank.mapper import build_invoice_create_payload
 from apps.users.models import User
@@ -21,6 +21,12 @@ class MonobankMapperTests(TestCase):
             brand=self.brand,
             category=self.category,
             is_active=True,
+        )
+        ProductImage.objects.create(
+            product=self.product,
+            remote_url="https://cdn.example.test/mono-product.webp",
+            is_primary=True,
+            sort_order=1,
         )
 
     def test_build_invoice_payload_includes_basket_order_items(self):
@@ -60,6 +66,7 @@ class MonobankMapperTests(TestCase):
         self.assertEqual(basket[0]["sum"], 20000)
         self.assertEqual(basket[0]["code"], "MONO-001")
         self.assertEqual(basket[0]["tax"], [0])
+        self.assertEqual(basket[0]["icon"], "https://cdn.example.test/mono-product.webp")
 
     def test_build_invoice_payload_adds_fallback_basket_order_when_order_items_absent(self):
         order = Order.objects.create(

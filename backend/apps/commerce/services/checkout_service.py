@@ -10,6 +10,7 @@ from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 
 from apps.commerce.models import Order, OrderItem
+from apps.catalog.services.product_management import get_product_display_name
 from apps.commerce.services.liqpay.service import LiqPayApiError, build_checkout_data
 from apps.commerce.services.cart_calculations import calculate_cart_totals, get_line_total, quantize_money
 from apps.commerce.services.cart_service import get_or_create_user_cart
@@ -115,6 +116,7 @@ def submit_checkout(
     *,
     user: User,
     payload: dict,
+    locale: str | None = None,
     monobank_webhook_url: str = "",
     monobank_redirect_url: str = "",
     liqpay_server_url: str = "",
@@ -252,7 +254,7 @@ def submit_checkout(
             OrderItem(
                 order=order,
                 product=item.product,
-                product_name=item.product.name,
+                product_name=get_product_display_name(item.product, locale),
                 product_sku=item.product.sku,
                 quantity=item.quantity,
                 unit_price=unit_price,

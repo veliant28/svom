@@ -12,6 +12,7 @@ export type BackofficeOrderOperationalItem = {
   recommended_supplier_name: string;
   selected_supplier_offer_id: string | null;
   selected_supplier_name: string;
+  selected_supplier_code?: string;
   shortage_reason_code: string;
   shortage_reason_note: string;
   operator_note: string;

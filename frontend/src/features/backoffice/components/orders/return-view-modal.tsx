@@ -6,6 +6,7 @@ import type { CSSProperties } from "react";
 
 import { OrderModalStaffActor } from "@/features/backoffice/components/orders/order-modal-staff-actor";
 import { OrderViewValueField } from "@/features/backoffice/components/orders/order-view-value-field";
+import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import { ReturnStatusChip } from "@/features/backoffice/components/widgets/return-status-chip";
 import { formatBackofficeDate } from "@/features/backoffice/lib/supplier-workspace";
@@ -60,6 +61,16 @@ export function ReturnViewModal({
   onClose: () => void;
   t: Translator;
 }) {
+  const resolveSupplierTone = (supplierCode: string): BackofficeStatusChipTone => {
+    if (supplierCode === "utr") {
+      return "blue";
+    }
+    if (supplierCode === "gpl") {
+      return "teal";
+    }
+    return "gray";
+  };
+
   const [selectedStatus, setSelectedStatus] = useState<BackofficeReturnOperational["status"]>("approved");
   const [adminComment, setAdminComment] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
@@ -210,9 +221,40 @@ export function ReturnViewModal({
                           return (
                             <div className={isInactive ? "opacity-45" : ""}>
                               <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0">
-                                  <p className="truncate text-sm font-semibold">{row.product_display_name || row.product_name_snapshot || "-"}</p>
-                                  <p className="mt-0.5 text-xs" style={{ color: "var(--muted)" }}>{row.product_svom_sku || row.product_sku_snapshot || "-"}</p>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex w-full items-center gap-1.5">
+                                    <p className="min-w-0 flex-1 truncate text-sm font-semibold">{row.product_display_name || row.product_name_snapshot || "-"}</p>
+                                    {(() => {
+                                      const supplierCode = (row.supplier_code || "").trim().toLowerCase();
+                                      if (!supplierCode) {
+                                        return null;
+                                      }
+                                      const supplierTooltip = supplierCode === "utr"
+                                        ? "Юник Трейд"
+                                        : supplierCode === "gpl"
+                                          ? "GPL"
+                                          : (row.supplier_name || supplierCode.toUpperCase());
+                                      return (
+                                        <BackofficeTooltip
+                                          content={supplierTooltip}
+                                          placement="top"
+                                          align="center"
+                                          wrapperClassName="inline-flex shrink-0"
+                                          tooltipClassName="whitespace-nowrap"
+                                        >
+                                          <BackofficeStatusChip
+                                            tone={resolveSupplierTone(supplierCode)}
+                                            className="cursor-pointer h-6 py-0 items-center [&>span]:leading-none"
+                                          >
+                                            {supplierCode.toUpperCase()}
+                                          </BackofficeStatusChip>
+                                        </BackofficeTooltip>
+                                      );
+                                    })()}
+                                  </div>
+                                  <p className="mt-0.5 text-xs" style={{ color: "var(--muted)" }}>
+                                    {row.product_svom_sku || row.product_sku_snapshot || "-"}
+                                  </p>
                                 </div>
                                 {canEditApprovalItems ? (
                                   <BackofficeTooltip content={actionLabel} placement="top" align="center" wrapperClassName="inline-flex shrink-0" tooltipClassName="whitespace-nowrap">

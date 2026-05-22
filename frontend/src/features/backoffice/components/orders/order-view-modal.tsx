@@ -16,6 +16,7 @@ import {
   type Translator,
 } from "@/features/backoffice/components/orders/order-view-modal.helpers";
 import { OrderViewValueField } from "@/features/backoffice/components/orders/order-view-value-field";
+import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { formatOrderDate, resolveOrderStatusDescription } from "@/features/backoffice/lib/orders/order-formatters";
@@ -66,6 +67,16 @@ export function OrderViewModal({
   onClose: () => void;
   t: Translator;
 }) {
+  const resolveSupplierTone = (supplierCode: string): BackofficeStatusChipTone => {
+    if (supplierCode === "utr") {
+      return "blue";
+    }
+    if (supplierCode === "gpl") {
+      return "teal";
+    }
+    return "gray";
+  };
+
   const [selectedAction, setSelectedAction] = useState<ActionKind>("confirm");
   const [monobankAmountMinorInput, setMonobankAmountMinorInput] = useState("");
 
@@ -204,8 +215,37 @@ export function OrderViewModal({
                     {items.length ? items.map((item) => (
                       <div key={item.id} className="rounded-md border p-2.5" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}>
                         <div className="flex items-start gap-2">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold">{item.product_name}</p>
+                          <div className="min-w-0 w-full">
+                            <div className="flex w-full items-center gap-1.5">
+                              <p className="min-w-0 flex-1 truncate text-sm font-semibold">{item.product_name}</p>
+                              {(() => {
+                                const supplierCode = (item.selected_supplier_code || "").trim().toLowerCase();
+                                if (!supplierCode) {
+                                  return null;
+                                }
+                                const supplierTooltip = supplierCode === "utr"
+                                  ? "Юник Трейд"
+                                  : supplierCode === "gpl"
+                                    ? "GPL"
+                                    : (item.selected_supplier_name || supplierCode.toUpperCase());
+                                return (
+                                  <BackofficeTooltip
+                                    content={supplierTooltip}
+                                    placement="top"
+                                    align="center"
+                                    wrapperClassName="inline-flex shrink-0"
+                                    tooltipClassName="whitespace-nowrap"
+                                  >
+                                    <BackofficeStatusChip
+                                      tone={resolveSupplierTone(supplierCode)}
+                                      className="cursor-pointer h-6 py-0 items-center [&>span]:leading-none"
+                                    >
+                                      {supplierCode.toUpperCase()}
+                                    </BackofficeStatusChip>
+                                  </BackofficeTooltip>
+                                );
+                              })()}
+                            </div>
                             <p className="mt-0.5 text-xs" style={{ color: "var(--muted)" }}>
                               {item.product_svom_sku || item.product_sku || "-"}
                             </p>

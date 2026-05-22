@@ -20,6 +20,8 @@ class CommerceServicesTests(TestCase):
             sku="SERVICE-001",
             article="SERVICE-001",
             name="Service Product",
+            name_uk="Сервісний товар",
+            name_ru="Сервисный товар",
             slug="service-product",
             brand=self.brand,
             category=self.category,
@@ -140,3 +142,22 @@ class CommerceServicesTests(TestCase):
         self.assertTrue(item.snapshot_availability_label)
         self.assertTrue(item.snapshot_procurement_source)
         self.assertIsNotNone(item.recommended_supplier_offer_id)
+
+    def test_submit_checkout_uses_localized_product_name_for_order_item_snapshot(self):
+        add_product_to_cart(user=self.user, product=self.product, quantity=1)
+        order = submit_checkout(
+            user=self.user,
+            locale="ru",
+            payload={
+                "contact_full_name": "Service Demo",
+                "contact_phone": "+380001112233",
+                "contact_email": "service@test.local",
+                "delivery_method": Order.DELIVERY_PICKUP,
+                "delivery_address": "",
+                "payment_method": Order.PAYMENT_CASH_ON_DELIVERY,
+                "customer_comment": "",
+            },
+        )
+        item = order.items.first()
+        assert item is not None
+        self.assertEqual(item.product_name, "Сервисный товар")

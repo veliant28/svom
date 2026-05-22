@@ -121,6 +121,7 @@ class CheckoutSubmitAPIView(APIView):
             order = submit_checkout(
                 user=request.user,
                 payload=serializer.validated_data,
+                locale=_resolve_request_locale(request),
                 monobank_webhook_url=request.build_absolute_uri("/api/commerce/payments/monobank/webhook/"),
                 monobank_redirect_url=request.build_absolute_uri("/checkout"),
                 liqpay_server_url=request.build_absolute_uri("/api/commerce/payments/liqpay/webhook/"),
@@ -367,3 +368,13 @@ def _build_checkout_preview_response(*, request, preview) -> dict:
             "warnings": preview.warnings,
         },
     }
+
+
+def _resolve_request_locale(request) -> str | None:
+    language_code = str(getattr(request, "LANGUAGE_CODE", "") or "").strip()
+    if language_code:
+        return language_code
+    accept_language = str(request.headers.get("Accept-Language", "") or "").strip()
+    if not accept_language:
+        return None
+    return accept_language.split(",", 1)[0]

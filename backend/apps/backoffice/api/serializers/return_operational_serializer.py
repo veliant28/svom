@@ -12,6 +12,8 @@ from apps.users.rbac import get_user_system_role
 class BackofficeReturnItemOperationalSerializer(serializers.ModelSerializer):
     product_display_name = serializers.SerializerMethodField()
     product_svom_sku = serializers.SerializerMethodField()
+    supplier_name = serializers.SerializerMethodField()
+    supplier_code = serializers.SerializerMethodField()
 
     class Meta:
         model = ReturnRequestItem
@@ -23,6 +25,8 @@ class BackofficeReturnItemOperationalSerializer(serializers.ModelSerializer):
             "product_svom_sku",
             "product_name_snapshot",
             "product_sku_snapshot",
+            "supplier_name",
+            "supplier_code",
             "quantity_ordered",
             "quantity_requested",
             "quantity_approved",
@@ -58,6 +62,23 @@ class BackofficeReturnItemOperationalSerializer(serializers.ModelSerializer):
             if svom_sku:
                 return svom_sku
         return str(obj.product_sku_snapshot or "").strip()
+
+    @staticmethod
+    def _resolve_selected_offer(obj: ReturnRequestItem):
+        order_item = getattr(obj, "order_item", None)
+        if order_item is None:
+            return None
+        return getattr(order_item, "selected_supplier_offer", None) or getattr(order_item, "snapshot_selected_offer", None)
+
+    def get_supplier_name(self, obj: ReturnRequestItem) -> str:
+        offer = self._resolve_selected_offer(obj)
+        supplier = getattr(offer, "supplier", None)
+        return str(getattr(supplier, "name", "") or "").strip()
+
+    def get_supplier_code(self, obj: ReturnRequestItem) -> str:
+        offer = self._resolve_selected_offer(obj)
+        supplier = getattr(offer, "supplier", None)
+        return str(getattr(supplier, "code", "") or "").strip()
 
 
 class BackofficeReturnEventSerializer(serializers.ModelSerializer):
