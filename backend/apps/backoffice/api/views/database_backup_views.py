@@ -117,11 +117,13 @@ class DatabaseBackupRunSerializer(serializers.Serializer):
 
 class DatabaseBackupSettingsAPIView(BackofficeAPIView):
     def get(self, request):
-        backup_settings = get_database_backup_settings()
+        backup_code = _resolve_backup_code_from_request(request)
+        backup_settings = get_database_backup_settings(code=backup_code)
         return Response(DatabaseBackupSettingsSerializer(backup_settings).data)
 
     def patch(self, request):
-        backup_settings = get_database_backup_settings()
+        backup_code = _resolve_backup_code_from_request(request)
+        backup_settings = get_database_backup_settings(code=backup_code)
         serializer = DatabaseBackupSettingsUpdateSerializer(backup_settings, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -134,15 +136,22 @@ class DatabaseBackupRunAPIView(BackofficeAPIView):
         serializer = DatabaseBackupRunSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         dispatch_async = serializer.validated_data.get("dispatch_async", True)
+        backup_code = _resolve_backup_code_from_request(request)
 
-        from apps.core.tasks.database_backup import run_database_backup_task
+        from apps.core.tasks.database_backup import run_autodb_clone_backup_task, run_database_backup_task
+
+        run_task = (
+            run_autodb_clone_backup_task
+            if backup_code == DatabaseBackupSettings.AUTO_DB_PRO_CLONE_CODE
+            else run_database_backup_task
+        )
 
         if dispatch_async:
-            task = run_database_backup_task.delay()
-            return Response({"mode": "async", "task_id": task.id}, status=status.HTTP_202_ACCEPTED)
+            task = run_task.delay()
+            return Response({"mode": "async", "task_id": task.id, "code": backup_code}, status=status.HTTP_202_ACCEPTED)
 
-        result = run_database_backup_task()
-        return Response({"mode": "sync", "result": result}, status=status.HTTP_200_OK)
+        result = run_task()
+        return Response({"mode": "sync", "result": result, "code": backup_code}, status=status.HTTP_200_OK)
 
 
 def _extract_schedule_time_from_cron(cron_expression: str) -> time:
@@ -160,3 +169,16 @@ def _extract_schedule_time_from_cron(cron_expression: str) -> time:
         return time(hour=23, minute=0)
 
     return time(hour=hour, minute=minute)
+
+
+def _resolve_backup_code_from_request(request) -> str:
+    allowed_codes = {
+        DatabaseBackupSettings.DEFAULT_CODE,
+        DatabaseBackupSettings.AUTO_DB_PRO_CLONE_CODE,
+    }
+    query_value = str(request.query_params.get("code") or "").strip()
+    body_value = str(getattr(request, "data", {}).get("code") or "").strip()
+    resolved = query_value or body_value or DatabaseBackupSettings.DEFAULT_CODE
+    if resolved not in allowed_codes:
+        raise serializers.ValidationError({"code": "Unsupported backup profile code."})
+    return resolved

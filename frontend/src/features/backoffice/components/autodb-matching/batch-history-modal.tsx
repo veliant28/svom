@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, LoaderCircle, PauseCircle, StopCircle, X, type LucideIcon } from "lucide-react";
+import { AlertTriangle, CheckCircle2, LoaderCircle, PauseCircle, Unplug, StopCircle, X, type LucideIcon } from "lucide-react";
 import { createPortal } from "react-dom";
 import type { CSSProperties } from "react";
 import { useTranslations } from "next-intl";
@@ -89,11 +89,18 @@ function buildTimelineEvents(
       t("batchHistory.timeline.linked", { count: bound }),
       t("batchHistory.timeline.errors", { count: failed }),
     ].join(" • ");
+    const stage = String(summary.stage || "").trim();
+    const stageDetails: string[] = [];
+    if (stage === "waiting_quota_recovery") {
+      stageDetails.push(t("batchHistory.timeline.waitingQuota"));
+    } else if (stage === "waiting_remote_retry") {
+      stageDetails.push(t("batchHistory.timeline.waitingRemoteRetry"));
+    }
     events.push({
       id: "progress",
       title: run.status === "running" ? t("batchHistory.timeline.inProgress") : t("batchHistory.timeline.progress"),
       time: formatDateTime(summary.last_heartbeat_at || startedAt, locale),
-      details: [progressLine],
+      details: [progressLine, ...stageDetails],
     });
   }
 
@@ -135,6 +142,13 @@ function resolveRunStatusLabel({
   t: ReturnType<typeof useTranslations>;
 }): { tone: "blue" | "gray" | "success" | "warning"; label: string; icon: LucideIcon } {
   if (isRunning) {
+    const stage = String(summary.stage || "").trim();
+    if (stage === "waiting_quota_recovery") {
+      return { tone: "warning", label: t("batchHistory.badges.quotaPause"), icon: AlertTriangle };
+    }
+    if (stage === "waiting_remote_retry") {
+      return { tone: "warning", label: t("batchHistory.badges.remotePause"), icon: Unplug };
+    }
     return { tone: "blue", label: t("batchHistory.status.running"), icon: LoaderCircle };
   }
   if (!run) {
@@ -173,6 +187,8 @@ export function AutoDbBatchHistoryModal({
   const requestedLimit = toCount(summary.requested_limit);
   const selected = toCount(summary.selected);
   const processed = toCount(summary.processed);
+  const processedInCycle = toCount(summary.processed_in_cycle);
+  const isContinuous = Boolean(summary.continuous);
   const processedTarget = selected || requestedLimit;
   const linked = toCount(summary.bound);
   const errors = toCount(summary.failed);
@@ -203,7 +219,7 @@ export function AutoDbBatchHistoryModal({
             <BackofficeStatusChip
               tone={status.tone}
               icon={status.icon}
-              className={isRunning ? "[&>svg]:animate-spin" : ""}
+              className={isRunning && status.icon === LoaderCircle ? "[&>svg]:animate-spin" : ""}
             >
               {status.label}
             </BackofficeStatusChip>
@@ -222,7 +238,10 @@ export function AutoDbBatchHistoryModal({
         <div className="max-h-[75vh] overflow-y-auto px-4 py-4">
           <div className="mb-4">
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-              <MetricCard label={t("batchHistory.metrics.processed")} value={`${processed}/${processedTarget || "—"}`} />
+              <MetricCard
+                label={t("batchHistory.metrics.processed")}
+                value={isContinuous ? `${processedInCycle}/${processedTarget || "—"}` : `${processed}/${processedTarget || "—"}`}
+              />
               <MetricCard label={t("batchHistory.metrics.linked")} value={linked} />
               <MetricCard label={t("batchHistory.metrics.errors")} value={errors} />
               <MetricCard label={t("batchHistory.metrics.quota")} value={`${quotaUsed}/${quotaLimit || "—"}`} />

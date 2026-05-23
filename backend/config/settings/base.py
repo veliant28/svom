@@ -327,6 +327,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "core.dispatch_scheduled_database_backup",
         "schedule": crontab(minute="*"),
     },
+    "core-autodb-clone-backup-scheduled-dispatch": {
+        "task": "core.dispatch_scheduled_autodb_clone_backup",
+        "schedule": crontab(minute="*"),
+    },
     "supplier-imports-cleanup-price-list-files": {
         "task": "supplier_imports.cleanup_price_list_files",
         "schedule": crontab(minute=17),

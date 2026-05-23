@@ -209,18 +209,26 @@ export type AutoDbActionResponse = {
 export type AutoDbTecdocBatchSummary = {
   running?: boolean;
   stage?: string;
+  continuous?: boolean;
   requested_limit?: number;
   requested_product_ids_count?: number;
+  cycle_index?: number;
   selected?: number;
+  selected_total?: number;
+  processed_in_cycle?: number;
   processed?: number;
   bound?: number;
   failed?: number;
   stopped_reason?: string;
   last_error?: string;
   processing_index?: number;
+  processing_retry_attempt?: number;
   processing_product_id?: string;
   processing_supplier_id?: number;
   processing_article?: string;
+  retry_reason?: string;
+  retry_in_seconds?: number;
+  quota_cooldown_until?: string;
   started_at?: string;
   finished_at?: string;
   last_heartbeat_at?: string;

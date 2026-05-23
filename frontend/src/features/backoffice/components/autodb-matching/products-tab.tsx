@@ -55,7 +55,7 @@ export function AutoDbMatchingProductsTab({
   const [filters, setFilters] = useState<AutoDbMatchingProductsFilterState>(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<AutoDbMatchingProductsPageSize>(25);
-  const [batchSize, setBatchSize] = useState(200);
+  const [batchSize, setBatchSize] = useState(50);
   const [isBatchSubmitting, setIsBatchSubmitting] = useState(false);
   const [drawerJobId, setDrawerJobId] = useState<string | null>(null);
   const [selectedSet, setSelectedSet] = useState<Set<string>>(new Set());
@@ -111,7 +111,7 @@ export function AutoDbMatchingProductsTab({
     if (!token) return;
     setIsBatchSubmitting(true);
     try {
-      const response = await runAutoDbTecdocBatch(token, { batch_size: batchSize });
+      const response = await runAutoDbTecdocBatch(token, { batch_size: batchSize, continuous: true });
       if (response.status === "already_running") {
         showWarning(t("toasts.batchAlreadyRunning"));
       } else {

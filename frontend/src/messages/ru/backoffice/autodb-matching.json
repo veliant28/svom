@@ -9,8 +9,18 @@
         "productsTitle": "Несвязанные товары",
         "searchTitle": "Поиск в Auto-DB"
       },
-      "common": { "yes": "Да", "no": "Нет", "prev": "Назад", "next": "Вперед" },
-      "states": { "empty": "Нет данных", "emptyProducts": "Нет несвязанных товаров", "emptySearch": "Результатов пока нет", "loadingCandidates": "Загрузка..." },
+      "common": {
+        "yes": "Да",
+        "no": "Нет",
+        "prev": "Назад",
+        "next": "Вперед"
+      },
+      "states": {
+        "empty": "Нет данных",
+        "emptyProducts": "Нет несвязанных товаров",
+        "emptySearch": "Результатов пока нет",
+        "loadingCandidates": "Загрузка..."
+      },
       "dashboard": {
         "cards": {
           "totalJobs": "Всего задач",
@@ -169,7 +179,7 @@
           "trustedLink": "Доверенная связка",
           "noDeterministicSupplierVariantMatch": "Нет детерминированного совпадения варианта поставщика",
           "notApplySafeStatus": "Статус небезопасен для apply"
-},
+        },
         "statusTooltip": {
           "status": "Статус",
           "reason": "Причина",
@@ -177,7 +187,9 @@
           "lookup": "Источник lookup",
           "method": "Метод lookup"
         },
-        "pagination": { "total": "Всего: {count}" },
+        "pagination": {
+          "total": "Всего: {count}"
+        },
         "filters": {
           "perPage": "На странице: {count}",
           "allSuppliers": "Все поставщики",
@@ -329,7 +341,15 @@
           "processed": "Обработано: {count}",
           "linked": "Связано: {count}",
           "errors": "Ошибки: {count}",
-          "lastError": "Последняя ошибка: {value}"
+          "lastError": "Последняя ошибка: {value}",
+          "waitingQuota": "Пауза по квоте",
+          "waitingRemoteRetry": "Пауза из-за обрыва связи"
+        },
+        "badges": {
+          "quotaWait": "Пауза: Квота",
+          "remoteRetry": "Пауза: Обрыв",
+          "quotaPause": "Пауза: Квота",
+          "remotePause": "Пауза: Обрыв"
         }
       },
       "search": {
@@ -360,7 +380,11 @@
         "lookupLoading": "Поиск товаров...",
         "lookupEmpty": "Совпадения не найдены",
         "selectedSkuSuffix": "выбран",
-        "sources": { "local": "Локальная", "remote": "Удаленная", "both": "Обе" },
+        "sources": {
+          "local": "Локальная",
+          "remote": "Удаленная",
+          "both": "Обе"
+        },
         "columns": {
           "source": "source",
           "supplier": "supplier",
@@ -437,7 +461,9 @@
         "actionRequiresConfirmation": "Требуется подтверждение",
         "applyBlocked": "Apply заблокирован без dry-run"
       },
-      "safety": { "applyPlaceholder": "Apply-действия отключены: нет перезаписи названий, категорий, фото, цен и остатков." },
+      "safety": {
+        "applyPlaceholder": "Apply-действия отключены: нет перезаписи названий, категорий, фото, цен и остатков."
+      },
       "drawer": {
         "title": "Детали",
         "productInfo": "Информация о товаре",

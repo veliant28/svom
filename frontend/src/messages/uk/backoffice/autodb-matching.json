@@ -9,8 +9,18 @@
         "productsTitle": "Незвʼязані товари",
         "searchTitle": "Пошук в Auto-DB"
       },
-      "common": { "yes": "Да", "no": "Нет", "prev": "Назад", "next": "Вперед" },
-      "states": { "empty": "Немає даних", "emptyProducts": "Немає незвʼязаних товарів", "emptySearch": "Результатів поки немає", "loadingCandidates": "Завантаження..." },
+      "common": {
+        "yes": "Да",
+        "no": "Нет",
+        "prev": "Назад",
+        "next": "Вперед"
+      },
+      "states": {
+        "empty": "Немає даних",
+        "emptyProducts": "Немає незвʼязаних товарів",
+        "emptySearch": "Результатів поки немає",
+        "loadingCandidates": "Завантаження..."
+      },
       "dashboard": {
         "cards": {
           "totalJobs": "Total jobs",
@@ -169,7 +179,7 @@
           "trustedLink": "Довірений зв'язок",
           "noDeterministicSupplierVariantMatch": "Немає детермінованого збігу варіанту постачальника",
           "notApplySafeStatus": "Статус небезпечний для apply"
-},
+        },
         "statusTooltip": {
           "status": "Статус",
           "reason": "Причина",
@@ -177,7 +187,9 @@
           "lookup": "Джерело lookup",
           "method": "Метод lookup"
         },
-        "pagination": { "total": "Всього: {count}" },
+        "pagination": {
+          "total": "Всього: {count}"
+        },
         "filters": {
           "perPage": "На сторінці: {count}",
           "allSuppliers": "Усі постачальники",
@@ -329,7 +341,15 @@
           "processed": "Оброблено: {count}",
           "linked": "Звʼязано: {count}",
           "errors": "Помилки: {count}",
-          "lastError": "Остання помилка: {value}"
+          "lastError": "Остання помилка: {value}",
+          "waitingQuota": "Пауза через квоту",
+          "waitingRemoteRetry": "Пауза через обрив зв'язку"
+        },
+        "badges": {
+          "quotaWait": "Пауза: Квота",
+          "remoteRetry": "Пауза: Обрив",
+          "quotaPause": "Пауза: Квота",
+          "remotePause": "Пауза: Обрив"
         }
       },
       "search": {
@@ -360,7 +380,11 @@
         "lookupLoading": "Пошук товарів...",
         "lookupEmpty": "Збігів не знайдено",
         "selectedSkuSuffix": "обрано",
-        "sources": { "local": "Локальна", "remote": "Віддалена", "both": "Обидві" },
+        "sources": {
+          "local": "Локальна",
+          "remote": "Віддалена",
+          "both": "Обидві"
+        },
         "columns": {
           "source": "source",
           "supplier": "supplier",
@@ -437,7 +461,9 @@
         "actionRequiresConfirmation": "Потрібне підтвердження",
         "applyBlocked": "Apply заблокирован без dry-run"
       },
-      "safety": { "applyPlaceholder": "Apply-действия отключены: нет перезаписи названий, категорий, фото, цен и остатков." },
+      "safety": {
+        "applyPlaceholder": "Apply-действия отключены: нет перезаписи названий, категорий, фото, цен и остатков."
+      },
       "drawer": {
         "title": "Деталі",
         "productInfo": "Інформація про товар",

@@ -85,3 +85,56 @@ class BackofficeTecdocBatchSelectorTests(TestCase):
 
         self.assertNotIn(str(trusted.id), selected_ids)
         self.assertIn(str(untrusted.id), selected_ids)
+
+    def test_select_candidates_only_new_tecdoc_mode_keeps_only_new_tecdoc_unlinked(self):
+        ready = self._make_product(sku="WIX-NEW-TECDOC", supplier_id=10, article="WA3333", article_key="")
+        linked = self._make_product(sku="WIX-LINKED", supplier_id=10, article="WA4444", article_key="10:WA4444")
+        review = self._make_product(sku="WIX-REVIEW", supplier_id=10, article="WA5555", article_key="")
+        non_tecdoc = Product.objects.create(
+            sku="AT-NON-TECDOC",
+            article="AT-001",
+            name="AT non tecdoc",
+            slug="at-non-tecdoc",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+            autodb_supplier_id=10,
+            autodb_article_number="AT-001",
+            autodb_article_key="",
+            autodb_supplier_name="AT",
+            display_brand_name="AT",
+        )
+        unknown = Product.objects.create(
+            sku="WIX-UNKNOWN",
+            article="WA0000",
+            name="Unknown supplier",
+            slug="unknown-supplier",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+            autodb_supplier_id=0,
+            autodb_article_number="WA0000",
+            autodb_article_key="",
+            autodb_supplier_name="",
+            display_brand_name="TecBrand",
+        )
+
+        AutoDbProductLinkQuality.objects.update_or_create(
+            product=review,
+            autodb_article_key="10:WA5555",
+            defaults={
+                "autodb_supplier_id": 10,
+                "autodb_article_number": "WA5555",
+                "status": AutoDbProductLinkQuality.STATUS_NEEDS_MANUAL_REVIEW,
+                "reason": "manual_review",
+            },
+        )
+
+        selected = BackofficeTecdocBatchSelector().select_candidates(limit=50, only_new_tecdoc=True)
+        selected_ids = {item.product_id for item in selected}
+
+        self.assertIn(str(ready.id), selected_ids)
+        self.assertNotIn(str(linked.id), selected_ids)
+        self.assertNotIn(str(review.id), selected_ids)
+        self.assertNotIn(str(non_tecdoc.id), selected_ids)
+        self.assertNotIn(str(unknown.id), selected_ids)

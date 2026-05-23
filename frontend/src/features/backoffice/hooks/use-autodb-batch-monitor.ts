@@ -18,7 +18,7 @@ import type {
 } from "@/features/backoffice/types/backoffice";
 
 function clampBatchSize(value: number): number {
-  const normalized = Number.isFinite(value) ? Math.round(value) : 200;
+  const normalized = Number.isFinite(value) ? Math.round(value) : 50;
   return Math.max(10, Math.min(1000, normalized));
 }
 
@@ -36,7 +36,7 @@ export function useAutoDbBatchMonitor({
 }) {
   const t = useTranslations("backoffice.autodbMatching");
   const { showApiError, showInfo, showSuccess, showWarning } = useBackofficeFeedback();
-  const [batchSize, setBatchSize] = useState(200);
+  const [batchSize, setBatchSize] = useState(50);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const batchStateQueryFn = useCallback((apiToken: string) => getAutoDbTecdocBatchState(apiToken), []);
@@ -85,7 +85,7 @@ export function useAutoDbBatchMonitor({
     }
     setIsSubmitting(true);
     try {
-      const response = await runAutoDbTecdocBatch(token, { batch_size: clampBatchSize(batchSize) });
+      const response = await runAutoDbTecdocBatch(token, { batch_size: clampBatchSize(batchSize), continuous: true });
       if (response.status === "already_running") {
         showWarning(t("toasts.batchAlreadyRunning"));
       } else {

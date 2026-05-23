@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import signal
+import time
 
 from celery import shared_task
 from django.conf import settings
@@ -363,6 +364,7 @@ def run_backoffice_tecdoc_batch_bind_task(
     limit: int = 200,
     actor_id: str = "",
     product_ids: list[str] | None = None,
+    continuous: bool = False,
 ) -> dict[str, object]:
     run = AutoDbMatchingRun.objects.filter(id=run_id).first()
     if run is None:
@@ -370,6 +372,7 @@ def run_backoffice_tecdoc_batch_bind_task(
 
     requested_limit = max(1, min(int(limit or 0), 1000))
     requested_product_ids_count = len(product_ids or [])
+    continuous_mode = bool(continuous and requested_product_ids_count == 0)
     started_at = timezone.now()
     run.started_at = run.started_at or started_at
     run.status = AutoDbMatchingRun.STATUS_RUNNING
@@ -383,6 +386,7 @@ def run_backoffice_tecdoc_batch_bind_task(
         "processed": 0,
         "bound": 0,
         "failed": 0,
+        "continuous": continuous_mode,
         "stopped_reason": "",
         "last_error": "",
         "actor_id": str(actor_id or ""),
@@ -397,285 +401,402 @@ def run_backoffice_tecdoc_batch_bind_task(
     use_public_search = bool(getattr(settings, "AUTODB_BATCH_PUBLIC_SEARCH_ENABLED", True))
     public_api = AutoDbPublicApiClient() if use_public_search else None
     supplier_display_cache: dict[int, str] = {}
-    candidates = selector.select_candidates(
-        limit=requested_limit,
-        product_ids=product_ids,
+    remote_retry_seconds = max(
+        int(getattr(settings, "AUTODB_BACKOFFICE_BATCH_REMOTE_RETRY_SECONDS", 15) or 15),
+        1,
+    )
+    remote_retry_max_seconds = max(
+        int(getattr(settings, "AUTODB_BACKOFFICE_BATCH_REMOTE_RETRY_MAX_SECONDS", 120) or 120),
+        remote_retry_seconds,
+    )
+    quota_poll_seconds = max(
+        int(getattr(settings, "AUTODB_BACKOFFICE_BATCH_QUOTA_POLL_SECONDS", 30) or 30),
+        5,
     )
     results: list[dict[str, object]] = []
     processed = 0
     bound = 0
     failed = 0
+    selected_total = 0
+    cycle_index = 0
     stop_reason = ""
     last_error = ""
-    now = timezone.now()
-    run.summary_json = {
-        **(run.summary_json or {}),
-        "running": True,
-        "stage": "processing_items",
-        "requested_limit": requested_limit,
-        "requested_product_ids_count": requested_product_ids_count,
-        "selected": len(candidates),
-        "processed": processed,
-        "bound": bound,
-        "failed": failed,
-        "stopped_reason": stop_reason,
-        "last_error": last_error,
-        "last_heartbeat_at": now.isoformat(),
-    }
-    run.save(update_fields=["summary_json", "updated_at"])
+    selected_last_cycle = 0
+    while True:
+        cycle_index += 1
+        effective_product_ids = product_ids if cycle_index == 1 else None
+        cycle_base_processed = processed
+        candidates = selector.select_candidates(
+            limit=requested_limit,
+            product_ids=effective_product_ids,
+            only_new_tecdoc=continuous_mode and effective_product_ids is None,
+        )
+        selected_last_cycle = len(candidates)
+        selected_total += selected_last_cycle
 
-    for index, item in enumerate(candidates, start=1):
-        loop_heartbeat = timezone.now()
+        now = timezone.now()
         run.summary_json = {
             **(run.summary_json or {}),
             "running": True,
-            "stage": "processing_item",
+            "stage": "processing_items",
+            "continuous": continuous_mode,
             "requested_limit": requested_limit,
             "requested_product_ids_count": requested_product_ids_count,
-            "selected": len(candidates),
-            "processing_index": index,
-            "processing_product_id": str(item.product_id),
-            "processing_supplier_id": int(item.supplier_id),
-            "processing_article": str(item.article or ""),
+            "cycle_index": cycle_index,
+            "selected": selected_last_cycle,
+            "selected_total": selected_total,
+            "processed_in_cycle": 0,
             "processed": processed,
             "bound": bound,
             "failed": failed,
             "stopped_reason": stop_reason,
             "last_error": last_error,
-            "last_heartbeat_at": loop_heartbeat.isoformat(),
+            "last_heartbeat_at": now.isoformat(),
         }
         run.save(update_fields=["summary_json", "updated_at"])
-        try:
-            bind_supplier_id = int(item.supplier_id)
-            bind_article = str(item.article or "")
-            bind_supplier_name = str(item.supplier_name or "")
-            relinked_by_brand_guard = False
-            resolved_by_public_search = False
-            raw_offer_brand = ""
 
-            with _batch_item_timeout(BACKOFFICE_TECDOC_BATCH_ITEM_TIMEOUT_SECONDS):
-                raw_offer_brand = _latest_raw_offer_brand_for_product(product_id=item.product_id)
-                if public_api is not None and bind_article:
-                    public_candidate = _resolve_batch_candidate_via_public_search(
-                        client=public_api,
-                        article=bind_article,
-                        preferred_supplier_id=bind_supplier_id,
-                        preferred_brand=raw_offer_brand or bind_supplier_name,
-                        supplier_display_cache=supplier_display_cache,
-                    )
-                    if public_candidate is not None:
-                        bind_supplier_id, bind_supplier_name, bind_article = public_candidate
-                        resolved_by_public_search = True
-                    elif bind_supplier_id <= 0:
-                        _mark_link_clone_data_missing_needs_review(
-                            product_id=item.product_id,
-                            supplier_id=0,
-                            article_number=bind_article,
-                            reason="batch_public_search_no_candidate",
-                        )
-                        _apply_fallback_name_translation_for_product(
-                            product_id=str(item.product_id),
-                            reason="batch_public_search_no_candidate",
-                        )
-                        processed += 1
-                        failed += 1
-                        results.append(
-                            {
-                                "product_id": item.product_id,
-                                "supplier_id": 0,
-                                "article": bind_article,
-                                "status": "remote_not_found",
-                                "reason": "batch_public_search_no_candidate",
-                            }
-                        )
-                        continue
+        if selected_last_cycle <= 0:
+            break
 
-                if bind_supplier_id > 0 and not bind_supplier_name:
-                    bind_supplier_name = _supplier_display_name_from_autodb(
-                        supplier_id=bind_supplier_id,
-                        cache=supplier_display_cache,
-                    )
-                if raw_offer_brand:
-                    raw_brand_norm = normalize_brand(raw_offer_brand)
-                    supplier_brand_norm = normalize_brand(bind_supplier_name or str(bind_supplier_id))
-                    if raw_brand_norm and supplier_brand_norm and raw_brand_norm != supplier_brand_norm:
-                        matched_supplier_id, matched_supplier_name, matched_reason = _resolve_supplier_by_brand(
-                            matcher=brand_matcher,
-                            raw_brand=raw_offer_brand,
-                        )
-                        if matched_supplier_id and "relaxed_match" not in matched_reason:
-                            canonical_article = _resolve_article_for_supplier(
-                                storage=clone_storage,
-                                supplier_id=matched_supplier_id,
-                                article_input=bind_article,
+        for index, item in enumerate(candidates, start=1):
+            transient_attempt = 0
+            while True:
+                loop_heartbeat = timezone.now()
+                run.summary_json = {
+                    **(run.summary_json or {}),
+                    "running": True,
+                    "stage": "processing_item",
+                    "continuous": continuous_mode,
+                    "requested_limit": requested_limit,
+                    "requested_product_ids_count": requested_product_ids_count,
+                    "cycle_index": cycle_index,
+                    "selected": selected_last_cycle,
+                    "selected_total": selected_total,
+                    "processed_in_cycle": max(processed - cycle_base_processed, 0),
+                    "processing_index": index,
+                    "processing_product_id": str(item.product_id),
+                    "processing_supplier_id": int(item.supplier_id),
+                    "processing_article": str(item.article or ""),
+                    "processing_retry_attempt": transient_attempt,
+                    "processed": processed,
+                    "bound": bound,
+                    "failed": failed,
+                    "stopped_reason": stop_reason,
+                    "last_error": last_error,
+                    "last_heartbeat_at": loop_heartbeat.isoformat(),
+                }
+                run.save(update_fields=["summary_json", "updated_at"])
+                try:
+                    bind_supplier_id = int(item.supplier_id)
+                    bind_article = str(item.article or "")
+                    bind_supplier_name = str(item.supplier_name or "")
+                    relinked_by_brand_guard = False
+                    resolved_by_public_search = False
+                    raw_offer_brand = ""
+
+                    with _batch_item_timeout(BACKOFFICE_TECDOC_BATCH_ITEM_TIMEOUT_SECONDS):
+                        raw_offer_brand = _latest_raw_offer_brand_for_product(product_id=item.product_id)
+                        if public_api is not None and bind_article:
+                            public_candidate = _resolve_batch_candidate_via_public_search(
+                                client=public_api,
+                                article=bind_article,
+                                preferred_supplier_id=bind_supplier_id,
+                                preferred_brand=raw_offer_brand or bind_supplier_name,
+                                supplier_display_cache=supplier_display_cache,
                             )
-                            if canonical_article:
-                                bind_supplier_id = int(matched_supplier_id)
-                                bind_article = str(canonical_article)
-                                bind_supplier_name = str(matched_supplier_name or raw_offer_brand or bind_supplier_name)
-                                relinked_by_brand_guard = True
-                            else:
-                                _mark_link_brand_mismatch_needs_review(
+                            if public_candidate is not None:
+                                bind_supplier_id, bind_supplier_name, bind_article = public_candidate
+                                resolved_by_public_search = True
+                            elif bind_supplier_id <= 0:
+                                _mark_link_clone_data_missing_needs_review(
                                     product_id=item.product_id,
-                                    supplier_id=bind_supplier_id,
+                                    supplier_id=0,
                                     article_number=bind_article,
-                                    raw_brand=raw_offer_brand,
-                                    supplier_brand=bind_supplier_name,
-                                    reason="batch_brand_match_ok_article_not_found_for_brand",
+                                    reason="batch_public_search_no_candidate",
                                 )
                                 _apply_fallback_name_translation_for_product(
                                     product_id=str(item.product_id),
-                                    reason="brand_matched_article_missing",
+                                    reason="batch_public_search_no_candidate",
                                 )
                                 processed += 1
                                 failed += 1
                                 results.append(
                                     {
                                         "product_id": item.product_id,
-                                        "supplier_id": int(item.supplier_id),
-                                        "article": item.article,
-                                        "status": "skipped_brand_mismatch",
-                                        "reason": "brand_matched_article_missing",
-                                        "raw_offer_brand": raw_offer_brand,
-                                        "supplier_brand": bind_supplier_name,
+                                        "supplier_id": 0,
+                                        "article": bind_article,
+                                        "status": "remote_not_found",
+                                        "reason": "batch_public_search_no_candidate",
                                     }
                                 )
-                                continue
-                        else:
-                            _mark_link_brand_mismatch_needs_review(
+                                break
+
+                        if bind_supplier_id > 0 and not bind_supplier_name:
+                            bind_supplier_name = _supplier_display_name_from_autodb(
+                                supplier_id=bind_supplier_id,
+                                cache=supplier_display_cache,
+                            )
+                        if raw_offer_brand:
+                            raw_brand_norm = normalize_brand(raw_offer_brand)
+                            supplier_brand_norm = normalize_brand(bind_supplier_name or str(bind_supplier_id))
+                            if raw_brand_norm and supplier_brand_norm and raw_brand_norm != supplier_brand_norm:
+                                matched_supplier_id, matched_supplier_name, matched_reason = _resolve_supplier_by_brand(
+                                    matcher=brand_matcher,
+                                    raw_brand=raw_offer_brand,
+                                )
+                                if matched_supplier_id and "relaxed_match" not in matched_reason:
+                                    canonical_article = _resolve_article_for_supplier(
+                                        storage=clone_storage,
+                                        supplier_id=matched_supplier_id,
+                                        article_input=bind_article,
+                                    )
+                                    if canonical_article:
+                                        bind_supplier_id = int(matched_supplier_id)
+                                        bind_article = str(canonical_article)
+                                        bind_supplier_name = str(matched_supplier_name or raw_offer_brand or bind_supplier_name)
+                                        relinked_by_brand_guard = True
+                                    else:
+                                        _mark_link_brand_mismatch_needs_review(
+                                            product_id=item.product_id,
+                                            supplier_id=bind_supplier_id,
+                                            article_number=bind_article,
+                                            raw_brand=raw_offer_brand,
+                                            supplier_brand=bind_supplier_name,
+                                            reason="batch_brand_match_ok_article_not_found_for_brand",
+                                        )
+                                        _apply_fallback_name_translation_for_product(
+                                            product_id=str(item.product_id),
+                                            reason="brand_matched_article_missing",
+                                        )
+                                        processed += 1
+                                        failed += 1
+                                        results.append(
+                                            {
+                                                "product_id": item.product_id,
+                                                "supplier_id": int(item.supplier_id),
+                                                "article": item.article,
+                                                "status": "skipped_brand_mismatch",
+                                                "reason": "brand_matched_article_missing",
+                                                "raw_offer_brand": raw_offer_brand,
+                                                "supplier_brand": bind_supplier_name,
+                                            }
+                                        )
+                                        break
+                                else:
+                                    _mark_link_brand_mismatch_needs_review(
+                                        product_id=item.product_id,
+                                        supplier_id=bind_supplier_id,
+                                        article_number=bind_article,
+                                        raw_brand=raw_offer_brand,
+                                        supplier_brand=bind_supplier_name,
+                                        reason="batch_brand_mismatch_raw_offer_vs_supplier",
+                                    )
+                                    _apply_fallback_name_translation_for_product(
+                                        product_id=str(item.product_id),
+                                        reason="brand_mismatch_needs_manual_review",
+                                    )
+                                    processed += 1
+                                    failed += 1
+                                    results.append(
+                                        {
+                                            "product_id": item.product_id,
+                                            "supplier_id": int(item.supplier_id),
+                                            "article": item.article,
+                                            "status": "skipped_brand_mismatch",
+                                            "reason": "brand_mismatch_needs_manual_review",
+                                            "raw_offer_brand": raw_offer_brand,
+                                            "supplier_brand": bind_supplier_name,
+                                        }
+                                    )
+                                    break
+
+                        # Remote-first: refresh full article-related clone tables before bind.
+                        # Fitment/image/name enrichment runs right after bind and depends on
+                        # article_li/article_images/article_attributes being present locally.
+                        pre_clone = AutoDbArticleEnrichmentService().enrich_article(
+                            supplier_id=bind_supplier_id,
+                            article_number=bind_article,
+                            dry_run=False,
+                            replace_local=True,
+                        )
+                        pre_clone_remote_hits = int(pre_clone.remote_hits or 0)
+                        pre_clone_rows_total = sum(int(value or 0) for value in (pre_clone.populated_tables or {}).values())
+                        pre_clone_has_data = pre_clone_remote_hits > 0 or pre_clone_rows_total > 0
+                        clone_precheck_warning = ""
+                        if not pre_clone_has_data:
+                            clone_precheck_warning = "remote_or_clone_rows_not_found_for_article"
+
+                        bind_result = manual_bind_product_to_autodb_task(
+                            product_id=item.product_id,
+                            supplier_id=bind_supplier_id,
+                            article_number=bind_article,
+                            supplier_name=bind_supplier_name,
+                            article_id=None,
+                            actor_id=str(actor_id or ""),
+                            skip_clone_enrichment=True,
+                        )
+                        status_value = str(bind_result.get("status") or "")
+
+                    processed += 1
+                    if status_value == "bound" and not clone_precheck_warning:
+                        bound += 1
+                    else:
+                        if clone_precheck_warning:
+                            _mark_link_clone_data_missing_needs_review(
                                 product_id=item.product_id,
                                 supplier_id=bind_supplier_id,
                                 article_number=bind_article,
-                                raw_brand=raw_offer_brand,
-                                supplier_brand=bind_supplier_name,
-                                reason="batch_brand_mismatch_raw_offer_vs_supplier",
+                                reason="batch_clone_data_missing_after_bind",
                             )
-                            _apply_fallback_name_translation_for_product(
-                                product_id=str(item.product_id),
-                                reason="brand_mismatch_needs_manual_review",
-                            )
-                            processed += 1
-                            failed += 1
-                            results.append(
-                                {
-                                    "product_id": item.product_id,
-                                    "supplier_id": int(item.supplier_id),
-                                    "article": item.article,
-                                    "status": "skipped_brand_mismatch",
-                                    "reason": "brand_mismatch_needs_manual_review",
-                                    "raw_offer_brand": raw_offer_brand,
-                                    "supplier_brand": bind_supplier_name,
-                                }
-                            )
-                            continue
-
-                # Remote-first: refresh full article-related clone tables before bind.
-                # Fitment/image/name enrichment runs right after bind and depends on
-                # article_li/article_images/article_attributes being present locally.
-                pre_clone = AutoDbArticleEnrichmentService().enrich_article(
-                    supplier_id=bind_supplier_id,
-                    article_number=bind_article,
-                    dry_run=False,
-                    replace_local=True,
-                )
-                pre_clone_remote_hits = int(pre_clone.remote_hits or 0)
-                pre_clone_rows_total = sum(int(value or 0) for value in (pre_clone.populated_tables or {}).values())
-                pre_clone_has_data = pre_clone_remote_hits > 0 or pre_clone_rows_total > 0
-                clone_precheck_warning = ""
-                if not pre_clone_has_data:
-                    clone_precheck_warning = "remote_or_clone_rows_not_found_for_article"
-
-                bind_result = manual_bind_product_to_autodb_task(
-                    product_id=item.product_id,
-                    supplier_id=bind_supplier_id,
-                    article_number=bind_article,
-                    supplier_name=bind_supplier_name,
-                    article_id=None,
-                    actor_id=str(actor_id or ""),
-                    skip_clone_enrichment=True,
-                )
-                status_value = str(bind_result.get("status") or "")
-
-            processed += 1
-            if status_value == "bound" and not clone_precheck_warning:
-                bound += 1
-            else:
-                if clone_precheck_warning:
-                    _mark_link_clone_data_missing_needs_review(
-                        product_id=item.product_id,
-                        supplier_id=bind_supplier_id,
-                        article_number=bind_article,
-                        reason="batch_clone_data_missing_after_bind",
+                        _apply_fallback_name_translation_for_product(
+                            product_id=str(item.product_id),
+                            reason=clone_precheck_warning or f"bind_status_{status_value or 'error'}",
+                        )
+                        failed += 1
+                    results.append(
+                        {
+                            "product_id": item.product_id,
+                            "supplier_id": bind_supplier_id,
+                            "article": bind_article,
+                            "status": "needs_review" if clone_precheck_warning and status_value == "bound" else (status_value or "error"),
+                            "relinked_by_brand_guard": relinked_by_brand_guard,
+                            "resolved_by_public_search": resolved_by_public_search,
+                            "warning": clone_precheck_warning,
+                            "detail": bind_result,
+                        }
                     )
-                _apply_fallback_name_translation_for_product(
-                    product_id=str(item.product_id),
-                    reason=clone_precheck_warning or f"bind_status_{status_value or 'error'}",
-                )
-                failed += 1
-            results.append(
-                {
-                    "product_id": item.product_id,
-                    "supplier_id": bind_supplier_id,
-                    "article": bind_article,
-                    "status": "needs_review" if clone_precheck_warning and status_value == "bound" else (status_value or "error"),
-                    "relinked_by_brand_guard": relinked_by_brand_guard,
-                    "resolved_by_public_search": resolved_by_public_search,
-                    "warning": clone_precheck_warning,
-                    "detail": bind_result,
-                }
+                    last_error = ""
+                    break
+                except Exception as exc:  # noqa: BLE001
+                    error_text = str(exc)
+                    transient_reason = _classify_batch_transient_error(exc)
+                    if continuous_mode and transient_reason in {"quota_limit", "remote_disconnect"}:
+                        transient_attempt += 1
+                        last_error = error_text
+                        if transient_reason == "quota_limit":
+                            _wait_for_batch_quota_recovery(
+                                run=run,
+                                requested_limit=requested_limit,
+                                requested_product_ids_count=requested_product_ids_count,
+                                cycle_index=cycle_index,
+                                selected=selected_last_cycle,
+                                selected_total=selected_total,
+                                processed=processed,
+                                processed_in_cycle=max(processed - cycle_base_processed, 0),
+                                bound=bound,
+                                failed=failed,
+                                last_error=last_error,
+                                item=item,
+                                polling_seconds=quota_poll_seconds,
+                            )
+                        else:
+                            retry_delay = min(
+                                remote_retry_seconds * (2 ** max(transient_attempt - 1, 0)),
+                                remote_retry_max_seconds,
+                            )
+                            wait_now = timezone.now()
+                            run.summary_json = {
+                                **(run.summary_json or {}),
+                                "running": True,
+                                "stage": "waiting_remote_retry",
+                                "continuous": continuous_mode,
+                                "requested_limit": requested_limit,
+                                "requested_product_ids_count": requested_product_ids_count,
+                                "cycle_index": cycle_index,
+                                "selected": selected_last_cycle,
+                                "selected_total": selected_total,
+                                "processed_in_cycle": max(processed - cycle_base_processed, 0),
+                                "processing_index": index,
+                                "processing_product_id": str(item.product_id),
+                                "processing_supplier_id": int(item.supplier_id),
+                                "processing_article": str(item.article or ""),
+                                "processing_retry_attempt": transient_attempt,
+                                "retry_reason": "remote_disconnect",
+                                "retry_in_seconds": int(retry_delay),
+                                "processed": processed,
+                                "bound": bound,
+                                "failed": failed,
+                                "stopped_reason": "",
+                                "last_error": last_error,
+                                "last_heartbeat_at": wait_now.isoformat(),
+                            }
+                            run.save(update_fields=["summary_json", "updated_at"])
+                            time.sleep(float(retry_delay))
+                        continue
+
+                    processed += 1
+                    failed += 1
+                    _apply_fallback_name_translation_for_product(
+                        product_id=str(item.product_id),
+                        reason=error_text[:120] or "batch_exception",
+                    )
+                    if isinstance(exc, _BatchItemTimeoutError):
+                        _mark_link_clone_data_missing_needs_review(
+                            product_id=item.product_id,
+                            supplier_id=int(item.supplier_id),
+                            article_number=item.article,
+                            reason="batch_item_timeout",
+                        )
+                    else:
+                        _mark_link_clone_data_missing_needs_review(
+                            product_id=item.product_id,
+                            supplier_id=int(item.supplier_id),
+                            article_number=item.article,
+                            reason="batch_exception",
+                        )
+                    results.append(
+                        {
+                            "product_id": item.product_id,
+                            "supplier_id": int(item.supplier_id),
+                            "article": item.article,
+                            "status": "error",
+                            "reason": error_text,
+                        }
+                    )
+                    stop_key = _classify_batch_transient_error(exc)
+                    if stop_key == "quota_limit":
+                        stop_reason = "quota_limit"
+                        last_error = error_text
+                    elif stop_key == "remote_disconnect":
+                        stop_reason = "remote_disconnect"
+                        last_error = error_text
+                    break
+
+            loop_done = timezone.now()
+            run.summary_json = {
+                **(run.summary_json or {}),
+                "running": True,
+                "stage": "processing_items",
+                "continuous": continuous_mode,
+                "requested_limit": requested_limit,
+                "requested_product_ids_count": requested_product_ids_count,
+                "cycle_index": cycle_index,
+                "selected": selected_last_cycle,
+                "selected_total": selected_total,
+                "processed_in_cycle": max(processed - cycle_base_processed, 0),
+                "processed": processed,
+                "bound": bound,
+                "failed": failed,
+                "stopped_reason": stop_reason,
+                "last_error": last_error,
+                "last_heartbeat_at": loop_done.isoformat(),
+            }
+            run.save(update_fields=["summary_json", "updated_at"])
+            _maybe_send_batch_progress_notification(
+                run=run,
+                processed=processed,
+                linked=bound,
+                errors=failed,
+                batch_size=requested_limit,
             )
-        except Exception as exc:  # noqa: BLE001
-            processed += 1
-            failed += 1
-            error_text = str(exc)
-            _apply_fallback_name_translation_for_product(
-                product_id=str(item.product_id),
-                reason=error_text[:120] or "batch_exception",
-            )
-            if isinstance(exc, _BatchItemTimeoutError):
-                _mark_link_clone_data_missing_needs_review(
-                    product_id=item.product_id,
-                    supplier_id=int(item.supplier_id),
-                    article_number=item.article,
-                    reason="batch_item_timeout",
-                )
-            results.append(
-                {
-                    "product_id": item.product_id,
-                    "supplier_id": int(item.supplier_id),
-                    "article": item.article,
-                    "status": "error",
-                    "reason": error_text,
-                }
-            )
-            if _is_quota_or_remote_stop_error(exc):
-                stop_reason = "quota_or_remote_error"
-                last_error = error_text
+            if stop_reason:
                 break
 
-        loop_done = timezone.now()
-        run.summary_json = {
-            **(run.summary_json or {}),
-            "running": True,
-            "stage": "processing_items",
-            "requested_limit": requested_limit,
-            "requested_product_ids_count": requested_product_ids_count,
-            "selected": len(candidates),
-            "processed": processed,
-            "bound": bound,
-            "failed": failed,
-            "stopped_reason": stop_reason,
-            "last_error": last_error,
-            "last_heartbeat_at": loop_done.isoformat(),
-        }
-        run.save(update_fields=["summary_json", "updated_at"])
-        _maybe_send_batch_progress_notification(
-            run=run,
-            processed=processed,
-            linked=bound,
-            errors=failed,
-            batch_size=requested_limit,
-        )
+        if stop_reason:
+            break
+
+        if not continuous_mode:
+            break
 
     finished_at = timezone.now()
     final_status = AutoDbMatchingRun.STATUS_SUCCESS
@@ -688,9 +809,13 @@ def run_backoffice_tecdoc_batch_bind_task(
         **(run.summary_json or {}),
         "running": False,
         "stage": "finished",
+        "continuous": continuous_mode,
         "requested_limit": requested_limit,
         "requested_product_ids_count": requested_product_ids_count,
-        "selected": len(candidates),
+        "selected": selected_last_cycle,
+        "selected_total": selected_total,
+        "cycle_index": cycle_index,
+        "processed_in_cycle": max(processed - cycle_base_processed, 0) if cycle_index > 0 else 0,
         "processed": processed,
         "bound": bound,
         "failed": failed,
@@ -720,7 +845,9 @@ def run_backoffice_tecdoc_batch_bind_task(
     return {
         "status": "done",
         "run_id": str(run.id),
-        "selected": len(candidates),
+        "selected": selected_last_cycle,
+        "selected_total": selected_total,
+        "cycle_index": cycle_index,
         "processed": processed,
         "bound": bound,
         "failed": failed,
@@ -808,13 +935,87 @@ def check_remote_quota_recovery_task() -> dict[str, object]:
     }
 
 
-def _is_quota_or_remote_stop_error(exc: Exception) -> bool:
-    if isinstance(exc, AutoDbProRemoteClientError):
-        return True
+def _classify_batch_transient_error(exc: Exception) -> str:
     message = str(exc or "").lower()
-    if "1226" in message or "max_questions" in message or "quota" in message:
-        return True
-    return "remote" in message and ("timeout" in message or "connection" in message or "unavailable" in message)
+    if (
+        "1226" in message
+        or "max_questions" in message
+        or "quota" in message
+        or "blocked by quota gate" in message
+    ):
+        return "quota_limit"
+    if isinstance(exc, AutoDbProRemoteClientError):
+        return "remote_disconnect"
+    remote_tokens = (
+        "timeout",
+        "timed out",
+        "connection",
+        "server has gone away",
+        "lost connection",
+        "temporary failure",
+        "unavailable",
+    )
+    if "remote" in message and any(token in message for token in remote_tokens):
+        return "remote_disconnect"
+    return ""
+
+
+def _is_quota_or_remote_stop_error(exc: Exception) -> bool:
+    return bool(_classify_batch_transient_error(exc))
+
+
+def _wait_for_batch_quota_recovery(
+    *,
+    run: AutoDbMatchingRun,
+    requested_limit: int,
+    requested_product_ids_count: int,
+    cycle_index: int,
+    selected: int,
+    selected_total: int,
+    processed: int,
+    processed_in_cycle: int,
+    bound: int,
+    failed: int,
+    last_error: str,
+    item,
+    polling_seconds: int,
+) -> None:
+    tracker = AutoDbRemoteQuotaTracker()
+    while True:
+        quota = AutoDbRemoteQuotaState.objects.filter(remote_key=REMOTE_QUOTA_KEY).first()
+        payload = tracker.serialize(quota)
+        status_value = str(payload.get("status") or "")
+        if status_value != "quota_paused":
+            break
+        seconds_left = int(payload.get("seconds_until_reset") or 0)
+        wait_seconds = max(min(seconds_left, polling_seconds), 1) if seconds_left > 0 else polling_seconds
+        wait_now = timezone.now()
+        run.summary_json = {
+            **(run.summary_json or {}),
+            "running": True,
+            "stage": "waiting_quota_recovery",
+            "continuous": True,
+            "requested_limit": requested_limit,
+            "requested_product_ids_count": requested_product_ids_count,
+            "cycle_index": cycle_index,
+            "selected": selected,
+            "selected_total": selected_total,
+            "processed_in_cycle": int(max(processed_in_cycle, 0)),
+            "processing_product_id": str(getattr(item, "product_id", "") or ""),
+            "processing_supplier_id": int(getattr(item, "supplier_id", 0) or 0),
+            "processing_article": str(getattr(item, "article", "") or ""),
+            "retry_reason": "quota_limit",
+            "retry_in_seconds": int(wait_seconds),
+            "quota_cooldown_until": payload.get("cooldown_until"),
+            "processed": processed,
+            "bound": bound,
+            "failed": failed,
+            "stopped_reason": "",
+            "last_error": last_error,
+            "last_heartbeat_at": wait_now.isoformat(),
+        }
+        run.save(update_fields=["summary_json", "updated_at"])
+        time.sleep(float(wait_seconds))
 
 
 def _resolve_batch_candidate_via_public_search(

@@ -18,7 +18,7 @@ export type AutoDbMatchingProductsFilterState = {
 type Translator = (key: string, values?: Record<string, string | number>) => string;
 
 function clampBatchSize(value: number): number {
-  const numeric = Number.isFinite(value) ? Math.round(value) : 200;
+  const numeric = Number.isFinite(value) ? Math.round(value) : 50;
   return Math.max(10, Math.min(1000, numeric));
 }
 
@@ -86,7 +86,7 @@ export function AutoDbMatchingProductsFilters({
   onToggleBulkActions: () => void;
   onRunBulkBatch: () => void;
 }) {
-  const isBatchDisabled = isTecdocBatchRunning || isBatchSubmitting || isQuotaCooldownActive;
+  const isBatchDisabled = isTecdocBatchRunning || isBatchSubmitting;
   const isBatchBusy = isTecdocBatchRunning || isBatchSubmitting;
   const isStopDisabled = !isTecdocBatchRunning || isBatchSubmitting;
   const isBulkDisabled = selectedCount <= 0 || isBulkRunning || isTecdocBatchRunning || isQuotaCooldownActive;
@@ -125,7 +125,7 @@ export function AutoDbMatchingProductsFilters({
         ) : null}
       </div>
 
-      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-1">
+      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto px-1 py-1">
 
         <input
           value={filters.q}

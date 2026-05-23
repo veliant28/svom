@@ -87,8 +87,8 @@ export function getAutoDbTecdocBatchState(token: string) {
   return getJson<AutoDbTecdocBatchStateResponse>(`${BASE}/tecdoc-batch/state/`, undefined, { token });
 }
 
-export function runAutoDbTecdocBatch(token: string, body: { batch_size: number; product_ids?: string[] }) {
-  return postJson<AutoDbActionResponse, { batch_size: number; product_ids?: string[] }>(`${BASE}/tecdoc-batch/run/`, body, undefined, { token });
+export function runAutoDbTecdocBatch(token: string, body: { batch_size: number; product_ids?: string[]; continuous?: boolean }) {
+  return postJson<AutoDbActionResponse, { batch_size: number; product_ids?: string[]; continuous?: boolean }>(`${BASE}/tecdoc-batch/run/`, body, undefined, { token });
 }
 
 export function stopAutoDbTecdocBatch(token: string) {

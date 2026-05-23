@@ -16,7 +16,7 @@ from apps.core.services import (
 )
 
 from .._base import BackofficeAPIView
-from .utils import parse_positive_int, safe_str
+from .utils import parse_bool, parse_positive_int, safe_str
 
 
 def _actor_label(user) -> str:
@@ -51,6 +51,18 @@ def _resolve_batch_task_limits(batch_size: int) -> tuple[int, int]:
     return soft_limit, hard_limit
 
 
+def _resolve_continuous_batch_task_limits() -> tuple[int, int]:
+    soft_limit = max(
+        int(getattr(settings, "AUTODB_BACKOFFICE_CONTINUOUS_BATCH_SOFT_TIME_LIMIT_SECONDS", 60 * 60 * 24) or 0),
+        60 * 60,
+    )
+    hard_limit = max(
+        int(getattr(settings, "AUTODB_BACKOFFICE_CONTINUOUS_BATCH_TIME_LIMIT_SECONDS", soft_limit + 60 * 60) or 0),
+        soft_limit + 60,
+    )
+    return soft_limit, hard_limit
+
+
 class BackofficeAutoDbMatchingTecdocBatchRunAPIView(BackofficeAPIView):
     required_capability = "autocatalog.view"
 
@@ -69,10 +81,13 @@ class BackofficeAutoDbMatchingTecdocBatchRunAPIView(BackofficeAPIView):
             )
 
         product_ids = _parse_product_ids(request.data.get("product_ids"))
+        continuous_requested = parse_bool(request.data.get("continuous")) is True
+        # Keep bulk/product_ids mode backward-compatible (single-pass only).
+        continuous = bool(continuous_requested and not product_ids)
         if product_ids:
             batch_size = len(product_ids)
         else:
-            batch_size = parse_positive_int(request.data.get("batch_size"), default=200, maximum=1000)
+            batch_size = parse_positive_int(request.data.get("batch_size"), default=50, maximum=1000)
         actor = str(getattr(request.user, "id", "") or "")
         run = AutoDbMatchingRun.objects.create(
             run_type=BACKOFFICE_TECDOC_BATCH_RUN_TYPE,
@@ -85,17 +100,23 @@ class BackofficeAutoDbMatchingTecdocBatchRunAPIView(BackofficeAPIView):
                 "processed": 0,
                 "bound": 0,
                 "failed": 0,
+                "continuous": continuous,
                 "stopped_reason": "",
                 "last_error": "",
             },
         )
-        soft_time_limit, time_limit = _resolve_batch_task_limits(int(batch_size))
+        soft_time_limit, time_limit = (
+            _resolve_continuous_batch_task_limits()
+            if continuous
+            else _resolve_batch_task_limits(int(batch_size))
+        )
         task = run_backoffice_tecdoc_batch_bind_task.apply_async(
             kwargs={
                 "run_id": str(run.id),
                 "limit": int(batch_size),
                 "actor_id": actor,
                 "product_ids": product_ids or None,
+                "continuous": continuous,
             },
             soft_time_limit=soft_time_limit,
             time_limit=time_limit,
@@ -105,6 +126,7 @@ class BackofficeAutoDbMatchingTecdocBatchRunAPIView(BackofficeAPIView):
             "task_id": str(task.id),
             "task_soft_time_limit_seconds": int(soft_time_limit),
             "task_time_limit_seconds": int(time_limit),
+            "continuous": continuous,
         }
         run.save(update_fields=["summary_json", "updated_at"])
         send_system_autodb_batch_started_notification(

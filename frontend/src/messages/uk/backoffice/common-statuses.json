@@ -4,7 +4,7 @@
       "statuses": {
         "unknown": "Невідомо",
         "pending": "Очікує",
-        "never_run": "Не запускалось",
+        "never_run": "Не запущ.",
         "running": "Виконується",
         "generating": "Генерується",
         "ready": "Готово",

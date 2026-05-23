@@ -34,11 +34,20 @@ class BackofficeTecdocBatchSelector:
             if str(item).strip()
         }
 
-    def select_candidates(self, *, limit: int, product_ids: list[str] | None = None) -> list[TecdocBatchCandidate]:
+    def select_candidates(
+        self,
+        *,
+        limit: int,
+        product_ids: list[str] | None = None,
+        only_new_tecdoc: bool = False,
+    ) -> list[TecdocBatchCandidate]:
         target_limit = max(1, min(int(limit or 0), 1000))
         selected: list[TecdocBatchCandidate] = []
         requested_product_ids = [str(item).strip() for item in (product_ids or []) if str(item).strip()]
-        queryset = self._base_queryset(product_ids=requested_product_ids or None)
+        queryset = self._base_queryset(
+            product_ids=requested_product_ids or None,
+            only_new_tecdoc=bool(only_new_tecdoc),
+        )
         scanned = 0
         if requested_product_ids:
             max_scan = len(requested_product_ids)
@@ -74,7 +83,7 @@ class BackofficeTecdocBatchSelector:
                 break
         return selected
 
-    def _base_queryset(self, *, product_ids: list[str] | None = None):
+    def _base_queryset(self, *, product_ids: list[str] | None = None, only_new_tecdoc: bool = False):
         queryset = (
             Product.objects
             .filter(
@@ -89,6 +98,12 @@ class BackofficeTecdocBatchSelector:
             )
             .only("id", "autodb_supplier_id", "autodb_supplier_name", "autodb_article_number", "article", "display_brand_name", "autodb_article_key")
         )
+        if only_new_tecdoc:
+            queryset = queryset.filter(autodb_supplier_id__isnull=False).exclude(autodb_supplier_id=0)
+            queryset = queryset.filter(Q(autodb_article_key__isnull=True) | Q(autodb_article_key=""))
+            queryset = queryset.exclude(
+                autodb_link_qualities__status=AutoDbProductLinkQuality.STATUS_NEEDS_MANUAL_REVIEW,
+            )
         if product_ids:
             return queryset.filter(id__in=product_ids).order_by("-id")
         return queryset.order_by("-id")

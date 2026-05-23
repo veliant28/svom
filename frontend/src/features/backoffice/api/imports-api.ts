@@ -59,8 +59,20 @@ export async function runBackofficeImportSchedule(
   return postJson(`/backoffice/import-schedules/${sourceId}/run/`, payload ?? { dispatch_async: true }, undefined, { token });
 }
 
-export async function getBackofficeDatabaseBackupSchedule(token: string): Promise<BackofficeDatabaseBackupSchedule> {
-  return getJson<BackofficeDatabaseBackupSchedule>("/backoffice/database-backup/schedule/", undefined, { token });
+type BackupProfileCode = "postgresql" | "autodb_clone";
+
+function toBackupCodeParams(code?: BackupProfileCode) {
+  if (!code) {
+    return undefined;
+  }
+  return { code };
+}
+
+export async function getBackofficeDatabaseBackupSchedule(
+  token: string,
+  code?: BackupProfileCode,
+): Promise<BackofficeDatabaseBackupSchedule> {
+  return getJson<BackofficeDatabaseBackupSchedule>("/backoffice/database-backup/schedule/", toBackupCodeParams(code), { token });
 }
 
 export async function updateBackofficeDatabaseBackupSchedule(
@@ -74,8 +86,9 @@ export async function updateBackofficeDatabaseBackupSchedule(
     backup_directory: string;
     retention_count: number;
   }>,
+  code?: BackupProfileCode,
 ): Promise<BackofficeDatabaseBackupSchedule> {
-  return patchJson<BackofficeDatabaseBackupSchedule, typeof payload>("/backoffice/database-backup/schedule/", payload, undefined, { token });
+  return patchJson<BackofficeDatabaseBackupSchedule, typeof payload>("/backoffice/database-backup/schedule/", payload, toBackupCodeParams(code), { token });
 }
 
 export async function runBackofficeDatabaseBackup(
@@ -83,12 +96,14 @@ export async function runBackofficeDatabaseBackup(
   payload?: {
     dispatch_async?: boolean;
   },
+  code?: BackupProfileCode,
 ): Promise<{
   mode: "async" | "sync";
   task_id?: string;
+  code?: string;
   result?: Record<string, unknown>;
 }> {
-  return postJson("/backoffice/database-backup/run/", payload ?? { dispatch_async: true }, undefined, { token });
+  return postJson("/backoffice/database-backup/run/", payload ?? { dispatch_async: true }, toBackupCodeParams(code), { token });
 }
 
 export async function getBackofficeImportRuns(token: string, params?: BackofficeListQuery) {

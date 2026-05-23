@@ -8,6 +8,7 @@ from apps.core.db.mixins import TimestampedMixin, UUIDPrimaryKeyMixin
 
 class DatabaseBackupSettings(UUIDPrimaryKeyMixin, TimestampedMixin):
     DEFAULT_CODE = "postgresql"
+    AUTO_DB_PRO_CLONE_CODE = "autodb_clone"
     STATUS_NEVER_RUN = "never_run"
     STATUS_RUNNING = "running"
     STATUS_SUCCESS = "success"

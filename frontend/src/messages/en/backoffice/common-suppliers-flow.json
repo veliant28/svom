@@ -5,12 +5,22 @@
         "title": "Schedule",
         "subtitle": "Unified import schedule table for all suppliers.",
         "schedule": {
-          "daily": "Daily 7/7",
+          "daily": "7/7",
           "time": "Time:"
         },
         "databaseBackup": {
           "title": "PostgreSQL backup",
           "subtitle": "Full database dump to the Backup folder. The schedule catches missed runs and keeps only the latest files.",
+          "profiles": {
+            "postgresql": {
+              "title": "PostgreSQL backup (main DB)",
+              "subtitle": "Full dump of the application's primary database. Rotation keeps only the newest files."
+            },
+            "autodb_clone": {
+              "title": "Auto_DB_Pro Clone backup",
+              "subtitle": "Full dump of the local Auto_DB_Pro clone. Rotation removes old files to prevent storage growth."
+            }
+          },
           "time": "Time",
           "retention": "Keep",
           "nextRun": "Next run: {value}",
@@ -22,10 +32,10 @@
             "running": "Running..."
           },
           "messages": {
-            "saved": "Database backup settings saved.",
-            "runQueued": "Database backup queued.",
-            "runFailed": "Failed to start database backup.",
-            "actionFailed": "Unable to update database backup settings."
+            "saved": "\"{title}\" settings saved.",
+            "runQueued": "\"{title}\" has been queued.",
+            "runFailed": "Failed to start \"{title}\".",
+            "actionFailed": "Unable to update \"{title}\" settings."
           }
         },
         "filters": {
@@ -59,7 +69,8 @@
             "source": "Source",
             "enabled": "Auto import",
             "cron": "Schedule",
-            "nextRun": "Next run",
+            "nextRun": "NEXT RUN",
+            "status": "Status",
             "lastResult": "Last result",
             "pipeline": "Scenario",
             "actions": "Actions"

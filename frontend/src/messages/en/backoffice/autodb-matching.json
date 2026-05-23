@@ -9,8 +9,18 @@
         "productsTitle": "Unlinked products",
         "searchTitle": "Auto-DB Search"
       },
-      "common": { "yes": "Yes", "no": "No", "prev": "Previous", "next": "Next" },
-      "states": { "empty": "No data", "emptyProducts": "No unlinked products", "emptySearch": "No results yet", "loadingCandidates": "Loading..." },
+      "common": {
+        "yes": "Yes",
+        "no": "No",
+        "prev": "Previous",
+        "next": "Next"
+      },
+      "states": {
+        "empty": "No data",
+        "emptyProducts": "No unlinked products",
+        "emptySearch": "No results yet",
+        "loadingCandidates": "Loading..."
+      },
       "dashboard": {
         "cards": {
           "totalJobs": "Total jobs",
@@ -169,7 +179,7 @@
           "trustedLink": "Trusted link",
           "noDeterministicSupplierVariantMatch": "No deterministic supplier variant match",
           "notApplySafeStatus": "Status is not apply-safe"
-},
+        },
         "statusTooltip": {
           "status": "Status",
           "reason": "Reason",
@@ -177,7 +187,9 @@
           "lookup": "Lookup origin",
           "method": "Lookup method"
         },
-        "pagination": { "total": "Total: {count}" },
+        "pagination": {
+          "total": "Total: {count}"
+        },
         "filters": {
           "perPage": "Per page: {count}",
           "allSuppliers": "All suppliers",
@@ -329,7 +341,15 @@
           "processed": "Processed: {count}",
           "linked": "Linked: {count}",
           "errors": "Errors: {count}",
-          "lastError": "Last error: {value}"
+          "lastError": "Last error: {value}",
+          "waitingQuota": "Paused by quota",
+          "waitingRemoteRetry": "Paused due to connection drop"
+        },
+        "badges": {
+          "quotaWait": "Pause: Quota",
+          "remoteRetry": "Pause: Disconnect",
+          "quotaPause": "Pause: Quota",
+          "remotePause": "Pause: Disconnect"
         }
       },
       "search": {
@@ -360,7 +380,11 @@
         "lookupLoading": "Searching products...",
         "lookupEmpty": "No matches found",
         "selectedSkuSuffix": "selected",
-        "sources": { "local": "Local", "remote": "Remote", "both": "Both" },
+        "sources": {
+          "local": "Local",
+          "remote": "Remote",
+          "both": "Both"
+        },
         "columns": {
           "source": "source",
           "supplier": "supplier",
@@ -437,7 +461,9 @@
         "actionRequiresConfirmation": "Confirmation required",
         "applyBlocked": "Apply is blocked without dry-run"
       },
-      "safety": { "applyPlaceholder": "Apply actions are disabled: no name, category, photo, price or stock overwrite." },
+      "safety": {
+        "applyPlaceholder": "Apply actions are disabled: no name, category, photo, price or stock overwrite."
+      },
       "drawer": {
         "title": "Evidence",
         "productInfo": "Product info",

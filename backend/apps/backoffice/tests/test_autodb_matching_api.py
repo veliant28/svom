@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 
-from apps.autodb.models import AutoDbMatchJob, AutoDbRemoteQuotaState
+from apps.autodb.models import AutoDbMatchJob, AutoDbMatchingRun, AutoDbRemoteQuotaState
 from apps.autodb.services.matching.constants import REMOTE_QUOTA_KEY
 from apps.autodb.services.matching.quota_tracker import AutoDbRemoteQuotaTracker
 from apps.catalog.models import Brand, Category, Product, ProductImage
@@ -86,6 +86,47 @@ class BackofficeAutoDbMatchingApiTests(APITestCase):
         self.assertEqual(self.client.get(jobs, **self._auth(self.staff_token)).status_code, status.HTTP_200_OK)
         self.assertEqual(self.client.get(dashboard, **self._auth(self.regular_token)).status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(self.client.get(jobs, **self._auth(self.regular_token)).status_code, status.HTTP_403_FORBIDDEN)
+
+    @patch("apps.backoffice.api.views.autodb_matching.batch.run_backoffice_tecdoc_batch_bind_task.apply_async")
+    def test_tecdoc_batch_run_defaults_to_continuous_for_single_button(self, apply_async_mock):
+        apply_async_mock.return_value = SimpleNamespace(id="task-continuous-1")
+
+        response = self.client.post(
+            reverse("backoffice_api:autodb-matching-tecdoc-batch-run"),
+            {"batch_size": 50, "continuous": True},
+            format="json",
+            **self._auth(self.staff_token),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        run = AutoDbMatchingRun.objects.get(id=response.data["run"]["id"])
+        self.assertTrue(bool(run.summary_json.get("continuous")))
+
+        kwargs = apply_async_mock.call_args.kwargs
+        self.assertEqual(kwargs["kwargs"]["continuous"], True)
+        self.assertIsNotNone(kwargs.get("soft_time_limit"))
+        self.assertIsNotNone(kwargs.get("time_limit"))
+        self.assertGreater(int(kwargs.get("time_limit") or 0), 1800)
+
+    @patch("apps.backoffice.api.views.autodb_matching.batch.run_backoffice_tecdoc_batch_bind_task.apply_async")
+    def test_tecdoc_batch_run_keeps_bulk_mode_single_pass(self, apply_async_mock):
+        apply_async_mock.return_value = SimpleNamespace(id="task-bulk-1")
+
+        response = self.client.post(
+            reverse("backoffice_api:autodb-matching-tecdoc-batch-run"),
+            {"batch_size": 2, "product_ids": [str(self.product.id)], "continuous": True},
+            format="json",
+            **self._auth(self.staff_token),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        run = AutoDbMatchingRun.objects.get(id=response.data["run"]["id"])
+        self.assertFalse(bool(run.summary_json.get("continuous")))
+
+        kwargs = apply_async_mock.call_args.kwargs
+        self.assertEqual(kwargs["kwargs"]["continuous"], False)
+        self.assertIsNotNone(kwargs.get("soft_time_limit"))
+        self.assertIsNotNone(kwargs.get("time_limit"))
 
     def test_jobs_endpoint_classifies_remote_found_lookup_mode(self):
         self.job.status = AutoDbMatchJob.STATUS_REMOTE_FOUND
