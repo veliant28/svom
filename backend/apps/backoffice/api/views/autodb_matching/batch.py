@@ -245,6 +245,7 @@ def _stop_batch(*, request, run_type: str, batch_title: str) -> Response:
 
     now = timezone.now()
     summary["running"] = False
+    summary["stage"] = "finished"
     summary["stopped_reason"] = "manual_stop"
     summary["last_error"] = summary.get("last_error") or "manual stop requested"
     summary["finished_at"] = now.isoformat()

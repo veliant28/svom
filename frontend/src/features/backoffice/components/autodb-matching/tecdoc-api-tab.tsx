@@ -13,7 +13,7 @@ import {
   Unplug,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
@@ -193,10 +193,8 @@ function resolveRunStatusChip({
   const runStatus = String(run?.status || "").trim().toLowerCase();
   const summaryRunning = Boolean(summary.running);
   const effectivelyRunning = isRunning || summaryRunning || runStatus === "running";
-  const waitingQuota = stage === "waiting_quota_recovery";
-  const waitingRemote = stage === "waiting_remote_retry";
 
-  if (effectivelyRunning || waitingQuota || waitingRemote) {
+  if (effectivelyRunning) {
     if (stage === "waiting_quota_recovery") {
       return { tone: "warning", label: t("tecdocApi.status.waitingQuota"), icon: Timer, animationClass: "[&>svg]:animate-spin" };
     }
@@ -223,7 +221,17 @@ function resolveRunStatusChip({
   return { tone: "success", label: t("tecdocApi.status.finished"), icon: CheckCircle2, animationClass: "" };
 }
 
-function chartSeries({ run, quota, t }: { run: AutoDbTecdocBatchRun | null; quota: AutoDbRemoteQuota | null; t: ReturnType<typeof useTranslations> }) {
+function chartSeries({
+  run,
+  quota,
+  t,
+  isDarkTheme,
+}: {
+  run: AutoDbTecdocBatchRun | null;
+  quota: AutoDbRemoteQuota | null;
+  t: ReturnType<typeof useTranslations>;
+  isDarkTheme: boolean;
+}) {
   const summary = (run?.summary || {}) as AutoDbTecdocBatchSummary;
   const requestedLimit = Math.max(toCount(summary.requested_limit), 1);
   const selected = Math.max(toCount(summary.selected), requestedLimit);
@@ -231,14 +239,18 @@ function chartSeries({ run, quota, t }: { run: AutoDbTecdocBatchRun | null; quot
   const linked = toCount(summary.bound);
   const failed = toCount(summary.failed);
   const remaining = Math.max(selected - processed, 0);
+  const metricLabelColor = isDarkTheme ? "#e8edf1" : "#0f172a";
+  const chartTextColor = isDarkTheme ? "#c6d4df" : "#475569";
+  const chartSubtleTextColor = isDarkTheme ? "#9fb2c2" : "#64748b";
+  const chartGridColor = isDarkTheme ? "#31434f" : "#e2e8f0";
 
   const progressOption = {
     animationDuration: 260,
     grid: { left: 20, right: 20, top: 18, bottom: 18, containLabel: true },
     xAxis: {
       type: "value",
-      axisLabel: { color: "#64748b", fontSize: 11 },
-      splitLine: { lineStyle: { color: "#e2e8f0" } },
+      axisLabel: { color: chartSubtleTextColor, fontSize: 11 },
+      splitLine: { lineStyle: { color: chartGridColor } },
       min: 0,
       max: requestedLimit + 1,
     },
@@ -250,7 +262,7 @@ function chartSeries({ run, quota, t }: { run: AutoDbTecdocBatchRun | null; quot
         t("tecdocApi.charts.linked"),
         t("tecdocApi.charts.failed"),
       ],
-      axisLabel: { color: "#475569", fontSize: 11 },
+      axisLabel: { color: chartTextColor, fontSize: 11 },
     },
     series: [
       {
@@ -261,7 +273,7 @@ function chartSeries({ run, quota, t }: { run: AutoDbTecdocBatchRun | null; quot
           color: (args: { dataIndex: number }) => ["#94a3b8", "#0ea5e9", "#16a34a", "#f97316"][args.dataIndex] || "#94a3b8",
           borderRadius: [0, 6, 6, 0],
         },
-        label: { show: true, position: "right", color: "#0f172a", fontSize: 11 },
+        label: { show: true, position: "right", color: metricLabelColor, fontSize: 11 },
       },
     ],
   };
@@ -276,7 +288,7 @@ function chartSeries({ run, quota, t }: { run: AutoDbTecdocBatchRun | null; quot
     animationDuration: 260,
     legend: {
       bottom: 0,
-      textStyle: { color: "#475569", fontSize: 11 },
+      textStyle: { color: chartTextColor, fontSize: 11 },
     },
     series: [
       {
@@ -296,7 +308,7 @@ function chartSeries({ run, quota, t }: { run: AutoDbTecdocBatchRun | null; quot
           margin: 2,
           bleedMargin: 4,
           formatter: "{d}%",
-          color: "#0f172a",
+          color: metricLabelColor,
           fontSize: 12,
           fontWeight: 500,
         },
@@ -326,10 +338,15 @@ export function AutoDbMatchingTecdocApiTab({ monitor }: { monitor: TecdocApiBatc
   const run = monitor.run;
   const summary = (run?.summary || {}) as AutoDbTecdocBatchSummary;
   const running = monitor.isRunning;
-  const charts = chartSeries({ run, quota: monitor.remoteQuota, t });
+  const isDarkTheme = typeof document !== "undefined" && document.documentElement.classList.contains("theme-dark");
+  const charts = useMemo(
+    () => chartSeries({ run, quota: monitor.remoteQuota, t, isDarkTheme }),
+    [run, monitor.remoteQuota, t, isDarkTheme],
+  );
 
   const selected = Math.max(toCount(summary.selected), toCount(summary.requested_limit));
   const processed = toCount(summary.processed);
+  const processedDisplay = Math.min(processed, selected);
   const linked = toCount(summary.bound);
   const failed = toCount(summary.failed);
   const quotaMetrics = resolveQuotaMetrics(monitor.remoteQuota);
@@ -426,7 +443,7 @@ export function AutoDbMatchingTecdocApiTab({ monitor }: { monitor: TecdocApiBatc
       <article className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 rounded-2xl border p-3 lg:p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
         <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
           <Metric label={t("tecdocApi.metrics.selected")} value={selected} />
-          <Metric label={t("tecdocApi.metrics.processed")} value={`${processed}/${selected || "-"}`} />
+          <Metric label={t("tecdocApi.metrics.processed")} value={`${processedDisplay}/${selected || "-"}`} />
           <Metric label={t("tecdocApi.metrics.linked")} value={linked} />
           <Metric label={t("tecdocApi.metrics.failed")} value={failed} />
           <Metric label={t("tecdocApi.metrics.quota")} value={`${quotaUsed}/${quotaLimit || "-"}`} />
