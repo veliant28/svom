@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from celery import current_app
 from django.conf import settings
@@ -303,21 +303,133 @@ def _active_batch_run(*, run_type: str) -> AutoDbMatchingRun | None:
     if run is None:
         return None
 
-    # Guard against stale runs that can block UI button forever if worker/session died.
     now = timezone.now()
-    if run.updated_at and run.updated_at < (now - timedelta(minutes=15)):
-        summary = dict(run.summary_json or {})
-        summary["running"] = False
-        summary["stopped_reason"] = summary.get("stopped_reason") or "stale_timeout"
-        summary["last_error"] = summary.get("last_error") or "stale run auto-closed"
-        summary["finished_at"] = now.isoformat()
-        run.summary_json = summary
-        run.status = AutoDbMatchingRun.STATUS_PARTIAL
-        run.finished_at = now
-        run.error = "stale run auto-closed"
-        run.save(update_fields=["summary_json", "status", "finished_at", "error", "updated_at"])
+    summary = dict(run.summary_json or {})
+    if _should_recover_orphaned_run(run=run, summary=summary, now=now):
+        resumed = _try_resume_orphaned_run(run=run, summary=summary)
+        if resumed is not None:
+            return resumed
+        _close_stale_run(run=run, summary=summary, now=now, reason="orphaned_task")
         return None
 
+    # Guard against stale runs that can block UI button forever if worker/session died.
+    if run.updated_at and run.updated_at < (now - timedelta(minutes=15)):
+        _close_stale_run(run=run, summary=summary, now=now, reason="stale_timeout")
+        return None
+
+    return run
+
+
+def _close_stale_run(*, run: AutoDbMatchingRun, summary: dict, now, reason: str) -> None:
+    if reason == "orphaned_task":
+        fallback_error = "orphaned run auto-closed"
+    else:
+        fallback_error = "stale run auto-closed"
+    summary["running"] = False
+    summary["stopped_reason"] = summary.get("stopped_reason") or reason
+    summary["last_error"] = summary.get("last_error") or fallback_error
+    summary["finished_at"] = now.isoformat()
+    run.summary_json = summary
+    run.status = AutoDbMatchingRun.STATUS_PARTIAL
+    run.finished_at = now
+    run.error = fallback_error
+    run.save(update_fields=["summary_json", "status", "finished_at", "error", "updated_at"])
+
+
+def _parse_iso_datetime(value: str) -> datetime | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    try:
+        parsed = datetime.fromisoformat(raw)
+    except ValueError:
+        return None
+    if timezone.is_naive(parsed):
+        parsed = timezone.make_aware(parsed, timezone.get_current_timezone())
+    return parsed
+
+
+def _resolve_last_heartbeat(*, run: AutoDbMatchingRun, summary: dict):
+    parsed = _parse_iso_datetime(str(summary.get("last_heartbeat_at") or ""))
+    if parsed is not None:
+        return parsed
+    return run.updated_at or run.started_at
+
+
+def _task_visible_for_workers(task_id: str) -> bool:
+    try:
+        inspector = current_app.control.inspect(timeout=0.8)
+        query = inspector.query_task(task_id) or {}
+        for worker_payload in query.values():
+            if isinstance(worker_payload, dict) and task_id in worker_payload:
+                return True
+        active = inspector.active() or {}
+        for worker_tasks in active.values():
+            for task in worker_tasks or []:
+                if str((task or {}).get("id") or "") == task_id:
+                    return True
+        reserved = inspector.reserved() or {}
+        for worker_tasks in reserved.values():
+            for task in worker_tasks or []:
+                if str((task or {}).get("id") or "") == task_id:
+                    return True
+        scheduled = inspector.scheduled() or {}
+        for worker_entries in scheduled.values():
+            for entry in worker_entries or []:
+                request = (entry or {}).get("request") or {}
+                if str(request.get("id") or "") == task_id:
+                    return True
+        return False
+    except Exception:  # noqa: BLE001
+        # If inspect is unavailable, do not auto-close/requeue to avoid false positives.
+        return True
+
+
+def _should_recover_orphaned_run(*, run: AutoDbMatchingRun, summary: dict, now) -> bool:
+    task_id = safe_str(summary.get("task_id"))
+    if not task_id:
+        return False
+    heartbeat = _resolve_last_heartbeat(run=run, summary=summary)
+    if heartbeat is None:
+        return False
+    grace_seconds = max(int(getattr(settings, "AUTODB_BACKOFFICE_ORPHAN_TASK_GRACE_SECONDS", 180) or 180), 60)
+    if heartbeat >= (now - timedelta(seconds=grace_seconds)):
+        return False
+    return not _task_visible_for_workers(task_id)
+
+
+def _try_resume_orphaned_run(*, run: AutoDbMatchingRun, summary: dict) -> AutoDbMatchingRun | None:
+    # Only continuous mode can be safely auto-resumed.
+    if not bool(summary.get("continuous")):
+        return None
+    requested_limit = parse_positive_int(summary.get("requested_limit"), default=50, maximum=1000)
+    actor_id = safe_str(summary.get("actor_id"))
+    strict_tecdoc_only = bool(summary.get("strict_tecdoc_only"))
+    batch_source = safe_str(summary.get("batch_source")) or ("tecdoc_api" if run.run_type == BACKOFFICE_TECDOC_API_BATCH_RUN_TYPE else "legacy_batch")
+    soft_time_limit, time_limit = _resolve_continuous_batch_task_limits()
+    task = run_backoffice_tecdoc_batch_bind_task.apply_async(
+        kwargs={
+            "run_id": str(run.id),
+            "limit": int(requested_limit),
+            "actor_id": actor_id,
+            "product_ids": None,
+            "continuous": True,
+            "strict_tecdoc_only": bool(strict_tecdoc_only),
+            "batch_source": str(batch_source),
+        },
+        soft_time_limit=soft_time_limit,
+        time_limit=time_limit,
+    )
+    summary["task_id"] = str(task.id)
+    summary["task_soft_time_limit_seconds"] = int(soft_time_limit)
+    summary["task_time_limit_seconds"] = int(time_limit)
+    summary["running"] = True
+    summary["retry_reason"] = "orphan_requeued"
+    summary["retry_in_seconds"] = 0
+    previous_error = safe_str(summary.get("last_error"))
+    summary["last_error"] = previous_error or "orphaned task auto-requeued"
+    run.summary_json = summary
+    run.save(update_fields=["summary_json", "updated_at"])
     return run
 
 

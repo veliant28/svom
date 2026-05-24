@@ -12,6 +12,8 @@ import type {
   AutoDbTecdocBatchSummary,
 } from "@/features/backoffice/types/backoffice";
 
+const REMOTE_QUOTA_DISPLAY_LIMIT = 3332;
+
 function toCount(value: unknown): number {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -192,8 +194,10 @@ export function AutoDbBatchHistoryModal({
   const processedTarget = selected || requestedLimit;
   const linked = toCount(summary.bound);
   const errors = toCount(summary.failed);
-  const quotaUsed = toCount(remoteQuota?.estimated_queries_used);
-  const quotaLimit = toCount(remoteQuota?.estimated_limit_per_hour);
+  const rawQuotaUsed = toCount(remoteQuota?.estimated_queries_used);
+  const rawQuotaLimit = toCount(remoteQuota?.estimated_limit_per_hour);
+  const quotaLimit = rawQuotaLimit > 0 ? Math.min(rawQuotaLimit, REMOTE_QUOTA_DISPLAY_LIMIT) : 0;
+  const quotaUsed = quotaLimit > 0 ? Math.min(rawQuotaUsed, quotaLimit) : rawQuotaUsed;
   const status = resolveRunStatusLabel({ run, summary, isRunning, t });
 
   const timelineEvents = run ? buildTimelineEvents(run, locale, t) : [];

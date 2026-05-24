@@ -13,6 +13,8 @@ import type { AutoDbRemoteQuota } from "@/features/backoffice/types/backoffice";
 
 import { formatCountdown, Panel } from "./ui";
 
+const REMOTE_QUOTA_DISPLAY_LIMIT = 3332;
+
 function statusLabel(status: string, t: ReturnType<typeof useTranslations>) {
   if (status === "quota_paused") {
     return t("quota.statusPaused");
@@ -103,9 +105,11 @@ export function AutoDbQuotaCard({
     void refetch();
   }, [refreshNonce, refetch]);
 
-  const used = Number(data?.estimated_queries_used ?? 0);
-  const limit = Math.max(1, Number(data?.estimated_limit_per_hour ?? 1));
-  const usagePercent = Math.min(100, Math.max(0, Number(data?.usage_percent ?? (used / limit) * 100)));
+  const rawUsed = Math.max(0, Number(data?.estimated_queries_used ?? 0));
+  const rawLimit = Math.max(1, Number(data?.estimated_limit_per_hour ?? 1));
+  const limit = Math.max(1, Math.min(rawLimit, REMOTE_QUOTA_DISPLAY_LIMIT));
+  const used = Math.min(rawUsed, limit);
+  const usagePercent = Math.min(100, Math.max(0, (used / limit) * 100));
   const tone = statusTone(data?.status ?? "ok");
   const secondsLeft = resolvePausedTimerSeconds(data ?? null, nowMs);
   const topConsumers = useMemo(() => data?.consumers_breakdown ?? data?.top_consumers ?? [], [data?.consumers_breakdown, data?.top_consumers]);
@@ -137,8 +141,9 @@ export function AutoDbQuotaCard({
     const parsedRows: QuotaPoint[] = recentPoints
       .map((point) => {
         const ts = new Date(point.timestamp).getTime();
-        const percent = limit > 0 ? Math.min(100, (Number(point.cumulative_used || 0) / limit) * 100) : 0;
-        return { ts, percent, qpm: Number(point.query_count || 0), cumulative: Number(point.cumulative_used || 0) };
+        const cumulative = Math.min(Math.max(0, Number(point.cumulative_used || 0)), limit);
+        const percent = limit > 0 ? Math.min(100, (cumulative / limit) * 100) : 0;
+        return { ts, percent, qpm: Number(point.query_count || 0), cumulative };
       })
       .filter((point) => Number.isFinite(point.ts))
       .sort((a, b) => a.ts - b.ts)
