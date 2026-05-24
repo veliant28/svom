@@ -542,7 +542,7 @@ export function AccountOrderDetailPage({ orderId }: { orderId: string }) {
                     <tr key={item.id} style={{ borderTop: "1px solid var(--border)" }}>
                       <td className="px-3 py-2">{item.product?.sku || "-"}</td>
                       <td className="px-3 py-2">{item.product?.brand_name || "-"}</td>
-                      <td className="px-3 py-2">{item.product_sku || "-"}</td>
+                      <td className="px-3 py-2">{item.product?.article || item.product?.manufacturer_article || "-"}</td>
                       <td className="px-3 py-2">{item.product?.name || item.product_name || "-"}</td>
                       <td className="px-3 py-2 text-right">{item.quantity}</td>
                       <td className="px-3 py-2 text-right">{formatMoney(item.line_total, order.currency, locale)}</td>
