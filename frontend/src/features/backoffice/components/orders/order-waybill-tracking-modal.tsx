@@ -2,7 +2,7 @@ import { CheckCircle2, Clock3, Info, ScanBarcode, ScanLine, Truck, TriangleAlert
 import { createPortal } from "react-dom";
 import type { CSSProperties } from "react";
 
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import type { BackofficeOrderNovaPoshtaWaybill } from "@/features/backoffice/types/nova-poshta.types";
 
 type Translator = (key: string, values?: Record<string, string | number>) => string;
@@ -316,13 +316,13 @@ export function OrderWaybillTrackingModal({
         >
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <p className="text-sm font-semibold">{t("orders.modals.waybill.tracking.title")}</p>
-            <BackofficeStatusChip
+            <StatusChip
               tone={waybill.np_number ? "success" : "orange"}
               icon={waybill.np_number ? ScanBarcode : ScanLine}
               className="h-7 px-2 py-0 tracking-wide"
             >
               {waybill.np_number || t("orders.table.waybillEmpty")}
-            </BackofficeStatusChip>
+            </StatusChip>
           </div>
           <button
             type="button"

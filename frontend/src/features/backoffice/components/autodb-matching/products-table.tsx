@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef } from "react";
 
 import { BackofficeTable, type BackofficeColumn } from "@/features/backoffice/components/table/backoffice-table";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
-import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip, type StatusChipTone } from "@/features/backoffice/components/widgets/status-chip";
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import { getLocalizedProductName } from "@/features/backoffice/lib/products/localized-product-name";
 import type { AutoDbProductJob } from "@/features/backoffice/types/backoffice";
@@ -31,9 +31,9 @@ function normalizeReason(value: string): string {
   return String(value || "").trim();
 }
 
-function matchingStatusMeta(status: string): { tone: BackofficeStatusChipTone; icon: LucideIcon } {
+function matchingStatusMeta(status: string): { tone: StatusChipTone; icon: LucideIcon } {
   const key = String(status || "").trim().toLowerCase();
-  const map: Record<string, { tone: BackofficeStatusChipTone; icon: LucideIcon }> = {
+  const map: Record<string, { tone: StatusChipTone; icon: LucideIcon }> = {
     new: { tone: "info", icon: Clock3 },
     local_found: { tone: "blue", icon: SearchCode },
     remote_pending: { tone: "blue", icon: LoaderCircle },
@@ -59,14 +59,14 @@ function matchingStatusMeta(status: string): { tone: BackofficeStatusChipTone; i
   return map[key] || { tone: "gray", icon: CircleHelp };
 }
 
-function tecdocStatusMeta(status: string): { tone: BackofficeStatusChipTone; icon: LucideIcon } {
+function tecdocStatusMeta(status: string): { tone: StatusChipTone; icon: LucideIcon } {
   const key = String(status || "").trim().toLowerCase();
   if (key === "tecdoc") return { tone: "success", icon: CheckCircle2 };
   if (key === "non_tecdoc") return { tone: "gray", icon: MinusCircle };
   return { tone: "warning", icon: CircleHelp };
 }
 
-function supplierTone(code: string): BackofficeStatusChipTone {
+function supplierTone(code: string): StatusChipTone {
   const normalized = String(code || "").trim().toLowerCase();
   if (normalized === "gpl") return "teal";
   if (normalized === "utr") return "blue";
@@ -173,12 +173,12 @@ export function AutoDbMatchingProductsTable({
                 wrapperClassName="inline-flex"
                 tooltipClassName="whitespace-nowrap"
               >
-                <BackofficeStatusChip
+                <StatusChip
                   tone={supplierTone(code)}
                   className="cursor-pointer h-6 py-0 items-center [&>span]:leading-none"
                 >
                   {code.toUpperCase()}
-                </BackofficeStatusChip>
+                </StatusChip>
               </BackofficeTooltip>
             ))}
           </div>
@@ -288,13 +288,13 @@ export function AutoDbMatchingProductsTable({
               wrapperClassName="inline-flex max-w-full"
               tooltipClassName="max-w-[420px] whitespace-normal break-words"
             >
-              <BackofficeStatusChip tone={matching.tone} icon={matching.icon} className="max-w-full cursor-pointer">
+              <StatusChip tone={matching.tone} icon={matching.icon} className="max-w-full cursor-pointer">
                 <span className="truncate">{matchingLabel}</span>
-              </BackofficeStatusChip>
+              </StatusChip>
             </BackofficeTooltip>
-            <BackofficeStatusChip tone={tecdoc.tone} icon={tecdoc.icon} className="max-w-full cursor-pointer">
+            <StatusChip tone={tecdoc.tone} icon={tecdoc.icon} className="max-w-full cursor-pointer">
               <span className="truncate">{tecdocLabel}</span>
-            </BackofficeStatusChip>
+            </StatusChip>
           </div>
         );
       },

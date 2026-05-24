@@ -17,6 +17,7 @@ WINDOW_MINUTES = 60
 MAX_POINTS = 180
 _BASIC_AUTH_RE = re.compile(r"(https?://)[^/\s:@]+:[^/\s@]+@", re.IGNORECASE)
 _MYSQL_USER_RE = re.compile(r"User\s+'[^']+'", re.IGNORECASE)
+_CURRENT_VALUE_RE = re.compile(r"current value:\s*(\d+)", re.IGNORECASE)
 
 
 class AutoDbRemoteQuotaTracker:
@@ -89,6 +90,17 @@ class AutoDbRemoteQuotaTracker:
             locked = self._lock_quota(quota)
             self._ensure_window(locked, now=now)
             sanitized_error = self._sanitize_error(error)
+            inferred_limit = self._infer_limit_from_error(sanitized_error)
+            if inferred_limit > 0:
+                configured_limit = max(
+                    int(getattr(settings, "AUTODB_PRO_REMOTE_LIMIT_PER_HOUR", DEFAULT_LIMIT_PER_HOUR) or DEFAULT_LIMIT_PER_HOUR),
+                    1,
+                )
+                normalized_limit = min(inferred_limit, configured_limit)
+                locked.estimated_limit_per_hour = normalized_limit
+                # If MySQL already returned ER_USER_LIMIT_REACHED, real usage has reached
+                # the account quota threshold for the current window.
+                locked.estimated_queries_used = max(int(locked.estimated_queries_used or 0), normalized_limit)
             locked.last_quota_error_at = now
             locked.last_query_at = now
             locked.cooldown_until = now + timedelta(minutes=int(cooldown_minutes))
@@ -156,7 +168,8 @@ class AutoDbRemoteQuotaTracker:
 
     def _ensure_window(self, quota: AutoDbRemoteQuotaState, *, now) -> tuple[bool, bool]:
         configured_limit = max(int(getattr(settings, "AUTODB_PRO_REMOTE_LIMIT_PER_HOUR", DEFAULT_LIMIT_PER_HOUR) or DEFAULT_LIMIT_PER_HOUR), 1)
-        quota.estimated_limit_per_hour = configured_limit
+        current_limit = int(quota.estimated_limit_per_hour or 0)
+        quota.estimated_limit_per_hour = min(current_limit, configured_limit) if current_limit > 0 else configured_limit
         window_reset_applied = False
         quota_recovered = False
         if not quota.window_started_at or not quota.expected_reset_at or now >= quota.expected_reset_at:
@@ -279,6 +292,16 @@ class AutoDbRemoteQuotaTracker:
         text = _BASIC_AUTH_RE.sub(r"\1", str(error or ""))
         text = _MYSQL_USER_RE.sub("User '[redacted]'", text)
         return text[:300]
+
+    def _infer_limit_from_error(self, error: str) -> int:
+        message = str(error or "")
+        if "max_questions" not in message.lower():
+            return 0
+        match = _CURRENT_VALUE_RE.search(message)
+        if not match:
+            return 0
+        inferred = int(match.group(1) or 0)
+        return max(inferred, 0)
 
     def _lock_quota(self, quota: AutoDbRemoteQuotaState) -> AutoDbRemoteQuotaState:
         return AutoDbRemoteQuotaState.objects.select_for_update().get(pk=quota.pk)

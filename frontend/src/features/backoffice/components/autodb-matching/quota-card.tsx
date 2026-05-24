@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Activity, Clock3, Package, Tags } from "lucide-react";
+import { Activity, AlertTriangle, Clock3, Package, Tags } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { getAutoDbMatchingRemoteQuota } from "@/features/backoffice/api/backoffice-api";
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { EchartsPanel } from "@/features/backoffice/components/widgets/echarts-panel";
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import { useBackofficeQuery } from "@/features/backoffice/hooks/use-backoffice-query";
@@ -254,9 +254,9 @@ export function AutoDbQuotaCard({
             tooltipClassName="whitespace-nowrap"
           >
             <span>
-              <BackofficeStatusChip tone="teal" icon={Tags} className="cursor-pointer">
+              <StatusChip tone="teal" icon={Tags} className="cursor-pointer">
                 {mappedBrands}/{totalBrands}
-              </BackofficeStatusChip>
+              </StatusChip>
             </span>
           </BackofficeTooltip>
 
@@ -268,29 +268,34 @@ export function AutoDbQuotaCard({
             tooltipClassName="whitespace-nowrap"
           >
             <span>
-              <BackofficeStatusChip tone="blue" icon={Package} className="cursor-pointer">
+              <StatusChip tone="blue" icon={Package} className="cursor-pointer">
                 {linkedProducts}/{totalProducts}
-              </BackofficeStatusChip>
+              </StatusChip>
             </span>
           </BackofficeTooltip>
         </div>
         <div className="flex justify-end">
-          <BackofficeStatusChip tone={tone}>{statusLabel(data?.status ?? "ok", t)}</BackofficeStatusChip>
+          <StatusChip
+            tone={tone}
+            icon={data?.status === "quota_paused" ? AlertTriangle : undefined}
+          >
+            {statusLabel(data?.status ?? "ok", t)}
+          </StatusChip>
         </div>
       </div>
 
       <div className="flex items-center justify-between gap-2">
-        <BackofficeStatusChip
+        <StatusChip
           tone={timerTone}
           icon={Clock3}
           palette="countdown"
           className={timerTone === "warning" || timerTone === "error" ? "animate-pulse" : ""}
         >
           {timerLabel}
-        </BackofficeStatusChip>
-        <BackofficeStatusChip tone="info" icon={Activity}>
+        </StatusChip>
+        <StatusChip tone="info" icon={Activity}>
           {usagePercent.toFixed(1)}%
-        </BackofficeStatusChip>
+        </StatusChip>
       </div>
 
       <EchartsPanel option={chartOption} hasData={!isLoading && !error} emptyLabel={error || t("states.empty")} className="h-[240px] w-full" />

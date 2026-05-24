@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { ScanBarcode, ScanLine } from "lucide-react";
 
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { ReturnStatusChip } from "@/features/backoffice/components/widgets/return-status-chip";
 import { formatReturnDate, formatReturnMoney } from "@/features/account/lib/returns-formatters";
 import type { ReturnRequestListItem } from "@/features/commerce/types";
@@ -52,13 +52,13 @@ export function AccountReturnsList({ items, isLoading }: AccountReturnsListProps
 
             <div className="sm:justify-self-start">
               {item.tracking_number ? (
-                <BackofficeStatusChip tone="success" icon={ScanBarcode} className="whitespace-nowrap">
+                <StatusChip tone="success" icon={ScanBarcode} className="whitespace-nowrap">
                   {item.tracking_number}
-                </BackofficeStatusChip>
+                </StatusChip>
               ) : (
-                <BackofficeStatusChip tone="orange" icon={ScanLine} className="whitespace-nowrap">
+                <StatusChip tone="orange" icon={ScanLine} className="whitespace-nowrap">
                   {t("labels.noTtn")}
-                </BackofficeStatusChip>
+                </StatusChip>
               )}
             </div>
 

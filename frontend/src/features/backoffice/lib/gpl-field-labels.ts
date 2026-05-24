@@ -1,8 +1,8 @@
-import type { BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import type { StatusChipTone } from "@/features/backoffice/components/widgets/status-chip";
 
 export type GplPriceLevelMeta = {
   badgeLabel: string;
-  tone: BackofficeStatusChipTone;
+  tone: StatusChipTone;
   order: number;
 };
 

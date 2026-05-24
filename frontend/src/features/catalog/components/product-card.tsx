@@ -5,7 +5,7 @@ import { ArrowRight, Boxes, CheckCircle2, XCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 
-import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip, type StatusChipTone } from "@/features/backoffice/components/widgets/status-chip";
 import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
 import { WishlistToggleButton } from "@/features/wishlist/components/wishlist-toggle-button";
 import { Link } from "@/i18n/navigation";
@@ -23,7 +23,7 @@ export function ProductCard({
 }) {
   const t = useTranslations("product.card");
   const searchParams = useSearchParams();
-  const stockTone: BackofficeStatusChipTone =
+  const stockTone: StatusChipTone =
     product.total_stock_qty <= 0 ? "red" : product.total_stock_qty <= 5 ? "orange" : "blue";
   const sanitizedDetailQuery = (() => {
     if (!preserveCatalogQuery) {
@@ -117,9 +117,9 @@ export function ProductCard({
         <p className="text-sm font-semibold whitespace-nowrap">
           {product.final_price} {product.currency}
         </p>
-        <BackofficeStatusChip tone={stockTone} icon={Boxes} className="shrink-0">
+        <StatusChip tone={stockTone} icon={Boxes} className="shrink-0">
           {t("labels.stockTotal", { count: product.total_stock_qty })}
-        </BackofficeStatusChip>
+        </StatusChip>
       </div>
       <div className="mt-3 flex items-center justify-between gap-2">
         <div className="inline-flex gap-2">
@@ -127,9 +127,9 @@ export function ProductCard({
           <WishlistToggleButton productId={product.id} />
         </div>
         {fitmentBadge ? (
-          <BackofficeStatusChip tone={fitmentBadge.tone} icon={fitmentBadge.icon} className="shrink-0">
+          <StatusChip tone={fitmentBadge.tone} icon={fitmentBadge.icon} className="shrink-0">
             {fitmentBadge.label}
-          </BackofficeStatusChip>
+          </StatusChip>
         ) : null}
       </div>
 

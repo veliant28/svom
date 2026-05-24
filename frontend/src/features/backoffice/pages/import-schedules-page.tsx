@@ -102,6 +102,10 @@ function hasActiveImportRun(item: BackofficeImportSource): boolean {
   return isActiveImportRunSnapshot(item.last_run);
 }
 
+function isRunningStatus(status: string | null | undefined): boolean {
+  return String(status || "").trim().toLowerCase() === "running";
+}
+
 function ScheduleRunActionButton({
   item,
   token,
@@ -582,9 +586,19 @@ export function ImportSchedulesPage() {
               render: (row) => {
                 if (row.kind === "backup") {
                   const backupSchedule = getBackupSchedule(row.profileCode);
-                  return backupSchedule?.last_status ? <StatusChip status={backupSchedule.last_status} /> : "-";
+                  return backupSchedule?.last_status ? (
+                    <StatusChip
+                      status={backupSchedule.last_status}
+                      className={isRunningStatus(backupSchedule.last_status) ? "[&>svg]:animate-spin" : ""}
+                    />
+                  ) : "-";
                 }
-                return row.source.last_run?.status ? <StatusChip status={row.source.last_run.status} /> : "-";
+                return row.source.last_run?.status ? (
+                  <StatusChip
+                    status={row.source.last_run.status}
+                    className={isRunningStatus(row.source.last_run.status) ? "[&>svg]:animate-spin" : ""}
+                  />
+                ) : "-";
               },
             },
             {

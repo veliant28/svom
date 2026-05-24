@@ -40,6 +40,7 @@ class BackofficeTecdocBatchSelector:
         limit: int,
         product_ids: list[str] | None = None,
         only_new_tecdoc: bool = False,
+        strict_tecdoc_only: bool = False,
     ) -> list[TecdocBatchCandidate]:
         target_limit = max(1, min(int(limit or 0), 1000))
         selected: list[TecdocBatchCandidate] = []
@@ -47,6 +48,7 @@ class BackofficeTecdocBatchSelector:
         queryset = self._base_queryset(
             product_ids=requested_product_ids or None,
             only_new_tecdoc=bool(only_new_tecdoc),
+            strict_tecdoc_only=bool(strict_tecdoc_only),
         )
         scanned = 0
         if requested_product_ids:
@@ -67,6 +69,8 @@ class BackofficeTecdocBatchSelector:
                 continue
             if supplier_id <= 0 and not supplier_name:
                 continue
+            if strict_tecdoc_only and supplier_id <= 0:
+                continue
             if self._has_trusted_link_quality(product):
                 continue
             if self._is_non_tecdoc(product):
@@ -83,7 +87,13 @@ class BackofficeTecdocBatchSelector:
                 break
         return selected
 
-    def _base_queryset(self, *, product_ids: list[str] | None = None, only_new_tecdoc: bool = False):
+    def _base_queryset(
+        self,
+        *,
+        product_ids: list[str] | None = None,
+        only_new_tecdoc: bool = False,
+        strict_tecdoc_only: bool = False,
+    ):
         queryset = (
             Product.objects
             .filter(
@@ -104,6 +114,8 @@ class BackofficeTecdocBatchSelector:
             queryset = queryset.exclude(
                 autodb_link_qualities__status=AutoDbProductLinkQuality.STATUS_NEEDS_MANUAL_REVIEW,
             )
+        if strict_tecdoc_only:
+            queryset = queryset.filter(autodb_supplier_id__isnull=False).exclude(autodb_supplier_id=0)
         if product_ids:
             return queryset.filter(id__in=product_ids).order_by("-id")
         return queryset.order_by("-id")

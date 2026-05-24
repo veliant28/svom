@@ -3,7 +3,7 @@
 import { CheckCircle2, MinusCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { SupportStatusChip } from "@/features/support/components/support-status-chip";
 import type { SupportThread, SupportUser } from "@/features/support/types";
 
@@ -31,12 +31,12 @@ function SupportUserBlock({ label, user }: { label: string; user: SupportUser | 
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>{label}</p>
         {user ? (
-          <BackofficeStatusChip
+          <StatusChip
             tone={user.is_online ? "success" : "gray"}
             icon={user.is_online ? CheckCircle2 : MinusCircle}
           >
             {user.is_online ? t("online") : t("offline")}
-          </BackofficeStatusChip>
+          </StatusChip>
         ) : null}
       </div>
       <p className="mt-1 text-sm font-semibold">{user?.full_name || "-"}</p>

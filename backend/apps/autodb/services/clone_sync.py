@@ -36,7 +36,13 @@ class AutoDbCloneSyncService:
     VEHICLE_TABLES = tuple(sorted(VEHICLE_CATALOG_TABLE_WHITELIST))
     ARTICLE_TABLES = tuple(sorted(ARTICLE_CATALOG_TABLE_WHITELIST))
     KEYSET_CURSOR_TABLE_COLUMNS: dict[str, tuple[str, ...]] = {
-        "passanger_car_trees": ("id", "passangercarid", "searchtreeid"),
+        # Single-column cursor keeps remote ORDER BY cheap on very large tables.
+        "passanger_car_trees": ("id",),
+    }
+    FORCE_OFFSET_CURSOR_TABLES: set[str] = {
+        # Tree table appears to have non-unique cursor behavior for keyset/pk resume.
+        # Force OFFSET resume using saved last_offset to avoid false "completed" with partial data.
+        "passanger_car_trees",
     }
 
     def __init__(
@@ -152,6 +158,9 @@ class AutoDbCloneSyncService:
             pk_column = None
 
         keyset_columns = self.KEYSET_CURSOR_TABLE_COLUMNS.get(table)
+        if table in self.FORCE_OFFSET_CURSOR_TABLES:
+            pk_column = None
+            keyset_columns = None
         last_pk = state.last_pk if resume and pk_column and state.last_pk is not None else None
         offset = int(state.last_offset or 0) if resume and not pk_column else 0
         keyset_cursor = (
@@ -163,8 +172,8 @@ class AutoDbCloneSyncService:
         base_failed = int(state.failed_rows or 0) if resume else 0
 
         skip_total_count = bool(getattr(settings, "AUTODB_PRO_REMOTE_SKIP_TOTAL_COUNT", False))
-        total_rows = 0
-        if not skip_total_count:
+        total_rows = int(state.total_rows or 0) if resume else 0
+        if total_rows <= 0 and not skip_total_count:
             try:
                 total_rows = self.remote_client.count_table(table, pk_column=pk_column, start_from_id=start_from_id)
             except AutoDbProRemoteClientError as exc:

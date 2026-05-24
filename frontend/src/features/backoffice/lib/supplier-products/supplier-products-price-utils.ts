@@ -1,18 +1,18 @@
-import type { BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import type { StatusChipTone } from "@/features/backoffice/components/widgets/status-chip";
 import { resolveGplPriceLevelMeta } from "@/features/backoffice/lib/gpl-field-labels";
 
-const PRICE_CHIP_TONES: BackofficeStatusChipTone[] = ["blue", "success", "orange", "red", "info"];
+const PRICE_CHIP_TONES: StatusChipTone[] = ["blue", "success", "orange", "red", "info"];
 
 export type PriceLevel = {
   key: string;
   value: string;
   badgeLabel: string;
-  tone: BackofficeStatusChipTone;
+  tone: StatusChipTone;
   order: number;
   index: number;
 };
 
-function resolveGplPriceMeta(key: string): { badgeLabel: string; tone: BackofficeStatusChipTone; order: number } | null {
+function resolveGplPriceMeta(key: string): { badgeLabel: string; tone: StatusChipTone; order: number } | null {
   return resolveGplPriceLevelMeta(key);
 }
 

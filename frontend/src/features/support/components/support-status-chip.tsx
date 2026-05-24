@@ -5,9 +5,9 @@ import { CheckCircle2, CircleHelp, Clock3, LoaderCircle, MinusCircle } from "luc
 import { useTranslations } from "next-intl";
 
 import { normalizeStatusKey, normalizeStatusLabel } from "@/features/backoffice/lib/status";
-import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip, type StatusChipTone } from "@/features/backoffice/components/widgets/status-chip";
 
-function resolveSupportTone(statusKey: string): BackofficeStatusChipTone {
+function resolveSupportTone(statusKey: string): StatusChipTone {
   if (statusKey === "new") {
     return "info";
   }
@@ -59,8 +59,8 @@ export function SupportStatusChip({ status }: { status: string }) {
   }
 
   return (
-    <BackofficeStatusChip tone={resolveSupportTone(key)} icon={resolveSupportIcon(key)}>
+    <StatusChip tone={resolveSupportTone(key)} icon={resolveSupportIcon(key)}>
       {label}
-    </BackofficeStatusChip>
+    </StatusChip>
   );
 }

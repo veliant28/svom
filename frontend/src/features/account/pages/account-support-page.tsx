@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { AccountAuthRequired } from "@/features/account/components/account-auth-required";
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import {
   createSupportThread,
   getSupportBootstrap,
@@ -195,13 +195,13 @@ export function AccountSupportPage() {
           <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>{t("subtitle")}</p>
         </div>
         <div className="inline-flex items-center gap-2">
-          <BackofficeStatusChip
+          <StatusChip
             tone={isRealtimeConnected ? "success" : "warning"}
             icon={isRealtimeConnected ? CheckCircle2 : LoaderCircle}
             className={isRealtimeConnected ? "" : "animate-pulse"}
           >
             {isRealtimeConnected ? t("states.realtimeConnected") : t("states.realtimeReconnecting")}
-          </BackofficeStatusChip>
+          </StatusChip>
           <button
             type="button"
             className="inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-70"

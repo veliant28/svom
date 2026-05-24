@@ -4,7 +4,7 @@ import { Briefcase, Headset, ShieldCheck, UserRound, UsersRound } from "lucide-r
 import type { LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip, type StatusChipTone } from "@/features/backoffice/components/widgets/status-chip";
 
 const SYSTEM_PREFIX = "Backoffice Role:";
 
@@ -24,7 +24,7 @@ function resolveSystemRole(groupName: string): SystemRoleCode | null {
 }
 
 function resolveRoleVisual(role: SystemRoleCode): {
-  tone: BackofficeStatusChipTone;
+  tone: StatusChipTone;
   icon: LucideIcon;
 } {
   if (role === "administrator") {
@@ -62,16 +62,16 @@ export function RoleGroupBadge({
     const visual = resolveRoleVisual(role);
     const forceToneClass = forceDark ? darkToneByRole[role] : "";
     return (
-      <BackofficeStatusChip tone={visual.tone} icon={visual.icon} className={`${forceToneClass} ${className}`.trim()}>
+      <StatusChip tone={visual.tone} icon={visual.icon} className={`${forceToneClass} ${className}`.trim()}>
         {t(`rbac.roles.values.${role}`)}
-      </BackofficeStatusChip>
+      </StatusChip>
     );
   }
 
   const forceToneClass = forceDark ? darkToneCustom : "";
   return (
-    <BackofficeStatusChip tone="info" icon={UsersRound} className={`${forceToneClass} ${className}`.trim()}>
+    <StatusChip tone="info" icon={UsersRound} className={`${forceToneClass} ${className}`.trim()}>
       {groupName || "-"}
-    </BackofficeStatusChip>
+    </StatusChip>
   );
 }

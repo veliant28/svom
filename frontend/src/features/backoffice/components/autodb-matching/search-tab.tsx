@@ -12,7 +12,7 @@ import {
   manualAutoDbSearchLocal,
   manualAutoDbSearchRemote,
 } from "@/features/backoffice/api/backoffice-api";
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
@@ -395,16 +395,16 @@ export function AutoDbMatchingSearchTab({
                       style={{ borderColor: "var(--border)", backgroundColor: active ? "var(--surface-2)" : "transparent" }}
                       onClick={() => void loadCandidateDetails(candidate)}
                     >
-                      <td className="px-2 py-2"><BackofficeStatusChip tone={active ? "black" : "gray"}>{candidate.supplier_name}</BackofficeStatusChip></td>
+                      <td className="px-2 py-2"><StatusChip tone={active ? "black" : "gray"}>{candidate.supplier_name}</StatusChip></td>
                       <td className="px-2 py-2 font-semibold">{candidate.matched_stored_article}</td>
                       <td className="px-2 py-2 text-center">
-                        <BackofficeStatusChip
+                        <StatusChip
                           tone="success"
                           icon={CheckCircle2}
                           className="h-6 w-6 justify-center gap-0 px-0 py-0 [&>span:last-child]:hidden"
                         >
                           {t("search.statusFound")}
-                        </BackofficeStatusChip>
+                        </StatusChip>
                       </td>
                     </tr>
                   );

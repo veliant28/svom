@@ -16,9 +16,8 @@ import {
   type Translator,
 } from "@/features/backoffice/components/orders/order-view-modal.helpers";
 import { OrderViewValueField } from "@/features/backoffice/components/orders/order-view-value-field";
-import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip, type StatusChipTone } from "@/features/backoffice/components/widgets/status-chip";
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
-import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { formatOrderDate, resolveOrderStatusDescription } from "@/features/backoffice/lib/orders/order-formatters";
 import { formatBackofficeDate } from "@/features/backoffice/lib/supplier-workspace";
 import type {
@@ -67,7 +66,7 @@ export function OrderViewModal({
   onClose: () => void;
   t: Translator;
 }) {
-  const resolveSupplierTone = (supplierCode: string): BackofficeStatusChipTone => {
+  const resolveSupplierTone = (supplierCode: string): StatusChipTone => {
     if (supplierCode === "utr") {
       return "blue";
     }
@@ -236,12 +235,12 @@ export function OrderViewModal({
                                     wrapperClassName="inline-flex shrink-0"
                                     tooltipClassName="whitespace-nowrap"
                                   >
-                                    <BackofficeStatusChip
+                                    <StatusChip
                                       tone={resolveSupplierTone(supplierCode)}
                                       className="cursor-pointer h-6 py-0 items-center [&>span]:leading-none"
                                     >
                                       {supplierCode.toUpperCase()}
-                                    </BackofficeStatusChip>
+                                    </StatusChip>
                                   </BackofficeTooltip>
                                 );
                               })()}

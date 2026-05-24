@@ -5,9 +5,11 @@
         "dashboard": "Dashboard",
         "products": "Products",
         "search": "Search",
+        "tecdocApi": "TecDoc API",
         "dashboardTitle": "Operational dashboard",
         "productsTitle": "Unlinked products",
-        "searchTitle": "Auto-DB Search"
+        "searchTitle": "Auto-DB Search",
+        "tecdocApiTitle": "TecDoc API центр"
       },
       "common": {
         "yes": "Yes",
@@ -342,14 +344,59 @@
           "linked": "Linked: {count}",
           "errors": "Errors: {count}",
           "lastError": "Last error: {value}",
-          "waitingQuota": "Paused by quota",
-          "waitingRemoteRetry": "Paused due to connection drop"
+          "waitingQuota": "Pause: Quota",
+          "waitingRemoteRetry": "Pause: Disconnect"
         },
         "badges": {
           "quotaWait": "Pause: Quota",
           "remoteRetry": "Pause: Disconnect",
           "quotaPause": "Pause: Quota",
           "remotePause": "Pause: Disconnect"
+        }
+      },
+      "tecdocApi": {
+        "status": {
+          "idle": "Idle",
+          "running": "Running",
+          "waitingQuota": "Pause: Quota",
+          "waitingRemote": "Pause: Disconnect",
+          "stopped": "Stopped",
+          "finished": "Finished",
+          "finishedWithIssues": "Finished with issues"
+        },
+        "badges": {
+          "tecdocOnly": "TecDoc candidates only",
+          "quotaPause": "Quota: paused",
+          "quotaLive": "Quota: live"
+        },
+        "actions": {
+          "run": "Run API batch",
+          "stop": "Stop API batch",
+          "refresh": "Refresh state"
+        },
+        "metrics": {
+          "selected": "Selected",
+          "processed": "Processed",
+          "linked": "Linked",
+          "failed": "Errors",
+          "quota": "Quota"
+        },
+        "charts": {
+          "progressTitle": "API batch progress",
+          "quotaTitle": "Remote API quota",
+          "remaining": "Remaining",
+          "processed": "Processed",
+          "linked": "Linked",
+          "failed": "Errors",
+          "quotaUsed": "Used",
+          "quotaLeft": "Remaining"
+        },
+        "meta": {
+          "lastRun": "Last run",
+          "started": "Started",
+          "finished": "Finished",
+          "heartbeat": "Heartbeat",
+          "reset": "Quota reset"
         }
       },
       "search": {
@@ -455,6 +502,16 @@
         "batchStateCompletedWithIssues": "TecDoc batch completed with issues: {count}",
         "batchLinkedCount": "Linked: {count}",
         "batchErrorsCount": "Errors: {count}",
+        "tecdocApiQueued": "TecDoc API batch queued",
+        "tecdocApiAlreadyRunning": "TecDoc API batch is already running",
+        "tecdocApiStopped": "TecDoc API batch stopped",
+        "tecdocApiNoActiveRun": "No active TecDoc API batch run",
+        "tecdocApiStateRunning": "TecDoc API batch started",
+        "tecdocApiStateStopped": "TecDoc API batch stopped",
+        "tecdocApiStateCompleted": "TecDoc API batch completed",
+        "tecdocApiStateCompletedWithIssues": "TecDoc API batch completed with issues: {count}",
+        "tecdocApiLinkedCount": "Linked (API): {count}",
+        "tecdocApiErrorsCount": "Errors (API): {count}",
         "bulkNothingSelected": "Select products for bulk batch run",
         "candidatesFound": "Matches found: {count}",
         "exportDownloaded": "CSV copied",

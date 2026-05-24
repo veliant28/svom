@@ -12,6 +12,9 @@ from .actions import (
     BackofficeAutoDbMatchingRunRemoteAPIView,
 )
 from .batch import (
+    BackofficeAutoDbMatchingTecdocApiBatchRunAPIView,
+    BackofficeAutoDbMatchingTecdocApiBatchStateAPIView,
+    BackofficeAutoDbMatchingTecdocApiBatchStopAPIView,
     BackofficeAutoDbMatchingTecdocBatchRunAPIView,
     BackofficeAutoDbMatchingTecdocBatchStopAPIView,
     BackofficeAutoDbMatchingTecdocBatchStateAPIView,
@@ -41,6 +44,9 @@ __all__ = [
     "BackofficeAutoDbMatchingRemoteQuotaAPIView",
     "BackofficeAutoDbMatchingRunLocalDryRunAPIView",
     "BackofficeAutoDbMatchingRunRemoteAPIView",
+    "BackofficeAutoDbMatchingTecdocApiBatchRunAPIView",
+    "BackofficeAutoDbMatchingTecdocApiBatchStateAPIView",
+    "BackofficeAutoDbMatchingTecdocApiBatchStopAPIView",
     "BackofficeAutoDbMatchingTecdocBatchRunAPIView",
     "BackofficeAutoDbMatchingTecdocBatchStopAPIView",
     "BackofficeAutoDbMatchingTecdocBatchStateAPIView",

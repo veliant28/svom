@@ -201,7 +201,7 @@ export function AutoDbMatchingProductsFilters({
           suffix=""
           inputMode="numeric"
           integerOnly
-          inputWidthClassName="w-14"
+          inputWidthClassName="w-12"
           containerClassName="shrink-0"
           disabled={isBatchDisabled}
         />

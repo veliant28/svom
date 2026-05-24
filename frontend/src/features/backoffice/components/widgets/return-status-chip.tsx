@@ -12,11 +12,11 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip, type StatusChipTone } from "@/features/backoffice/components/widgets/status-chip";
 import type { ReturnStatus } from "@/features/commerce/types";
 
 type ReturnStatusMeta = {
-  tone: BackofficeStatusChipTone;
+  tone: StatusChipTone;
   icon: LucideIcon;
 };
 
@@ -55,8 +55,8 @@ export function ReturnStatusChip({ status, className = "" }: { status: string; c
   const label = tStatuses(labelKey);
 
   return (
-    <BackofficeStatusChip tone={meta.tone} icon={meta.icon} className={className}>
+    <StatusChip tone={meta.tone} icon={meta.icon} className={className}>
       {label}
-    </BackofficeStatusChip>
+    </StatusChip>
   );
 }

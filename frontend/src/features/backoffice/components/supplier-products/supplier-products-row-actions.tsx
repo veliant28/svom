@@ -1,4 +1,4 @@
-import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip, type StatusChipTone } from "@/features/backoffice/components/widgets/status-chip";
 import { AlertTriangle, CheckCircle2, MinusCircle, UserCheck, type LucideIcon } from "lucide-react";
 
 type Translator = (key: string, values?: Record<string, string | number>) => string;
@@ -17,7 +17,7 @@ export function SupplierProductsRowActions({
   t: Translator;
 }) {
   const normalizedStatus = String(status || "unmapped").trim().toLowerCase();
-  const toneByStatus: Record<string, BackofficeStatusChipTone> = {
+  const toneByStatus: Record<string, StatusChipTone> = {
     auto_mapped: "success",
     manual_mapped: "blue",
     needs_review: "warning",
@@ -57,9 +57,9 @@ export function SupplierProductsRowActions({
       aria-expanded={expanded}
       title={`${fullLabel}${mappedCategoryPath ? ` • ${mappedCategoryPath}` : ""}`}
     >
-      <BackofficeStatusChip tone={tone} icon={Icon}>
+      <StatusChip tone={tone} icon={Icon}>
         {shortLabel}
-      </BackofficeStatusChip>
+      </StatusChip>
     </button>
   );
 }

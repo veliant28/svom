@@ -2,7 +2,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { BadgeDollarSign, CheckCircle2, Flame, Sparkles, Star, XCircle, type LucideIcon } from "lucide-react";
 
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
-import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip, type StatusChipTone } from "@/features/backoffice/components/widgets/status-chip";
 import { ProductRowActions } from "@/features/backoffice/components/products/product-row-actions";
 import type { BackofficeColumn } from "@/features/backoffice/components/table/backoffice-table";
 import type { BackofficeCatalogProduct } from "@/features/backoffice/types/catalog.types";
@@ -22,7 +22,7 @@ function StatusIconChip({
 }: {
   label: string;
   tooltipContent?: ReactNode;
-  tone: BackofficeStatusChipTone;
+  tone: StatusChipTone;
   icon: LucideIcon;
 }) {
   return (
@@ -33,13 +33,13 @@ function StatusIconChip({
       wrapperClassName="inline-flex"
       tooltipClassName={tooltipContent ? "min-w-[190px]" : "whitespace-nowrap"}
     >
-      <BackofficeStatusChip
+      <StatusChip
         tone={tone}
         icon={icon}
         className="cursor-pointer justify-center gap-0 px-1.5 [&>span:last-child]:hidden"
       >
         <span className="sr-only">{label}</span>
-      </BackofficeStatusChip>
+      </StatusChip>
     </BackofficeTooltip>
   );
 }
@@ -224,13 +224,13 @@ export function createProductColumns({
             wrapperClassName="inline-flex max-w-full"
             tooltipClassName="min-w-[220px]"
           >
-            <BackofficeStatusChip
+            <StatusChip
               tone="blue"
               icon={BadgeDollarSign}
               className="inline-flex max-w-full min-w-0 cursor-pointer justify-start overflow-hidden"
             >
               <span className="block min-w-0 truncate tabular-nums">{priceMeta.badgeLabel}</span>
-            </BackofficeStatusChip>
+            </StatusChip>
           </BackofficeTooltip>
         );
       },
@@ -279,12 +279,12 @@ export function createProductColumns({
                 wrapperClassName="inline-flex"
                 tooltipClassName="whitespace-nowrap"
               >
-                <BackofficeStatusChip
+                <StatusChip
                   tone={supplierCode === "utr" ? "blue" : supplierCode === "gpl" ? "teal" : "gray"}
                   className="cursor-pointer h-6 py-0 items-center [&>span]:leading-none"
                 >
                   {supplierCode.toUpperCase()}
-                </BackofficeStatusChip>
+                </StatusChip>
               </BackofficeTooltip>
             </div>
             <div className="flex flex-wrap gap-1">

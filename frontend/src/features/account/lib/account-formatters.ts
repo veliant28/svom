@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { CheckCircle2, CircleHelp, Clock3, LoaderCircle, PackageCheck, Truck, XCircle } from "lucide-react";
-import type { BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import type { StatusChipTone } from "@/features/backoffice/components/widgets/status-chip";
 
 export function formatMoney(value: string, currency: string, locale: string): string {
   const amount = Number(value);
@@ -42,7 +42,7 @@ export function resolveOrderStatusTone(status: string): "success" | "warning" | 
   return "neutral";
 }
 
-export function resolveOrderStatusChipTone(status: string): BackofficeStatusChipTone {
+export function resolveOrderStatusChipTone(status: string): StatusChipTone {
   const normalized = String(status || "").trim().toLowerCase();
   if (normalized === "new") {
     return "info";

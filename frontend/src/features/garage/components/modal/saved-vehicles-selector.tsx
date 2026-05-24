@@ -4,7 +4,7 @@ import { CarFront, Check, CircleOff } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import type { GarageVehicle } from "@/features/garage/types/garage";
 import { formatGarageVehicleSubtitle, formatGarageVehicleTitle } from "@/features/garage/lib/vehicle-labels";
 
@@ -66,9 +66,9 @@ export function SavedVehiclesSelector({
                 <CarFront size={14} />
                 {formatGarageVehicleTitle(vehicle)}
                 {isActive ? (
-                  <BackofficeStatusChip tone="blue" icon={Check}>
+                  <StatusChip tone="blue" icon={Check}>
                     {t("saved.active")}
-                  </BackofficeStatusChip>
+                  </StatusChip>
                 ) : null}
               </span>
               <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>

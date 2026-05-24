@@ -8,7 +8,7 @@ import { ArrowLeft, LoaderCircle, Receipt } from "lucide-react";
 import { AccountAuthRequired } from "@/features/account/components/account-auth-required";
 import { formatDateTime, formatMoney, resolveOrderStatusChipIcon, resolveOrderStatusChipTone } from "@/features/account/lib/account-formatters";
 import { useAuth } from "@/features/auth/hooks/use-auth";
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import { getCheckoutMonobankWidget } from "@/features/checkout/api/monobank-payment";
 import { MonobankFallbackButton } from "@/features/checkout/components/payment/monobank-fallback-button";
@@ -457,7 +457,7 @@ export function AccountOrderDetailPage({ orderId }: { orderId: string }) {
           </div>
           <div className="flex items-center gap-2">
             <p className="text-base font-semibold">{formatMoney(order.total, order.currency, locale)}</p>
-            <BackofficeStatusChip tone={statusTone} icon={statusIcon}>{statusLabel}</BackofficeStatusChip>
+            <StatusChip tone={statusTone} icon={statusIcon}>{statusLabel}</StatusChip>
           </div>
         </div>
 

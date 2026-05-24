@@ -7,7 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { getBackofficeAutoDbSupplierBrands } from "@/features/backoffice/api/backoffice-api";
 import { BackofficeTable } from "@/features/backoffice/components/table/backoffice-table";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
 import { useBackofficeQuery } from "@/features/backoffice/hooks/use-backoffice-query";
 import type { BackofficeAutoDbSupplierBrand } from "@/features/backoffice/types/backoffice";
@@ -104,9 +104,9 @@ export function BrandsPage() {
               key: "status",
               label: t("brands.table.columns.status"),
               render: (item) => (
-                <BackofficeStatusChip tone={item.is_active ? "success" : "gray"} icon={item.is_active ? CheckCircle2 : XCircle}>
+                <StatusChip tone={item.is_active ? "success" : "gray"} icon={item.is_active ? CheckCircle2 : XCircle}>
                   {item.is_active ? t("statuses.active") : t("statuses.inactive")}
-                </BackofficeStatusChip>
+                </StatusChip>
               ),
             },
             {

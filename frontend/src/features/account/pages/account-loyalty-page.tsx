@@ -6,12 +6,12 @@ import { useTranslations } from "next-intl";
 
 import { AccountAuthRequired } from "@/features/account/components/account-auth-required";
 import { useAuth } from "@/features/auth/hooks/use-auth";
-import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip, type StatusChipTone } from "@/features/backoffice/components/widgets/status-chip";
 import { getMyLoyaltyCodes } from "@/features/commerce/api/get-my-loyalty-codes";
 import type { LoyaltyPromoCode } from "@/features/commerce/types";
 import { useStorefrontFeedback } from "@/shared/hooks/use-storefront-feedback";
 
-function resolveStateChip(state: LoyaltyPromoCode["state"]): { tone: BackofficeStatusChipTone; icon: LucideIcon } {
+function resolveStateChip(state: LoyaltyPromoCode["state"]): { tone: StatusChipTone; icon: LucideIcon } {
   if (state === "active") {
     return { tone: "success", icon: CheckCircle2 };
   }
@@ -112,9 +112,9 @@ export function AccountLoyaltyPage() {
                     <p className="text-xs" style={{ color: "var(--muted)" }}>{t("labels.code")}</p>
                     <p className="text-lg font-semibold tracking-[0.06em]">{promo.code}</p>
                   </div>
-                  <BackofficeStatusChip tone={stateChip.tone} icon={stateChip.icon}>
+                  <StatusChip tone={stateChip.tone} icon={stateChip.icon}>
                     {t(`states.values.${promo.state}`)}
-                  </BackofficeStatusChip>
+                  </StatusChip>
                 </div>
 
                 <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-sm">

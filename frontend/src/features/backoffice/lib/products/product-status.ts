@@ -1,9 +1,9 @@
-import type { BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import type { StatusChipTone } from "@/features/backoffice/components/widgets/status-chip";
 import type { BackofficeCatalogProduct } from "@/features/backoffice/types/catalog.types";
 
 type ProductPriceStatus = BackofficeCatalogProduct["productprice_status"];
 
-export function resolveProductPriceStatusTone(status: ProductPriceStatus): BackofficeStatusChipTone {
+export function resolveProductPriceStatusTone(status: ProductPriceStatus): StatusChipTone {
   if (status === "has_price") {
     return "success";
   }

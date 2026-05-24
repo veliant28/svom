@@ -1,6 +1,6 @@
 import { Bot, ShieldAlert, ShieldCheck } from "lucide-react";
 
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import type { SecurityActor, SecurityStatus, SecurityThreatLevel } from "@/features/backoffice/security/types/security.types";
 
 type Translator = (key: string, values?: Record<string, string | number>) => string;
@@ -33,9 +33,9 @@ export function SecurityStatusBadge({
   onClick?: () => void;
 }) {
   const chip = (
-    <BackofficeStatusChip tone={STATUS_TONES[status] ?? "gray"} icon={status === "whitelisted" ? ShieldCheck : ShieldAlert}>
+    <StatusChip tone={STATUS_TONES[status] ?? "gray"} icon={status === "whitelisted" ? ShieldCheck : ShieldAlert}>
       {t(`status.${status}`)}
-    </BackofficeStatusChip>
+    </StatusChip>
   );
 
   if (!onClick || status !== "blocked") {
@@ -50,9 +50,9 @@ export function SecurityStatusBadge({
 
 export function SecurityThreatBadge({ level, t }: { level: SecurityThreatLevel; t: Translator }) {
   return (
-    <BackofficeStatusChip tone={THREAT_TONES[level] ?? "gray"} icon={ShieldAlert}>
+    <StatusChip tone={THREAT_TONES[level] ?? "gray"} icon={ShieldAlert}>
       {t(`threat.${level}`)}
-    </BackofficeStatusChip>
+    </StatusChip>
   );
 }
 
@@ -74,9 +74,9 @@ export function SourceKindBadges({
   return (
     <div className={`flex flex-wrap gap-1 ${className}`}>
       {flags.map((flag) => (
-        <BackofficeStatusChip key={flag} tone="gray" icon={flag === "bot" ? Bot : undefined} className="px-1.5 py-0.5 text-[11px]">
+        <StatusChip key={flag} tone="gray" icon={flag === "bot" ? Bot : undefined} className="px-1.5 py-0.5 text-[11px]">
           {t(`sourceKind.${flag}`)}
-        </BackofficeStatusChip>
+        </StatusChip>
       ))}
     </div>
   );

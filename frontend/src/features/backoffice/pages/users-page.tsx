@@ -17,7 +17,7 @@ import {
 import { RoleGroupBadge } from "@/features/backoffice/components/rbac/role-group-badge";
 import { BackofficeTable } from "@/features/backoffice/components/table/backoffice-table";
 import { ActionIconButton } from "@/features/backoffice/components/widgets/action-icon-button";
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
@@ -59,13 +59,13 @@ function StatusIconChip({
       wrapperClassName="inline-flex"
       tooltipClassName="whitespace-nowrap"
     >
-      <BackofficeStatusChip
+      <StatusChip
         tone={tone}
         icon={icon}
         className="cursor-help justify-center gap-0 px-1.5 [&>span:last-child]:hidden"
       >
         <span className="sr-only">{label}</span>
-      </BackofficeStatusChip>
+      </StatusChip>
     </BackofficeTooltip>
   );
 }

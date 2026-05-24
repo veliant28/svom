@@ -3,7 +3,7 @@
 import { Clock3 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import type { SecurityBlock } from "@/features/backoffice/security/types/security.types";
 
 type Translator = (key: string, values?: Record<string, string | number>) => string;
@@ -42,8 +42,8 @@ export function SecurityBlockTimer({ block, t }: { block: SecurityBlock | null; 
 
   const tone = !block || block.status !== "active" ? "gray" : block.expires_at ? "warning" : "error";
   return (
-    <BackofficeStatusChip tone={tone} palette="countdown" icon={Clock3}>
+    <StatusChip tone={tone} palette="countdown" icon={Clock3}>
       {label}
-    </BackofficeStatusChip>
+    </StatusChip>
   );
 }

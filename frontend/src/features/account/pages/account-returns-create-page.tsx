@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 
 import { AccountAuthRequired } from "@/features/account/components/account-auth-required";
 import { formatDateTime, formatMoney, resolveOrderStatusChipIcon, resolveOrderStatusChipTone } from "@/features/account/lib/account-formatters";
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { getEligibleReturnOrders } from "@/features/commerce/api/returns-api";
 import type { EligibleReturnOrder } from "@/features/commerce/types";
 import { useAuth } from "@/features/auth/hooks/use-auth";
@@ -153,7 +153,7 @@ export function AccountReturnsCreatePage() {
                 </p>
                 <p className="text-base font-semibold leading-[1.05]">{formatMoney(order.total, order.currency, locale)}</p>
                 <div className="sm:justify-self-start">
-                  <BackofficeStatusChip tone={statusTone} icon={statusIcon} className="whitespace-nowrap">{statusLabel}</BackofficeStatusChip>
+                  <StatusChip tone={statusTone} icon={statusIcon} className="whitespace-nowrap">{statusLabel}</StatusChip>
                 </div>
               </article>
             </Link>

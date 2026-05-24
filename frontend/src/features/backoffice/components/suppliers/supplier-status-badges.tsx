@@ -1,6 +1,6 @@
 import { Timer } from "lucide-react";
 
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { supplierToneIcon, type SupplierStatusTone } from "@/features/backoffice/lib/suppliers/supplier-status";
 
 export function SupplierTokenStateBadge({
@@ -11,9 +11,9 @@ export function SupplierTokenStateBadge({
   label: string;
 }) {
   return (
-    <BackofficeStatusChip tone={tone} icon={supplierToneIcon(tone)}>
+    <StatusChip tone={tone} icon={supplierToneIcon(tone)}>
       {label}
-    </BackofficeStatusChip>
+    </StatusChip>
   );
 }
 
@@ -25,8 +25,8 @@ export function SupplierTokenCountdownBadge({
   label: string;
 }) {
   return (
-    <BackofficeStatusChip tone={tone} icon={Timer} palette="countdown">
+    <StatusChip tone={tone} icon={Timer} palette="countdown">
       {label}
-    </BackofficeStatusChip>
+    </StatusChip>
   );
 }

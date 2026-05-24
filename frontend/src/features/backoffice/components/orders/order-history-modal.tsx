@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 import type { CSSProperties } from "react";
 
 import { RoleGroupBadge } from "@/features/backoffice/components/rbac/role-group-badge";
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
 import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import type { BackofficeOrderHistoryEvent } from "@/features/backoffice/types/orders.types";
 
@@ -169,13 +168,13 @@ export function OrderHistoryModal({
                         <div className="grid gap-1 text-xs">
                           <div className="flex flex-wrap items-center gap-2">
                             <StatusChip status={fromStatus || "unknown"} />
-                            <BackofficeStatusChip
+                            <StatusChip
                               tone="warning"
                               icon={ArrowRight}
                               className="justify-center gap-0 px-1.5 border-amber-500/70 bg-amber-400/35 text-amber-900 dark:border-amber-300/75 dark:bg-amber-300/30 dark:text-amber-50 [&>span:last-child]:hidden"
                             >
                               <span className="sr-only">{t("orders.history.statusChanged")}</span>
-                            </BackofficeStatusChip>
+                            </StatusChip>
                             <StatusChip status={toStatus || "unknown"} />
                           </div>
                         </div>

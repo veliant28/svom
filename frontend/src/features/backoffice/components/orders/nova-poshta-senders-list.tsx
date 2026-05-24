@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { getRawMetaString } from "@/features/backoffice/components/orders/nova-poshta-senders.helpers";
 import type { BackofficeNovaPoshtaSenderProfile } from "@/features/backoffice/types/nova-poshta.types";
 
@@ -116,16 +116,16 @@ function NovaPoshtaSenderCard({
         </div>
         <div className="flex flex-wrap items-center justify-end gap-1.5">
           {item.is_default ? (
-            <BackofficeStatusChip tone="blue" icon={Star}>
+            <StatusChip tone="blue" icon={Star}>
               {t("orders.modals.waybill.settings.default")}
-            </BackofficeStatusChip>
+            </StatusChip>
           ) : null}
-          <BackofficeStatusChip
+          <StatusChip
             tone={item.is_active ? "success" : "gray"}
             icon={item.is_active ? CheckCircle2 : TriangleAlert}
           >
             {item.is_active ? "Активен" : "Неактивен"}
-          </BackofficeStatusChip>
+          </StatusChip>
         </div>
       </div>
 

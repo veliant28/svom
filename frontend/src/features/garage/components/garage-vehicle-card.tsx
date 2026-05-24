@@ -3,7 +3,7 @@
 import { CarFront, Star, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import type { GarageVehicle } from "@/features/garage/types/garage";
 
 function formatBrandModelTitle(vehicle: GarageVehicle): string {
@@ -59,9 +59,9 @@ export function GarageVehicleCard({
           {formatBrandModelTitle(vehicle)}
         </p>
         {vehicle.is_primary ? (
-          <BackofficeStatusChip tone="success" icon={CarFront}>
+          <StatusChip tone="success" icon={CarFront}>
             {t("primary")}
-          </BackofficeStatusChip>
+          </StatusChip>
         ) : (
           <span className="group relative inline-flex">
             <button

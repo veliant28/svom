@@ -2,7 +2,7 @@ import { CheckCircle2, XCircle } from "lucide-react";
 
 import { CategoryRowActions } from "@/features/backoffice/components/categories/category-row-actions";
 import type { BackofficeColumn } from "@/features/backoffice/components/table/backoffice-table";
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { formatBackofficeDate } from "@/features/backoffice/lib/supplier-workspace";
 import type { BackofficeCatalogCategory } from "@/features/backoffice/types/catalog.types";
 
@@ -40,9 +40,9 @@ export function createCategoryColumns({
       key: "status",
       label: t("categories.table.columns.status"),
       render: (item) => (
-        <BackofficeStatusChip tone={item.is_active ? "success" : "gray"} icon={item.is_active ? CheckCircle2 : XCircle}>
+        <StatusChip tone={item.is_active ? "success" : "gray"} icon={item.is_active ? CheckCircle2 : XCircle}>
           {item.is_active ? t("statuses.active") : t("statuses.inactive")}
-        </BackofficeStatusChip>
+        </StatusChip>
       ),
     },
     { key: "updated", label: t("categories.table.columns.updated"), render: (item) => formatBackofficeDate(item.updated_at) },

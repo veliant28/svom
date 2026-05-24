@@ -9,7 +9,11 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from apps.autodb.models import AutoDbMatchingRun
-from apps.autodb.tasks import BACKOFFICE_TECDOC_BATCH_RUN_TYPE, run_backoffice_tecdoc_batch_bind_task
+from apps.autodb.tasks import (
+    BACKOFFICE_TECDOC_API_BATCH_RUN_TYPE,
+    BACKOFFICE_TECDOC_BATCH_RUN_TYPE,
+    run_backoffice_tecdoc_batch_bind_task,
+)
 from apps.core.services import (
     send_system_autodb_batch_started_notification,
     send_system_autodb_batch_stopped_notification,
@@ -67,85 +71,12 @@ class BackofficeAutoDbMatchingTecdocBatchRunAPIView(BackofficeAPIView):
     required_capability = "autocatalog.view"
 
     def post(self, request):
-        active = _active_batch_run()
-        if active is not None:
-            return Response(
-                {
-                    "dry_run": False,
-                    "created": False,
-                    "status": "already_running",
-                    "run": _serialize_run(active),
-                    "message": "TecDoc batch is already running.",
-                },
-                status=status.HTTP_200_OK,
-            )
-
-        product_ids = _parse_product_ids(request.data.get("product_ids"))
-        continuous_requested = parse_bool(request.data.get("continuous")) is True
-        # Keep bulk/product_ids mode backward-compatible (single-pass only).
-        continuous = bool(continuous_requested and not product_ids)
-        if product_ids:
-            batch_size = len(product_ids)
-        else:
-            batch_size = parse_positive_int(request.data.get("batch_size"), default=50, maximum=1000)
-        actor = str(getattr(request.user, "id", "") or "")
-        run = AutoDbMatchingRun.objects.create(
+        return _run_batch(
+            request=request,
             run_type=BACKOFFICE_TECDOC_BATCH_RUN_TYPE,
-            status=AutoDbMatchingRun.STATUS_RUNNING,
-            dry_run=False,
-            created_by_source=f"backoffice:{safe_str(getattr(request.user, 'email', '')) or actor}",
-            summary_json={
-                "running": True,
-                "requested_limit": batch_size,
-                "processed": 0,
-                "bound": 0,
-                "failed": 0,
-                "continuous": continuous,
-                "stopped_reason": "",
-                "last_error": "",
-            },
-        )
-        soft_time_limit, time_limit = (
-            _resolve_continuous_batch_task_limits()
-            if continuous
-            else _resolve_batch_task_limits(int(batch_size))
-        )
-        task = run_backoffice_tecdoc_batch_bind_task.apply_async(
-            kwargs={
-                "run_id": str(run.id),
-                "limit": int(batch_size),
-                "actor_id": actor,
-                "product_ids": product_ids or None,
-                "continuous": continuous,
-            },
-            soft_time_limit=soft_time_limit,
-            time_limit=time_limit,
-        )
-        run.summary_json = {
-            **(run.summary_json or {}),
-            "task_id": str(task.id),
-            "task_soft_time_limit_seconds": int(soft_time_limit),
-            "task_time_limit_seconds": int(time_limit),
-            "continuous": continuous,
-        }
-        run.save(update_fields=["summary_json", "updated_at"])
-        send_system_autodb_batch_started_notification(
-            run_id=str(run.id),
-            actor_name=_actor_label(getattr(request, "user", None)),
-            requested_limit=int(batch_size),
-            selected_products_count=len(product_ids),
-        )
-        return Response(
-            {
-                "dry_run": False,
-                "created": True,
-                "status": "queued",
-                "selected_products_count": len(product_ids),
-                "run": _serialize_run(run),
-                "task_id": str(task.id),
-                "message": "TecDoc batch queued.",
-            },
-            status=status.HTTP_202_ACCEPTED,
+            batch_title="TecDoc batch",
+            strict_tecdoc_only=False,
+            batch_source="legacy_batch",
         )
 
 
@@ -153,54 +84,10 @@ class BackofficeAutoDbMatchingTecdocBatchStopAPIView(BackofficeAPIView):
     required_capability = "autocatalog.view"
 
     def post(self, request):
-        active = _active_batch_run()
-        if active is None:
-            return Response(
-                {
-                    "dry_run": False,
-                    "status": "no_active_run",
-                    "stopped": False,
-                    "message": "No active TecDoc batch run.",
-                },
-                status=status.HTTP_200_OK,
-            )
-
-        summary = dict(active.summary_json or {})
-        task_id = safe_str(summary.get("task_id"))
-        revoked = False
-        if task_id:
-            current_app.control.revoke(task_id, terminate=True, signal="SIGKILL")
-            revoked = True
-
-        now = timezone.now()
-        summary["running"] = False
-        summary["stopped_reason"] = "manual_stop"
-        summary["last_error"] = summary.get("last_error") or "manual stop requested"
-        summary["finished_at"] = now.isoformat()
-        active.summary_json = summary
-        active.status = AutoDbMatchingRun.STATUS_PARTIAL
-        active.finished_at = now
-        active.error = "manual stop requested"
-        active.save(update_fields=["summary_json", "status", "finished_at", "error", "updated_at"])
-        send_system_autodb_batch_stopped_notification(
-            run_id=str(active.id),
-            actor_name=_actor_label(getattr(request, "user", None)),
-            processed=int(summary.get("processed") or 0),
-            found=int(summary.get("bound") or 0),
-            linked=int(summary.get("bound") or 0),
-            not_found=int(summary.get("failed") or 0),
-            stop_reason=str(summary.get("stopped_reason") or "manual_stop"),
-        )
-        return Response(
-            {
-                "dry_run": False,
-                "status": "stopped",
-                "stopped": True,
-                "revoked": revoked,
-                "run": _serialize_run(active),
-                "message": "TecDoc batch stop requested.",
-            },
-            status=status.HTTP_200_OK,
+        return _stop_batch(
+            request=request,
+            run_type=BACKOFFICE_TECDOC_BATCH_RUN_TYPE,
+            batch_title="TecDoc batch",
         )
 
 
@@ -208,25 +95,206 @@ class BackofficeAutoDbMatchingTecdocBatchStateAPIView(BackofficeAPIView):
     required_capability = "autocatalog.view"
 
     def get(self, request):
-        active = _active_batch_run()
-        latest = (
-            AutoDbMatchingRun.objects.filter(run_type=BACKOFFICE_TECDOC_BATCH_RUN_TYPE)
-            .order_by("-created_at")
-            .first()
+        return _state_batch(run_type=BACKOFFICE_TECDOC_BATCH_RUN_TYPE)
+
+
+class BackofficeAutoDbMatchingTecdocApiBatchRunAPIView(BackofficeAPIView):
+    required_capability = "autocatalog.view"
+
+    def post(self, request):
+        return _run_batch(
+            request=request,
+            run_type=BACKOFFICE_TECDOC_API_BATCH_RUN_TYPE,
+            batch_title="TecDoc API batch",
+            strict_tecdoc_only=True,
+            batch_source="tecdoc_api",
         )
+
+
+class BackofficeAutoDbMatchingTecdocApiBatchStopAPIView(BackofficeAPIView):
+    required_capability = "autocatalog.view"
+
+    def post(self, request):
+        return _stop_batch(
+            request=request,
+            run_type=BACKOFFICE_TECDOC_API_BATCH_RUN_TYPE,
+            batch_title="TecDoc API batch",
+        )
+
+
+class BackofficeAutoDbMatchingTecdocApiBatchStateAPIView(BackofficeAPIView):
+    required_capability = "autocatalog.view"
+
+    def get(self, request):
+        return _state_batch(run_type=BACKOFFICE_TECDOC_API_BATCH_RUN_TYPE)
+
+
+def _run_batch(
+    *,
+    request,
+    run_type: str,
+    batch_title: str,
+    strict_tecdoc_only: bool,
+    batch_source: str,
+) -> Response:
+    active = _active_batch_run(run_type=run_type)
+    if active is not None:
         return Response(
             {
-                "running": active is not None,
-                "active_run": _serialize_run(active) if active is not None else None,
-                "latest_run": _serialize_run(latest) if latest is not None else None,
-            }
+                "dry_run": False,
+                "created": False,
+                "status": "already_running",
+                "run": _serialize_run(active),
+                "message": f"{batch_title} is already running.",
+            },
+            status=status.HTTP_200_OK,
         )
 
+    product_ids = _parse_product_ids(request.data.get("product_ids"))
+    continuous_requested = parse_bool(request.data.get("continuous")) is True
+    # Keep bulk/product_ids mode backward-compatible (single-pass only).
+    continuous = bool(continuous_requested and not product_ids)
+    if product_ids:
+        batch_size = len(product_ids)
+    else:
+        batch_size = parse_positive_int(request.data.get("batch_size"), default=50, maximum=1000)
+    actor = str(getattr(request.user, "id", "") or "")
+    run = AutoDbMatchingRun.objects.create(
+        run_type=run_type,
+        status=AutoDbMatchingRun.STATUS_RUNNING,
+        dry_run=False,
+        created_by_source=f"backoffice:{safe_str(getattr(request.user, 'email', '')) or actor}",
+        summary_json={
+            "running": True,
+            "requested_limit": batch_size,
+            "processed": 0,
+            "bound": 0,
+            "failed": 0,
+            "continuous": continuous,
+            "strict_tecdoc_only": bool(strict_tecdoc_only),
+            "batch_source": str(batch_source or "legacy_batch"),
+            "stopped_reason": "",
+            "last_error": "",
+        },
+    )
+    soft_time_limit, time_limit = (
+        _resolve_continuous_batch_task_limits()
+        if continuous
+        else _resolve_batch_task_limits(int(batch_size))
+    )
+    task = run_backoffice_tecdoc_batch_bind_task.apply_async(
+        kwargs={
+            "run_id": str(run.id),
+            "limit": int(batch_size),
+            "actor_id": actor,
+            "product_ids": product_ids or None,
+            "continuous": continuous,
+            "strict_tecdoc_only": bool(strict_tecdoc_only),
+            "batch_source": str(batch_source or "legacy_batch"),
+        },
+        soft_time_limit=soft_time_limit,
+        time_limit=time_limit,
+    )
+    run.summary_json = {
+        **(run.summary_json or {}),
+        "task_id": str(task.id),
+        "task_soft_time_limit_seconds": int(soft_time_limit),
+        "task_time_limit_seconds": int(time_limit),
+        "continuous": continuous,
+    }
+    run.save(update_fields=["summary_json", "updated_at"])
+    send_system_autodb_batch_started_notification(
+        run_id=str(run.id),
+        actor_name=_actor_label(getattr(request, "user", None)),
+        requested_limit=int(batch_size),
+        selected_products_count=len(product_ids),
+    )
+    return Response(
+        {
+            "dry_run": False,
+            "created": True,
+            "status": "queued",
+            "selected_products_count": len(product_ids),
+            "run": _serialize_run(run),
+            "task_id": str(task.id),
+            "message": f"{batch_title} queued.",
+        },
+        status=status.HTTP_202_ACCEPTED,
+    )
 
-def _active_batch_run() -> AutoDbMatchingRun | None:
+
+def _stop_batch(*, request, run_type: str, batch_title: str) -> Response:
+    active = _active_batch_run(run_type=run_type)
+    if active is None:
+        return Response(
+            {
+                "dry_run": False,
+                "status": "no_active_run",
+                "stopped": False,
+                "message": f"No active {batch_title} run.",
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    summary = dict(active.summary_json or {})
+    task_id = safe_str(summary.get("task_id"))
+    revoked = False
+    if task_id:
+        current_app.control.revoke(task_id, terminate=True, signal="SIGKILL")
+        revoked = True
+
+    now = timezone.now()
+    summary["running"] = False
+    summary["stopped_reason"] = "manual_stop"
+    summary["last_error"] = summary.get("last_error") or "manual stop requested"
+    summary["finished_at"] = now.isoformat()
+    active.summary_json = summary
+    active.status = AutoDbMatchingRun.STATUS_PARTIAL
+    active.finished_at = now
+    active.error = "manual stop requested"
+    active.save(update_fields=["summary_json", "status", "finished_at", "error", "updated_at"])
+    send_system_autodb_batch_stopped_notification(
+        run_id=str(active.id),
+        actor_name=_actor_label(getattr(request, "user", None)),
+        processed=int(summary.get("processed") or 0),
+        found=int(summary.get("bound") or 0),
+        linked=int(summary.get("bound") or 0),
+        not_found=int(summary.get("failed") or 0),
+        stop_reason=str(summary.get("stopped_reason") or "manual_stop"),
+    )
+    return Response(
+        {
+            "dry_run": False,
+            "status": "stopped",
+            "stopped": True,
+            "revoked": revoked,
+            "run": _serialize_run(active),
+            "message": f"{batch_title} stop requested.",
+        },
+        status=status.HTTP_200_OK,
+    )
+
+
+def _state_batch(*, run_type: str) -> Response:
+    active = _active_batch_run(run_type=run_type)
+    latest = (
+        AutoDbMatchingRun.objects.filter(run_type=run_type)
+        .order_by("-created_at")
+        .first()
+    )
+    return Response(
+        {
+            "running": active is not None,
+            "active_run": _serialize_run(active) if active is not None else None,
+            "latest_run": _serialize_run(latest) if latest is not None else None,
+        }
+    )
+
+
+def _active_batch_run(*, run_type: str) -> AutoDbMatchingRun | None:
     run = (
         AutoDbMatchingRun.objects.filter(
-            run_type=BACKOFFICE_TECDOC_BATCH_RUN_TYPE,
+            run_type=run_type,
             status=AutoDbMatchingRun.STATUS_RUNNING,
         )
         .order_by("-created_at")

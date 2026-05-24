@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, LoaderCircle, RefreshCw } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
 import { useAuth } from "@/features/auth/hooks/use-auth";
@@ -74,13 +74,13 @@ export function SupportWallboardPage() {
         description={t("wallboard.subtitle")}
         actions={(
           <div className="inline-flex items-center gap-2">
-            <BackofficeStatusChip
+            <StatusChip
               tone={wallboardSocket.connectionState === "open" ? "success" : "warning"}
               icon={wallboardSocket.connectionState === "open" ? CheckCircle2 : LoaderCircle}
               className={wallboardSocket.connectionState === "open" ? "" : "animate-pulse"}
             >
               {wallboardSocket.connectionState === "open" ? t("states.realtimeConnected") : t("states.realtimeReconnecting")}
-            </BackofficeStatusChip>
+            </StatusChip>
             <button
               type="button"
               className="inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold transition-colors"

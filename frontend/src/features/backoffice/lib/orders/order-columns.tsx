@@ -3,7 +3,6 @@ import { useEffect, useRef } from "react";
 
 import { OrderRowActions } from "@/features/backoffice/components/orders/order-row-actions";
 import type { BackofficeColumn } from "@/features/backoffice/components/table/backoffice-table";
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
 import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import type { BackofficeOrderOperational } from "@/features/backoffice/types/orders.types";
@@ -261,9 +260,9 @@ export function createOrderColumns({
       render: (item) => {
         if (!item.nova_poshta_waybill_exists || !item.nova_poshta_waybill_number) {
           return (
-            <BackofficeStatusChip tone="orange" icon={ScanLine}>
+            <StatusChip tone="orange" icon={ScanLine}>
               {t("orders.table.waybillEmpty")}
-            </BackofficeStatusChip>
+            </StatusChip>
           );
         }
 
@@ -282,9 +281,9 @@ export function createOrderColumns({
               aria-label={t("orders.tooltips.waybillHistory")}
               title={t("orders.tooltips.waybillHistory")}
             >
-              <BackofficeStatusChip tone="success" icon={ScanBarcode}>
+              <StatusChip tone="success" icon={ScanBarcode}>
                 {item.nova_poshta_waybill_number}
-              </BackofficeStatusChip>
+              </StatusChip>
             </button>
           </BackofficeTooltip>
         );
@@ -297,9 +296,9 @@ export function createOrderColumns({
       render: (item) => {
         if (!item.nova_poshta_waybill_exists) {
           return (
-            <BackofficeStatusChip tone="gray" icon={MinusCircle}>
+            <StatusChip tone="gray" icon={MinusCircle}>
               {t("orders.table.waybillStatusEmpty")}
-            </BackofficeStatusChip>
+            </StatusChip>
           );
         }
 
@@ -315,12 +314,12 @@ export function createOrderColumns({
           fallbackLabel,
         });
         const chip = (
-          <BackofficeStatusChip
+          <StatusChip
             tone={hasError ? "error" : hasAttention ? "warning" : "blue"}
             icon={hasError || hasAttention ? TriangleAlert : Clock3}
           >
             {statusView.shortLabel}
-          </BackofficeStatusChip>
+          </StatusChip>
         );
         if (!statusView.tooltipLabel) {
           return chip;

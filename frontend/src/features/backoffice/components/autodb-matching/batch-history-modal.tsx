@@ -1,11 +1,11 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, LoaderCircle, PauseCircle, Unplug, StopCircle, X, type LucideIcon } from "lucide-react";
+import { CheckCircle2, LoaderCircle, PauseCircle, StopCircle, Timer, Unplug, X, type LucideIcon } from "lucide-react";
 import { createPortal } from "react-dom";
 import type { CSSProperties } from "react";
 import { useTranslations } from "next-intl";
 
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import type {
   AutoDbRemoteQuota,
   AutoDbTecdocBatchRun,
@@ -144,7 +144,7 @@ function resolveRunStatusLabel({
   if (isRunning) {
     const stage = String(summary.stage || "").trim();
     if (stage === "waiting_quota_recovery") {
-      return { tone: "warning", label: t("batchHistory.badges.quotaPause"), icon: AlertTriangle };
+      return { tone: "warning", label: t("batchHistory.badges.quotaPause"), icon: Timer };
     }
     if (stage === "waiting_remote_retry") {
       return { tone: "warning", label: t("batchHistory.badges.remotePause"), icon: Unplug };
@@ -216,13 +216,13 @@ export function AutoDbBatchHistoryModal({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <BackofficeStatusChip
+            <StatusChip
               tone={status.tone}
               icon={status.icon}
-              className={isRunning && status.icon === LoaderCircle ? "[&>svg]:animate-spin" : ""}
+              className={isRunning && (status.icon === LoaderCircle || status.icon === Timer) ? "[&>svg]:animate-spin" : ""}
             >
               {status.label}
-            </BackofficeStatusChip>
+            </StatusChip>
             <button
               type="button"
               onClick={onClose}

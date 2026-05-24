@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import type { Order } from "@/features/commerce/types";
 import { formatDateTime, formatMoney, resolveOrderStatusChipIcon, resolveOrderStatusChipTone } from "@/features/account/lib/account-formatters";
 import { Link } from "@/i18n/navigation";
@@ -61,7 +61,7 @@ export function AccountOrdersList({ orders, isLoading }: AccountOrdersListProps)
               <p className="text-base font-semibold leading-[1.05]">{formatMoney(order.total, order.currency, locale)}</p>
 
               <div className="sm:justify-self-start">
-                <BackofficeStatusChip tone={tone} icon={icon} className="whitespace-nowrap">{statusLabel}</BackofficeStatusChip>
+                <StatusChip tone={tone} icon={icon} className="whitespace-nowrap">{statusLabel}</StatusChip>
               </div>
             </article>
           </Link>

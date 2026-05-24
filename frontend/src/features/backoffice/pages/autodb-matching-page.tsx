@@ -8,13 +8,15 @@ import { AutoDbBatchHistoryModal } from "@/features/backoffice/components/autodb
 import { AutoDbMatchingDashboardTab } from "@/features/backoffice/components/autodb-matching/dashboard-tab";
 import { AutoDbMatchingProductsTab } from "@/features/backoffice/components/autodb-matching/products-tab";
 import { AutoDbMatchingSearchTab } from "@/features/backoffice/components/autodb-matching/search-tab";
+import { AutoDbMatchingTecdocApiTab } from "@/features/backoffice/components/autodb-matching/tecdoc-api-tab";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
 import { useAutoDbBatchMonitor } from "@/features/backoffice/hooks/use-autodb-batch-monitor";
+import { useAutoDbTecdocApiBatchMonitor } from "@/features/backoffice/hooks/use-autodb-tecdoc-api-batch-monitor";
 import type { AutoDbProductJob } from "@/features/backoffice/types/backoffice";
 
-type TabKey = "dashboard" | "products" | "search";
+type TabKey = "dashboard" | "products" | "search" | "tecdocApi";
 
-const TABS: TabKey[] = ["dashboard", "products", "search"];
+const TABS: TabKey[] = ["dashboard", "products", "search", "tecdocApi"];
 
 export function AutoDbMatchingPage() {
   const locale = useLocale();
@@ -24,16 +26,24 @@ export function AutoDbMatchingPage() {
   const [seedJob, setSeedJob] = useState<AutoDbProductJob | null>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const batch = useAutoDbBatchMonitor({
+  const legacyBatch = useAutoDbBatchMonitor({
     refreshNonce,
-    isHistoryModalOpen: historyOpen,
+    isHistoryModalOpen: historyOpen && tab !== "tecdocApi",
   });
+  const apiBatch = useAutoDbTecdocApiBatchMonitor({
+    refreshNonce,
+    isHistoryModalOpen: historyOpen && tab === "tecdocApi",
+    enableToasts: tab === "tecdocApi",
+  });
+  const batch = tab === "tecdocApi" ? apiBatch : legacyBatch;
   const title =
     tab === "dashboard"
       ? t("tabs.dashboardTitle")
       : tab === "products"
         ? t("tabs.productsTitle")
-        : t("tabs.searchTitle");
+        : tab === "search"
+          ? t("tabs.searchTitle")
+          : t("tabs.tecdocApiTitle");
 
   return (
     <section>
@@ -80,7 +90,9 @@ export function AutoDbMatchingPage() {
                   ? "#16a34a"
                   : item === "products"
                     ? "#2563eb"
-                    : "#ea580c";
+                    : item === "search"
+                      ? "#ea580c"
+                      : "#0f766e";
               return (
                 <button
                   key={item}
@@ -114,6 +126,7 @@ export function AutoDbMatchingPage() {
         />
       ) : null}
       {tab === "search" ? <AutoDbMatchingSearchTab seedJob={seedJob} refreshNonce={refreshNonce} /> : null}
+      {tab === "tecdocApi" ? <AutoDbMatchingTecdocApiTab monitor={apiBatch} /> : null}
 
       <AutoDbBatchHistoryModal
         isOpen={historyOpen}

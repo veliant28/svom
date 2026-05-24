@@ -10,7 +10,7 @@ import {
   setBackofficeRawOfferCategoryMapping,
 } from "@/features/backoffice/api/backoffice-api";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
-import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip, type StatusChipTone } from "@/features/backoffice/components/widgets/status-chip";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
 import type {
   BackofficeCategoryMappingCategoryOption,
@@ -130,7 +130,7 @@ export function SupplierCategoryMappingModal({
     [categories, detail?.mapped_category, selectedCategoryId],
   );
   const normalizedStatus = String(detail?.category_mapping_status || "unmapped").trim().toLowerCase();
-  const toneByStatus: Record<string, BackofficeStatusChipTone> = {
+  const toneByStatus: Record<string, StatusChipTone> = {
     auto_mapped: "success",
     manual_mapped: "blue",
     needs_review: "warning",
@@ -243,9 +243,9 @@ export function SupplierCategoryMappingModal({
                   <p className="flex items-center gap-2">
                     <strong>{t("productsPage.categoryMapping.fields.status")}:</strong>
                     <span title={statusFullLabel}>
-                      <BackofficeStatusChip tone={statusTone} icon={StatusIcon}>
+                      <StatusChip tone={statusTone} icon={StatusIcon}>
                         {statusShortLabel}
-                      </BackofficeStatusChip>
+                      </StatusChip>
                     </span>
                   </p>
                   <p>

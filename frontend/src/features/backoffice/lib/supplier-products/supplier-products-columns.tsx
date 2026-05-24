@@ -3,7 +3,7 @@ import { BadgeDollarSign } from "lucide-react";
 
 import { SupplierProductsRowActions } from "@/features/backoffice/components/supplier-products/supplier-products-row-actions";
 import type { BackofficeColumn } from "@/features/backoffice/components/table/backoffice-table";
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import { formatBackofficeDate } from "@/features/backoffice/lib/supplier-workspace";
 import { priceDigitsOnly } from "@/features/backoffice/lib/supplier-products/supplier-products-formatters";
@@ -171,7 +171,7 @@ export function createSupplierProductsColumns({
                 wrapperClassName="inline-flex max-w-full"
                 tooltipClassName="min-w-[210px]"
               >
-                <BackofficeStatusChip
+                <StatusChip
                   tone={level.tone}
                   icon={BadgeDollarSign}
                   className="w-full max-w-full min-w-0 cursor-help justify-start overflow-hidden"
@@ -179,7 +179,7 @@ export function createSupplierProductsColumns({
                   <span className="block min-w-0 truncate tabular-nums">
                     {priceDigitsOnly(level.value)}
                   </span>
-                </BackofficeStatusChip>
+                </StatusChip>
               </BackofficeTooltip>
             ))}
           </div>

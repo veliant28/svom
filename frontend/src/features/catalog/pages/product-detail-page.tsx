@@ -5,7 +5,7 @@ import { Boxes, CheckCircle2, ChevronLeft, XCircle } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 
-import { BackofficeStatusChip, type BackofficeStatusChipTone } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip, type StatusChipTone } from "@/features/backoffice/components/widgets/status-chip";
 import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
 import { CartProductQuantityStepper } from "@/features/cart/components/cart-product-quantity-stepper";
 import { getProductFitmentOptions } from "@/features/catalog/api/get-product-fitment-options";
@@ -53,7 +53,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   };
   const primaryImage = images.find((image) => image.is_primary) ?? images[0];
   const totalStockQty = product?.total_stock_qty ?? 0;
-  const stockTone: BackofficeStatusChipTone = totalStockQty <= 0 ? "red" : totalStockQty <= 5 ? "orange" : "blue";
+  const stockTone: StatusChipTone = totalStockQty <= 0 ? "red" : totalStockQty <= 5 ? "orange" : "blue";
   const fitmentBadge = (() => {
     const selectedVehicleCompatible = product?.compatibility_summary?.selected_vehicle?.is_compatible;
     const hasFitmentData = (product?.compatibility_summary?.fitment_count || product?.fitment_count || 0) > 0;
@@ -308,9 +308,9 @@ export function ProductDetailPage({ slug }: { slug: string }) {
               <CartProductQuantityStepper productId={product.id} maxQuantity={product.total_stock_qty} />
             </div>
             <div className="flex justify-end">
-              <BackofficeStatusChip tone={stockTone} icon={Boxes} className="shrink-0">
+              <StatusChip tone={stockTone} icon={Boxes} className="shrink-0">
                 {t("labels.stockTotal", { count: product.total_stock_qty })}
-              </BackofficeStatusChip>
+              </StatusChip>
             </div>
           </div>
           <div className="mt-3 inline-flex gap-2">
@@ -339,9 +339,9 @@ export function ProductDetailPage({ slug }: { slug: string }) {
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-sm font-semibold">{t("fitmentTitle")}</h2>
               {fitmentBadge ? (
-                <BackofficeStatusChip tone={fitmentBadge.tone} icon={fitmentBadge.icon} className="shrink-0">
+                <StatusChip tone={fitmentBadge.tone} icon={fitmentBadge.icon} className="shrink-0">
                   {fitmentBadge.label}
-                </BackofficeStatusChip>
+                </StatusChip>
               ) : null}
             </div>
             {selectedVehicle ? (

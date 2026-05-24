@@ -9,7 +9,7 @@ import { useTranslations } from "next-intl";
 import { getBackofficeSummary } from "@/features/backoffice/api/backoffice-api";
 import { OperationsRoleSwitcher } from "@/features/backoffice/components/dashboard/operations-role-switcher";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
 import { useBackofficeQuery } from "@/features/backoffice/hooks/use-backoffice-query";
@@ -375,14 +375,14 @@ export function BackofficeDashboardPage() {
                 }
                 icon={AlertTriangle}
                 trailing={(
-                  <BackofficeStatusChip
+                  <StatusChip
                     tone={unprocessedTone}
                     palette="countdown"
                     icon={Clock3}
                     className={unprocessedTone === "warning" || unprocessedTone === "error" ? "animate-pulse" : ""}
                   >
                     {t("cards.unprocessedOrdersTimer", { value: unprocessedTimerLabel })}
-                  </BackofficeStatusChip>
+                  </StatusChip>
                 )}
               />
 

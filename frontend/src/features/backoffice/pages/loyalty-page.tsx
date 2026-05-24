@@ -15,7 +15,6 @@ import { BackofficeTable } from "@/features/backoffice/components/table/backoffi
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
 import { PercentStepper } from "@/features/backoffice/components/pricing/percent-stepper";
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
@@ -328,13 +327,13 @@ export function LoyaltyPage() {
                         wrapperClassName="inline-flex"
                         tooltipClassName="whitespace-nowrap"
                       >
-                        <BackofficeStatusChip
+                        <StatusChip
                           tone="success"
                           icon={CheckCircle2}
                           className="cursor-help justify-center gap-0 px-1.5 [&>span:last-child]:hidden"
                         >
                           <span className="sr-only">{t("loyalty.states.selected")}</span>
-                        </BackofficeStatusChip>
+                        </StatusChip>
                       </BackofficeTooltip>
                     </span>
                   ) : null}

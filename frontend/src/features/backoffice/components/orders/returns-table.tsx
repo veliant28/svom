@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { BackofficeTable, type BackofficeColumn } from "@/features/backoffice/components/table/backoffice-table";
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { ActionIconButton } from "@/features/backoffice/components/widgets/action-icon-button";
-import { BackofficeStatusChip } from "@/features/backoffice/components/widgets/backoffice-status-chip";
+import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import { ReturnStatusChip } from "@/features/backoffice/components/widgets/return-status-chip";
 import { formatBackofficeDate } from "@/features/backoffice/lib/supplier-workspace";
 import type { BackofficeReturnOperational } from "@/features/backoffice/types/returns.types";
@@ -151,8 +151,8 @@ export function ReturnsTable({
       className: "w-[15%]",
       render: (item) => (
         item.tracking_number
-          ? <BackofficeStatusChip tone="success" icon={ScanBarcode}>{item.tracking_number}</BackofficeStatusChip>
-          : <BackofficeStatusChip tone="orange" icon={ScanLine}>{t("returns.labels.noTtn")}</BackofficeStatusChip>
+          ? <StatusChip tone="success" icon={ScanBarcode}>{item.tracking_number}</StatusChip>
+          : <StatusChip tone="orange" icon={ScanLine}>{t("returns.labels.noTtn")}</StatusChip>
       ),
     },
     {

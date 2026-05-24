@@ -328,6 +328,7 @@ def manual_bind_product_to_autodb_task(
 
 
 BACKOFFICE_TECDOC_BATCH_RUN_TYPE = "backoffice_tecdoc_batch_bind"
+BACKOFFICE_TECDOC_API_BATCH_RUN_TYPE = "backoffice_tecdoc_api_batch_bind"
 BACKOFFICE_TECDOC_BATCH_ITEM_TIMEOUT_SECONDS = max(
     10,
     int(getattr(settings, "AUTODB_BACKOFFICE_BATCH_ITEM_TIMEOUT_SECONDS", 90) or 90),
@@ -365,6 +366,8 @@ def run_backoffice_tecdoc_batch_bind_task(
     actor_id: str = "",
     product_ids: list[str] | None = None,
     continuous: bool = False,
+    strict_tecdoc_only: bool = False,
+    batch_source: str = "legacy_batch",
 ) -> dict[str, object]:
     run = AutoDbMatchingRun.objects.filter(id=run_id).first()
     if run is None:
@@ -390,6 +393,8 @@ def run_backoffice_tecdoc_batch_bind_task(
         "stopped_reason": "",
         "last_error": "",
         "actor_id": str(actor_id or ""),
+        "strict_tecdoc_only": bool(strict_tecdoc_only),
+        "batch_source": str(batch_source or "legacy_batch"),
         "started_at": run.started_at.isoformat() if run.started_at else started_at.isoformat(),
         "last_heartbeat_at": started_at.isoformat(),
     }
@@ -430,6 +435,7 @@ def run_backoffice_tecdoc_batch_bind_task(
             limit=requested_limit,
             product_ids=effective_product_ids,
             only_new_tecdoc=continuous_mode and effective_product_ids is None,
+            strict_tecdoc_only=bool(strict_tecdoc_only),
         )
         selected_last_cycle = len(candidates)
         selected_total += selected_last_cycle
@@ -451,6 +457,8 @@ def run_backoffice_tecdoc_batch_bind_task(
             "failed": failed,
             "stopped_reason": stop_reason,
             "last_error": last_error,
+            "strict_tecdoc_only": bool(strict_tecdoc_only),
+            "batch_source": str(batch_source or "legacy_batch"),
             "last_heartbeat_at": now.isoformat(),
         }
         run.save(update_fields=["summary_json", "updated_at"])
@@ -483,6 +491,8 @@ def run_backoffice_tecdoc_batch_bind_task(
                     "failed": failed,
                     "stopped_reason": stop_reason,
                     "last_error": last_error,
+                    "strict_tecdoc_only": bool(strict_tecdoc_only),
+                    "batch_source": str(batch_source or "legacy_batch"),
                     "last_heartbeat_at": loop_heartbeat.isoformat(),
                 }
                 run.save(update_fields=["summary_json", "updated_at"])
@@ -718,6 +728,8 @@ def run_backoffice_tecdoc_batch_bind_task(
                                 "failed": failed,
                                 "stopped_reason": "",
                                 "last_error": last_error,
+                                "strict_tecdoc_only": bool(strict_tecdoc_only),
+                                "batch_source": str(batch_source or "legacy_batch"),
                                 "last_heartbeat_at": wait_now.isoformat(),
                             }
                             run.save(update_fields=["summary_json", "updated_at"])
@@ -779,6 +791,8 @@ def run_backoffice_tecdoc_batch_bind_task(
                 "failed": failed,
                 "stopped_reason": stop_reason,
                 "last_error": last_error,
+                "strict_tecdoc_only": bool(strict_tecdoc_only),
+                "batch_source": str(batch_source or "legacy_batch"),
                 "last_heartbeat_at": loop_done.isoformat(),
             }
             run.save(update_fields=["summary_json", "updated_at"])
@@ -821,6 +835,8 @@ def run_backoffice_tecdoc_batch_bind_task(
         "failed": failed,
         "stopped_reason": stop_reason,
         "last_error": last_error,
+        "strict_tecdoc_only": bool(strict_tecdoc_only),
+        "batch_source": str(batch_source or "legacy_batch"),
         "last_heartbeat_at": finished_at.isoformat(),
         "finished_at": finished_at.isoformat(),
         "results_preview": results[:50],

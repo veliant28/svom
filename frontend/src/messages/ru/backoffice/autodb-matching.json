@@ -5,9 +5,11 @@
         "dashboard": "Дашборд",
         "products": "Товары",
         "search": "Поиск",
+        "tecdocApi": "TecDoc API",
         "dashboardTitle": "Операционный дашборд",
         "productsTitle": "Несвязанные товары",
-        "searchTitle": "Поиск в Auto-DB"
+        "searchTitle": "Поиск в Auto-DB",
+        "tecdocApiTitle": "TecDoc API центр"
       },
       "common": {
         "yes": "Да",
@@ -342,14 +344,59 @@
           "linked": "Связано: {count}",
           "errors": "Ошибки: {count}",
           "lastError": "Последняя ошибка: {value}",
-          "waitingQuota": "Пауза по квоте",
-          "waitingRemoteRetry": "Пауза из-за обрыва связи"
+          "waitingQuota": "Пауза: Квота",
+          "waitingRemoteRetry": "Пауза: Обрыв"
         },
         "badges": {
           "quotaWait": "Пауза: Квота",
           "remoteRetry": "Пауза: Обрыв",
           "quotaPause": "Пауза: Квота",
           "remotePause": "Пауза: Обрыв"
+        }
+      },
+      "tecdocApi": {
+        "status": {
+          "idle": "Ожидание",
+          "running": "Выполняется",
+          "waitingQuota": "Пауза: Квота",
+          "waitingRemote": "Пауза: Обрыв",
+          "stopped": "Остановлен",
+          "finished": "Завершен",
+          "finishedWithIssues": "Завершен с ошибками"
+        },
+        "badges": {
+          "tecdocOnly": "Только TecDoc кандидаты",
+          "quotaPause": "Квота: пауза",
+          "quotaLive": "Квота: активна"
+        },
+        "actions": {
+          "run": "Запустить API батч",
+          "stop": "Остановить API батч",
+          "refresh": "Обновить состояние"
+        },
+        "metrics": {
+          "selected": "В выборке",
+          "processed": "Обработано",
+          "linked": "Связано",
+          "failed": "Ошибки",
+          "quota": "Квота"
+        },
+        "charts": {
+          "progressTitle": "Прогресс API батча",
+          "quotaTitle": "Квота удаленной API",
+          "remaining": "Осталось",
+          "processed": "Обработано",
+          "linked": "Связано",
+          "failed": "Ошибки",
+          "quotaUsed": "Использовано",
+          "quotaLeft": "Осталось"
+        },
+        "meta": {
+          "lastRun": "Последний запуск",
+          "started": "Старт",
+          "finished": "Финиш",
+          "heartbeat": "Heartbeat",
+          "reset": "Сброс квоты"
         }
       },
       "search": {
@@ -455,6 +502,16 @@
         "batchStateCompletedWithIssues": "TecDoc batch завершен с ошибками: {count}",
         "batchLinkedCount": "Связано: {count}",
         "batchErrorsCount": "Ошибки: {count}",
+        "tecdocApiQueued": "TecDoc API батч поставлен в очередь",
+        "tecdocApiAlreadyRunning": "TecDoc API батч уже выполняется",
+        "tecdocApiStopped": "TecDoc API батч остановлен",
+        "tecdocApiNoActiveRun": "Активный TecDoc API батч не найден",
+        "tecdocApiStateRunning": "TecDoc API батч запущен",
+        "tecdocApiStateStopped": "TecDoc API батч остановлен",
+        "tecdocApiStateCompleted": "TecDoc API батч завершен",
+        "tecdocApiStateCompletedWithIssues": "TecDoc API батч завершен с ошибками: {count}",
+        "tecdocApiLinkedCount": "Связано (API): {count}",
+        "tecdocApiErrorsCount": "Ошибки (API): {count}",
         "bulkNothingSelected": "Выберите товары для массового запуска",
         "candidatesFound": "Найдено совпадений: {count}",
         "exportDownloaded": "CSV скопирован",
