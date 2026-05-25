@@ -304,6 +304,13 @@ export function WorkersPage() {
     return buildTaskRows(workers, 0, false);
   }, [workers]);
   const primaryWorker = workers[0] ?? null;
+  const isDarkTheme = typeof document !== "undefined" && document.documentElement.classList.contains("theme-dark");
+  const chartTextColor = isDarkTheme ? "#d6e2eb" : "#475569";
+  const chartSubtleTextColor = isDarkTheme ? "#c7d8e5" : "#64748b";
+  const chartAxisLineColor = isDarkTheme ? "#4b6070" : "#cbd5e1";
+  const chartGridColor = isDarkTheme ? "#31434f" : "#e2e8f0";
+  const chartMetricColor = isDarkTheme ? "#e8edf1" : "#0f172a";
+  const metaTextColor = isDarkTheme ? "#b9cbd9" : "var(--muted)";
   const taskCounts = useMemo(() => {
     const active = activeTaskRows.length;
     const idle = workers.reduce((acc, worker) => acc + Math.max(0, worker.reserved_count) + Math.max(0, worker.scheduled_count), 0);
@@ -342,25 +349,31 @@ export function WorkersPage() {
     return {
       animationDuration: 280,
       grid: { left: 24, right: 20, top: 28, bottom: 22, containLabel: true },
-      tooltip: { trigger: "axis" },
+      tooltip: {
+        trigger: "axis",
+        backgroundColor: isDarkTheme ? "rgba(23,33,38,0.96)" : "#ffffff",
+        borderColor: chartAxisLineColor,
+        borderWidth: 1,
+        textStyle: { color: chartMetricColor, fontSize: 11 },
+      },
       legend: {
         top: 0,
         type: "scroll",
-        textStyle: { color: "#64748b", fontSize: 11 },
+        textStyle: { color: chartSubtleTextColor, fontSize: 11 },
       },
       xAxis: {
         type: "category",
         boundaryGap: false,
         data: axis,
-        axisLabel: { color: "#64748b", fontSize: 11 },
-        axisLine: { lineStyle: { color: "#cbd5e1" } },
+        axisLabel: { color: chartSubtleTextColor, fontSize: 11 },
+        axisLine: { lineStyle: { color: chartAxisLineColor } },
       },
       yAxis: {
         type: "value",
         min: 0,
         max: yAxisMax,
-        axisLabel: { color: "#64748b", fontSize: 11, formatter: "{value}%" },
-        splitLine: { lineStyle: { color: "#e2e8f0" } },
+        axisLabel: { color: chartSubtleTextColor, fontSize: 11, formatter: "{value}%" },
+        splitLine: { lineStyle: { color: chartGridColor } },
       },
       series: prioritized.map((task) => {
         const worker = workersByName.get(task.workerName);
@@ -389,31 +402,38 @@ export function WorkersPage() {
         };
       }),
     };
-  }, [activeTaskRowsForCharts, workersByName, workersState.data?.cpu_history]);
+  }, [activeTaskRowsForCharts, chartAxisLineColor, chartGridColor, chartMetricColor, chartSubtleTextColor, isDarkTheme, workersByName, workersState.data?.cpu_history]);
 
   const currentTasksOption = useMemo(() => {
     const rows = [...activeTaskRowsForCharts].slice(0, 20);
     return {
       animationDuration: 220,
       grid: { left: 88, right: 16, top: 14, bottom: 14, containLabel: true },
-      tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        backgroundColor: isDarkTheme ? "rgba(23,33,38,0.96)" : "#ffffff",
+        borderColor: chartAxisLineColor,
+        borderWidth: 1,
+        textStyle: { color: chartMetricColor, fontSize: 11 },
+      },
       xAxis: {
         type: "value",
         min: 0,
         max: 100,
-        axisLabel: { color: "#64748b", fontSize: 11, formatter: "{value}%" },
-        splitLine: { lineStyle: { color: "#e2e8f0" } },
+        axisLabel: { color: chartSubtleTextColor, fontSize: 11, formatter: "{value}%" },
+        splitLine: { lineStyle: { color: chartGridColor } },
       },
       yAxis: {
         type: "category",
         data: rows.map((item) => (item.taskName.split(".").pop() || item.taskName).slice(0, 42)),
-        axisLabel: { color: "#64748b", fontSize: 11 },
+        axisLabel: { color: chartTextColor, fontSize: 11 },
       },
       series: [
         {
           type: "bar",
           data: rows.map((item) => item.cpuPercent),
-          label: { show: true, position: "right", color: "#0f172a", fontSize: 11, formatter: "{c}%" },
+          label: { show: true, position: "right", color: chartMetricColor, fontSize: 11, formatter: "{c}%" },
           itemStyle: {
             borderRadius: [0, 6, 6, 0],
             color: (params: { dataIndex: number }) => {
@@ -424,7 +444,7 @@ export function WorkersPage() {
         },
       ],
     };
-  }, [activeTaskRowsForCharts, workersByName]);
+  }, [activeTaskRowsForCharts, chartAxisLineColor, chartGridColor, chartMetricColor, chartSubtleTextColor, chartTextColor, isDarkTheme, workersByName]);
 
   const performAction = useCallback(async (
     action: "stop" | "pause" | "resume" | "restart" | "kill_task",
@@ -507,7 +527,7 @@ export function WorkersPage() {
             <StatusBadge status="idle" label={`${tCommon("workers.badges.idle")}: ${taskCounts.idle}`} />
             <StatusBadge status="stuck" label={`${tCommon("workers.badges.stuck")}: ${taskCounts.stuck}`} />
             <StatusBadge status="offline" label={`${tCommon("workers.badges.offline")}: ${taskCounts.offline}`} />
-            <span className="ml-auto text-xs" style={{ color: "var(--muted)" }}>
+            <span className="ml-auto text-xs" style={{ color: metaTextColor }}>
               {tCommon("workers.updatedAt", { value: formatDateTime(workersState.data?.generated_at || "") })}
             </span>
           </div>
@@ -522,7 +542,7 @@ export function WorkersPage() {
         <article className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-2 rounded-2xl border p-3 lg:p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold">{tCommon("workers.currentTasks")}</h2>
-            <span className="text-xs" style={{ color: "var(--muted)" }}>
+            <span className="text-xs" style={{ color: metaTextColor }}>
               {tCommon("workers.total", { count: activeTaskRows.length })}
             </span>
           </div>
@@ -600,7 +620,7 @@ export function WorkersPage() {
                           <p className="truncate text-xs font-semibold">{title}</p>
                           <StatusBadge status={task.taskStatus} label={statusLabel} />
                         </div>
-                        <p className="mt-1 truncate text-[11px]" style={{ color: "var(--muted)" }}>
+                        <p className="mt-1 truncate text-[11px]" style={{ color: metaTextColor }}>
                           {tCommon("workers.rowTaskMeta", {
                             taskId: task.taskId.slice(0, 8),
                             worker: task.workerName,
@@ -609,7 +629,7 @@ export function WorkersPage() {
                             runtime: formatDuration(task.runtimeSeconds),
                           })}
                         </p>
-                        <p className="truncate text-[11px]" style={{ color: "var(--muted)" }}>
+                        <p className="truncate text-[11px]" style={{ color: metaTextColor }}>
                           {tCommon("workers.taskStartedAt", { value: task.startedAtText })}
                         </p>
                       </div>
