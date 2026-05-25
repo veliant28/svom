@@ -251,6 +251,12 @@
               "description": "Allows working with procurement recommendations and supplier overrides."
             }
           },
+          "workers": {
+            "manage": {
+              "title": "Manage workers",
+              "description": "Allows opening worker dashboard, tracking worker state, and sending worker control commands."
+            }
+          },
           "security": {
             "view": {
               "title": "View security",

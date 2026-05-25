@@ -36,14 +36,11 @@ class AutoDbCloneSyncService:
     VEHICLE_TABLES = tuple(sorted(VEHICLE_CATALOG_TABLE_WHITELIST))
     ARTICLE_TABLES = tuple(sorted(ARTICLE_CATALOG_TABLE_WHITELIST))
     KEYSET_CURSOR_TABLE_COLUMNS: dict[str, tuple[str, ...]] = {
-        # Single-column cursor keeps remote ORDER BY cheap on very large tables.
-        "passanger_car_trees": ("id",),
+        # Keep keyset mapping available as a fallback mode, but default this table
+        # to OFFSET for maximum throughput on a stable remote source.
+        "passanger_car_trees": ("id", "passangercarid", "searchtreeid", "parentid", "description"),
     }
-    FORCE_OFFSET_CURSOR_TABLES: set[str] = {
-        # Tree table appears to have non-unique cursor behavior for keyset/pk resume.
-        # Force OFFSET resume using saved last_offset to avoid false "completed" with partial data.
-        "passanger_car_trees",
-    }
+    FORCE_OFFSET_CURSOR_TABLES: set[str] = {"passanger_car_trees"}
 
     def __init__(
         self,
@@ -168,6 +165,17 @@ class AutoDbCloneSyncService:
             if resume and keyset_columns
             else None
         )
+        if (
+            resume
+            and keyset_columns
+            and keyset_cursor is None
+            and int(state.last_offset or 0) > 0
+            and str(state.last_cursor or "").startswith("offset:")
+        ):
+            raise AutoDbProRemoteClientError(
+                f"Table '{table}' has legacy OFFSET resume cursor. "
+                "For safe keyset resume without misses/duplicates restart with --force-recreate-table."
+            )
         base_processed = int(state.processed_rows or 0) if resume else 0
         base_failed = int(state.failed_rows or 0) if resume else 0
 

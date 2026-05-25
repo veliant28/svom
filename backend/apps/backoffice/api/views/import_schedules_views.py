@@ -9,6 +9,7 @@ from rest_framework import serializers, status
 from rest_framework.generics import ListAPIView, UpdateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from django.core.cache import cache
 
 from apps.backoffice.api.serializers import ImportSourceSerializer
 from apps.backoffice.permissions import IsStaffOrSuperuser
@@ -131,7 +132,22 @@ class ImportScheduleRunAPIView(UpdateAPIView):
         source = get_object_or_404(self.get_queryset(), id=id)
         dispatch_async = serializer.validated_data.get("dispatch_async", True)
 
-        from apps.supplier_imports.tasks.run_scheduled_supplier_pipeline import run_scheduled_supplier_pipeline_task
+        from apps.supplier_imports.tasks.run_scheduled_supplier_pipeline import (
+            get_pipeline_lock_key,
+            run_scheduled_supplier_pipeline_task,
+        )
+
+        lock_key = get_pipeline_lock_key(source_code=source.code)
+        if dispatch_async and cache.get(lock_key):
+            return Response(
+                {
+                    "mode": "async",
+                    "source_code": source.code,
+                    "status": "skipped",
+                    "detail": "already_running",
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
 
         if dispatch_async:
             task = run_scheduled_supplier_pipeline_task.delay(source_code=source.code)

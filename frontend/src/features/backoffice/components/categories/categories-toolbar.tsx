@@ -30,7 +30,7 @@ export function CategoriesToolbar({
     <>
       <PageHeader title={t("categories.title")} />
 
-      <section className="mb-3 flex flex-wrap items-center gap-2 lg:flex-nowrap">
+      <section className="mb-3 flex flex-wrap items-center gap-2 px-1 py-1 lg:flex-nowrap">
         <input
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}

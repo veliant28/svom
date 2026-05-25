@@ -48,6 +48,7 @@ export const BACKOFFICE_CAPABILITIES = {
   promoBannersManage: "promo_banners.manage",
   loyaltyIssue: "loyalty.issue",
   procurementManage: "procurement.manage",
+  workersManage: "workers.manage",
 } as const;
 
 export function hasBackofficeCapability(user: BackofficeUser | null | undefined, capability: BackofficeCapabilityCode): boolean {

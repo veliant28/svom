@@ -54,7 +54,7 @@ export function BrandsPage() {
     <section>
       <PageHeader title={t("brands.title")} description={t("brands.subtitle")} />
 
-      <section className="mb-3 flex flex-wrap items-center gap-2">
+      <section className="mb-3 flex flex-wrap items-center gap-2 px-1 py-1">
         <input
           value={query}
           onChange={(event) => {

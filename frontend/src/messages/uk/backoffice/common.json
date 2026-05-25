@@ -85,6 +85,45 @@
           "system": "Системна"
         },
         "logout": "Вийти"
+      },
+      "workers": {
+        "title": "Вокер",
+        "subtitle": "Моніторинг і керування Celery-воркерами в реальному часі.",
+        "empty": "Немає даних по воркерах.",
+        "currentWorkers": "Поточні вокери",
+        "total": "Всього: {count}",
+        "updatedAt": "Оновлено: {value}",
+        "rowMeta": "CPU {cpu}% • Активних {active} • У черзі {reserved} • Runtime {runtime}",
+        "badges": {
+          "active": "Виконується",
+          "idle": "Очікування",
+          "stuck": "Завис",
+          "offline": "Офлайн"
+        },
+        "status": {
+          "active": "Виконується",
+          "idle": "Очікування",
+          "stuck": "Завис",
+          "offline": "Офлайн"
+        },
+        "actions": {
+          "refresh": "Оновити",
+          "pause": "Пауза",
+          "resume": "Продовжити",
+          "restart": "Рестарт",
+          "stop": "Стоп",
+          "kill": "Вбити задачу",
+          "cancel": "Скасувати"
+        },
+        "killModal": {
+          "title": "Підтвердьте зупинку задачі",
+          "message": "Вбити активну задачу на воркері {worker}? Task ID: {taskId}"
+        },
+        "toasts": {
+          "actionSuccess": "Дію «{action}» відправлено для {worker}.",
+          "actionWarning": "Команду відправлено, але відповідь воркера не підтверджено.",
+          "actionFailed": "Не вдалося виконати дію над воркером."
+        }
       }
     }
   }

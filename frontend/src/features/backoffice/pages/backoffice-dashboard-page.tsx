@@ -14,7 +14,9 @@ import { PageHeader } from "@/features/backoffice/components/widgets/page-header
 import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffice-feedback";
 import { useBackofficeQuery } from "@/features/backoffice/hooks/use-backoffice-query";
 import { normalizeStatusKey, normalizeStatusLabel } from "@/features/backoffice/lib/status";
+import { BACKOFFICE_CAPABILITIES, hasBackofficeCapability } from "@/features/backoffice/lib/capabilities";
 import type { BackofficeSummary } from "@/features/backoffice/types/backoffice";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 
 const ORDER_WARNING_SECONDS = 15 * 60;
 const ORDER_CRITICAL_SECONDS = 45 * 60;
@@ -147,6 +149,8 @@ function DashboardKpiCard({
 export function BackofficeDashboardPage() {
   const t = useTranslations("backoffice.dashboard");
   const tCommon = useTranslations("backoffice.common");
+  const tNav = useTranslations("backoffice.navigation");
+  const { user } = useAuth();
   const { showInfo, showWarning } = useBackofficeFeedback();
   const [nowMs, setNowMs] = useState(() => Date.now());
   const toastKeyRef = useRef("");
@@ -329,6 +333,8 @@ export function BackofficeDashboardPage() {
     ],
   }), [supplierQualityItems, t]);
 
+  const canManageWorkers = hasBackofficeCapability(user, BACKOFFICE_CAPABILITIES.workersManage);
+
   return (
     <section>
       <PageHeader
@@ -340,25 +346,29 @@ export function BackofficeDashboardPage() {
             dashboardHref="/backoffice"
             managersHref="/backoffice/operations/managers"
             operatorsHref="/backoffice/operations/operators"
+            workersHref={canManageWorkers ? "/backoffice/workers" : undefined}
             dashboardLabel={t("staff.roles.dashboard")}
             managersLabel={t("staff.roles.managers")}
             operatorsLabel={t("staff.roles.operators")}
+            workersLabel={canManageWorkers ? tNav("workers") : undefined}
             ariaLabel={t("staff.switcherAriaLabel")}
           />
         )}
-        actions={
-          <button
-            type="button"
-            className="inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold transition-colors"
-            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
-            onClick={() => {
-              void refetch();
-            }}
-          >
-            <RefreshCw size={16} className="animate-spin" style={{ animationDuration: "2.2s" }} />
-            {t("actions.refreshOperationalContour")}
-          </button>
-        }
+        actions={(
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold transition-colors"
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+              onClick={() => {
+                void refetch();
+              }}
+            >
+              <RefreshCw size={16} className="animate-spin" style={{ animationDuration: "2.2s" }} />
+              {t("actions.refreshOperationalContour")}
+            </button>
+          </div>
+        )}
       />
 
       <AsyncState isLoading={isLoading} error={error} empty={!data} emptyLabel={t("states.empty")}>

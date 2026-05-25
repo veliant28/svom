@@ -9,18 +9,22 @@ export function OperationsRoleSwitcher({
   dashboardHref,
   managersHref,
   operatorsHref,
+  workersHref,
   dashboardLabel,
   managersLabel,
   operatorsLabel,
+  workersLabel,
   ariaLabel,
 }: {
-  activeTab: BackofficeStaffActivityRole | "dashboard";
+  activeTab: BackofficeStaffActivityRole | "dashboard" | "workers";
   dashboardHref: string;
   managersHref: string;
   operatorsHref: string;
+  workersHref?: string;
   dashboardLabel: string;
   managersLabel: string;
   operatorsLabel: string;
+  workersLabel?: string;
   ariaLabel: string;
 }) {
   return (
@@ -69,6 +73,21 @@ export function OperationsRoleSwitcher({
       >
         {operatorsLabel}
       </Link>
+      {workersHref && workersLabel ? (
+        <Link
+          href={workersHref}
+          role="tab"
+          aria-selected={activeTab === "workers"}
+          className="inline-flex h-10 items-center rounded-lg border px-4 text-sm font-semibold transition-colors"
+          style={{
+            borderColor: activeTab === "workers" ? "#0ea5e9" : "var(--border)",
+            backgroundColor: activeTab === "workers" ? "#0ea5e9" : "var(--surface-2)",
+            color: activeTab === "workers" ? "#ffffff" : "var(--text)",
+          }}
+        >
+          {workersLabel}
+        </Link>
+      ) : null}
     </div>
   );
 }

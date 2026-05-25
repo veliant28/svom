@@ -451,14 +451,16 @@ export function ImportSchedulesPage() {
         }
       />
 
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <input
-          value={q}
-          onChange={(event) => setQ(event.target.value)}
-          placeholder={t("importSchedules.filters.search")}
-          className="h-9 min-w-[260px] rounded-md border px-3 text-sm"
-          style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
-        />
+      <div className="mb-3 flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto px-1 py-1">
+          <input
+            value={q}
+            onChange={(event) => setQ(event.target.value)}
+            placeholder={t("importSchedules.filters.search")}
+            className="h-10 w-[220px] xl:w-[280px] rounded-md border px-3 text-sm shrink-0"
+            style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+          />
+        </div>
       </div>
 
       <AsyncState isLoading={isLoading || isBackupLoading} error={error} empty={!tableRows.length} emptyLabel={t("importSchedules.states.empty")}>

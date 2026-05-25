@@ -288,6 +288,12 @@ BACKOFFICE_CAPABILITIES: tuple[BackofficeCapabilityDefinition, ...] = (
         title="Procurement manage",
         description="Work with procurement recommendations and supplier overrides.",
     ),
+    BackofficeCapabilityDefinition(
+        code="workers.manage",
+        permission_codename="bo_cap_workers_manage",
+        title="Workers manage",
+        description="View worker dashboard and control worker lifecycle/actions.",
+    ),
 )
 
 

@@ -145,9 +145,18 @@ def _download_gpl_api_price_list(
     header_keys: list[str] = []
     page = 1
     last_page = 1
-    per_page = 100
+    try:
+        configured_per_page = int(getattr(settings, "GPL_API_PER_PAGE", 500))
+    except (TypeError, ValueError):
+        configured_per_page = 500
+    try:
+        configured_max_per_page = int(getattr(settings, "GPL_API_PER_PAGE_MAX", 1000))
+    except (TypeError, ValueError):
+        configured_max_per_page = 1000
+    normalized_max_per_page = configured_max_per_page if configured_max_per_page > 0 else 1000
+    per_page = max(1, min(configured_per_page, normalized_max_per_page))
     max_pages = 5000
-    page_delay_seconds = max(float(getattr(settings, "GPL_API_PAGE_DELAY_SECONDS", 1.2)), 0.0)
+    page_delay_seconds = max(float(getattr(settings, "GPL_API_PAGE_DELAY_SECONDS", 3.0)), 0.0)
 
     while page <= last_page and page <= max_pages:
         payload = _fetch_gpl_page_with_backoff(
@@ -219,7 +228,7 @@ def _normalize_cell_value(value: Any) -> Any:
 
 
 def _fetch_gpl_page_with_backoff(*, service, access_token: str, page: int, per_page: int) -> dict[str, Any]:
-    attempts = 8
+    attempts = max(1, int(getattr(settings, "GPL_API_PAGE_RETRY_ATTEMPTS", 4)))
     for attempt in range(1, attempts + 1):
         try:
             return service.gpl_client.fetch_prices_page(

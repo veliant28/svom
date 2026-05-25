@@ -44,7 +44,8 @@ export type BackofficeCapabilityCode =
   | "footer.settings"
   | "promo_banners.manage"
   | "loyalty.issue"
-  | "procurement.manage";
+  | "procurement.manage"
+  | "workers.manage";
 
 export type BackofficeSystemRole = "administrator" | "manager" | "user" | "operator" | null;
 

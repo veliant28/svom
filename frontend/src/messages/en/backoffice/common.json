@@ -85,6 +85,45 @@
           "system": "System"
         },
         "logout": "Logout"
+      },
+      "workers": {
+        "title": "Worker",
+        "subtitle": "Real-time monitoring and control for Celery workers.",
+        "empty": "No worker data yet.",
+        "currentWorkers": "Current workers",
+        "total": "Total: {count}",
+        "updatedAt": "Updated: {value}",
+        "rowMeta": "CPU {cpu}% • Active {active} • Reserved {reserved} • Runtime {runtime}",
+        "badges": {
+          "active": "Running",
+          "idle": "Idle",
+          "stuck": "Stuck",
+          "offline": "Offline"
+        },
+        "status": {
+          "active": "Running",
+          "idle": "Idle",
+          "stuck": "Stuck",
+          "offline": "Offline"
+        },
+        "actions": {
+          "refresh": "Refresh",
+          "pause": "Pause",
+          "resume": "Resume",
+          "restart": "Restart",
+          "stop": "Stop",
+          "kill": "Kill task",
+          "cancel": "Cancel"
+        },
+        "killModal": {
+          "title": "Confirm task termination",
+          "message": "Kill active task on worker {worker}? Task ID: {taskId}"
+        },
+        "toasts": {
+          "actionSuccess": "Action \"{action}\" sent for {worker}.",
+          "actionWarning": "Command sent, but worker reply is not confirmed.",
+          "actionFailed": "Failed to perform worker action."
+        }
       }
     }
   }

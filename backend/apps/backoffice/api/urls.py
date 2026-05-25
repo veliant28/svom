@@ -1,6 +1,7 @@
 from django.urls import path
 
 from apps.backoffice.api.views.footer_settings_view import BackofficeFooterSettingsAPIView
+from apps.backoffice.api.views.worker_monitor_views import BackofficeWorkersActionAPIView, BackofficeWorkersDashboardAPIView
 from apps.backoffice.api.views.integration_center_views import (
     BackofficeAutoDbRemoteConnectionTestAPIView,
     BackofficeIntegrationCenterAPIView,
@@ -405,6 +406,8 @@ urlpatterns = [
     path("settings/email/test/", BackofficeEmailSettingsTestAPIView.as_view(), name="settings-email-test"),
     path("telegram/settings/", BackofficeTelegramSettingsAPIView.as_view(), name="telegram-settings"),
     path("telegram/test/", BackofficeTelegramTestAPIView.as_view(), name="telegram-test"),
+    path("workers/dashboard/", BackofficeWorkersDashboardAPIView.as_view(), name="workers-dashboard"),
+    path("workers/action/", BackofficeWorkersActionAPIView.as_view(), name="workers-action"),
     path("rbac/meta/", BackofficeRbacMetaAPIView.as_view(), name="rbac-meta"),
     path("users/", BackofficeUserListCreateAPIView.as_view(), name="users-list-create"),
     path("users/<int:id>/", BackofficeUserRetrieveUpdateAPIView.as_view(), name="users-detail-update"),

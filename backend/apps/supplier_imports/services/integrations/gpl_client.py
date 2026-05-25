@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+from django.conf import settings
+
 from apps.supplier_imports.services.integrations.client_utils import http_json_request
 from apps.supplier_imports.services.integrations.exceptions import SupplierClientError
 
@@ -81,7 +83,12 @@ class GplClient:
         per_page: int = 100,
         filter_payload: dict | None = None,
     ) -> dict:
-        normalized_per_page = max(1, min(int(per_page), 100))
+        try:
+            configured_max = int(getattr(settings, "GPL_API_PER_PAGE_MAX", 1000))
+        except (TypeError, ValueError):
+            configured_max = 1000
+        normalized_max = configured_max if configured_max > 0 else 1000
+        normalized_per_page = max(1, min(int(per_page), normalized_max))
         response = http_json_request(
             method="POST",
             url=f"{self.base_url}/api/prices?page={max(int(page), 1)}&per_page={normalized_per_page}",

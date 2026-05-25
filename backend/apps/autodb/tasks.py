@@ -842,9 +842,7 @@ def run_backoffice_tecdoc_batch_bind_task(
         "results_preview": results[:50],
     }
     run.save(update_fields=["status", "finished_at", "error", "summary_json", "updated_at"])
-    quota_state = AutoDbRemoteQuotaState.objects.filter(remote_key=REMOTE_QUOTA_KEY).first()
-    quota_used = int(getattr(quota_state, "estimated_queries_used", 0) or 0)
-    quota_limit = int(getattr(quota_state, "estimated_limit_per_hour", 0) or 0)
+    quota_used, quota_limit = _current_quota_snapshot()
     send_system_autodb_batch_finished_notification(
         run_id=str(run.id),
         final_status=run.status,
@@ -893,9 +891,7 @@ def _maybe_send_batch_progress_notification(
     if processed == last_processed and linked == last_linked and errors == last_errors:
         return
 
-    quota_state = AutoDbRemoteQuotaState.objects.filter(remote_key=REMOTE_QUOTA_KEY).first()
-    quota_used = int(getattr(quota_state, "estimated_queries_used", 0) or 0)
-    quota_limit = int(getattr(quota_state, "estimated_limit_per_hour", 0) or 0)
+    quota_used, quota_limit = _current_quota_snapshot()
     send_system_autodb_batch_progress_notification(
         run_id=str(run.id),
         processed=processed,
@@ -910,6 +906,14 @@ def _maybe_send_batch_progress_notification(
     summary["last_progress_notify_errors"] = int(errors)
     run.summary_json = summary
     run.save(update_fields=["summary_json", "updated_at"])
+
+
+def _current_quota_snapshot() -> tuple[int, int]:
+    quota_state = AutoDbRemoteQuotaState.objects.filter(remote_key=REMOTE_QUOTA_KEY).first()
+    payload = AutoDbRemoteQuotaTracker().serialize(quota_state)
+    used = int(payload.get("estimated_queries_used") or 0)
+    limit = int(payload.get("estimated_limit_per_hour") or 0)
+    return used, max(limit, 0)
 
 
 @shared_task(name="autodb.check_remote_quota_recovery")

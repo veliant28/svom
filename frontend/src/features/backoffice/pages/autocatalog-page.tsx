@@ -131,7 +131,7 @@ export function AutocatalogPage() {
     <section>
       <PageHeader title={t("title")} description={t("subtitle")} />
 
-      <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-8">
+      <div className="mb-3 grid grid-cols-1 gap-2 px-1 py-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-8">
         <input
           value={q}
           onChange={(event) => {
