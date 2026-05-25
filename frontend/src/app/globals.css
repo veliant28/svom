@@ -945,7 +945,39 @@ body.modal-open > :not([data-modal-root]) {
   animation: workerOfflineBlink 2.4s steps(1, end) infinite;
 }
 
+@keyframes autodbQuotaAlarmBounce {
+  0%,
+  12%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  16% {
+    transform: translateY(-1px) rotate(-12deg);
+  }
+  20% {
+    transform: translateY(-2px) rotate(12deg);
+  }
+  24% {
+    transform: translateY(-1px) rotate(-10deg);
+  }
+  28% {
+    transform: translateY(0) rotate(8deg);
+  }
+  34% {
+    transform: translateY(-1px) rotate(-5deg);
+  }
+  40% {
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+.autodb-batch-quota-alarm > svg {
+  animation: autodbQuotaAlarmBounce 1.8s ease-in-out infinite;
+  transform-origin: center;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .autodb-batch-quota-alarm > svg,
   .worker-badge-active,
   .worker-badge-idle,
   .worker-badge-stuck,

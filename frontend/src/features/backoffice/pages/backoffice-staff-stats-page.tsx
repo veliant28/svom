@@ -11,7 +11,9 @@ import { BackofficeTable } from "@/features/backoffice/components/table/backoffi
 import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { PageHeader } from "@/features/backoffice/components/widgets/page-header";
 import { useBackofficeQuery } from "@/features/backoffice/hooks/use-backoffice-query";
+import { BACKOFFICE_CAPABILITIES, hasBackofficeCapability } from "@/features/backoffice/lib/capabilities";
 import type { BackofficeStaffActivityPayload, BackofficeStaffActivityRole } from "@/features/backoffice/types/backoffice";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 
 type EChartInstance = {
   setOption: (option: object) => void;
@@ -120,8 +122,11 @@ function formatCompactDateTime(raw: string | null): string {
 
 export function BackofficeStaffStatsPage({ role }: { role: BackofficeStaffActivityRole }) {
   const t = useTranslations("backoffice.dashboard");
+  const tNav = useTranslations("backoffice.navigation");
+  const { user } = useAuth();
   const queryFn = useCallback((token: string) => getBackofficeStaffActivity(token, { role, days: 14 }), [role]);
   const { data, isLoading, error, refetch } = useBackofficeQuery<BackofficeStaffActivityPayload>(queryFn, [role]);
+  const canManageWorkers = hasBackofficeCapability(user, BACKOFFICE_CAPABILITIES.workersManage);
 
   const roleAccent = role === "manager" ? "#2563eb" : "#ea580c";
   const roleAccentSoft = role === "manager" ? "rgba(37,99,235,0.16)" : "rgba(234,88,12,0.16)";
@@ -216,9 +221,11 @@ export function BackofficeStaffStatsPage({ role }: { role: BackofficeStaffActivi
             dashboardHref="/backoffice"
             managersHref="/backoffice/operations/managers"
             operatorsHref="/backoffice/operations/operators"
+            workersHref={canManageWorkers ? "/backoffice/workers" : undefined}
             dashboardLabel={t("staff.roles.dashboard")}
             managersLabel={t("staff.roles.managers")}
             operatorsLabel={t("staff.roles.operators")}
+            workersLabel={canManageWorkers ? tNav("workers") : undefined}
             ariaLabel={t("staff.switcherAriaLabel")}
           />
         )}

@@ -199,6 +199,12 @@ export function AutoDbBatchHistoryModal({
   const quotaLimit = rawQuotaLimit > 0 ? Math.min(rawQuotaLimit, REMOTE_QUOTA_DISPLAY_LIMIT) : 0;
   const quotaUsed = quotaLimit > 0 ? Math.min(rawQuotaUsed, quotaLimit) : rawQuotaUsed;
   const status = resolveRunStatusLabel({ run, summary, isRunning, t });
+  const statusIconClassName =
+    isRunning && status.icon === LoaderCircle
+      ? "[&>svg]:animate-spin"
+      : isRunning && status.icon === Timer
+        ? "autodb-batch-quota-alarm"
+        : "";
 
   const timelineEvents = run ? buildTimelineEvents(run, locale, t) : [];
 
@@ -223,7 +229,7 @@ export function AutoDbBatchHistoryModal({
             <StatusChip
               tone={status.tone}
               icon={status.icon}
-              className={isRunning && (status.icon === LoaderCircle || status.icon === Timer) ? "[&>svg]:animate-spin" : ""}
+              className={statusIconClassName}
             >
               {status.label}
             </StatusChip>
