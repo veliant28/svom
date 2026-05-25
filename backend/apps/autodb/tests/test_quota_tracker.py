@@ -49,3 +49,22 @@ class AutoDbRemoteQuotaTrackerTests(TestCase):
         quota.refresh_from_db()
         self.assertEqual(quota.estimated_limit_per_hour, 1000)
         self.assertEqual(quota.estimated_queries_used, 101)
+
+    def test_local_limit_reach_does_not_auto_pause_without_remote_quota_error(self):
+        now = timezone.now()
+        quota = AutoDbRemoteQuotaState.objects.create(
+            remote_key="autodb_pro_mysql",
+            estimated_limit_per_hour=1000,
+            estimated_queries_used=999,
+            window_started_at=now,
+            expected_reset_at=now + timedelta(minutes=30),
+        )
+        tracker = AutoDbRemoteQuotaTracker()
+
+        tracker.record_success(quota, query_count=1, run_id="tecdoc-batch")
+
+        quota.refresh_from_db()
+        payload = tracker.serialize(quota)
+        self.assertEqual(quota.estimated_queries_used, 1000)
+        self.assertIsNone(quota.cooldown_until)
+        self.assertEqual(payload.get("status"), "warning")

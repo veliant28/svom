@@ -171,7 +171,7 @@ class AutoDbRemoteLookupService:
         quota: AutoDbRemoteQuotaState,
         error: str,
     ) -> AutoDbRemoteLookupResult:
-        self.quota_tracker.record_quota_error(
+        quota = self.quota_tracker.record_quota_error(
             quota,
             error=error,
             cooldown_minutes=self.cooldown_minutes,

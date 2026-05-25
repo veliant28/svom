@@ -242,8 +242,8 @@ function chartSeries({
   const remaining = Math.max(selectedInCycle - processedInCycle, 0);
   const progressAxisMax = Math.max(selectedInCycle, processedInCycle, linkedInCycle, failedInCycle, remaining, 1) + 1;
   const metricLabelColor = isDarkTheme ? "#e8edf1" : "#0f172a";
-  const chartTextColor = isDarkTheme ? "#c6d4df" : "#475569";
-  const chartSubtleTextColor = isDarkTheme ? "#9fb2c2" : "#64748b";
+  const chartTextColor = isDarkTheme ? "#d6e2eb" : "#475569";
+  const chartSubtleTextColor = isDarkTheme ? "#c7d8e5" : "#64748b";
   const chartGridColor = isDarkTheme ? "#31434f" : "#e2e8f0";
 
   const progressOption = {
@@ -252,6 +252,8 @@ function chartSeries({
     xAxis: {
       type: "value",
       axisLabel: { color: chartSubtleTextColor, fontSize: 11 },
+      axisLine: { lineStyle: { color: chartSubtleTextColor } },
+      axisTick: { lineStyle: { color: chartSubtleTextColor } },
       splitLine: { lineStyle: { color: chartGridColor } },
       min: 0,
       max: progressAxisMax,

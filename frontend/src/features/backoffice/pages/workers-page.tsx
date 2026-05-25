@@ -26,6 +26,8 @@ import { useBackofficeFeedback } from "@/features/backoffice/hooks/use-backoffic
 import { useBackofficeQuery } from "@/features/backoffice/hooks/use-backoffice-query";
 import { BACKOFFICE_CAPABILITIES, hasBackofficeCapability } from "@/features/backoffice/lib/capabilities";
 import type {
+  BackofficeWorkerTask,
+  BackofficeWorkerTaskStatus,
   BackofficeWorker,
   BackofficeWorkersDashboard,
   BackofficeWorkerStatus,
@@ -37,9 +39,8 @@ type ActiveTaskRow = {
   taskId: string;
   taskName: string;
   workerName: string;
+  taskStatus: BackofficeWorkerTaskStatus;
   workerStatus: BackofficeWorkerStatus;
-  workerOnline: boolean;
-  workerQueues: string[];
   cpuPercent: number;
   runtimeSeconds: number;
   reservedCount: number;
@@ -133,6 +134,64 @@ function resolveWorkerCpuColor(worker?: BackofficeWorker): string {
     return "#10b981";
   }
   return "#0ea5e9";
+}
+
+function buildTaskRows(
+  workers: BackofficeWorker[],
+  elapsedSeconds: number,
+  includeLiveRuntime: boolean,
+): ActiveTaskRow[] {
+  const rows: ActiveTaskRow[] = [];
+
+  for (const worker of workers) {
+    const tasksFromApi = worker.current_tasks ?? [];
+    const taskList: BackofficeWorkerTask[] = tasksFromApi.length > 0
+      ? tasksFromApi
+      : (worker.current_task_ids ?? []).map((taskId, index) => ({
+        task_id: taskId,
+        task_name: worker.current_task_names?.[index] || "",
+        runtime_seconds: worker.longest_task_seconds,
+        status: worker.status === "stuck" ? "stuck" : "active",
+        started_at: worker.last_seen_at,
+      }));
+
+    if (!taskList.length) {
+      continue;
+    }
+
+    const perTaskCpu = worker.cpu_percent / Math.max(taskList.length, 1);
+
+    taskList.forEach((task, index) => {
+      const taskId = String(task.task_id || "").trim();
+      const fallbackName = taskId || `${worker.name}-${index + 1}`;
+      const taskName = String(task.task_name || "").trim() || fallbackName;
+      const runtimeBase = Number.isFinite(task.runtime_seconds) ? Math.max(0, task.runtime_seconds) : 0;
+      const runtimeSeconds = includeLiveRuntime && worker.online && worker.active_count > 0
+        ? runtimeBase + elapsedSeconds
+        : runtimeBase;
+
+      rows.push({
+        key: `${worker.name}:${taskId || index}`,
+        taskId,
+        taskName,
+        taskStatus: task.status || "active",
+        workerName: worker.name,
+        workerStatus: worker.status,
+        cpuPercent: Number(perTaskCpu.toFixed(2)),
+        runtimeSeconds,
+        reservedCount: worker.reserved_count,
+        startedAtText: formatDateTime(task.started_at || worker.last_seen_at),
+      });
+    });
+  }
+
+  rows.sort((left, right) => {
+    const leftWeight = (left.taskStatus === "stuck" ? 1000 : 0) + left.runtimeSeconds;
+    const rightWeight = (right.taskStatus === "stuck" ? 1000 : 0) + right.runtimeSeconds;
+    return rightWeight - leftWeight;
+  });
+
+  return rows.slice(0, 200);
 }
 
 function WorkerKillConfirmModal({
@@ -239,50 +298,16 @@ export function WorkersPage() {
 
   const activeTaskRows = useMemo<ActiveTaskRow[]>(() => {
     const elapsedSeconds = Math.max(0, Math.floor((liveNowMs - snapshotMs) / 1000));
-    const rows: ActiveTaskRow[] = [];
-
-    for (const worker of workers) {
-      const taskIds = worker.current_task_ids ?? [];
-      if (!taskIds.length) {
-        continue;
-      }
-      const taskNames = worker.current_task_names ?? [];
-      const perTaskCpu = worker.cpu_percent / Math.max(taskIds.length, 1);
-      const runtimeSeconds = worker.online && worker.active_count > 0
-        ? worker.longest_task_seconds + elapsedSeconds
-        : worker.longest_task_seconds;
-
-      taskIds.forEach((taskId, index) => {
-        const taskName = (taskNames[index] || "").trim() || taskId;
-        rows.push({
-          key: `${worker.name}:${taskId || index}`,
-          taskId,
-          taskName,
-          workerName: worker.name,
-          workerStatus: worker.status,
-          workerOnline: worker.online,
-          workerQueues: worker.queues,
-          cpuPercent: Number(perTaskCpu.toFixed(2)),
-          runtimeSeconds,
-          reservedCount: worker.reserved_count,
-          startedAtText: formatDateTime(worker.last_seen_at),
-        });
-      });
-    }
-
-    rows.sort((left, right) => {
-      const leftWeight = (left.workerStatus === "stuck" ? 1000 : 0) + left.runtimeSeconds;
-      const rightWeight = (right.workerStatus === "stuck" ? 1000 : 0) + right.runtimeSeconds;
-      return rightWeight - leftWeight;
-    });
-
-    return rows.slice(0, 200);
+    return buildTaskRows(workers, elapsedSeconds, true);
   }, [liveNowMs, snapshotMs, workers]);
+  const activeTaskRowsForCharts = useMemo<ActiveTaskRow[]>(() => {
+    return buildTaskRows(workers, 0, false);
+  }, [workers]);
   const primaryWorker = workers[0] ?? null;
   const taskCounts = useMemo(() => {
     const active = activeTaskRows.length;
     const idle = workers.reduce((acc, worker) => acc + Math.max(0, worker.reserved_count) + Math.max(0, worker.scheduled_count), 0);
-    const stuck = activeTaskRows.filter((task) => task.workerStatus === "stuck").length;
+    const stuck = activeTaskRows.filter((task) => task.taskStatus === "stuck").length;
     const offline = workers.reduce((acc, worker) => {
       if (worker.status !== "offline") {
         return acc;
@@ -294,7 +319,7 @@ export function WorkersPage() {
 
   const cpuOption = useMemo(() => {
     const history = workersState.data?.cpu_history ?? [];
-    const prioritized = [...activeTaskRows]
+    const prioritized = [...activeTaskRowsForCharts]
       .sort((left, right) => right.cpuPercent - left.cpuPercent)
       .slice(0, 12);
 
@@ -364,10 +389,10 @@ export function WorkersPage() {
         };
       }),
     };
-  }, [activeTaskRows, workersByName, workersState.data?.cpu_history]);
+  }, [activeTaskRowsForCharts, workersByName, workersState.data?.cpu_history]);
 
   const currentTasksOption = useMemo(() => {
-    const rows = [...activeTaskRows].slice(0, 20);
+    const rows = [...activeTaskRowsForCharts].slice(0, 20);
     return {
       animationDuration: 220,
       grid: { left: 88, right: 16, top: 14, bottom: 14, containLabel: true },
@@ -399,7 +424,7 @@ export function WorkersPage() {
         },
       ],
     };
-  }, [activeTaskRows, workersByName]);
+  }, [activeTaskRowsForCharts, workersByName]);
 
   const performAction = useCallback(async (
     action: "stop" | "pause" | "resume" | "restart" | "kill_task",
@@ -560,7 +585,7 @@ export function WorkersPage() {
                     return null;
                   }
                   const isSubmitting = submittingWorker === worker.name;
-                  const statusLabel = tCommon(`workers.status.${task.workerStatus}` as never);
+                  const statusLabel = tCommon(`workers.status.${task.taskStatus}` as never);
                   const activeTaskId = task.taskId || "";
                   const title = task.taskName.split(".").pop() || task.taskName;
 
@@ -573,7 +598,7 @@ export function WorkersPage() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="truncate text-xs font-semibold">{title}</p>
-                          <StatusBadge status={task.workerStatus} label={statusLabel} />
+                          <StatusBadge status={task.taskStatus} label={statusLabel} />
                         </div>
                         <p className="mt-1 truncate text-[11px]" style={{ color: "var(--muted)" }}>
                           {tCommon("workers.rowTaskMeta", {

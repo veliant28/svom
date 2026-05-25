@@ -81,7 +81,7 @@ export function EchartsPanel({
   if (!hasData) {
     return (
       <div
-        className="flex h-[240px] items-center justify-center rounded-xl border text-sm"
+        className={`flex items-center justify-center rounded-xl border text-sm ${className}`}
         style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)", color: "var(--muted)" }}
       >
         {emptyLabel}

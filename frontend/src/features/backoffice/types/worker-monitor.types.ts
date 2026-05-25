@@ -1,4 +1,13 @@
 export type BackofficeWorkerStatus = "active" | "idle" | "stuck" | "offline";
+export type BackofficeWorkerTaskStatus = "active" | "stuck" | "offline";
+
+export type BackofficeWorkerTask = {
+  task_id: string;
+  task_name: string;
+  runtime_seconds: number;
+  status: BackofficeWorkerTaskStatus;
+  started_at: string;
+};
 
 export type BackofficeWorker = {
   name: string;
@@ -16,6 +25,7 @@ export type BackofficeWorker = {
   pool_processes: number[];
   current_task_ids: string[];
   current_task_names: string[];
+  current_tasks: BackofficeWorkerTask[];
   queues: string[];
 };
 

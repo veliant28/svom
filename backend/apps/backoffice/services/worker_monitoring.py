@@ -48,6 +48,36 @@ def _worker_status(*, online: bool, active_count: int, stuck: bool) -> str:
     return "idle"
 
 
+def _task_status(*, worker_online: bool, runtime_seconds: int, no_progress_seconds: int, cpu_percent: float, stuck_runtime_seconds: int, stuck_no_progress_seconds: int, stuck_low_cpu_threshold: float) -> str:
+    if not worker_online:
+        return "offline"
+    if (
+        runtime_seconds >= stuck_runtime_seconds
+        and no_progress_seconds >= stuck_no_progress_seconds
+        and cpu_percent <= stuck_low_cpu_threshold
+    ):
+        return "stuck"
+    return "active"
+
+
+@dataclass
+class WorkerTaskSample:
+    task_id: str
+    task_name: str
+    runtime_seconds: int
+    status: str
+    started_at: str
+
+    def to_payload(self) -> dict[str, Any]:
+        return {
+            "task_id": self.task_id,
+            "task_name": self.task_name,
+            "runtime_seconds": self.runtime_seconds,
+            "status": self.status,
+            "started_at": self.started_at,
+        }
+
+
 @dataclass
 class WorkerSample:
     name: str
@@ -65,6 +95,7 @@ class WorkerSample:
     pool_processes: list[int]
     current_task_ids: list[str]
     current_task_names: list[str]
+    current_tasks: list[WorkerTaskSample]
     queues: list[str]
 
     def to_payload(self) -> dict[str, Any]:
@@ -84,6 +115,7 @@ class WorkerSample:
             "pool_processes": self.pool_processes,
             "current_task_ids": self.current_task_ids,
             "current_task_names": self.current_task_names,
+            "current_tasks": [task.to_payload() for task in self.current_tasks],
             "queues": self.queues,
         }
 
@@ -144,6 +176,7 @@ class BackofficeWorkerMonitorService:
 
             active_task_ids: list[str] = []
             active_task_names: list[str] = []
+            task_runtime_rows: list[dict[str, Any]] = []
             max_runtime = 0
 
             for task in active_tasks:
@@ -156,8 +189,18 @@ class BackofficeWorkerMonitorService:
                 if task_name:
                     active_task_names.append(task_name)
                 started_at = _parse_float(task.get("time_start"), 0.0)
+                runtime_seconds = 0
                 if started_at > 0:
-                    max_runtime = max(max_runtime, int(max(now.timestamp() - started_at, 0.0)))
+                    runtime_seconds = int(max(now.timestamp() - started_at, 0.0))
+                    max_runtime = max(max_runtime, runtime_seconds)
+                task_runtime_rows.append(
+                    {
+                        "task_id": task_id,
+                        "task_name": task_name,
+                        "runtime_seconds": runtime_seconds,
+                        "started_at": datetime.fromtimestamp(started_at, tz=timezone.utc) if started_at > 0 else None,
+                    }
+                )
 
             total_processed = 0
             total_payload = stat_payload.get("total") or {}
@@ -182,6 +225,30 @@ class BackofficeWorkerMonitorService:
                 and no_progress_seconds >= self._stuck_no_progress_seconds
                 and cpu_percent <= self._stuck_low_cpu_threshold
             )
+            current_tasks: list[WorkerTaskSample] = []
+            for task_row in task_runtime_rows:
+                task_id = str(task_row.get("task_id") or "").strip()
+                task_name = str(task_row.get("task_name") or "").strip()
+                runtime_seconds = max(_parse_int(task_row.get("runtime_seconds"), 0), 0)
+                started_at = task_row.get("started_at")
+                started_at_iso = _iso(started_at) if isinstance(started_at, datetime) else ""
+                current_tasks.append(
+                    WorkerTaskSample(
+                        task_id=task_id,
+                        task_name=task_name,
+                        runtime_seconds=runtime_seconds,
+                        status=_task_status(
+                            worker_online=True,
+                            runtime_seconds=runtime_seconds,
+                            no_progress_seconds=no_progress_seconds,
+                            cpu_percent=cpu_percent,
+                            stuck_runtime_seconds=self._stuck_runtime_seconds,
+                            stuck_no_progress_seconds=self._stuck_no_progress_seconds,
+                            stuck_low_cpu_threshold=self._stuck_low_cpu_threshold,
+                        ),
+                        started_at=started_at_iso,
+                    )
+                )
 
             status = _worker_status(online=True, active_count=active_count, stuck=stuck)
 
@@ -231,6 +298,7 @@ class BackofficeWorkerMonitorService:
                     pool_processes=pool_processes,
                     current_task_ids=active_task_ids,
                     current_task_names=active_task_names,
+                    current_tasks=current_tasks,
                     queues=queue_names,
                 )
             )
@@ -275,6 +343,7 @@ class BackofficeWorkerMonitorService:
                     pool_processes=[],
                     current_task_ids=[],
                     current_task_names=[],
+                    current_tasks=[],
                     queues=[],
                 )
             )

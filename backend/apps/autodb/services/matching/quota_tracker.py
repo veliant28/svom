@@ -35,18 +35,9 @@ class AutoDbRemoteQuotaTracker:
             _window_reset_applied, quota_recovered = self._ensure_window(locked, now=now)
             count = max(int(query_count or 0), 0)
             locked.estimated_queries_used = int(locked.estimated_queries_used or 0) + count
-            limit = max(int(locked.estimated_limit_per_hour or DEFAULT_LIMIT_PER_HOUR), 1)
-            auto_paused = False
-            if int(locked.estimated_queries_used or 0) >= limit:
-                locked.cooldown_until = locked.expected_reset_at
-                locked.last_quota_error_at = now
-                if not locked.last_error:
-                    locked.last_error = "local quota gate reached hourly limit"
-                auto_paused = True
             locked.last_ok_at = now
             locked.last_query_at = now
-            if not auto_paused:
-                locked.last_error = ""
+            locked.last_error = ""
             consumer = self._consumer_name(run_id=run_id)
             locked.recent_points_json = self._append_point(
                 locked.recent_points_json,
@@ -55,7 +46,7 @@ class AutoDbRemoteQuotaTracker:
                 cumulative_used=locked.estimated_queries_used,
                 run_id=run_id,
                 consumer=consumer,
-                status="quota_paused" if auto_paused else status,
+                status=status,
             )
             locked.save(
                 update_fields=[
@@ -120,6 +111,7 @@ class AutoDbRemoteQuotaTracker:
             locked.save(
                 update_fields=[
                     "estimated_limit_per_hour",
+                    "estimated_queries_used",
                     "window_started_at",
                     "expected_reset_at",
                     "last_quota_error_at",
@@ -254,8 +246,6 @@ class AutoDbRemoteQuotaTracker:
     def _usage_status(self, quota: AutoDbRemoteQuotaState) -> str:
         limit = max(int(quota.estimated_limit_per_hour or DEFAULT_LIMIT_PER_HOUR), 1)
         percent = int(quota.estimated_queries_used or 0) / limit * 100
-        if percent >= 100:
-            return "quota_paused"
         if percent >= 80:
             return "warning"
         return "ok"
