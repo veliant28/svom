@@ -32,6 +32,20 @@ import type {
 } from "@/features/backoffice/types/worker-monitor.types";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 
+type ActiveTaskRow = {
+  key: string;
+  taskId: string;
+  taskName: string;
+  workerName: string;
+  workerStatus: BackofficeWorkerStatus;
+  workerOnline: boolean;
+  workerQueues: string[];
+  cpuPercent: number;
+  runtimeSeconds: number;
+  reservedCount: number;
+  startedAtText: string;
+};
+
 function formatDuration(secondsRaw: number): string {
   const seconds = Math.max(0, Math.floor(secondsRaw));
   const hours = Math.floor(seconds / 3600);
@@ -192,14 +206,16 @@ export function WorkersPage() {
   const queryFn = useCallback((token: string) => getBackofficeWorkersDashboard(token), []);
   const workersState = useBackofficeQuery<BackofficeWorkersDashboard>(queryFn);
 
+  const refetchWorkers = workersState.refetch;
+
   useEffect(() => {
     const intervalId = window.setInterval(() => {
-      void workersState.refetch();
+      void refetchWorkers();
     }, 5000);
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [workersState]);
+  }, [refetchWorkers]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -211,7 +227,7 @@ export function WorkersPage() {
   }, []);
 
   const workers = useMemo(() => workersState.data?.workers ?? [], [workersState.data?.workers]);
-  const counts = workersState.data?.status_counts ?? { active: 0, idle: 0, stuck: 0, offline: 0 };
+  const workersByName = useMemo(() => new Map(workers.map((worker) => [worker.name, worker] as const)), [workers]);
   const snapshotMs = useMemo(() => {
     const raw = workersState.data?.generated_at;
     if (!raw) {
@@ -221,23 +237,66 @@ export function WorkersPage() {
     return Number.isFinite(parsed) ? parsed : liveNowMs;
   }, [liveNowMs, workersState.data?.generated_at]);
 
-  const cpuOption = useMemo(() => {
-    const history = workersState.data?.cpu_history ?? [];
-    const workerByName = new Map(workers.map((worker) => [worker.name, worker] as const));
-    const workerNames = new Set<string>();
-    for (const sample of history) {
-      Object.keys(sample.workers || {}).forEach((name) => workerNames.add(name));
+  const activeTaskRows = useMemo<ActiveTaskRow[]>(() => {
+    const elapsedSeconds = Math.max(0, Math.floor((liveNowMs - snapshotMs) / 1000));
+    const rows: ActiveTaskRow[] = [];
+
+    for (const worker of workers) {
+      const taskIds = worker.current_task_ids ?? [];
+      if (!taskIds.length) {
+        continue;
+      }
+      const taskNames = worker.current_task_names ?? [];
+      const perTaskCpu = worker.cpu_percent / Math.max(taskIds.length, 1);
+      const runtimeSeconds = worker.online && worker.active_count > 0
+        ? worker.longest_task_seconds + elapsedSeconds
+        : worker.longest_task_seconds;
+
+      taskIds.forEach((taskId, index) => {
+        const taskName = (taskNames[index] || "").trim() || taskId;
+        rows.push({
+          key: `${worker.name}:${taskId || index}`,
+          taskId,
+          taskName,
+          workerName: worker.name,
+          workerStatus: worker.status,
+          workerOnline: worker.online,
+          workerQueues: worker.queues,
+          cpuPercent: Number(perTaskCpu.toFixed(2)),
+          runtimeSeconds,
+          reservedCount: worker.reserved_count,
+          startedAtText: formatDateTime(worker.last_seen_at),
+        });
+      });
     }
 
-    const prioritized = [...workerNames]
-      .sort((left, right) => {
-        const leftWorker = workers.find((item) => item.name === left);
-        const rightWorker = workers.find((item) => item.name === right);
-        const leftWeight = (leftWorker?.stuck ? 1000 : 0) + (leftWorker?.active_count || 0) * 20 + (leftWorker?.cpu_percent || 0);
-        const rightWeight = (rightWorker?.stuck ? 1000 : 0) + (rightWorker?.active_count || 0) * 20 + (rightWorker?.cpu_percent || 0);
-        return rightWeight - leftWeight;
-      })
-      .slice(0, 10);
+    rows.sort((left, right) => {
+      const leftWeight = (left.workerStatus === "stuck" ? 1000 : 0) + left.runtimeSeconds;
+      const rightWeight = (right.workerStatus === "stuck" ? 1000 : 0) + right.runtimeSeconds;
+      return rightWeight - leftWeight;
+    });
+
+    return rows.slice(0, 200);
+  }, [liveNowMs, snapshotMs, workers]);
+  const primaryWorker = workers[0] ?? null;
+  const taskCounts = useMemo(() => {
+    const active = activeTaskRows.length;
+    const idle = workers.reduce((acc, worker) => acc + Math.max(0, worker.reserved_count) + Math.max(0, worker.scheduled_count), 0);
+    const stuck = activeTaskRows.filter((task) => task.workerStatus === "stuck").length;
+    const offline = workers.reduce((acc, worker) => {
+      if (worker.status !== "offline") {
+        return acc;
+      }
+      return acc + Math.max(0, worker.reserved_count) + Math.max(0, worker.scheduled_count);
+    }, 0);
+    return { active, idle, stuck, offline };
+  }, [activeTaskRows, workers]);
+
+  const cpuOption = useMemo(() => {
+    const history = workersState.data?.cpu_history ?? [];
+    const prioritized = [...activeTaskRows]
+      .sort((left, right) => right.cpuPercent - left.cpuPercent)
+      .slice(0, 12);
 
     const axis = history.map((item) => {
       const date = new Date(item.timestamp);
@@ -278,11 +337,13 @@ export function WorkersPage() {
         axisLabel: { color: "#64748b", fontSize: 11, formatter: "{value}%" },
         splitLine: { lineStyle: { color: "#e2e8f0" } },
       },
-      series: prioritized.map((workerName) => {
-        const worker = workerByName.get(workerName);
+      series: prioritized.map((task) => {
+        const worker = workersByName.get(task.workerName);
         const lineColor = resolveWorkerCpuColor(worker);
+        const taskLabel = task.taskName.split(".").pop() || task.taskName;
+        const displayName = `${taskLabel} • ${task.taskId.slice(0, 8)}`;
         return {
-          name: workerName,
+          name: displayName,
           type: "line",
           color: lineColor,
           smooth: false,
@@ -293,19 +354,20 @@ export function WorkersPage() {
           areaStyle: { color: lineColor, opacity: 0.12 },
           emphasis: { disabled: true },
           data: history.map((item) => {
-            const rawValue = item.workers?.[workerName];
+            const rawValue = item.workers?.[task.workerName];
             if (typeof rawValue !== "number" || !Number.isFinite(rawValue)) {
               return null;
             }
-            return Number(rawValue.toFixed(2));
+            const divisor = Math.max((workersByName.get(task.workerName)?.current_task_ids?.length ?? 1), 1);
+            return Number((rawValue / divisor).toFixed(2));
           }),
         };
       }),
     };
-  }, [workers, workersState.data?.cpu_history]);
+  }, [activeTaskRows, workersByName, workersState.data?.cpu_history]);
 
-  const currentWorkersOption = useMemo(() => {
-    const rows = [...workers].slice(0, 12);
+  const currentTasksOption = useMemo(() => {
+    const rows = [...activeTaskRows].slice(0, 20);
     return {
       animationDuration: 220,
       grid: { left: 88, right: 16, top: 14, bottom: 14, containLabel: true },
@@ -319,25 +381,25 @@ export function WorkersPage() {
       },
       yAxis: {
         type: "category",
-        data: rows.map((item) => item.name.replace("celery@", "")),
+        data: rows.map((item) => (item.taskName.split(".").pop() || item.taskName).slice(0, 42)),
         axisLabel: { color: "#64748b", fontSize: 11 },
       },
       series: [
         {
           type: "bar",
-          data: rows.map((item) => item.cpu_percent),
+          data: rows.map((item) => item.cpuPercent),
           label: { show: true, position: "right", color: "#0f172a", fontSize: 11, formatter: "{c}%" },
           itemStyle: {
             borderRadius: [0, 6, 6, 0],
             color: (params: { dataIndex: number }) => {
-              const worker = rows[params.dataIndex];
+              const worker = workersByName.get(rows[params.dataIndex]?.workerName || "");
               return resolveWorkerCpuColor(worker);
             },
           },
         },
       ],
     };
-  }, [workers]);
+  }, [activeTaskRows, workersByName]);
 
   const performAction = useCallback(async (
     action: "stop" | "pause" | "resume" | "restart" | "kill_task",
@@ -370,8 +432,8 @@ export function WorkersPage() {
   }, [canManageWorkers, showApiError, showSuccess, showWarning, tCommon, workersState]);
 
   const handleManualRefresh = useCallback(async () => {
-    await workersState.refetch();
-  }, [workersState]);
+    await refetchWorkers();
+  }, [refetchWorkers]);
 
   return (
     <>
@@ -416,10 +478,10 @@ export function WorkersPage() {
         <section className="grid h-[calc(100vh-11rem)] min-h-[560px] grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
         <article className="rounded-2xl border p-3 lg:p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <StatusBadge status="active" label={`${tCommon("workers.badges.active")}: ${counts.active}`} />
-            <StatusBadge status="idle" label={`${tCommon("workers.badges.idle")}: ${counts.idle}`} />
-            <StatusBadge status="stuck" label={`${tCommon("workers.badges.stuck")}: ${counts.stuck}`} />
-            <StatusBadge status="offline" label={`${tCommon("workers.badges.offline")}: ${counts.offline}`} />
+            <StatusBadge status="active" label={`${tCommon("workers.badges.active")}: ${taskCounts.active}`} />
+            <StatusBadge status="idle" label={`${tCommon("workers.badges.idle")}: ${taskCounts.idle}`} />
+            <StatusBadge status="stuck" label={`${tCommon("workers.badges.stuck")}: ${taskCounts.stuck}`} />
+            <StatusBadge status="offline" label={`${tCommon("workers.badges.offline")}: ${taskCounts.offline}`} />
             <span className="ml-auto text-xs" style={{ color: "var(--muted)" }}>
               {tCommon("workers.updatedAt", { value: formatDateTime(workersState.data?.generated_at || "") })}
             </span>
@@ -434,94 +496,106 @@ export function WorkersPage() {
 
         <article className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-2 rounded-2xl border p-3 lg:p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">{tCommon("workers.currentWorkers")}</h2>
+            <h2 className="text-sm font-semibold">{tCommon("workers.currentTasks")}</h2>
             <span className="text-xs" style={{ color: "var(--muted)" }}>
-              {tCommon("workers.total", { count: workers.length })}
+              {tCommon("workers.total", { count: activeTaskRows.length })}
             </span>
           </div>
 
-          <div className="grid min-h-0 grid-rows-[minmax(0,0.48fr)_minmax(0,0.52fr)] gap-2">
-            <EchartsPanel
-              option={currentWorkersOption}
-              hasData={workers.length > 0}
-              emptyLabel={tCommon("workers.empty")}
-              className="h-full w-full"
-            />
+          <div className="grid min-h-0 grid-rows-[minmax(0,0.45fr)_minmax(0,0.55fr)] gap-2">
+            <div className="grid min-h-0 gap-2 lg:grid-cols-[44px_minmax(0,1fr)]">
+              <div className="flex h-full flex-col items-center justify-center gap-1">
+                <ActionIconButton
+                  label={tCommon("workers.actions.pause")}
+                  icon={Pause}
+                  disabled={!primaryWorker || submittingWorker === primaryWorker.name || !primaryWorker.online || primaryWorker.queues.length === 0}
+                  onClick={() => {
+                    if (!primaryWorker) return;
+                    void performAction("pause", primaryWorker);
+                  }}
+                />
+                <ActionIconButton
+                  label={tCommon("workers.actions.resume")}
+                  icon={Play}
+                  disabled={!primaryWorker || submittingWorker === primaryWorker.name || !primaryWorker.online || primaryWorker.queues.length === 0}
+                  onClick={() => {
+                    if (!primaryWorker) return;
+                    void performAction("resume", primaryWorker);
+                  }}
+                />
+                <ActionIconButton
+                  label={tCommon("workers.actions.restart")}
+                  icon={RotateCcw}
+                  disabled={!primaryWorker || submittingWorker === primaryWorker.name || !primaryWorker.online}
+                  onClick={() => {
+                    if (!primaryWorker) return;
+                    void performAction("restart", primaryWorker);
+                  }}
+                />
+                <ActionIconButton
+                  label={tCommon("workers.actions.stop")}
+                  icon={Square}
+                  disabled={!primaryWorker || submittingWorker === primaryWorker.name || !primaryWorker.online}
+                  onClick={() => {
+                    if (!primaryWorker) return;
+                    void performAction("stop", primaryWorker);
+                  }}
+                />
+                {primaryWorker && submittingWorker === primaryWorker.name ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
+              </div>
+
+              <EchartsPanel
+                option={currentTasksOption}
+                hasData={activeTaskRows.length > 0}
+                emptyLabel={tCommon("workers.empty")}
+                className="h-full w-full"
+              />
+            </div>
 
             <div className="min-h-0 overflow-auto rounded-xl border" style={{ borderColor: "var(--border)" }}>
               <div className="grid gap-1 p-2">
-                {workers.map((worker) => {
+                {activeTaskRows.map((task) => {
+                  const worker = workersByName.get(task.workerName);
+                  if (!worker) {
+                    return null;
+                  }
                   const isSubmitting = submittingWorker === worker.name;
-                  const statusLabel = tCommon(`workers.status.${worker.status}` as never);
-                  const hasActiveTask = worker.current_task_ids.length > 0;
-                  const activeTaskId = worker.current_task_ids[0] || "";
-                  const liveRuntimeSeconds = (() => {
-                    if (!worker.online || worker.active_count <= 0) {
-                      return worker.longest_task_seconds;
-                    }
-                    const elapsed = Math.max(0, Math.floor((liveNowMs - snapshotMs) / 1000));
-                    return worker.longest_task_seconds + elapsed;
-                  })();
+                  const statusLabel = tCommon(`workers.status.${task.workerStatus}` as never);
+                  const activeTaskId = task.taskId || "";
+                  const title = task.taskName.split(".").pop() || task.taskName;
 
                   return (
                     <div
-                      key={worker.name}
+                      key={task.key}
                       className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-lg border px-2 py-1.5"
                       style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)" }}
                     >
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="truncate text-xs font-semibold">{worker.name}</p>
-                          <StatusBadge status={worker.status} label={statusLabel} />
+                          <p className="truncate text-xs font-semibold">{title}</p>
+                          <StatusBadge status={task.workerStatus} label={statusLabel} />
                         </div>
                         <p className="mt-1 truncate text-[11px]" style={{ color: "var(--muted)" }}>
-                          {tCommon("workers.rowMeta", {
-                            cpu: worker.cpu_percent.toFixed(1),
-                            active: worker.active_count,
-                            reserved: worker.reserved_count,
-                            runtime: formatDuration(liveRuntimeSeconds),
+                          {tCommon("workers.rowTaskMeta", {
+                            taskId: task.taskId.slice(0, 8),
+                            worker: task.workerName,
+                            cpu: task.cpuPercent.toFixed(1),
+                            reserved: task.reservedCount,
+                            runtime: formatDuration(task.runtimeSeconds),
                           })}
+                        </p>
+                        <p className="truncate text-[11px]" style={{ color: "var(--muted)" }}>
+                          {tCommon("workers.taskStartedAt", { value: task.startedAtText })}
                         </p>
                       </div>
 
                       <div className="flex items-center gap-1">
                         <ActionIconButton
-                          label={tCommon("workers.actions.pause")}
-                          icon={Pause}
-                          disabled={isSubmitting || !worker.online || worker.queues.length === 0}
-                          onClick={() => {
-                            void performAction("pause", worker);
-                          }}
-                        />
-                        <ActionIconButton
-                          label={tCommon("workers.actions.resume")}
-                          icon={Play}
-                          disabled={isSubmitting || !worker.online || worker.queues.length === 0}
-                          onClick={() => {
-                            void performAction("resume", worker);
-                          }}
-                        />
-                        <ActionIconButton
-                          label={tCommon("workers.actions.restart")}
-                          icon={RotateCcw}
-                          disabled={isSubmitting || !worker.online}
-                          onClick={() => {
-                            void performAction("restart", worker);
-                          }}
-                        />
-                        <ActionIconButton
-                          label={tCommon("workers.actions.stop")}
-                          icon={Square}
-                          disabled={isSubmitting || !worker.online}
-                          onClick={() => {
-                            void performAction("stop", worker);
-                          }}
-                        />
-                        <ActionIconButton
                           label={tCommon("workers.actions.kill")}
                           icon={XOctagon}
                           tone="danger"
-                          disabled={isSubmitting || !hasActiveTask}
+                          dangerFill
+                          disabled={isSubmitting || !activeTaskId}
                           onClick={() => {
                             if (!activeTaskId) {
                               return;

@@ -12,7 +12,7 @@ from rest_framework.test import APITestCase
 from apps.autodb.models import AutoDbMatchJob, AutoDbMatchingRun, AutoDbRemoteQuotaState
 from apps.autodb.services.matching.constants import REMOTE_QUOTA_KEY
 from apps.autodb.services.matching.quota_tracker import AutoDbRemoteQuotaTracker
-from apps.catalog.models import Brand, Category, Product, ProductImage
+from apps.catalog.models import AutoDbProductLinkQuality, Brand, Category, Product, ProductImage
 from apps.pricing.models import ProductPrice, Supplier, SupplierOffer
 from apps.users.models import User
 from apps.users.rbac import set_user_system_role
@@ -393,6 +393,47 @@ class BackofficeAutoDbMatchingApiTests(APITestCase):
         self.assertEqual(response.data["results"][0]["product"]["sku"], linked_product.sku)
         self.assertEqual(response.data["results"][0]["matching_status"], AutoDbMatchJob.STATUS_NEW)
         self.assertEqual(response.data["results"][0]["matching_status_view"], AutoDbMatchJob.STATUS_NEW)
+
+    def test_job_detail_fallback_for_linked_product_exposes_link_quality_evidence(self):
+        linked_product = Product.objects.create(
+            sku="WIX-FALLBACK-DETAIL-LINKED-1",
+            article="WA6342",
+            name="Fallback detail linked product",
+            slug="wix-fallback-detail-linked-1",
+            brand=self.brand,
+            category=self.category,
+            is_active=True,
+            autodb_supplier_id=10,
+            autodb_supplier_name="WIX",
+            autodb_article_number="WA 6342",
+            autodb_article_key="10:WA6342",
+        )
+        AutoDbProductLinkQuality.objects.update_or_create(
+            product=linked_product,
+            autodb_article_key="10:WA6342",
+            defaults={
+                "autodb_supplier_id": 10,
+                "autodb_article_number": "WA 6342",
+                "status": AutoDbProductLinkQuality.STATUS_TRUSTED,
+                "reason": "quality_audit_ok",
+                "evidence": {"source": "test_seed", "note": "trusted"},
+            },
+        )
+
+        response = self.client.get(
+            reverse("backoffice_api:autodb-matching-job-detail", kwargs={"id": linked_product.id}),
+            **self._auth(self.staff_token),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["matching_status"], AutoDbMatchJob.STATUS_LINKED)
+        self.assertEqual(response.data["drawer"]["brand_resolution"]["resolver_source"], "link_quality_audit")
+        self.assertEqual(response.data["drawer"]["article_source"]["reason"], "quality_audit_ok")
+        self.assertEqual(response.data["drawer"]["local_lookup_evidence"]["result"], AutoDbMatchJob.STATUS_LOCAL_FOUND)
+        self.assertEqual(response.data["drawer"]["remote_lookup_evidence"]["result"], AutoDbMatchJob.STATUS_LINKED)
+        self.assertEqual(response.data["drawer"]["clone_sync_state"]["result"], AutoDbMatchJob.STATUS_CLONE_SYNCED)
+        self.assertEqual(response.data["drawer"]["link_audit_result"]["result"], AutoDbMatchJob.STATUS_LINKED)
+        self.assertEqual(response.data["drawer"]["link_audit_result"]["payload"]["quality_status"], "trusted")
 
     @patch("apps.backoffice.api.views.autodb_matching.actions.manual_bind_product_to_autodb_task")
     def test_manual_create_job_queues_async_bind(self, bind_task):

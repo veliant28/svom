@@ -10,6 +10,7 @@ export function ActionIconButton({
   onClick,
   disabled = false,
   tone = "default",
+  dangerFill = false,
   align = "center",
 }: {
   label: string;
@@ -17,9 +18,11 @@ export function ActionIconButton({
   onClick: () => void;
   disabled?: boolean;
   tone?: "default" | "danger";
+  dangerFill?: boolean;
   align?: "start" | "center" | "end";
 }) {
   const isDanger = tone === "danger";
+  const isSolidDanger = isDanger && dangerFill;
 
   return (
     <BackofficeTooltip
@@ -34,8 +37,8 @@ export function ActionIconButton({
         className="inline-flex h-8 w-8 items-center justify-center rounded-md border disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500"
         style={{
           borderColor: isDanger ? "#ef4444" : "var(--border)",
-          backgroundColor: "var(--surface)",
-          color: isDanger ? "#dc2626" : "var(--text)",
+          backgroundColor: isSolidDanger ? "#dc2626" : "var(--surface)",
+          color: isSolidDanger ? "#ffffff" : isDanger ? "#dc2626" : "var(--text)",
         }}
         aria-label={label}
         disabled={disabled}
@@ -46,4 +49,3 @@ export function ActionIconButton({
     </BackofficeTooltip>
   );
 }
-

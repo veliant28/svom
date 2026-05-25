@@ -540,6 +540,41 @@ class BackofficeAutoDbMatchingJobDetailAPIView(BackofficeAPIView):
     required_capability = "autocatalog.view"
 
     def get(self, request, id):
+        # 1) If `id` is a job id (legacy/details route), return that exact job.
+        job = (
+            AutoDbMatchJob.objects.select_related(
+                "product",
+                "product__category",
+                "product__product_price",
+                "supplier_offer",
+                "supplier_offer__supplier",
+            )
+            .prefetch_related("evidence", "product__supplier_offers__supplier")
+            .filter(id=id)
+            .first()
+        )
+        if job is not None:
+            return Response(serialize_job_detail(job))
+
+        # 2) If `id` is a product id (current table uses product ids),
+        # try to return the latest real job for this product first.
+        latest_product_job = (
+            AutoDbMatchJob.objects.select_related(
+                "product",
+                "product__category",
+                "product__product_price",
+                "supplier_offer",
+                "supplier_offer__supplier",
+            )
+            .prefetch_related("evidence", "product__supplier_offers__supplier")
+            .filter(product_id=id)
+            .order_by("-updated_at", "-created_at")
+            .first()
+        )
+        if latest_product_job is not None:
+            return Response(serialize_job_detail(latest_product_job))
+
+        # 3) Fallback-only product details when no matching job exists at all.
         helper = BackofficeAutoDbMatchingJobsAPIView()
         product = (
             Product.objects.select_related("category", "product_price")
@@ -559,20 +594,7 @@ class BackofficeAutoDbMatchingJobDetailAPIView(BackofficeAPIView):
                     reason=reason,
                 )
             )
-        job = (
-            AutoDbMatchJob.objects.select_related(
-                "product",
-                "product__category",
-                "product__product_price",
-                "supplier_offer",
-                "supplier_offer__supplier",
-            )
-            .prefetch_related("evidence", "product__supplier_offers__supplier")
-            .filter(id=id)
-            .first()
-        )
-        if job is not None:
-            return Response(serialize_job_detail(job))
+
         raise NotFound()
 
 

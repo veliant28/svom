@@ -976,7 +976,25 @@ body.modal-open > :not([data-modal-root]) {
   transform-origin: center;
 }
 
+.autodb-quota-stress > svg {
+  animation: autodbQuotaStressCarousel 1.4s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes autodbQuotaStressCarousel {
+  0% {
+    transform: translateX(1.6px) rotate(2deg);
+  }
+  50% {
+    transform: translateX(-1.6px) rotate(-2deg);
+  }
+  100% {
+    transform: translateX(1.6px) rotate(2deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .autodb-quota-stress > svg,
   .autodb-batch-quota-alarm > svg,
   .worker-badge-active,
   .worker-badge-idle,

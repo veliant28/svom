@@ -110,7 +110,8 @@ export function AutoDbQuotaCard({
   const limit = Math.max(1, Math.min(rawLimit, REMOTE_QUOTA_DISPLAY_LIMIT));
   const used = Math.min(rawUsed, limit);
   const usagePercent = Math.min(100, Math.max(0, (used / limit) * 100));
-  const tone = statusTone(data?.status ?? "ok");
+  const quotaStatus = data?.status ?? "ok";
+  const tone = statusTone(quotaStatus);
   const secondsLeft = resolvePausedTimerSeconds(data ?? null, nowMs);
   const topConsumers = useMemo(() => data?.consumers_breakdown ?? data?.top_consumers ?? [], [data?.consumers_breakdown, data?.top_consumers]);
 
@@ -241,6 +242,9 @@ export function AutoDbQuotaCard({
   const timerValue = secondsLeft === null ? tDashboard("cards.unprocessedOrdersTimerIdle") : formatCountdown(secondsLeft);
   const timerLabel = tDashboard("cards.unprocessedOrdersTimer", { value: timerValue });
   const timerTone = secondsLeft === null ? "success" : tone;
+  const timerClassName = [secondsLeft !== null ? "[&>svg]:animate-spin" : "", timerTone === "warning" || timerTone === "error" ? "animate-pulse" : ""]
+    .filter(Boolean)
+    .join(" ");
   const mappedBrands = Math.max(0, Number(quotaMeta?.mappedBrands ?? 0));
   const totalBrands = Math.max(0, Number(quotaMeta?.totalBrands ?? 0));
   const linkedProducts = Math.max(0, Number(quotaMeta?.linkedProducts ?? 0));
@@ -282,9 +286,10 @@ export function AutoDbQuotaCard({
         <div className="flex justify-end">
           <StatusChip
             tone={tone}
-            icon={data?.status === "quota_paused" ? AlertTriangle : undefined}
+            icon={quotaStatus === "quota_paused" || quotaStatus === "warning" ? AlertTriangle : undefined}
+            className={quotaStatus === "warning" || quotaStatus === "quota_paused" ? "worker-badge-stuck" : ""}
           >
-            {statusLabel(data?.status ?? "ok", t)}
+            {statusLabel(quotaStatus, t)}
           </StatusChip>
         </div>
       </div>
@@ -294,11 +299,11 @@ export function AutoDbQuotaCard({
           tone={timerTone}
           icon={Clock3}
           palette="countdown"
-          className={timerTone === "warning" || timerTone === "error" ? "animate-pulse" : ""}
+          className={timerClassName}
         >
           {timerLabel}
         </StatusChip>
-        <StatusChip tone="info" icon={Activity}>
+        <StatusChip tone="info" icon={Activity} className={usagePercent >= 85 ? "autodb-quota-stress" : ""}>
           {usagePercent.toFixed(1)}%
         </StatusChip>
       </div>

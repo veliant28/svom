@@ -252,15 +252,22 @@ def send_system_autodb_batch_progress_notification(
     errors: int,
     quota_used: int,
     quota_limit: int,
+    cycle_index: int = 0,
+    cycle_processed: int | None = None,
+    cycle_total: int | None = None,
 ) -> None:
     channel = _get_system_channel_for_batch_notifications()
     if channel is None:
         return
     token, chat_id = channel
+    progress_current = int(cycle_processed) if cycle_processed is not None else int(processed)
+    progress_total = int(cycle_total) if cycle_total is not None else max(int(batch_size or 0), 0)
+    cycle_line = f"Цикл: {int(cycle_index)}\n" if int(cycle_index or 0) > 0 else ""
     text = (
         "🔄 AutoDB batch в работе\n"
         f"Run ID: {run_id}\n"
-        f"Обработано: {int(processed)}/{max(int(batch_size or 0), 0)}\n"
+        f"{cycle_line}"
+        f"Обработано: {progress_current}/{progress_total}\n"
         f"Связано: {int(linked)}\n"
         f"Ошибки: {int(errors)}\n"
         f"Квота: {int(quota_used)}/{max(int(quota_limit or 0), 0)}"

@@ -431,6 +431,8 @@ def run_backoffice_tecdoc_batch_bind_task(
         cycle_index += 1
         effective_product_ids = product_ids if cycle_index == 1 else None
         cycle_base_processed = processed
+        cycle_base_bound = bound
+        cycle_base_failed = failed
         candidates = selector.select_candidates(
             limit=requested_limit,
             product_ids=effective_product_ids,
@@ -452,6 +454,8 @@ def run_backoffice_tecdoc_batch_bind_task(
             "selected": selected_last_cycle,
             "selected_total": selected_total,
             "processed_in_cycle": 0,
+            "linked_in_cycle": 0,
+            "failed_in_cycle": 0,
             "processed": processed,
             "bound": bound,
             "failed": failed,
@@ -481,6 +485,8 @@ def run_backoffice_tecdoc_batch_bind_task(
                     "selected": selected_last_cycle,
                     "selected_total": selected_total,
                     "processed_in_cycle": max(processed - cycle_base_processed, 0),
+                    "linked_in_cycle": max(bound - cycle_base_bound, 0),
+                    "failed_in_cycle": max(failed - cycle_base_failed, 0),
                     "processing_index": index,
                     "processing_product_id": str(item.product_id),
                     "processing_supplier_id": int(item.supplier_id),
@@ -693,6 +699,8 @@ def run_backoffice_tecdoc_batch_bind_task(
                                 selected_total=selected_total,
                                 processed=processed,
                                 processed_in_cycle=max(processed - cycle_base_processed, 0),
+                                linked_in_cycle=max(bound - cycle_base_bound, 0),
+                                failed_in_cycle=max(failed - cycle_base_failed, 0),
                                 bound=bound,
                                 failed=failed,
                                 last_error=last_error,
@@ -716,6 +724,8 @@ def run_backoffice_tecdoc_batch_bind_task(
                                 "selected": selected_last_cycle,
                                 "selected_total": selected_total,
                                 "processed_in_cycle": max(processed - cycle_base_processed, 0),
+                                "linked_in_cycle": max(bound - cycle_base_bound, 0),
+                                "failed_in_cycle": max(failed - cycle_base_failed, 0),
                                 "processing_index": index,
                                 "processing_product_id": str(item.product_id),
                                 "processing_supplier_id": int(item.supplier_id),
@@ -786,6 +796,8 @@ def run_backoffice_tecdoc_batch_bind_task(
                 "selected": selected_last_cycle,
                 "selected_total": selected_total,
                 "processed_in_cycle": max(processed - cycle_base_processed, 0),
+                "linked_in_cycle": max(bound - cycle_base_bound, 0),
+                "failed_in_cycle": max(failed - cycle_base_failed, 0),
                 "processed": processed,
                 "bound": bound,
                 "failed": failed,
@@ -880,18 +892,30 @@ def _maybe_send_batch_progress_notification(
 ) -> None:
     if processed <= 0:
         return
-    total = max(int(batch_size or 0), 0)
-    if total > 0 and processed >= total:
-        return
 
     summary = dict(run.summary_json or {})
+    total = max(int(batch_size or 0), 0)
+    continuous = bool(summary.get("continuous"))
+    if total > 0 and processed >= total and not continuous:
+        return
+
     last_processed = int(summary.get("last_progress_notify_processed") or 0)
     last_linked = int(summary.get("last_progress_notify_linked") or 0)
     last_errors = int(summary.get("last_progress_notify_errors") or 0)
     if processed == last_processed and linked == last_linked and errors == last_errors:
         return
 
+    # In continuous mode keep notifications alive after requested_limit,
+    # but avoid sending on every single item.
+    if continuous and linked == last_linked and errors == last_errors:
+        progress_step = 25
+        if (processed - last_processed) < progress_step:
+            return
+
     quota_used, quota_limit = _current_quota_snapshot()
+    cycle_index = int(summary.get("cycle_index") or 0)
+    cycle_processed = int(summary.get("processed_in_cycle") or 0)
+    cycle_total = int(summary.get("selected") or total or 0)
     send_system_autodb_batch_progress_notification(
         run_id=str(run.id),
         processed=processed,
@@ -900,6 +924,9 @@ def _maybe_send_batch_progress_notification(
         errors=errors,
         quota_used=quota_used,
         quota_limit=quota_limit,
+        cycle_index=cycle_index,
+        cycle_processed=cycle_processed,
+        cycle_total=cycle_total,
     )
     summary["last_progress_notify_processed"] = int(processed)
     summary["last_progress_notify_linked"] = int(linked)
@@ -994,6 +1021,8 @@ def _wait_for_batch_quota_recovery(
     selected_total: int,
     processed: int,
     processed_in_cycle: int,
+    linked_in_cycle: int,
+    failed_in_cycle: int,
     bound: int,
     failed: int,
     last_error: str,
@@ -1021,6 +1050,8 @@ def _wait_for_batch_quota_recovery(
             "selected": selected,
             "selected_total": selected_total,
             "processed_in_cycle": int(max(processed_in_cycle, 0)),
+            "linked_in_cycle": int(max(linked_in_cycle, 0)),
+            "failed_in_cycle": int(max(failed_in_cycle, 0)),
             "processing_product_id": str(getattr(item, "product_id", "") or ""),
             "processing_supplier_id": int(getattr(item, "supplier_id", 0) or 0),
             "processing_article": str(getattr(item, "article", "") or ""),

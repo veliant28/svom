@@ -3,8 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from apps.autodb.models import AutoDbMatchEvidence, AutoDbMatchJob
-from apps.catalog.models import ProductImage
-from apps.catalog.models import Product
+from apps.catalog.models import AutoDbProductLinkQuality, Product, ProductImage
 from apps.catalog.services.autodb_content import build_autodb_characteristic_attributes
 from apps.compatibility.models import ProductFitment
 from apps.supplier_imports.parsers.utils import normalize_brand
@@ -176,6 +175,45 @@ def serialize_fallback_product_detail(
         tecdoc_state=tecdoc_state,
         reason=reason,
     )
+    link_quality = _fallback_link_quality(product)
+    has_link = bool(safe_str(payload["product"].get("autodb_article_key")))
+    supplier_id = _safe_supplier_id(payload.get("autodb_supplier_id"))
+    quality_supplier_id = _safe_supplier_id(getattr(link_quality, "autodb_supplier_id", None) if link_quality else None)
+    effective_supplier_id = quality_supplier_id or supplier_id
+    quality_article = safe_str(getattr(link_quality, "autodb_article_number", "")) if link_quality else ""
+    effective_article = quality_article or payload["article_value"]
+    quality_reason = safe_str(getattr(link_quality, "reason", "")) if link_quality else ""
+    quality_payload = getattr(link_quality, "evidence", {}) if link_quality else {}
+    if not isinstance(quality_payload, dict):
+        quality_payload = {}
+    quality_created_at = (
+        iso_or_none(getattr(link_quality, "checked_at", None))
+        or iso_or_none(getattr(link_quality, "updated_at", None))
+        if link_quality
+        else None
+    )
+    resolver_source = "no_job_fallback"
+    if has_link:
+        resolver_source = "product_link_fields"
+    if link_quality is not None:
+        resolver_source = "link_quality_manual" if bool(link_quality.manually_confirmed) else "link_quality_audit"
+    supplier_candidate = payload["autodb_supplier_display"] or supplier_display_name(
+        effective_supplier_id,
+        fallback=safe_str(payload["product"].get("autodb_supplier_name", "")),
+    )
+    detail_reason = quality_reason or reason
+    local_result = AutoDbMatchJob.STATUS_LOCAL_FOUND if effective_supplier_id and effective_article else matching_status
+    remote_result = AutoDbMatchJob.STATUS_LINKED if has_link else matching_status
+    clone_result = AutoDbMatchJob.STATUS_CLONE_SYNCED if has_link else matching_status
+    link_result = _fallback_link_result(matching_status=matching_status, quality=link_quality, has_link=has_link)
+    evidence_base_payload = {
+        "fallback": True,
+        "resolver_source": resolver_source,
+        "quality_status": safe_str(getattr(link_quality, "status", "")) if link_quality else "",
+        "quality_manually_confirmed": bool(getattr(link_quality, "manually_confirmed", False)) if link_quality else False,
+    }
+    if quality_payload:
+        evidence_base_payload["quality_evidence"] = quality_payload
     payload["drawer"] = {
         "product_info": {
             "sku": product.sku,
@@ -191,20 +229,72 @@ def serialize_fallback_product_detail(
         "brand_resolution": {
             "raw_brand": payload["raw_brand"],
             "normalized_brand": payload["normalized_brand"],
-            "autodb_supplier_candidate": "",
-            "resolver_source": "no_job_fallback",
+            "autodb_supplier_candidate": supplier_candidate,
+            "resolver_source": resolver_source,
         },
         "article_source": {
-            "selected_article_field": payload["article_value"],
+            "selected_article_field": effective_article or payload["article_value"],
             "source_type": payload["article_source"],
-            "confidence": "",
-            "reason": "job_not_created",
+            "confidence": "fallback_link_quality" if link_quality else "fallback_product_fields",
+            "reason": detail_reason,
             "canonical_article": payload["canonical_article"],
         },
-        "local_lookup_evidence": {},
-        "remote_lookup_evidence": {},
-        "clone_sync_state": {},
-        "link_audit_result": {},
+        "local_lookup_evidence": _fallback_evidence_payload(
+            stage="local_lookup",
+            source=resolver_source,
+            result=local_result,
+            supplier_id=effective_supplier_id,
+            article_value=effective_article,
+            canonical_article=payload["canonical_article"],
+            remote_stored_article=effective_article,
+            article_prd_present=has_link,
+            prd_present=has_link,
+            reason=detail_reason,
+            payload={**evidence_base_payload, "evidence_type": "local_lookup"},
+            created_at=quality_created_at,
+        ),
+        "remote_lookup_evidence": _fallback_evidence_payload(
+            stage="remote_lookup",
+            source=resolver_source,
+            result=remote_result,
+            supplier_id=effective_supplier_id,
+            article_value=effective_article,
+            canonical_article=payload["canonical_article"],
+            remote_stored_article=effective_article,
+            article_prd_present=has_link,
+            prd_present=has_link,
+            reason=detail_reason,
+            payload={**evidence_base_payload, "evidence_type": "remote_lookup"},
+            created_at=quality_created_at,
+        ),
+        "clone_sync_state": _fallback_evidence_payload(
+            stage="clone_sync_plan",
+            source=resolver_source,
+            result=clone_result,
+            supplier_id=effective_supplier_id,
+            article_value=effective_article,
+            canonical_article=payload["canonical_article"],
+            remote_stored_article=effective_article,
+            article_prd_present=has_link,
+            prd_present=has_link,
+            reason=detail_reason,
+            payload={**evidence_base_payload, "evidence_type": "clone_sync"},
+            created_at=quality_created_at,
+        ),
+        "link_audit_result": _fallback_evidence_payload(
+            stage="link_audit",
+            source=resolver_source,
+            result=link_result,
+            supplier_id=effective_supplier_id,
+            article_value=effective_article,
+            canonical_article=payload["canonical_article"],
+            remote_stored_article=effective_article,
+            article_prd_present=has_link,
+            prd_present=has_link,
+            reason=detail_reason,
+            payload={**evidence_base_payload, "evidence_type": "link_audit"},
+            created_at=quality_created_at,
+        ),
         "enrichment_availability": {
             "attributes_count": _attributes_count_from_clone(product),
             "fitments_count": ProductFitment.objects.filter(product=product).count(),
@@ -331,6 +421,70 @@ def _attributes_count_from_clone(product: Product) -> int:
         return len(build_autodb_characteristic_attributes(product=product))
     except Exception:  # noqa: BLE001
         return 0
+
+
+def _fallback_link_quality(product: Product) -> AutoDbProductLinkQuality | None:
+    article_key = safe_str(getattr(product, "autodb_article_key", ""))
+    queryset = AutoDbProductLinkQuality.objects.filter(product=product)
+    if article_key:
+        exact = queryset.filter(autodb_article_key=article_key).order_by("-checked_at", "-updated_at").first()
+        if exact is not None:
+            return exact
+    return queryset.order_by("-checked_at", "-updated_at").first()
+
+
+def _safe_supplier_id(value: Any) -> int | None:
+    try:
+        parsed = int(value or 0)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed > 0 else None
+
+
+def _fallback_link_result(*, matching_status: str, quality: AutoDbProductLinkQuality | None, has_link: bool) -> str:
+    if quality is not None:
+        quality_status = safe_str(getattr(quality, "status", ""))
+        if quality_status == AutoDbProductLinkQuality.STATUS_TRUSTED:
+            return AutoDbMatchJob.STATUS_LINKED
+        if quality_status in {
+            AutoDbProductLinkQuality.STATUS_SUSPICIOUS,
+            AutoDbProductLinkQuality.STATUS_NEEDS_MANUAL_REVIEW,
+        }:
+            return AutoDbMatchJob.STATUS_NEEDS_REVIEW
+    if has_link:
+        return AutoDbMatchJob.STATUS_LINKED
+    return matching_status
+
+
+def _fallback_evidence_payload(
+    *,
+    stage: str,
+    source: str,
+    result: str,
+    supplier_id: int | None,
+    article_value: str,
+    canonical_article: str,
+    remote_stored_article: str,
+    article_prd_present: bool,
+    prd_present: bool,
+    reason: str,
+    payload: dict[str, Any],
+    created_at: str | None,
+) -> dict[str, Any]:
+    return {
+        "stage": stage,
+        "source": source,
+        "result": result,
+        "supplier_id": supplier_id,
+        "article_value": article_value,
+        "canonical_article": canonical_article,
+        "remote_stored_article": remote_stored_article,
+        "article_prd_present": article_prd_present,
+        "prd_present": prd_present,
+        "reason": reason,
+        "payload": payload,
+        "created_at": created_at,
+    }
 
 
 def _lookup_context(job: AutoDbMatchJob) -> dict[str, Any]:

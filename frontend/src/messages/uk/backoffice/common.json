@@ -89,11 +89,14 @@
       "workers": {
         "title": "Вокер",
         "subtitle": "Моніторинг і керування Celery-воркерами в реальному часі.",
-        "empty": "Немає даних по воркерах.",
+        "empty": "Немає даних по задачах.",
         "currentWorkers": "Поточні вокери",
+        "currentTasks": "Поточні задачі",
         "total": "Всього: {count}",
         "updatedAt": "Оновлено: {value}",
         "rowMeta": "CPU {cpu}% • Активних {active} • У черзі {reserved} • Runtime {runtime}",
+        "rowTaskMeta": "Task {taskId} • Worker {worker} • CPU {cpu}% • У черзі {reserved} • Runtime {runtime}",
+        "taskStartedAt": "Знімок: {value}",
         "badges": {
           "active": "Виконується",
           "idle": "Очікування",

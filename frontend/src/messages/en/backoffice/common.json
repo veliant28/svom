@@ -89,11 +89,14 @@
       "workers": {
         "title": "Worker",
         "subtitle": "Real-time monitoring and control for Celery workers.",
-        "empty": "No worker data yet.",
+        "empty": "No task data yet.",
         "currentWorkers": "Current workers",
+        "currentTasks": "Current tasks",
         "total": "Total: {count}",
         "updatedAt": "Updated: {value}",
         "rowMeta": "CPU {cpu}% • Active {active} • Reserved {reserved} • Runtime {runtime}",
+        "rowTaskMeta": "Task {taskId} • Worker {worker} • CPU {cpu}% • Reserved {reserved} • Runtime {runtime}",
+        "taskStartedAt": "Snapshot: {value}",
         "badges": {
           "active": "Running",
           "idle": "Idle",

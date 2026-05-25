@@ -196,7 +196,7 @@ function resolveRunStatusChip({
 
   if (effectivelyRunning) {
     if (stage === "waiting_quota_recovery") {
-      return { tone: "warning", label: t("tecdocApi.status.waitingQuota"), icon: Timer, animationClass: "[&>svg]:animate-spin" };
+      return { tone: "warning", label: t("tecdocApi.status.waitingQuota"), icon: Timer, animationClass: "autodb-batch-quota-alarm" };
     }
     if (stage === "waiting_remote_retry") {
       return { tone: "warning", label: t("tecdocApi.status.waitingRemote"), icon: Unplug, animationClass: "[&>svg]:animate-pulse" };
@@ -234,11 +234,13 @@ function chartSeries({
 }) {
   const summary = (run?.summary || {}) as AutoDbTecdocBatchSummary;
   const requestedLimit = Math.max(toCount(summary.requested_limit), 1);
-  const selected = Math.max(toCount(summary.selected), requestedLimit);
-  const processed = toCount(summary.processed);
-  const linked = toCount(summary.bound);
-  const failed = toCount(summary.failed);
-  const remaining = Math.max(selected - processed, 0);
+  const selectedInCycleRaw = Math.max(toCount(summary.selected), 0);
+  const selectedInCycle = selectedInCycleRaw > 0 ? selectedInCycleRaw : requestedLimit;
+  const processedInCycle = Math.max(toCount(summary.processed_in_cycle), 0);
+  const linkedInCycle = Math.max(toCount((summary as { linked_in_cycle?: number }).linked_in_cycle), 0);
+  const failedInCycle = Math.max(toCount((summary as { failed_in_cycle?: number }).failed_in_cycle), 0);
+  const remaining = Math.max(selectedInCycle - processedInCycle, 0);
+  const progressAxisMax = Math.max(selectedInCycle, processedInCycle, linkedInCycle, failedInCycle, remaining, 1) + 1;
   const metricLabelColor = isDarkTheme ? "#e8edf1" : "#0f172a";
   const chartTextColor = isDarkTheme ? "#c6d4df" : "#475569";
   const chartSubtleTextColor = isDarkTheme ? "#9fb2c2" : "#64748b";
@@ -252,7 +254,7 @@ function chartSeries({
       axisLabel: { color: chartSubtleTextColor, fontSize: 11 },
       splitLine: { lineStyle: { color: chartGridColor } },
       min: 0,
-      max: requestedLimit + 1,
+      max: progressAxisMax,
     },
     yAxis: {
       type: "category",
@@ -268,7 +270,7 @@ function chartSeries({
       {
         type: "bar",
         clip: false,
-        data: [remaining, processed, linked, failed],
+        data: [remaining, processedInCycle, linkedInCycle, failedInCycle],
         itemStyle: {
           color: (args: { dataIndex: number }) => ["#94a3b8", "#0ea5e9", "#16a34a", "#f97316"][args.dataIndex] || "#94a3b8",
           borderRadius: [0, 6, 6, 0],
@@ -345,10 +347,11 @@ export function AutoDbMatchingTecdocApiTab({ monitor }: { monitor: TecdocApiBatc
   );
 
   const selected = Math.max(toCount(summary.selected), toCount(summary.requested_limit));
-  const processed = toCount(summary.processed);
-  const processedDisplay = Math.min(processed, selected);
-  const linked = toCount(summary.bound);
-  const failed = toCount(summary.failed);
+  const selectedCycle = selected > 0 ? selected : Math.max(toCount(summary.requested_limit), 1);
+  const processedCycle = Math.max(toCount(summary.processed_in_cycle), 0);
+  const processedDisplay = Math.min(processedCycle, selectedCycle);
+  const linked = Math.max(toCount((summary as { linked_in_cycle?: number }).linked_in_cycle), 0);
+  const failed = Math.max(toCount((summary as { failed_in_cycle?: number }).failed_in_cycle), 0);
   const quotaMetrics = resolveQuotaMetrics(monitor.remoteQuota);
   const quotaUsed = quotaMetrics.used;
   const quotaLimit = quotaMetrics.limit;
