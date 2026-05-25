@@ -900,28 +900,40 @@ def _maybe_send_batch_progress_notification(
         return
 
     last_processed = int(summary.get("last_progress_notify_processed") or 0)
+    cycle_index = int(summary.get("cycle_index") or 0)
+    batch_source = str(summary.get("batch_source") or "")
+    is_tecdoc_api_batch = batch_source == "tecdoc_api"
+    progress_linked = int(summary.get("linked_in_cycle") or linked or 0) if is_tecdoc_api_batch else int(linked)
+    progress_errors = int(summary.get("failed_in_cycle") or errors or 0) if is_tecdoc_api_batch else int(errors)
+
     last_linked = int(summary.get("last_progress_notify_linked") or 0)
     last_errors = int(summary.get("last_progress_notify_errors") or 0)
-    if processed == last_processed and linked == last_linked and errors == last_errors:
+    last_cycle_index = int(summary.get("last_progress_notify_cycle_index") or 0)
+
+    if (
+        processed == last_processed
+        and progress_linked == last_linked
+        and progress_errors == last_errors
+        and cycle_index == last_cycle_index
+    ):
         return
 
     # In continuous mode keep notifications alive after requested_limit,
     # but avoid sending on every single item.
-    if continuous and linked == last_linked and errors == last_errors:
+    if continuous and progress_linked == last_linked and progress_errors == last_errors and cycle_index == last_cycle_index:
         progress_step = 25
         if (processed - last_processed) < progress_step:
             return
 
     quota_used, quota_limit = _current_quota_snapshot()
-    cycle_index = int(summary.get("cycle_index") or 0)
     cycle_processed = int(summary.get("processed_in_cycle") or 0)
     cycle_total = int(summary.get("selected") or total or 0)
     send_system_autodb_batch_progress_notification(
         run_id=str(run.id),
         processed=processed,
         batch_size=total,
-        linked=linked,
-        errors=errors,
+        linked=progress_linked,
+        errors=progress_errors,
         quota_used=quota_used,
         quota_limit=quota_limit,
         cycle_index=cycle_index,
@@ -929,8 +941,9 @@ def _maybe_send_batch_progress_notification(
         cycle_total=cycle_total,
     )
     summary["last_progress_notify_processed"] = int(processed)
-    summary["last_progress_notify_linked"] = int(linked)
-    summary["last_progress_notify_errors"] = int(errors)
+    summary["last_progress_notify_linked"] = int(progress_linked)
+    summary["last_progress_notify_errors"] = int(progress_errors)
+    summary["last_progress_notify_cycle_index"] = int(cycle_index)
     run.summary_json = summary
     run.save(update_fields=["summary_json", "updated_at"])
 

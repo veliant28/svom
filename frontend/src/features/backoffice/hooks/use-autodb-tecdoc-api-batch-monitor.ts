@@ -176,7 +176,7 @@ export function useAutoDbTecdocApiBatchMonitor({
     showSuccess(t("toasts.tecdocApiStateCompleted"));
   }, [batchState?.running, enableToasts, isHistoryModalOpen, run?.summary, showInfo, showSuccess, showWarning, t]);
 
-  const previousCountersRef = useRef<{ runId: string; linked: number; failed: number } | null>(null);
+  const previousCountersRef = useRef<{ runId: string; cycleIndex: number; linked: number; failed: number } | null>(null);
   useEffect(() => {
     if (!enableToasts) {
       previousCountersRef.current = null;
@@ -188,15 +188,20 @@ export function useAutoDbTecdocApiBatchMonitor({
     }
 
     const summary = run.summary ?? {};
+    const cycleIndex = Math.max(toCount(summary.cycle_index), 0);
     const current = {
       runId: run.id,
-      linked: toCount(summary.bound),
-      failed: toCount(summary.failed),
+      cycleIndex,
+      linked: Math.max(toCount((summary as { linked_in_cycle?: number }).linked_in_cycle), 0),
+      failed: Math.max(toCount((summary as { failed_in_cycle?: number }).failed_in_cycle), 0),
     };
     const previous = previousCountersRef.current;
     previousCountersRef.current = current;
 
     if (!previous || previous.runId !== current.runId) {
+      return;
+    }
+    if (previous.cycleIndex !== current.cycleIndex) {
       return;
     }
 

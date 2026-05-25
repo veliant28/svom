@@ -762,7 +762,11 @@ class ManualAutoDbSearch:
         return out[:30]
 
     def _compatibility_preview(self, *, supplier_id: int, article_number: str, source: str) -> list[dict[str, Any]]:
-        linkage_limit = 250 if source != "remote" else 80
+        default_linkage_limit = 2000 if source != "remote" else 600
+        linkage_limit = max(
+            self._count_rows(table="article_li", supplier_id=supplier_id, article_number=article_number),
+            default_linkage_limit,
+        )
         linkage_rows = self._article_rows(
             table="article_li",
             supplier_id=supplier_id,
@@ -776,7 +780,7 @@ class ManualAutoDbSearch:
             if linkage is not None:
                 linkage_type = safe_str(row.get("linkageTypeId") or row.get("linkagetypeid")) or "PassengerCar"
                 linkage_meta.append((linkage, linkage_type))
-        linkage_meta = list(dict.fromkeys(linkage_meta))[:60]
+        linkage_meta = list(dict.fromkeys(linkage_meta))
         if not linkage_meta:
             return []
         passenger_linkage_ids = [
@@ -792,7 +796,7 @@ class ManualAutoDbSearch:
             for item in [*passenger_cars.values(), *commercial_cars.values()]
         ]
         model_ids = [item for item in model_ids if item is not None]
-        models = self._models_by_ids(model_ids=model_ids[:120], source=source)
+        models = self._models_by_ids(model_ids=model_ids, source=source)
         out: list[dict[str, Any]] = []
         for linkage_id, linkage_type in linkage_meta:
             linkage_type_key = linkage_type.casefold()
@@ -825,7 +829,7 @@ class ManualAutoDbSearch:
                     "linkage_type": linkage_type,
                 }
             )
-        return out[:40]
+        return out
 
     def _passenger_cars_by_ids(self, *, linkage_ids: list[int], source: str) -> dict[int, dict[str, Any]]:
         return self._vehicles_by_ids(
@@ -845,25 +849,37 @@ class ManualAutoDbSearch:
         if not linkage_ids:
             return {}
         rows: list[dict[str, Any]] = []
-        if source == "remote":
-            try:
-                rows = self.storage.fetch_remote_rows_in(
-                    table=table,
-                    column="id",
-                    values=linkage_ids[:60],
-                    columns=["id", "modelid", "description", "fulldescription", "constructioninterval"],
-                    limit=120,
+        unique_ids = list(dict.fromkeys(linkage_ids))
+        chunk_size = 400
+        columns = ["id", "modelid", "description", "fulldescription", "constructioninterval"]
+        for offset in range(0, len(unique_ids), chunk_size):
+            chunk = unique_ids[offset : offset + chunk_size]
+            if not chunk:
+                continue
+            limit = max(len(chunk) * 2, 160)
+            if source == "remote":
+                try:
+                    rows.extend(
+                        self.storage.fetch_remote_rows_in(
+                            table=table,
+                            column="id",
+                            values=chunk,
+                            columns=columns,
+                            limit=limit,
+                        )
+                    )
+                except Exception:  # noqa: BLE001
+                    continue
+            else:
+                rows.extend(
+                    self._safe_fetch_local_rows_in(
+                        table=table,
+                        column="id",
+                        values=chunk,
+                        columns=columns,
+                        limit=limit,
+                    )
                 )
-            except Exception:  # noqa: BLE001
-                rows = []
-        else:
-            rows = self._safe_fetch_local_rows_in(
-                table=table,
-                column="id",
-                values=linkage_ids[:60],
-                columns=["id", "modelid", "description", "fulldescription", "constructioninterval"],
-                limit=120,
-            )
         out: dict[int, dict[str, Any]] = {}
         for row in rows:
             linkage = self._safe_int(row.get("id"))
@@ -875,26 +891,37 @@ class ManualAutoDbSearch:
         if not model_ids:
             return {}
         rows: list[dict[str, Any]] = []
-        unique_ids = list(dict.fromkeys(model_ids))[:120]
-        if source == "remote":
-            try:
-                rows = self.storage.fetch_remote_rows_in(
-                    table="models",
-                    column="id",
-                    values=unique_ids,
-                    columns=["id", "description", "fulldescription"],
-                    limit=160,
+        unique_ids = list(dict.fromkeys(model_ids))
+        chunk_size = 400
+        columns = ["id", "description", "fulldescription"]
+        for offset in range(0, len(unique_ids), chunk_size):
+            chunk = unique_ids[offset : offset + chunk_size]
+            if not chunk:
+                continue
+            limit = max(len(chunk) * 2, 160)
+            if source == "remote":
+                try:
+                    rows.extend(
+                        self.storage.fetch_remote_rows_in(
+                            table="models",
+                            column="id",
+                            values=chunk,
+                            columns=columns,
+                            limit=limit,
+                        )
+                    )
+                except Exception:  # noqa: BLE001
+                    continue
+            else:
+                rows.extend(
+                    self._safe_fetch_local_rows_in(
+                        table="models",
+                        column="id",
+                        values=chunk,
+                        columns=columns,
+                        limit=limit,
+                    )
                 )
-            except Exception:  # noqa: BLE001
-                rows = []
-        else:
-            rows = self._safe_fetch_local_rows_in(
-                table="models",
-                column="id",
-                values=unique_ids,
-                columns=["id", "description", "fulldescription"],
-                limit=160,
-            )
         out: dict[int, dict[str, Any]] = {}
         for row in rows:
             model_id = self._safe_int(row.get("id"))

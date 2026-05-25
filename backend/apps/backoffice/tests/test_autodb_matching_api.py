@@ -243,6 +243,45 @@ class BackofficeAutoDbMatchingApiTests(APITestCase):
         self.assertEqual(first["model"], "SPRINTER")
         self.assertNotEqual(first["label"], "CommercialVehicle #4401")
 
+    def test_manual_local_search_compatibility_preview_not_capped_to_40(self):
+        with connections["auto_db_pro"].cursor() as cursor:
+            cursor.execute(
+                'CREATE TABLE IF NOT EXISTS article_li ("supplierId" INTEGER, "DataSupplierArticleNumber" TEXT, "linkageId" INTEGER, "linkageTypeId" TEXT)'
+            )
+            cursor.execute(
+                'CREATE TABLE IF NOT EXISTS commercial_vehicles ("id" INTEGER, "modelid" INTEGER, "description" TEXT, "fulldescription" TEXT, "constructioninterval" TEXT)'
+            )
+            cursor.execute('CREATE TABLE IF NOT EXISTS models ("id" INTEGER, "description" TEXT, "fulldescription" TEXT)')
+            cursor.execute("TRUNCATE TABLE article_li")
+            cursor.execute("TRUNCATE TABLE commercial_vehicles")
+            cursor.execute("TRUNCATE TABLE models")
+            cursor.execute(
+                'INSERT INTO models ("id", "description", "fulldescription") VALUES (%s, %s, %s)',
+                [901, "SPRINTER", "MERCEDES-BENZ SPRINTER"],
+            )
+            for linkage_id in range(5000, 5045):
+                cursor.execute(
+                    'INSERT INTO article_li ("supplierId", "DataSupplierArticleNumber", "linkageId", "linkageTypeId") VALUES (%s, %s, %s, %s)',
+                    [10, "WA 6342", linkage_id, "CommercialVehicle"],
+                )
+                cursor.execute(
+                    'INSERT INTO commercial_vehicles ("id", "modelid", "description", "fulldescription", "constructioninterval") VALUES (%s, %s, %s, %s, %s)',
+                    [linkage_id, 901, f"316 CDI #{linkage_id}", f"MERCEDES-BENZ SPRINTER 316 CDI #{linkage_id}", "2018-"],
+                )
+
+        response = self.client.post(
+            reverse("backoffice_api:autodb-matching-manual-local"),
+            {"supplier_id": 10, "supplier_name": "WIX", "article": "WA6342"},
+            format="json",
+            **self._auth(self.staff_token),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        result = response.data["results"][0]
+        preview = result["details"]["compatibility_preview"]
+        self.assertEqual(len(preview), 45)
+        self.assertEqual(result["fitments_available_count"], 45)
+
     @patch("apps.backoffice.api.views.autodb_matching.actions.AutoDbLookupV3ReadOnlyService")
     def test_manual_remote_search_no_upsert_and_no_product_writes(self, lookup_cls):
         before = self._write_counts()
