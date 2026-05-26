@@ -34,20 +34,26 @@ class AutoDbRemoteQuotaTracker:
             locked = self._lock_quota(quota)
             _window_reset_applied, quota_recovered = self._ensure_window(locked, now=now)
             count = max(int(query_count or 0), 0)
-            locked.estimated_queries_used = int(locked.estimated_queries_used or 0) + count
+            previous_used = int(locked.estimated_queries_used or 0)
+            optimistic_used = previous_used + count
             locked.last_ok_at = now
             locked.last_query_at = now
             locked.last_error = ""
             consumer = self._consumer_name(run_id=run_id)
-            locked.recent_points_json = self._append_point(
+            updated_points = self._append_point(
                 locked.recent_points_json,
                 timestamp=now,
                 query_count=count,
-                cumulative_used=locked.estimated_queries_used,
+                cumulative_used=optimistic_used,
                 run_id=run_id,
                 consumer=consumer,
                 status=status,
             )
+            recent_points = self._recent_points(updated_points, now=now)
+            rolling_used = self._rolling_used(recent_points)
+            self._sync_window_from_points(locked, recent_points=recent_points, now=now)
+            locked.estimated_queries_used = rolling_used
+            locked.recent_points_json = self._recompute_cumulative_points(recent_points)
             locked.save(
                 update_fields=[
                     "estimated_limit_per_hour",
@@ -162,25 +168,29 @@ class AutoDbRemoteQuotaTracker:
         configured_limit = max(int(getattr(settings, "AUTODB_PRO_REMOTE_LIMIT_PER_HOUR", DEFAULT_LIMIT_PER_HOUR) or DEFAULT_LIMIT_PER_HOUR), 1)
         current_limit = int(quota.estimated_limit_per_hour or 0)
         quota.estimated_limit_per_hour = min(current_limit, configured_limit) if current_limit > 0 else configured_limit
-        window_reset_applied = False
+        changed = False
         quota_recovered = False
-        if not quota.window_started_at or not quota.expected_reset_at or now >= quota.expected_reset_at:
-            had_pending_quota_cooldown = bool(
-                quota.cooldown_until
-                and quota.expected_reset_at
-                and quota.last_quota_error_at
-                and now >= quota.expected_reset_at
-            )
-            started = now.replace(second=0, microsecond=0)
-            quota.window_started_at = started
-            quota.expected_reset_at = started + timedelta(minutes=WINDOW_MINUTES)
-            quota.estimated_queries_used = 0
+        recent_points = self._recent_points(quota.recent_points_json, now=now)
+        recomputed_points = self._recompute_cumulative_points(recent_points)
+        rolling_used = self._rolling_used(recent_points)
+
+        if quota.recent_points_json != recomputed_points:
+            quota.recent_points_json = recomputed_points
+            changed = True
+
+        if int(quota.estimated_queries_used or 0) != rolling_used:
+            quota.estimated_queries_used = rolling_used
+            changed = True
+
+        changed = self._sync_window_from_points(quota, recent_points=recent_points, now=now) or changed
+
+        if quota.cooldown_until and quota.cooldown_until <= now:
             quota.cooldown_until = None
             quota.last_error = ""
-            quota.recent_points_json = self._recent_points(quota.recent_points_json, now=now)
-            window_reset_applied = True
-            quota_recovered = had_pending_quota_cooldown
-        return window_reset_applied, quota_recovered
+            quota_recovered = True
+            changed = True
+
+        return changed, quota_recovered
 
     def _notify_quota_recovered(self, *, remote_key: str) -> None:
         try:
@@ -233,6 +243,49 @@ class AutoDbRemoteQuotaTracker:
         raw = [item for item in points if isinstance(item, dict)] if isinstance(points, list) else []
         cutoff = now - timedelta(minutes=WINDOW_MINUTES)
         return [item for item in raw if self._point_is_recent(item, cutoff=cutoff)][-MAX_POINTS:]
+
+    def _rolling_used(self, points: list[dict]) -> int:
+        return sum(max(int(item.get("query_count") or 0), 0) for item in points)
+
+    def _recompute_cumulative_points(self, points: list[dict]) -> list[dict]:
+        cumulative = 0
+        normalized: list[dict] = []
+        for raw in points:
+            query_count = max(int(raw.get("query_count") or 0), 0)
+            cumulative += query_count
+            next_point = dict(raw)
+            next_point["query_count"] = query_count
+            next_point["cumulative_used"] = cumulative
+            normalized.append(next_point)
+        return normalized
+
+    def _sync_window_from_points(self, quota: AutoDbRemoteQuotaState, *, recent_points: list[dict], now) -> bool:
+        current_started = quota.window_started_at
+        current_reset = quota.expected_reset_at
+        if recent_points:
+            first_dt = self._point_datetime(recent_points[0])
+            if first_dt is None:
+                started = now.replace(second=0, microsecond=0)
+            else:
+                started = first_dt
+            reset_at = started + timedelta(minutes=WINDOW_MINUTES)
+        else:
+            started = now.replace(second=0, microsecond=0)
+            reset_at = started + timedelta(minutes=WINDOW_MINUTES)
+        if current_started != started or current_reset != reset_at:
+            quota.window_started_at = started
+            quota.expected_reset_at = reset_at
+            return True
+        return False
+
+    def _point_datetime(self, item: dict) -> timezone.datetime | None:
+        try:
+            value = timezone.datetime.fromisoformat(str(item.get("timestamp")))
+        except (TypeError, ValueError):
+            return None
+        if timezone.is_naive(value):
+            value = timezone.make_aware(value, timezone.get_current_timezone())
+        return value
 
     def _point_is_recent(self, item: dict, *, cutoff) -> bool:
         try:

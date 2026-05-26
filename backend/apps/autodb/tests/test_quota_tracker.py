@@ -41,6 +41,17 @@ class AutoDbRemoteQuotaTrackerTests(TestCase):
             estimated_queries_used=100,
             window_started_at=now,
             expected_reset_at=now + timedelta(minutes=30),
+            recent_points_json=[
+                {
+                    "timestamp": (now - timedelta(minutes=1)).replace(second=0, microsecond=0).isoformat(),
+                    "query_count": 100,
+                    "cumulative_used": 100,
+                    "run_id": "tecdoc-batch",
+                    "consumer": "celery_batch",
+                    "status": "ok",
+                    "error": "",
+                }
+            ],
         )
         tracker = AutoDbRemoteQuotaTracker()
 
@@ -58,6 +69,17 @@ class AutoDbRemoteQuotaTrackerTests(TestCase):
             estimated_queries_used=999,
             window_started_at=now,
             expected_reset_at=now + timedelta(minutes=30),
+            recent_points_json=[
+                {
+                    "timestamp": (now - timedelta(minutes=1)).replace(second=0, microsecond=0).isoformat(),
+                    "query_count": 999,
+                    "cumulative_used": 999,
+                    "run_id": "tecdoc-batch",
+                    "consumer": "celery_batch",
+                    "status": "ok",
+                    "error": "",
+                }
+            ],
         )
         tracker = AutoDbRemoteQuotaTracker()
 
@@ -68,3 +90,32 @@ class AutoDbRemoteQuotaTrackerTests(TestCase):
         self.assertEqual(quota.estimated_queries_used, 1000)
         self.assertIsNone(quota.cooldown_until)
         self.assertEqual(payload.get("status"), "warning")
+
+    def test_serialize_does_not_hard_reset_used_on_expected_reset_boundary(self):
+        now = timezone.now()
+        old_expected_reset = now - timedelta(seconds=30)
+        quota = AutoDbRemoteQuotaState.objects.create(
+            remote_key="autodb_pro_mysql",
+            estimated_limit_per_hour=3332,
+            estimated_queries_used=2143,
+            window_started_at=now - timedelta(hours=1),
+            expected_reset_at=old_expected_reset,
+            recent_points_json=[
+                {
+                    "timestamp": (now - timedelta(minutes=2)).replace(second=0, microsecond=0).isoformat(),
+                    "query_count": 2143,
+                    "cumulative_used": 2143,
+                    "run_id": "tecdoc-batch",
+                    "consumer": "celery_batch",
+                    "status": "ok",
+                    "error": "",
+                }
+            ],
+        )
+        tracker = AutoDbRemoteQuotaTracker()
+
+        payload = tracker.serialize(quota)
+        quota.refresh_from_db()
+
+        self.assertEqual(quota.estimated_queries_used, 2143)
+        self.assertEqual(int(payload.get("estimated_queries_used") or 0), 2143)
