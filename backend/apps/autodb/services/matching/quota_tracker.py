@@ -170,6 +170,11 @@ class AutoDbRemoteQuotaTracker:
         quota.estimated_limit_per_hour = min(current_limit, configured_limit) if current_limit > 0 else configured_limit
         changed = False
         quota_recovered = False
+        if quota.cooldown_until and quota.cooldown_until > now:
+            # During active remote cooldown we freeze usage at the captured value
+            # from quota error time (no gradual decay while paused).
+            return changed, quota_recovered
+
         recent_points = self._recent_points(quota.recent_points_json, now=now)
 
         # Keep rolling-window accounting in normal mode, but when remote cooldown
