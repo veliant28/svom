@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   LoaderCircle,
   Pause,
@@ -261,11 +261,30 @@ export function WorkersPage() {
   const [submittingWorker, setSubmittingWorker] = useState("");
   const [killModal, setKillModal] = useState<{ worker: string; taskId: string } | null>(null);
   const [liveNowMs, setLiveNowMs] = useState(() => Date.now());
+  const [refreshNonce, setRefreshNonce] = useState(0);
 
   const queryFn = useCallback((token: string) => getBackofficeWorkersDashboard(token), []);
   const workersState = useBackofficeQuery<BackofficeWorkersDashboard>(queryFn);
+  const rawWorkersRefetch = workersState.refetch;
 
-  const refetchWorkers = workersState.refetch;
+  const isRefetchingWorkersRef = useRef(false);
+  const hasQueuedWorkersRefetchRef = useRef(false);
+  const refetchWorkers = useCallback(async () => {
+    if (isRefetchingWorkersRef.current) {
+      hasQueuedWorkersRefetchRef.current = true;
+      return;
+    }
+
+    isRefetchingWorkersRef.current = true;
+    try {
+      do {
+        hasQueuedWorkersRefetchRef.current = false;
+        await rawWorkersRefetch();
+      } while (hasQueuedWorkersRefetchRef.current);
+    } finally {
+      isRefetchingWorkersRef.current = false;
+    }
+  }, [rawWorkersRefetch]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -275,6 +294,13 @@ export function WorkersPage() {
       window.clearInterval(intervalId);
     };
   }, [refetchWorkers]);
+
+  useEffect(() => {
+    if (refreshNonce <= 0) {
+      return;
+    }
+    void refetchWorkers();
+  }, [refreshNonce, refetchWorkers]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -468,17 +494,13 @@ export function WorkersPage() {
       } else {
         showWarning(tCommon("workers.toasts.actionWarning"));
       }
-      await workersState.refetch();
+      await refetchWorkers();
     } catch (error) {
       showApiError(error, tCommon("workers.toasts.actionFailed"));
     } finally {
       setSubmittingWorker("");
     }
-  }, [canManageWorkers, showApiError, showSuccess, showWarning, tCommon, workersState]);
-
-  const handleManualRefresh = useCallback(async () => {
-    await refetchWorkers();
-  }, [refetchWorkers]);
+  }, [canManageWorkers, refetchWorkers, showApiError, showSuccess, showWarning, tCommon, workersState.token]);
 
   return (
     <>
@@ -491,7 +513,7 @@ export function WorkersPage() {
             className="inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold transition-colors"
             style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
             onClick={() => {
-              void handleManualRefresh();
+              setRefreshNonce((prev) => prev + 1);
             }}
           >
             <RefreshCw size={16} className="animate-spin" style={{ animationDuration: "2.2s" }} />

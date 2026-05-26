@@ -30,9 +30,11 @@ function toCount(value: unknown): number {
 export function useAutoDbBatchMonitor({
   refreshNonce,
   isHistoryModalOpen,
+  enableToasts = true,
 }: {
   refreshNonce: number;
   isHistoryModalOpen: boolean;
+  enableToasts?: boolean;
 }) {
   const t = useTranslations("backoffice.autodbMatching");
   const { showApiError, showInfo, showSuccess, showWarning } = useBackofficeFeedback();
@@ -121,12 +123,19 @@ export function useAutoDbBatchMonitor({
 
   const previousRunningRef = useRef<boolean | null>(null);
   useEffect(() => {
+    if (!enableToasts) {
+      previousRunningRef.current = null;
+      return;
+    }
     if (!isHistoryModalOpen) {
       previousRunningRef.current = null;
     }
-  }, [isHistoryModalOpen]);
+  }, [enableToasts, isHistoryModalOpen]);
 
   useEffect(() => {
+    if (!enableToasts) {
+      return;
+    }
     if (!isHistoryModalOpen) {
       return;
     }
@@ -165,10 +174,14 @@ export function useAutoDbBatchMonitor({
     }
 
     showSuccess(t("toasts.batchStateCompleted"));
-  }, [batchState?.running, isHistoryModalOpen, run?.summary, showInfo, showSuccess, showWarning, t]);
+  }, [batchState?.running, enableToasts, isHistoryModalOpen, run?.summary, showInfo, showSuccess, showWarning, t]);
 
   const previousCountersRef = useRef<{ runId: string; linked: number; failed: number } | null>(null);
   useEffect(() => {
+    if (!enableToasts) {
+      previousCountersRef.current = null;
+      return;
+    }
     if (!run) {
       previousCountersRef.current = null;
       return;
@@ -193,7 +206,7 @@ export function useAutoDbBatchMonitor({
     if (current.failed > previous.failed) {
       showWarning(t("toasts.batchErrorsCount", { count: current.failed }));
     }
-  }, [run, showInfo, showWarning, t]);
+  }, [enableToasts, run, showInfo, showWarning, t]);
 
   return {
     token,

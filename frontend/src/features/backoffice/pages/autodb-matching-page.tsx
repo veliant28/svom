@@ -29,6 +29,7 @@ export function AutoDbMatchingPage() {
   const legacyBatch = useAutoDbBatchMonitor({
     refreshNonce,
     isHistoryModalOpen: historyOpen && tab !== "tecdocApi",
+    enableToasts: tab !== "tecdocApi",
   });
   const apiBatch = useAutoDbTecdocApiBatchMonitor({
     refreshNonce,

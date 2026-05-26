@@ -508,7 +508,7 @@ export function ImportSchedulesPage() {
                         <input
                           type="time"
                           value={currentBackupDraft.schedule_run_time}
-                          className="h-8 rounded-md border px-2 text-xs"
+                          className="backoffice-time-input h-8 rounded-md border px-2 text-xs"
                           style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
                           onChange={(event) =>
                             setBackupDraftByCode((prev) => ({
@@ -543,7 +543,7 @@ export function ImportSchedulesPage() {
                       <input
                         type="time"
                         value={draft.schedule_run_time}
-                        className="h-8 rounded-md border px-2 text-xs"
+                        className="backoffice-time-input h-8 rounded-md border px-2 text-xs"
                         style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
                         onChange={(event) => {
                           const value = event.target.value;

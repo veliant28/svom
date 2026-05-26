@@ -160,6 +160,15 @@ label:has(select:not(:disabled)) {
   cursor: pointer;
 }
 
+.backoffice-time-input::-webkit-calendar-picker-indicator {
+  opacity: 0.9;
+}
+
+.theme-dark .backoffice-time-input::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.35) contrast(1.05);
+  opacity: 1;
+}
+
 /* Disabled elements should never look clickable */
 button:disabled,
 input:disabled,
