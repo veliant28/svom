@@ -25,6 +25,7 @@ export function AutoDbMatchingPage() {
   const [tab, setTab] = useState<TabKey>("dashboard");
   const [seedJob, setSeedJob] = useState<AutoDbProductJob | null>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
+  const [tecdocRefreshNonce, setTecdocRefreshNonce] = useState(0);
   const [historyOpen, setHistoryOpen] = useState(false);
   const legacyBatch = useAutoDbBatchMonitor({
     refreshNonce,
@@ -70,7 +71,13 @@ export function AutoDbMatchingPage() {
               type="button"
               className="inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold transition-colors"
               style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
-              onClick={() => setRefreshNonce((prev) => prev + 1)}
+              onClick={() => {
+                if (tab === "tecdocApi") {
+                  setTecdocRefreshNonce((prev) => prev + 1);
+                  return;
+                }
+                setRefreshNonce((prev) => prev + 1);
+              }}
             >
               <RefreshCw size={16} className="animate-spin" style={{ animationDuration: "2.2s" }} />
               {tDashboard("actions.refreshOperationalContour")}
@@ -127,7 +134,7 @@ export function AutoDbMatchingPage() {
         />
       ) : null}
       {tab === "search" ? <AutoDbMatchingSearchTab seedJob={seedJob} refreshNonce={refreshNonce} /> : null}
-      {tab === "tecdocApi" ? <AutoDbMatchingTecdocApiTab monitor={apiBatch} /> : null}
+      {tab === "tecdocApi" ? <AutoDbMatchingTecdocApiTab monitor={apiBatch} refreshNonce={tecdocRefreshNonce} /> : null}
 
       <AutoDbBatchHistoryModal
         isOpen={historyOpen}

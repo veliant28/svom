@@ -262,6 +262,8 @@ export function WorkersPage() {
   const [killModal, setKillModal] = useState<{ worker: string; taskId: string } | null>(null);
   const [liveNowMs, setLiveNowMs] = useState(() => Date.now());
   const [refreshNonce, setRefreshNonce] = useState(0);
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const handledManualRefreshNonceRef = useRef(0);
 
   const queryFn = useCallback((token: string) => getBackofficeWorkersDashboard(token), []);
   const workersState = useBackofficeQuery<BackofficeWorkersDashboard>(queryFn);
@@ -296,10 +298,19 @@ export function WorkersPage() {
   }, [refetchWorkers]);
 
   useEffect(() => {
-    if (refreshNonce <= 0) {
+    if (refreshNonce <= 0 || handledManualRefreshNonceRef.current === refreshNonce) {
       return;
     }
-    void refetchWorkers();
+    handledManualRefreshNonceRef.current = refreshNonce;
+    setIsManualRefreshing(true);
+    const startedAtMs = Date.now();
+    void refetchWorkers().finally(() => {
+      const elapsedMs = Date.now() - startedAtMs;
+      const remainingMs = Math.max(0, 450 - elapsedMs);
+      window.setTimeout(() => {
+        setIsManualRefreshing(false);
+      }, remainingMs);
+    });
   }, [refreshNonce, refetchWorkers]);
 
   useEffect(() => {
@@ -537,7 +548,7 @@ export function WorkersPage() {
       />
 
       <AsyncState
-        isLoading={workersState.isLoading && !workersState.data}
+        isLoading={!workersState.data ? workersState.isLoading : isManualRefreshing}
         error={workersState.error}
         empty={false}
         emptyLabel=""

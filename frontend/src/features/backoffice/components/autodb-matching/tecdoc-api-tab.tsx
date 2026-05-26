@@ -13,10 +13,11 @@ import {
   Unplug,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { BackofficeTooltip } from "@/features/backoffice/components/widgets/backoffice-tooltip";
+import { AsyncState } from "@/features/backoffice/components/widgets/async-state";
 import { EchartsPanel } from "@/features/backoffice/components/widgets/echarts-panel";
 import { StatusChip } from "@/features/backoffice/components/widgets/status-chip";
 import type { useAutoDbTecdocApiBatchMonitor } from "@/features/backoffice/hooks/use-autodb-tecdoc-api-batch-monitor";
@@ -336,9 +337,18 @@ function chartSeries({
 
 type TecdocApiBatchMonitor = ReturnType<typeof useAutoDbTecdocApiBatchMonitor>;
 
-export function AutoDbMatchingTecdocApiTab({ monitor }: { monitor: TecdocApiBatchMonitor }) {
+export function AutoDbMatchingTecdocApiTab({
+  monitor,
+  refreshNonce = 0,
+}: {
+  monitor: TecdocApiBatchMonitor;
+  refreshNonce?: number;
+}) {
   const t = useTranslations("backoffice.autodbMatching");
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const handledManualRefreshNonceRef = useRef(0);
+  const refreshBatch = monitor.refreshBatch;
   const run = monitor.run;
   const summary = (run?.summary || {}) as AutoDbTecdocBatchSummary;
   const running = monitor.isRunning;
@@ -369,9 +379,31 @@ export function AutoDbMatchingTecdocApiTab({ monitor }: { monitor: TecdocApiBatc
     return () => window.clearInterval(timerId);
   }, []);
 
+  useEffect(() => {
+    if (refreshNonce <= 0 || handledManualRefreshNonceRef.current === refreshNonce) {
+      return;
+    }
+    handledManualRefreshNonceRef.current = refreshNonce;
+    setIsManualRefreshing(true);
+    const startedAtMs = Date.now();
+    void refreshBatch().finally(() => {
+      const elapsedMs = Date.now() - startedAtMs;
+      const remainingMs = Math.max(0, 450 - elapsedMs);
+      window.setTimeout(() => {
+        setIsManualRefreshing(false);
+      }, remainingMs);
+    });
+  }, [refreshBatch, refreshNonce]);
+
   return (
-    <section className="grid h-[calc(100vh-11rem)] min-h-[560px] grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
-      <article className="rounded-2xl border p-3 lg:p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
+    <AsyncState
+      isLoading={isManualRefreshing}
+      error={null}
+      empty={false}
+      emptyLabel=""
+    >
+      <section className="grid h-[calc(100vh-11rem)] min-h-[560px] grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
+        <article className="rounded-2xl border p-3 lg:p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <StatusChip
@@ -443,9 +475,9 @@ export function AutoDbMatchingTecdocApiTab({ monitor }: { monitor: TecdocApiBatc
 
           </div>
         </div>
-      </article>
+        </article>
 
-      <article className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 rounded-2xl border p-3 lg:p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
+        <article className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 rounded-2xl border p-3 lg:p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
         <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
           <Metric label={t("tecdocApi.metrics.selected")} value={selected} />
           <Metric label={t("tecdocApi.metrics.processed")} value={`${processedDisplay}/${selected || "-"}`} />
@@ -506,8 +538,9 @@ export function AutoDbMatchingTecdocApiTab({ monitor }: { monitor: TecdocApiBatc
             </div>
           </div>
         </div>
-      </article>
-    </section>
+        </article>
+      </section>
+    </AsyncState>
   );
 }
 
