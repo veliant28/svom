@@ -171,6 +171,16 @@ class AutoDbRemoteQuotaTracker:
         changed = False
         quota_recovered = False
         recent_points = self._recent_points(quota.recent_points_json, now=now)
+
+        # Keep rolling-window accounting in normal mode, but when remote cooldown
+        # fully expires we intentionally start a fresh cycle from zero.
+        if quota.cooldown_until and quota.cooldown_until <= now:
+            quota.cooldown_until = None
+            quota.last_error = ""
+            quota_recovered = True
+            recent_points = []
+            changed = True
+
         recomputed_points = self._recompute_cumulative_points(recent_points)
         rolling_used = self._rolling_used(recent_points)
 
@@ -183,12 +193,6 @@ class AutoDbRemoteQuotaTracker:
             changed = True
 
         changed = self._sync_window_from_points(quota, recent_points=recent_points, now=now) or changed
-
-        if quota.cooldown_until and quota.cooldown_until <= now:
-            quota.cooldown_until = None
-            quota.last_error = ""
-            quota_recovered = True
-            changed = True
 
         return changed, quota_recovered
 

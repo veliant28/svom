@@ -119,3 +119,36 @@ class AutoDbRemoteQuotaTrackerTests(TestCase):
 
         self.assertEqual(quota.estimated_queries_used, 2143)
         self.assertEqual(int(payload.get("estimated_queries_used") or 0), 2143)
+
+    def test_cooldown_expiry_resets_counter_to_zero(self):
+        now = timezone.now()
+        quota = AutoDbRemoteQuotaState.objects.create(
+            remote_key="autodb_pro_mysql",
+            estimated_limit_per_hour=3332,
+            estimated_queries_used=2825,
+            cooldown_until=now - timedelta(seconds=5),
+            last_quota_error_at=now - timedelta(minutes=1),
+            window_started_at=now - timedelta(minutes=30),
+            expected_reset_at=now + timedelta(minutes=30),
+            recent_points_json=[
+                {
+                    "timestamp": (now - timedelta(minutes=1)).replace(second=0, microsecond=0).isoformat(),
+                    "query_count": 2825,
+                    "cumulative_used": 2825,
+                    "run_id": "tecdoc-batch",
+                    "consumer": "celery_batch",
+                    "status": "ok",
+                    "error": "",
+                }
+            ],
+            last_error="ERROR 1226 (42000): max_questions",
+        )
+        tracker = AutoDbRemoteQuotaTracker()
+
+        payload = tracker.serialize(quota)
+        quota.refresh_from_db()
+
+        self.assertEqual(quota.estimated_queries_used, 0)
+        self.assertEqual(int(payload.get("estimated_queries_used") or 0), 0)
+        self.assertIsNone(quota.cooldown_until)
+        self.assertEqual(quota.recent_points_json, [])
