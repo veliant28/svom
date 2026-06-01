@@ -12,7 +12,7 @@ export type GetProductsParams = CatalogFilters & {
 type CatalogProductsResponse = ListResponse<CatalogProduct>;
 
 export async function getProducts(params: GetProductsParams = {}): Promise<PaginatedResponse<CatalogProduct>> {
-  const data = await getJson<CatalogProductsResponse>("/catalog/products/", {
+  const data = await getJson<CatalogProductsResponse>("/catalog/products", {
     locale: params.locale,
     page: params.page,
     page_size: params.pageSize,

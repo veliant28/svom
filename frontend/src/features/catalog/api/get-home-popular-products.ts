@@ -10,7 +10,7 @@ type GetHomePopularProductsParams = Pick<CatalogFilters, "vehicle_id" | "passang
 export async function getHomePopularProducts(
   params: GetHomePopularProductsParams = {},
 ): Promise<CatalogProduct[]> {
-  const data = await getJson<ListResponse<CatalogProduct>>("/catalog/home/popular-products/", {
+  const data = await getJson<ListResponse<CatalogProduct>>("/catalog/home/popular-products", {
     locale: params.locale,
     vehicle_id: params.vehicle_id,
     passanger_car_id: params.passanger_car_id,
@@ -19,4 +19,3 @@ export async function getHomePopularProducts(
   });
   return normalizeListResponse(data);
 }
-

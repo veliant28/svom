@@ -16,5 +16,5 @@ export async function getProductFitmentOptions(
   locale?: string,
   params: ProductFitmentOptionsParams = {},
 ): Promise<ProductFitmentOptions> {
-  return getJson<ProductFitmentOptions>(`/catalog/products/${slug}/compatibility/options/`, { ...params, locale });
+  return getJson<ProductFitmentOptions>(`/catalog/products/${slug}/compatibility/options`, { ...params, locale });
 }

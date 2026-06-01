@@ -18,6 +18,7 @@ export function SubcategoryTile({ categoryId, name, isActive, onNavigate, perfor
   return (
     <Link
       href={href}
+      prefetch={false}
       scroll={false}
       onClick={onNavigate}
       className={`block rounded-lg border px-2.5 py-1.5 text-[13px] ${isFastMode ? "transition-colors duration-100" : "transition-all duration-150"}`}

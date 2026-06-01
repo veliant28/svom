@@ -24,6 +24,7 @@ export class ApiRequestError extends Error {
   url: string;
   payload?: ApiErrorPayload;
   isNetworkError: boolean;
+  isTimeout: boolean;
 
   constructor(params: {
     message: string;
@@ -31,6 +32,7 @@ export class ApiRequestError extends Error {
     status?: number;
     payload?: ApiErrorPayload;
     isNetworkError?: boolean;
+    isTimeout?: boolean;
   }) {
     super(params.message);
     this.name = "ApiRequestError";
@@ -38,6 +40,7 @@ export class ApiRequestError extends Error {
     this.status = params.status;
     this.payload = params.payload;
     this.isNetworkError = params.isNetworkError ?? false;
+    this.isTimeout = params.isTimeout ?? false;
   }
 }
 
@@ -62,7 +65,6 @@ function toSearchParams(params?: QueryParams): string {
 }
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 15000;
-const GET_NETWORK_RETRY_ATTEMPTS = 2;
 
 async function requestJson<T>(
   method: "GET" | "POST" | "PATCH" | "DELETE",
@@ -99,41 +101,33 @@ async function requestJson<T>(
 
   let response: Response | null = null;
   const timeoutMs = Number.isFinite(options.timeoutMs) ? Math.max(0, Number(options.timeoutMs)) : DEFAULT_REQUEST_TIMEOUT_MS;
-  const maxAttempts = method === "GET" ? GET_NETWORK_RETRY_ATTEMPTS : 1;
   let lastNetworkError: unknown = null;
   let timedOut = false;
+  const controller = new AbortController();
+  const timeoutId =
+    timeoutMs > 0
+      ? setTimeout(() => {
+          controller.abort();
+        }, timeoutMs)
+      : null;
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    const controller = new AbortController();
-    const timeoutId =
-      timeoutMs > 0
-        ? setTimeout(() => {
-            controller.abort();
-          }, timeoutMs)
-        : null;
-
-    try {
-      response = await fetch(requestUrl, {
-        method,
-        headers,
-        body: body === undefined ? undefined : JSON.stringify(body),
-        cache: "no-store",
-        credentials: options.credentials ?? "omit",
-        signal: controller.signal,
-      });
-      status = response.status;
-      lastNetworkError = null;
-      break;
-    } catch (error: unknown) {
-      lastNetworkError = error;
-      timedOut = error instanceof Error && error.name === "AbortError";
-      if (attempt >= maxAttempts) {
-        break;
-      }
-    } finally {
-      if (timeoutId !== null) {
-        clearTimeout(timeoutId);
-      }
+  try {
+    response = await fetch(requestUrl, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+      cache: "no-store",
+      credentials: options.credentials ?? "omit",
+      signal: controller.signal,
+    });
+    status = response.status;
+    lastNetworkError = null;
+  } catch (error: unknown) {
+    lastNetworkError = error;
+    timedOut = error instanceof Error && error.name === "AbortError";
+  } finally {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
     }
   }
 
@@ -151,6 +145,7 @@ async function requestJson<T>(
         : "Network error while sending request.",
       url: requestUrl,
       isNetworkError: true,
+      isTimeout: timedOut,
     });
   }
 

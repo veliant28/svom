@@ -146,6 +146,12 @@ DATABASES = {
     }
 }
 
+DB_CONN_MAX_AGE = max(env_int("DJANGO_DB_CONN_MAX_AGE", 120), 0)
+DB_CONN_HEALTH_CHECKS = env_bool("DJANGO_DB_CONN_HEALTH_CHECKS", True)
+
+DATABASES["default"]["CONN_MAX_AGE"] = DB_CONN_MAX_AGE
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = DB_CONN_HEALTH_CHECKS
+
 AUTODB_PRO_LOCAL_DATABASE_URL = os.getenv("AUTODB_PRO_LOCAL_DATABASE_URL", "").strip()
 AUTODB_PRO_LOCAL_DATABASE_NAME = os.getenv("AUTODB_PRO_LOCAL_DATABASE_NAME", "Auto_DB_Pro").strip() or "Auto_DB_Pro"
 _legacy_autodb_db_name = os.getenv("AUTODB_POSTGRES_DB", "").strip()
@@ -168,6 +174,8 @@ else:
     }
 
 DATABASES["auto_db_pro"] = _auto_db_pro_config
+DATABASES["auto_db_pro"]["CONN_MAX_AGE"] = DB_CONN_MAX_AGE
+DATABASES["auto_db_pro"]["CONN_HEALTH_CHECKS"] = DB_CONN_HEALTH_CHECKS
 DATABASE_ROUTERS = ["apps.autodb.db_router.AutoDbRouter"]
 
 REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "redis://127.0.0.1:6379/1")

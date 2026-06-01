@@ -90,17 +90,8 @@ def get_autodb_primary_image_url(*, product: Product) -> str:
 
 
 def build_autodb_characteristic_attributes(*, product: Product) -> list[dict[str, str]]:
-    pairs = _resolve_article_brand_pairs(product=product)
-    if not pairs:
-        return []
-    supplier_ids = _resolve_supplier_ids(pairs=pairs)
-    direct_supplier_id = int(getattr(product, "autodb_supplier_id", 0) or 0)
-    if direct_supplier_id > 0:
-        supplier_ids.add(direct_supplier_id)
-    if not supplier_ids:
-        return []
-    articles = {article for article, _brand in pairs}
-    content = _build_content_from_local_clone(supplier_ids=supplier_ids, articles=articles)
+    # Reuse cached content path to avoid clone-backed lookups on every detail request.
+    content = get_autodb_product_content(product=product, prefer_live=False)
     rows: list[dict[str, str]] = []
     for index, item in enumerate(content.attributes):
         name = str(item.get("attribute_name") or "").strip()

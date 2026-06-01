@@ -6,7 +6,7 @@ import type { CategorySummary } from "../types";
 
 export async function getCategories(locale?: string): Promise<CategorySummary[]> {
   const data = await getJson<ListResponse<CategorySummary>>(
-    "/catalog/categories/",
+    "/catalog/categories",
     locale ? { locale } : undefined,
   );
   return normalizeListResponse(data);
@@ -14,7 +14,7 @@ export async function getCategories(locale?: string): Promise<CategorySummary[]>
 
 export async function getHeaderCategories(locale?: string): Promise<CategorySummary[]> {
   const data = await getJson<ListResponse<CategorySummary>>(
-    "/catalog/categories/",
+    "/catalog/categories",
     {
       ...(locale ? { locale } : {}),
       scope: "header",
@@ -25,7 +25,7 @@ export async function getHeaderCategories(locale?: string): Promise<CategorySumm
 
 export async function getHeaderNavigation(locale?: string): Promise<HeaderCategoryParent[]> {
   const data = await getJson<ListResponse<HeaderCategoryParent>>(
-    "/catalog/navigation/header/",
+    "/catalog/navigation/header",
     locale ? { locale } : undefined,
   );
   return normalizeListResponse(data);

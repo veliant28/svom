@@ -148,14 +148,19 @@ def resolve_selected_autodb_vehicle_display(request) -> dict[str, str | int] | N
 def resolve_selected_passanger_car_id(request) -> int | None:
     if request is None:
         return None
+    cached = getattr(request, "_resolved_public_passanger_car_id", None)
+    if cached is not None:
+        return cached
 
     for key in ("passanger_car_id", "vehicle_id"):
         parsed = parse_positive_int(request.query_params.get(key))
         if parsed:
+            setattr(request, "_resolved_public_passanger_car_id", parsed)
             return parsed
 
     garage_vehicle_id = str(request.query_params.get("garage_vehicle") or "").strip()
     if not garage_vehicle_id:
+        setattr(request, "_resolved_public_passanger_car_id", None)
         return None
 
     row = (
@@ -164,10 +169,14 @@ def resolve_selected_passanger_car_id(request) -> int | None:
         .first()
     )
     if not row:
+        setattr(request, "_resolved_public_passanger_car_id", None)
         return None
     if str(row.get("catalog_source") or "").strip() != GarageVehicle.CATALOG_SOURCE_AUTODB_PRO:
+        setattr(request, "_resolved_public_passanger_car_id", None)
         return None
-    return parse_positive_int(row.get("autodb_passanger_car_id"))
+    resolved = parse_positive_int(row.get("autodb_passanger_car_id"))
+    setattr(request, "_resolved_public_passanger_car_id", resolved)
+    return resolved
 
 
 def serialize_autodb_fitment_mapping(car: dict[str, object]) -> dict:
@@ -400,6 +409,76 @@ def get_public_autodb_fitment_ids(*, product: Product, include_commercial: bool 
     return sorted({int(row["vehicle_id"]) for row in entries if int(row["vehicle_id"]) > 0})
 
 
+def get_public_autodb_fitment_count(*, product: Product, include_commercial: bool = False) -> int:
+    sources = [ProductFitment.SOURCE_MANUAL]
+    if _can_use_autodb_fitments_for_public(product=product):
+        sources.append(ProductFitment.SOURCE_AUTODB_PRO)
+
+    queryset = ProductFitment.objects.filter(
+        product=product,
+        source__in=sources,
+        is_stale=False,
+        excluded_from_public_filtering=False,
+        quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
+        autodb_passanger_car_id__isnull=False,
+    )
+    if not include_commercial:
+        queryset = queryset.filter(linkage_type__iexact=LINKAGE_TYPE_PASSENGER_CAR)
+    return int(queryset.values("autodb_passanger_car_id").distinct().count())
+
+
+def get_public_autodb_fitment_entries_limited(
+    *,
+    product: Product,
+    include_commercial: bool = False,
+    limit: int = 80,
+) -> list[dict[str, object]]:
+    out: dict[tuple[int, str], dict[str, object]] = {}
+
+    autodb_rows = (
+        _public_autodb_fitments_qs(product=product, include_commercial=include_commercial)
+        .values_list("autodb_passanger_car_id", "linkage_type")
+        .distinct()[: max(limit, 1)]
+    )
+    for vehicle_id_raw, linkage_type_raw in autodb_rows:
+        vehicle_id = parse_positive_int(vehicle_id_raw)
+        if not vehicle_id:
+            continue
+        linkage_type = str(linkage_type_raw or "").strip() or LINKAGE_TYPE_PASSENGER_CAR
+        key = (vehicle_id, _linkage_type_key(linkage_type))
+        if key in out:
+            continue
+        out[key] = {
+            "vehicle_id": vehicle_id,
+            "linkage_type": linkage_type,
+            "is_passenger": _linkage_type_key(linkage_type) == _linkage_type_key(LINKAGE_TYPE_PASSENGER_CAR),
+        }
+        if len(out) >= limit:
+            return list(out.values())
+
+    manual_rows = (
+        _public_manual_fitments_qs(product=product)
+        .values_list("autodb_passanger_car_id", "linkage_type")
+        .distinct()[: max(limit, 1)]
+    )
+    for vehicle_id_raw, linkage_type_raw in manual_rows:
+        vehicle_id = parse_positive_int(vehicle_id_raw)
+        if not vehicle_id:
+            continue
+        linkage_type = str(linkage_type_raw or "").strip() or LINKAGE_TYPE_PASSENGER_CAR
+        key = (vehicle_id, _linkage_type_key(linkage_type))
+        if key in out:
+            continue
+        out[key] = {
+            "vehicle_id": vehicle_id,
+            "linkage_type": linkage_type,
+            "is_passenger": _linkage_type_key(linkage_type) == _linkage_type_key(LINKAGE_TYPE_PASSENGER_CAR),
+        }
+        if len(out) >= limit:
+            break
+    return list(out.values())
+
+
 def resolve_public_autodb_vehicle_map(*, passanger_car_ids: list[int]) -> dict[int, dict[str, object]]:
     if not passanger_car_ids:
         return {}
@@ -439,11 +518,17 @@ def resolve_public_autodb_vehicle_map_by_entries(
 
 
 def _can_use_autodb_fitments_for_public(*, product: Product) -> bool:
+    cached = getattr(product, "_can_use_autodb_fitments_for_public_cache", None)
+    if cached is not None:
+        return bool(cached)
+
     if _public_manual_fitments_qs(product=product).exists():
+        setattr(product, "_can_use_autodb_fitments_for_public_cache", True)
         return True
 
     article_key = str(getattr(product, "autodb_article_key", "") or "").strip()
     if not article_key:
+        setattr(product, "_can_use_autodb_fitments_for_public_cache", False)
         return False
     has_trusted_quality = AutoDbProductLinkQuality.objects.filter(
         product=product,
@@ -451,10 +536,13 @@ def _can_use_autodb_fitments_for_public(*, product: Product) -> bool:
         status=AutoDbProductLinkQuality.STATUS_TRUSTED,
     ).exists()
     if not has_trusted_quality:
+        setattr(product, "_can_use_autodb_fitments_for_public_cache", False)
         return False
-    return _public_autodb_fitments_qs(product=product, include_commercial=True).filter(
+    result = _public_autodb_fitments_qs(product=product, include_commercial=True).filter(
         autodb_article_key=article_key
     ).exists()
+    setattr(product, "_can_use_autodb_fitments_for_public_cache", bool(result))
+    return bool(result)
 
 
 def _public_autodb_fitments_qs(*, product: Product, include_commercial: bool = False):

@@ -73,6 +73,29 @@ class ProductFitment(UUIDPrimaryKeyMixin, TimestampedMixin):
                 name="compatibility_fitment_unique_source_hash",
             ),
         ]
+        indexes = [
+            models.Index(
+                fields=("product", "autodb_passanger_car_id"),
+                condition=Q(
+                    source="autodb_pro",
+                    is_stale=False,
+                    excluded_from_public_filtering=False,
+                    quality_status="trusted",
+                    autodb_passanger_car_id__isnull=False,
+                ),
+                name="compat_fit_pub_prod_car_idx",
+            ),
+            models.Index(
+                fields=("product", "source", "autodb_passanger_car_id"),
+                condition=Q(
+                    is_stale=False,
+                    excluded_from_public_filtering=False,
+                    quality_status="trusted",
+                    autodb_passanger_car_id__isnull=False,
+                ),
+                name="compat_fit_pub_prod_src_idx",
+            ),
+        ]
 
     def __str__(self) -> str:
         if self.autodb_passanger_car_id:

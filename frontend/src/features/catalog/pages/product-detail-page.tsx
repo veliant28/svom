@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Boxes, CheckCircle2, ChevronLeft, XCircle } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
@@ -13,7 +13,7 @@ import { getProductFitments } from "@/features/catalog/api/get-product-fitments"
 import { useProductDetail } from "@/features/catalog/hooks/use-product-detail";
 import { resolveCompatibilityBadgeState } from "@/features/catalog/lib/compatibility-badge";
 import { buildProductIdentityParts } from "@/features/catalog/lib/product-identity";
-import type { ProductFitment, ProductFitmentOptions } from "@/features/catalog/types";
+import type { ProductFitment } from "@/features/catalog/types";
 import { WishlistToggleButton } from "@/features/wishlist/components/wishlist-toggle-button";
 import { ContainedImagePanel } from "@/shared/components/ui/contained-image-panel";
 import { clearCatalogReturnState, readCatalogReturnState } from "@/features/catalog/lib/catalog-navigation-state";
@@ -27,17 +27,20 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   const tCard = useTranslations("product.card");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { product, isLoading, vehicleParams } = useProductDetail(slug);
+  const { product, isLoading, vehicleParams, errorKind, retryLoad } = useProductDetail(slug);
   const images = Array.isArray(product?.images) ? product.images : [];
   const attributes = Array.isArray(product?.attributes) ? product.attributes : [];
   const productFitments = useMemo(() => (Array.isArray(product?.fitments) ? product.fitments : []), [product?.fitments]);
   const [selectedMake, setSelectedMake] = useState<string>("");
   const [selectedModel, setSelectedModel] = useState<string>("");
-  const [fitmentOptions, setFitmentOptions] = useState<ProductFitmentOptions | null>(null);
   const [remoteFitments, setRemoteFitments] = useState<ProductFitment[] | null>(null);
   const [remoteFitmentCount, setRemoteFitmentCount] = useState<number | null>(null);
+  const [optionMakes, setOptionMakes] = useState<string[]>([]);
+  const [optionModels, setOptionModels] = useState<string[]>([]);
   const [selectedVehicleApplied, setSelectedVehicleApplied] = useState(false);
   const [fitmentListExpanded, setFitmentListExpanded] = useState(false);
+  const fitmentModelsCacheRef = useRef<Map<string, string[]>>(new Map());
+  const fitmentRowsCacheRef = useRef<Map<string, { count: number; results: ProductFitment[] }>>(new Map());
   const fitments = remoteFitments ?? productFitments;
   const catalogParams = useMemo(() => {
     const nextParams = new URLSearchParams(searchParams?.toString() ?? "");
@@ -98,11 +101,14 @@ export function ProductDetailPage({ slug }: { slug: string }) {
     }
     setSelectedMake("");
     setSelectedModel("");
-    setFitmentOptions(null);
     setRemoteFitments(null);
     setRemoteFitmentCount(null);
+    setOptionMakes([]);
+    setOptionModels([]);
     setSelectedVehicleApplied(false);
     setFitmentListExpanded(false);
+    fitmentModelsCacheRef.current.clear();
+    fitmentRowsCacheRef.current.clear();
   }, [product?.id]);
 
   useEffect(() => {
@@ -116,50 +122,128 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   }, [product]);
 
   useEffect(() => {
-    if (!product) {
+    const selectedVehicle = product?.compatibility_summary?.selected_vehicle;
+    if (selectedVehicleApplied || !selectedVehicle?.is_compatible) {
       return;
     }
 
+    const makeName = (selectedVehicle.make || "").trim();
+    const modelName = (selectedVehicle.model || "").trim();
+    if (!makeName || !modelName) {
+      setSelectedVehicleApplied(true);
+      return;
+    }
+
+    setSelectedMake(makeName);
+    setSelectedModel(modelName);
+    setSelectedVehicleApplied(true);
+  }, [product?.compatibility_summary?.selected_vehicle, selectedVehicleApplied]);
+
+  useEffect(() => {
+    if (!product) {
+      setOptionMakes([]);
+      setOptionModels([]);
+      setRemoteFitments(null);
+      setRemoteFitmentCount(null);
+      return;
+    }
     let isMounted = true;
 
-    async function loadOptions() {
+    async function loadMakes() {
       try {
-        const options = await getProductFitmentOptions(slug, locale, {
+        const response = await getProductFitmentOptions(slug, locale, {
           ...vehicleParams,
-          make: selectedMake,
-          model: selectedModel,
         });
-        if (isMounted) {
-          setFitmentOptions(options);
+        if (!isMounted) {
+          return;
+        }
+        const makes = (response.makes || []).map((item) => (item.label || item.value || "").trim()).filter(Boolean);
+        setOptionMakes(makes);
+        if (response.selected_make) {
+          const suggestedMake = String(response.selected_make).trim();
+          setSelectedMake((current) => current || suggestedMake);
+        }
+        if (response.selected_model) {
+          const suggestedModel = String(response.selected_model).trim();
+          setSelectedModel((current) => current || suggestedModel);
         }
       } catch {
         if (isMounted) {
-          setFitmentOptions(null);
+          setOptionMakes([]);
         }
       }
     }
 
-    void loadOptions();
-
+    void loadMakes();
     return () => {
       isMounted = false;
     };
-  }, [locale, product, selectedMake, selectedModel, slug, vehicleParams]);
+  }, [locale, product, slug, vehicleParams]);
 
   useEffect(() => {
-    if (selectedVehicleApplied || !fitmentOptions?.selected_make || !fitmentOptions.selected_model) {
+    if (!product || !selectedMake) {
+      setOptionModels([]);
       return;
     }
 
-    setSelectedMake(fitmentOptions.selected_make);
-    setSelectedModel(fitmentOptions.selected_model);
-    setSelectedVehicleApplied(true);
-  }, [fitmentOptions, selectedVehicleApplied]);
+    const cachedModels = fitmentModelsCacheRef.current.get(selectedMake);
+    if (cachedModels) {
+      setOptionModels(cachedModels);
+      return;
+    }
+
+    let isMounted = true;
+    async function loadModelsByMake() {
+      try {
+        const response = await getProductFitmentOptions(slug, locale, {
+          ...vehicleParams,
+          make: selectedMake,
+        });
+        if (!isMounted) {
+          return;
+        }
+        const models = (response.models || []).map((item) => (item.label || item.value || "").trim()).filter(Boolean);
+        fitmentModelsCacheRef.current.set(selectedMake, models);
+        setOptionModels(models);
+      } catch {
+        if (isMounted) {
+          setOptionModels([]);
+        }
+      }
+    }
+
+    void loadModelsByMake();
+    return () => {
+      isMounted = false;
+    };
+  }, [locale, product, selectedMake, slug, vehicleParams]);
+
+  const fitmentRowsCacheKey = useMemo(() => {
+    const vehicleKey =
+      String(vehicleParams.passanger_car_id || "") ||
+      String(vehicleParams.vehicle_id || "") ||
+      String(vehicleParams.garage_vehicle || "");
+    return [slug, vehicleKey, selectedMake, selectedModel].join("|");
+  }, [selectedMake, selectedModel, slug, vehicleParams.garage_vehicle, vehicleParams.passanger_car_id, vehicleParams.vehicle_id]);
 
   useEffect(() => {
     if (!product) {
       setRemoteFitments(null);
       setRemoteFitmentCount(null);
+      return;
+    }
+
+    const shouldLoadRemoteRows = fitmentListExpanded || Boolean(selectedMake) || Boolean(selectedModel);
+    if (!shouldLoadRemoteRows) {
+      setRemoteFitments(null);
+      setRemoteFitmentCount(null);
+      return;
+    }
+
+    const cachedRows = fitmentRowsCacheRef.current.get(fitmentRowsCacheKey);
+    if (cachedRows) {
+      setRemoteFitments(cachedRows.results);
+      setRemoteFitmentCount(cachedRows.count);
       return;
     }
 
@@ -169,11 +253,15 @@ export function ProductDetailPage({ slug }: { slug: string }) {
       try {
         const response = await getProductFitments(slug, locale, {
           ...vehicleParams,
-          make: selectedMake,
-          model: selectedModel,
-          limit: 300,
+          make: selectedMake || undefined,
+          model: selectedModel || undefined,
+          limit: selectedModel ? 300 : 160,
         });
         if (isMounted) {
+          fitmentRowsCacheRef.current.set(fitmentRowsCacheKey, {
+            count: response.count,
+            results: response.results,
+          });
           setRemoteFitments(response.results);
           setRemoteFitmentCount(response.count);
         }
@@ -190,32 +278,25 @@ export function ProductDetailPage({ slug }: { slug: string }) {
     return () => {
       isMounted = false;
     };
-  }, [locale, product, selectedMake, selectedModel, slug, vehicleParams]);
+  }, [fitmentListExpanded, fitmentRowsCacheKey, locale, product, selectedMake, selectedModel, slug, vehicleParams]);
 
   const availableMakes = useMemo(() => {
-    if (fitmentOptions?.makes.length) {
-      return fitmentOptions.makes.map((option) => option.value);
+    if (optionMakes.length > 0) {
+      return optionMakes;
     }
-
-    return Array.from(new Set(productFitments.map((fitment) => (fitment.make || "").trim()).filter(Boolean))).sort((a, b) =>
-      a.localeCompare(b),
-    );
-  }, [fitmentOptions, productFitments]);
+    return Array.from(new Set(fitments.map((fitment) => (fitment.make || "").trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  }, [fitments, optionMakes]);
 
   const availableModels = useMemo(() => {
     if (!selectedMake) {
       return [];
     }
-
-    if (fitmentOptions?.models.length) {
-      return fitmentOptions.models.map((option) => option.value);
+    if (optionModels.length > 0) {
+      return optionModels;
     }
-
-    const filtered = productFitments.filter((fitment) => (fitment.make || "").trim() === selectedMake);
-    return Array.from(new Set(filtered.map((fitment) => (fitment.model || "").trim()).filter(Boolean))).sort((a, b) =>
-      a.localeCompare(b),
-    );
-  }, [fitmentOptions, productFitments, selectedMake]);
+    const filtered = fitments.filter((fitment) => (fitment.make || "").trim() === selectedMake);
+    return Array.from(new Set(filtered.map((fitment) => (fitment.model || "").trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  }, [fitments, optionModels, selectedMake]);
 
   useEffect(() => {
     if (!selectedMake || availableMakes.includes(selectedMake)) {
@@ -261,6 +342,22 @@ export function ProductDetailPage({ slug }: { slug: string }) {
 
   if (isLoading && !product) {
     return <ProductDetailSkeleton />;
+  }
+
+  if (!product && errorKind !== "not_found") {
+    return (
+      <section className="mx-auto max-w-6xl px-4 py-8">
+        <p>{t("networkError")}</p>
+        <button
+          type="button"
+          onClick={retryLoad}
+          className="mt-3 inline-flex h-9 items-center rounded-md border px-3 text-sm font-medium transition hover:opacity-80"
+          style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", color: "var(--fg)" }}
+        >
+          {t("retry")}
+        </button>
+      </section>
+    );
   }
 
   if (!product) {
@@ -402,7 +499,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
                 </div>
 
                 <p className="mt-2 text-xs" style={{ color: "var(--muted)" }}>
-                  {t("fitmentRows", { count: remoteFitmentCount ?? visibleFitments.length })}
+                  {t("fitmentRows", { count: remoteFitmentCount ?? product.fitment_count ?? visibleFitments.length })}
                 </p>
 
                 <div className="mt-2 max-h-60 space-y-1 overflow-auto pr-1">

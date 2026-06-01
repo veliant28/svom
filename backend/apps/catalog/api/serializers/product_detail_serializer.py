@@ -12,14 +12,12 @@ from apps.catalog.services.product_sku import (
 from apps.catalog.services.category_vehicle_filter_policy import get_vehicle_filter_policy
 from apps.catalog.services.product_stock import resolve_display_stock_qty
 from apps.catalog.services.product_fitment_lookup import (
-    get_autodb_fitment_queryset,
+    get_public_autodb_fitment_count,
     get_public_autodb_fitment_entries,
-    get_public_autodb_fitment_ids,
+    get_public_autodb_fitment_entries_limited,
     resolve_public_autodb_vehicle_map_by_entries,
     resolve_selected_autodb_vehicle_display,
-    resolve_selected_autocatalog_vehicle,
     _linkage_type_key,
-    serialize_autodb_fitment_mapping,
     serialize_autodb_fitment_mapping_from_selector,
     serialize_autodb_fitment_fallback_row,
 )
@@ -92,8 +90,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     selected_offer_raw_brand = serializers.SerializerMethodField()
     is_sellable = serializers.SerializerMethodField()
     total_stock_qty = serializers.SerializerMethodField()
-    has_fitment_data = serializers.BooleanField(read_only=True, default=False)
-    fits_selected_vehicle = serializers.BooleanField(read_only=True, allow_null=True, default=None)
+    has_fitment_data = serializers.SerializerMethodField()
+    fits_selected_vehicle = serializers.SerializerMethodField()
     fitment_badge_hidden = serializers.SerializerMethodField()
     fitment_count = serializers.SerializerMethodField()
     is_autodb_compatible_data_available = serializers.SerializerMethodField()
@@ -159,9 +157,42 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         cached = getattr(obj, "_sellable_snapshot", None)
         if cached is not None:
             return cached
-        snapshot = sellable_service.build(product=obj, quantity=1)
+        snapshot = sellable_service.build(
+            product=obj,
+            quantity=1,
+            include_explainability=False,
+        )
         setattr(obj, "_sellable_snapshot", snapshot)
         return snapshot
+
+    def _fitment_entries(self, obj: Product, *, include_commercial: bool) -> list[dict[str, object]]:
+        cache_attr = "_public_autodb_fitment_entries_all" if include_commercial else "_public_autodb_fitment_entries_passenger"
+        cached = getattr(obj, cache_attr, None)
+        if cached is not None:
+            return cached
+        entries = get_public_autodb_fitment_entries(product=obj, include_commercial=include_commercial)
+        setattr(obj, cache_attr, entries)
+        return entries
+
+    def _fitment_ids(self, obj: Product, *, include_commercial: bool) -> list[int]:
+        cache_attr = "_public_autodb_fitment_ids_all" if include_commercial else "_public_autodb_fitment_ids_passenger"
+        cached = getattr(obj, cache_attr, None)
+        if cached is not None:
+            return cached
+        ids = sorted({int(row["vehicle_id"]) for row in self._fitment_entries(obj, include_commercial=include_commercial) if int(row["vehicle_id"]) > 0})
+        setattr(obj, cache_attr, ids)
+        return ids
+
+    def _autodb_attributes(self, obj: Product) -> list[dict]:
+        cached = getattr(obj, "_public_autodb_attributes", None)
+        if cached is not None:
+            return cached
+        if not self._is_autodb_linked(obj):
+            attrs: list[dict] = []
+        else:
+            attrs = build_autodb_characteristic_attributes(product=obj)
+        setattr(obj, "_public_autodb_attributes", attrs)
+        return attrs
 
     def get_availability_status(self, obj: Product) -> str:
         return self._snapshot(obj).availability_status
@@ -183,6 +214,15 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         if not selected_offer_id:
             obj._public_selected_offer = None
             return None
+
+        prefetched_cache = getattr(obj, "_prefetched_objects_cache", {})
+        prefetched_offers = list(prefetched_cache.get("supplier_offers", []) or [])
+        if prefetched_offers:
+            for row in prefetched_offers:
+                if str(getattr(row, "id", "")) == selected_offer_id:
+                    obj._public_selected_offer = row
+                    return row
+
         offer = SupplierOffer.objects.select_related("supplier").filter(id=selected_offer_id).first()
         obj._public_selected_offer = offer
         return offer
@@ -195,17 +235,35 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             obj._public_selected_raw_offer = None
             return None
         supplier_sku = str(getattr(selected_offer, "supplier_sku", "") or "").strip()
-        raw_offer = (
-            SupplierRawOffer.objects.filter(matched_product=obj, supplier=selected_offer.supplier)
-            .filter(
-                Q(external_sku=supplier_sku)
-                | Q(article=supplier_sku)
-                | Q(external_sku__icontains=supplier_sku)
-                | Q(article__icontains=supplier_sku)
+        prefetched_cache = getattr(obj, "_prefetched_objects_cache", {})
+        prefetched = list(prefetched_cache.get("raw_supplier_offers", []) or [])
+        candidate_rows = [row for row in prefetched if str(getattr(row, "supplier_id", "")) == str(selected_offer.supplier_id)]
+
+        raw_offer = None
+        if candidate_rows:
+            if supplier_sku:
+                supplier_sku_lower = supplier_sku.lower()
+                exact = [
+                    row
+                    for row in candidate_rows
+                    if str(getattr(row, "external_sku", "") or "").strip().lower() == supplier_sku_lower
+                    or str(getattr(row, "article", "") or "").strip().lower() == supplier_sku_lower
+                ]
+                raw_offer = exact[0] if exact else None
+            if raw_offer is None:
+                raw_offer = candidate_rows[0]
+            obj._public_selected_raw_offer = raw_offer
+            return raw_offer
+
+        raw_offer = None
+        if supplier_sku:
+            # Keep lookup index-friendly on production-sized tables.
+            raw_offer = (
+                SupplierRawOffer.objects.filter(matched_product=obj, supplier=selected_offer.supplier)
+                .filter(Q(external_sku=supplier_sku) | Q(article=supplier_sku))
+                .order_by("-updated_at", "-id")
+                .first()
             )
-            .order_by("-updated_at", "-id")
-            .first()
-        )
         if raw_offer is None:
             raw_offer = (
                 SupplierRawOffer.objects.filter(matched_product=obj, supplier=selected_offer.supplier)
@@ -270,22 +328,31 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return resolve_display_stock_qty(obj)
 
     def _resolve_locale(self) -> str | None:
+        if hasattr(self, "_resolved_locale"):
+            return getattr(self, "_resolved_locale")
         request = self.context.get("request")
         if request is None:
+            setattr(self, "_resolved_locale", None)
             return None
 
         locale = (request.query_params.get("locale") or "").strip()
         if locale:
+            setattr(self, "_resolved_locale", locale)
             return locale
 
         language_code = getattr(request, "LANGUAGE_CODE", "")
         if language_code:
-            return str(language_code)
+            resolved = str(language_code)
+            setattr(self, "_resolved_locale", resolved)
+            return resolved
 
         accept_language = str(request.headers.get("Accept-Language", "")).strip()
         if not accept_language:
+            setattr(self, "_resolved_locale", None)
             return None
-        return accept_language.split(",", 1)[0]
+        resolved = accept_language.split(",", 1)[0]
+        setattr(self, "_resolved_locale", resolved)
+        return resolved
 
     def get_name(self, obj: Product) -> str:
         return get_product_display_name(obj, self._resolve_locale())
@@ -333,7 +400,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             )
 
         if self._is_autodb_linked(obj):
-            autodb_content = get_autodb_product_content(product=obj, prefer_live=True)
+            autodb_content = get_autodb_product_content(product=obj, prefer_live=False)
             for index, url in enumerate(autodb_content.image_urls):
                 clean_url = str(url or "").strip()
                 if not clean_url or clean_url in seen_urls:
@@ -354,63 +421,56 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return rows
 
     def get_attributes(self, obj: Product) -> list[dict]:
-        if not self._is_autodb_linked(obj):
-            return []
-        return build_autodb_characteristic_attributes(product=obj)
+        return self._autodb_attributes(obj)
 
     def get_fitments(self, obj: Product) -> list[dict]:
         cached = getattr(obj, "_resolved_public_fitments", None)
         if cached is not None:
             return cached
-        fitment_ids = get_public_autodb_fitment_ids(product=obj, include_commercial=True)
-        if not fitment_ids:
+        fitment_total = self._fitment_count(obj, include_commercial=True)
+        if fitment_total <= 0:
             return []
 
         rows: list[dict] = []
-        dedupe: set[tuple[str, str, str, str, str]] = set()
         selected_vehicle_display = resolve_selected_autodb_vehicle_display(self.context.get("request"))
-
-        selected_vehicle = resolve_selected_autocatalog_vehicle(self.context.get("request"))
-        selected_model_key = None
-        if selected_vehicle is not None:
-            selected_model_key = (selected_vehicle.make_name, selected_vehicle.model_name)
-        autodb_maps = get_autodb_fitment_queryset(product=obj, selected_vehicle=selected_vehicle)
-        for mapping in autodb_maps:
-            row = serialize_autodb_fitment_mapping(mapping)
-            key = (row["make"], row["model"], row["generation"], row["engine"], row["modification"])
-            if key in dedupe:
+        fitment_entries = get_public_autodb_fitment_entries_limited(
+            product=obj,
+            include_commercial=True,
+            limit=80,
+        )
+        vehicle_map = resolve_public_autodb_vehicle_map_by_entries(fitment_entries=fitment_entries)
+        for entry in fitment_entries:
+            car_id = int(entry.get("vehicle_id") or 0)
+            if car_id <= 0:
                 continue
-            dedupe.add(key)
-            rows.append(row)
-            if selected_model_key is not None and (row["make"], row["model"]) == selected_model_key:
-                continue
+            linkage_type = str(entry.get("linkage_type") or "")
+            vehicle = vehicle_map.get((_linkage_type_key(linkage_type), car_id))
+            if vehicle is not None:
+                rows.append(serialize_autodb_fitment_mapping_from_selector(vehicle))
+            else:
+                rows.append(
+                    serialize_autodb_fitment_fallback_row(
+                        passanger_car_id=car_id,
+                        selected_vehicle=selected_vehicle_display,
+                        linkage_type=linkage_type,
+                    )
+                )
             if len(rows) >= 80:
                 break
 
-        if not rows:
-            fitment_entries = get_public_autodb_fitment_entries(product=obj, include_commercial=True)
-            vehicle_map = resolve_public_autodb_vehicle_map_by_entries(fitment_entries=fitment_entries)
-            for entry in fitment_entries:
-                car_id = int(entry.get("vehicle_id") or 0)
-                if car_id <= 0:
-                    continue
-                linkage_type = str(entry.get("linkage_type") or "")
-                vehicle = vehicle_map.get((_linkage_type_key(linkage_type), car_id))
-                if vehicle is not None:
-                    rows.append(serialize_autodb_fitment_mapping_from_selector(vehicle))
-                else:
-                    rows.append(
-                        serialize_autodb_fitment_fallback_row(
-                            passanger_car_id=car_id,
-                            selected_vehicle=selected_vehicle_display,
-                            linkage_type=linkage_type,
-                        )
-                    )
-                if len(rows) >= 80:
-                    break
-
         setattr(obj, "_resolved_public_fitments", rows)
         return rows
+
+    def get_has_fitment_data(self, obj: Product) -> bool:
+        return bool(self._fitment_count(obj, include_commercial=True) > 0)
+
+    def get_fits_selected_vehicle(self, obj: Product) -> bool | None:
+        selected_vehicle = self.get_compatibility_summary(obj).get("selected_vehicle")
+        if selected_vehicle is None:
+            return None
+        if "is_compatible" not in selected_vehicle:
+            return None
+        return bool(selected_vehicle.get("is_compatible"))
 
     def get_fitment_badge_hidden(self, obj: Product) -> bool:
         return False
@@ -419,6 +479,11 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         article_key = str(getattr(obj, "autodb_article_key", "") or "").strip()
         if not article_key:
             return ""
+        prefetched = getattr(obj, "_prefetched_objects_cache", {}).get("autodb_link_qualities")
+        if prefetched:
+            for quality in prefetched:
+                if str(getattr(quality, "autodb_article_key", "") or "").strip() == article_key:
+                    return str(getattr(quality, "status", "") or "")
         quality = (
             AutoDbProductLinkQuality.objects.filter(product=obj, autodb_article_key=article_key)
             .order_by("-checked_at", "-updated_at")
@@ -433,8 +498,17 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     def get_vehicle_filter_policy(self, obj: Product) -> str:
         return get_vehicle_filter_policy(getattr(obj, "category", None))
 
+    def _fitment_count(self, obj: Product, *, include_commercial: bool) -> int:
+        cache_attr = "_public_fitment_count_all" if include_commercial else "_public_fitment_count_passenger"
+        cached = getattr(obj, cache_attr, None)
+        if cached is not None:
+            return int(cached)
+        count = get_public_autodb_fitment_count(product=obj, include_commercial=include_commercial)
+        setattr(obj, cache_attr, int(count))
+        return int(count)
+
     def get_fitment_count(self, obj: Product) -> int:
-        return len(set(get_public_autodb_fitment_ids(product=obj, include_commercial=True)))
+        return self._fitment_count(obj, include_commercial=True)
 
     def get_is_autodb_compatible_data_available(self, obj: Product) -> bool:
         if self.get_fitment_count(obj) > 0:
@@ -443,26 +517,41 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             return False
         if self._get_link_quality_status(obj) != AutoDbProductLinkQuality.STATUS_TRUSTED:
             return False
-        return bool(build_autodb_characteristic_attributes(product=obj))
+        return bool(self._autodb_attributes(obj))
 
     def get_compatibility_summary(self, obj: Product) -> dict:
-        fitment_ids = set(get_public_autodb_fitment_ids(product=obj, include_commercial=True))
-        if not fitment_ids:
-            return {
+        cached = getattr(obj, "_resolved_public_compatibility_summary", None)
+        if cached is not None:
+            return cached
+        fitment_count = self._fitment_count(obj, include_commercial=True)
+        if fitment_count <= 0:
+            payload = {
                 "available": False,
                 "fitment_count": 0,
                 "selected_vehicle": None,
                 "sample_vehicles": [],
             }
-        passenger_fitment_ids = set(get_public_autodb_fitment_ids(product=obj))
+            setattr(obj, "_resolved_public_compatibility_summary", payload)
+            return payload
 
         selected_vehicle = resolve_selected_autodb_vehicle_display(self.context.get("request"))
         selected_vehicle_payload = None
         if selected_vehicle is not None:
             selected_vehicle_id = int(selected_vehicle.get("vehicle_id") or 0)
+            selected_vehicle_fits = False
+            if selected_vehicle_id > 0:
+                selected_vehicle_fits = ProductFitment.objects.filter(
+                    product=obj,
+                    source__in=(ProductFitment.SOURCE_AUTODB_PRO, ProductFitment.SOURCE_MANUAL),
+                    is_stale=False,
+                    excluded_from_public_filtering=False,
+                    quality_status=ProductFitment.QUALITY_STATUS_TRUSTED,
+                    linkage_type__iexact="PassengerCar",
+                    autodb_passanger_car_id=selected_vehicle_id,
+                ).exists()
             selected_vehicle_payload = {
                 "vehicle_id": selected_vehicle_id,
-                "is_compatible": selected_vehicle_id in passenger_fitment_ids,
+                "is_compatible": bool(selected_vehicle_fits),
                 "label": str(selected_vehicle.get("label") or ""),
                 "subtitle": str(selected_vehicle.get("subtitle") or ""),
                 "make": str(selected_vehicle.get("make") or ""),
@@ -489,9 +578,11 @@ class ProductDetailSerializer(serializers.ModelSerializer):
                 }
             )
 
-        return {
-            "available": bool(fitment_ids),
-            "fitment_count": len(fitment_ids),
+        payload = {
+            "available": bool(fitment_count > 0),
+            "fitment_count": int(fitment_count),
             "selected_vehicle": selected_vehicle_payload,
             "sample_vehicles": sample_vehicles,
         }
+        setattr(obj, "_resolved_public_compatibility_summary", payload)
+        return payload

@@ -8,6 +8,9 @@ import { getProductDetail } from "@/features/catalog/api/get-product-detail";
 import { resolveActiveVehicleFitmentParams } from "@/features/catalog/lib/vehicle-fitment";
 import type { CatalogFilters, ProductDetail } from "@/features/catalog/types";
 import { useActiveVehicle } from "@/features/garage/hooks/use-active-vehicle";
+import { isApiRequestError } from "@/shared/api/http-client";
+
+export type ProductDetailErrorKind = "not_found" | "network" | "unknown" | null;
 
 export function resolveVehicleParams(params: {
   activeGarageVehicleId?: string | null;
@@ -45,15 +48,19 @@ export function useProductDetail(slug: string) {
     activeTemporaryAutoDbPassangerCarId,
     activeVehicleSource,
   } = useActiveVehicle();
+  const activeGarageVehicleCatalogSource = activeGarageVehicle?.catalog_source ?? null;
+  const activeGarageVehicleAutoDbPassangerCarId = activeGarageVehicle?.autodb_passanger_car_id ?? null;
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorKind, setErrorKind] = useState<ProductDetailErrorKind>(null);
+  const [reloadToken, setReloadToken] = useState(0);
   const hasResolvedInitialLoadRef = useRef(false);
   const vehicleParams = useMemo(
     () =>
       resolveVehicleParams({
         activeGarageVehicleId,
-        activeGarageVehicleCatalogSource: activeGarageVehicle?.catalog_source ?? null,
-        activeGarageVehicleAutoDbPassangerCarId: activeGarageVehicle?.autodb_passanger_car_id ?? null,
+        activeGarageVehicleCatalogSource,
+        activeGarageVehicleAutoDbPassangerCarId,
         activeTemporaryAutoDbPassangerCarId,
         activeVehicleSource,
         explicitParams: {
@@ -65,7 +72,8 @@ export function useProductDetail(slug: string) {
       }),
     [
       activeGarageVehicleId,
-      activeGarageVehicle,
+      activeGarageVehicleCatalogSource,
+      activeGarageVehicleAutoDbPassangerCarId,
       activeTemporaryAutoDbPassangerCarId,
       activeVehicleSource,
       vehicleIdParam,
@@ -86,10 +94,20 @@ export function useProductDetail(slug: string) {
         const data = await getProductDetail(slug, locale, vehicleParams);
         if (isMounted) {
           setProduct(data);
+          setErrorKind(null);
         }
-      } catch {
+      } catch (error: unknown) {
         if (isMounted) {
-          setProduct(null);
+          if (isApiRequestError(error) && error.status === 404) {
+            setProduct(null);
+            setErrorKind("not_found");
+          } else if (isApiRequestError(error)) {
+            setProduct(null);
+            setErrorKind("network");
+          } else {
+            setProduct(null);
+            setErrorKind("unknown");
+          }
         }
       } finally {
         if (isMounted) {
@@ -108,7 +126,12 @@ export function useProductDetail(slug: string) {
     locale,
     slug,
     vehicleParams,
+    reloadToken,
   ]);
 
-  return { product, isLoading, vehicleParams };
+  const retryLoad = () => {
+    setReloadToken((value) => value + 1);
+  };
+
+  return { product, isLoading, vehicleParams, errorKind, retryLoad };
 }

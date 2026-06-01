@@ -117,7 +117,7 @@ export function HeroBackgroundSlider({ slides, settings }: HeroBackgroundSliderP
               <source media="(max-width: 767px)" srcSet={slide.mobile_image_url || slide.desktop_image_url} />
               <img
                 src={slide.desktop_image_url}
-                alt={slide.title}
+                alt=""
                 className="h-full w-full object-cover"
               />
             </picture>

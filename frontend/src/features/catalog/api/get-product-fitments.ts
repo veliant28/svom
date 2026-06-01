@@ -18,5 +18,5 @@ export async function getProductFitments(
   locale?: string,
   params: ProductFitmentRowsParams = {},
 ): Promise<ProductFitmentRowsResponse> {
-  return getJson<ProductFitmentRowsResponse>(`/catalog/products/${slug}/fitments/`, { ...params, locale });
+  return getJson<ProductFitmentRowsResponse>(`/catalog/products/${slug}/fitments`, { ...params, locale });
 }

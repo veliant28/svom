@@ -83,6 +83,18 @@ def cleanup_product_display_candidate(*, product: Product, value: str) -> str:
     return cleaned
 
 
+def _safe_product_brand_name(product: Product) -> str:
+    # Prefer denormalized/public fields to avoid touching optional legacy brand tables.
+    for field_name in ("display_brand_name", "autodb_supplier_name", "normalized_brand"):
+        value = sanitize_product_name(str(getattr(product, field_name, "") or ""))
+        if value:
+            return value
+    try:
+        return sanitize_product_name(str(getattr(getattr(product, "brand", None), "name", "") or ""))
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 def build_product_public_name_fallback(*, product: Product, locale: str | None = None) -> str:
     category = getattr(product, "category", None)
     category_name = ""
@@ -91,7 +103,7 @@ def build_product_public_name_fallback(*, product: Product, locale: str | None =
     if not category_name:
         category_name = "Товар"
 
-    brand_name = sanitize_product_name(str(getattr(getattr(product, "brand", None), "name", "") or ""))
+    brand_name = _safe_product_brand_name(product)
     article = sanitize_product_name(str(getattr(product, "article", "") or getattr(product, "autodb_article_number", "") or ""))
     suffix = sanitize_product_name(" ".join(item for item in [brand_name, article] if item))
     if suffix:
@@ -129,7 +141,7 @@ def get_product_display_name_with_meta(
             return candidate, source
 
     if unknown_label != "Товар":
-        brand_name = sanitize_product_name(str(getattr(getattr(product, "brand", None), "name", "") or ""))
+        brand_name = _safe_product_brand_name(product)
         article = sanitize_product_name(str(getattr(product, "article", "") or getattr(product, "autodb_article_number", "") or ""))
         suffix = sanitize_product_name(" ".join(item for item in (brand_name, article) if item))
         return (f"{unknown_label} {suffix}".strip(), "fallback")
@@ -145,7 +157,7 @@ def get_product_display_name(product: Product, locale: str | None = None) -> str
 
 def get_admin_display_name(product: Product) -> str:
     base_name = get_product_display_name(product, "uk")
-    brand_name = sanitize_product_name(str(getattr(getattr(product, "brand", None), "name", "") or ""))
+    brand_name = _safe_product_brand_name(product)
     article = sanitize_product_name(str(getattr(product, "article", "") or getattr(product, "autodb_article_number", "") or ""))
     suffix = sanitize_product_name(" ".join(item for item in [brand_name, article] if item))
     if base_name and suffix:

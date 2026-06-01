@@ -1,14 +1,11 @@
-from django.db.models import Q
 from rest_framework import serializers
 
 from apps.catalog.models import AutoDbProductLinkQuality, Product
-from apps.catalog.services.autodb_content import get_autodb_primary_image_url
 from apps.catalog.services.product_management import get_product_display_name
 from apps.catalog.services.product_branding import get_product_display_brand_payload
 from apps.catalog.services.product_sku import (
     get_product_catalog_article,
     get_product_display_sku,
-    get_product_manufacturer_article,
 )
 from apps.catalog.services.product_stock import resolve_display_stock_qty
 from apps.catalog.services.product_fitment_lookup import (
@@ -18,7 +15,6 @@ from apps.catalog.services.product_fitment_lookup import (
 from apps.catalog.services.category_vehicle_filter_policy import get_vehicle_filter_policy
 from apps.pricing.models import SupplierOffer
 from apps.pricing.services import ProductSellableSnapshotService
-from apps.supplier_imports.models import SupplierRawOffer
 
 from .product_shared_serializer import ProductCategorySerializer
 
@@ -110,7 +106,12 @@ class ProductListSerializer(serializers.ModelSerializer):
         return get_product_catalog_article(obj)
 
     def get_manufacturer_article(self, obj: Product) -> str:
-        return get_product_manufacturer_article(obj)
+        # Fast path for list cards: avoid heavy raw-offer probing per row.
+        display_sku = get_product_display_sku(obj)
+        candidate = str(getattr(obj, "article", "") or getattr(obj, "autodb_article_number", "") or "").strip()
+        if candidate and candidate != display_sku:
+            return candidate
+        return ""
 
     def get_primary_image(self, obj: Product) -> str:
         primary_row = None
@@ -133,27 +134,34 @@ class ProductListSerializer(serializers.ModelSerializer):
             if remote_url:
                 return remote_url
 
-        if not obj.autodb_supplier_id or not str(obj.autodb_article_number or "").strip():
-            return ""
-        return get_autodb_primary_image_url(product=obj)
+        return ""
 
     def _resolve_locale(self) -> str | None:
+        if hasattr(self, "_resolved_locale"):
+            return getattr(self, "_resolved_locale")
         request = self.context.get("request")
         if request is None:
+            setattr(self, "_resolved_locale", None)
             return None
 
         locale = (request.query_params.get("locale") or "").strip()
         if locale:
+            setattr(self, "_resolved_locale", locale)
             return locale
 
         language_code = getattr(request, "LANGUAGE_CODE", "")
         if language_code:
-            return str(language_code)
+            resolved = str(language_code)
+            setattr(self, "_resolved_locale", resolved)
+            return resolved
 
         accept_language = str(request.headers.get("Accept-Language", "")).strip()
         if not accept_language:
+            setattr(self, "_resolved_locale", None)
             return None
-        return accept_language.split(",", 1)[0]
+        resolved = accept_language.split(",", 1)[0]
+        setattr(self, "_resolved_locale", resolved)
+        return resolved
 
     def get_name(self, obj: Product) -> str:
         return get_product_display_name(obj, self._resolve_locale())
@@ -180,7 +188,11 @@ class ProductListSerializer(serializers.ModelSerializer):
         cached = getattr(obj, "_sellable_snapshot", None)
         if cached is not None:
             return cached
-        snapshot = sellable_service.build(product=obj, quantity=1)
+        snapshot = sellable_service.build(
+            product=obj,
+            quantity=1,
+            include_explainability=False,
+        )
         setattr(obj, "_sellable_snapshot", snapshot)
         return snapshot
 
@@ -204,37 +216,18 @@ class ProductListSerializer(serializers.ModelSerializer):
         if not selected_offer_id:
             obj._public_selected_offer = None
             return None
+
+        prefetched_cache = getattr(obj, "_prefetched_objects_cache", {})
+        prefetched_offers = list(prefetched_cache.get("supplier_offers", []) or [])
+        if prefetched_offers:
+            for row in prefetched_offers:
+                if str(getattr(row, "id", "")) == selected_offer_id:
+                    obj._public_selected_offer = row
+                    return row
+
         offer = SupplierOffer.objects.select_related("supplier").filter(id=selected_offer_id).first()
         obj._public_selected_offer = offer
         return offer
-
-    def _selected_raw_offer(self, obj: Product) -> SupplierRawOffer | None:
-        if hasattr(obj, "_public_selected_raw_offer"):
-            return getattr(obj, "_public_selected_raw_offer")
-        selected_offer = self._selected_offer(obj)
-        if selected_offer is None:
-            obj._public_selected_raw_offer = None
-            return None
-        supplier_sku = str(getattr(selected_offer, "supplier_sku", "") or "").strip()
-        raw_offer = (
-            SupplierRawOffer.objects.filter(matched_product=obj, supplier=selected_offer.supplier)
-            .filter(
-                Q(external_sku=supplier_sku)
-                | Q(article=supplier_sku)
-                | Q(external_sku__icontains=supplier_sku)
-                | Q(article__icontains=supplier_sku)
-            )
-            .order_by("-updated_at", "-id")
-            .first()
-        )
-        if raw_offer is None:
-            raw_offer = (
-                SupplierRawOffer.objects.filter(matched_product=obj, supplier=selected_offer.supplier)
-                .order_by("-updated_at", "-id")
-                .first()
-            )
-        obj._public_selected_raw_offer = raw_offer
-        return raw_offer
 
     def get_selected_offer_supplier_code(self, obj: Product) -> str:
         offer = self._selected_offer(obj)
@@ -259,30 +252,10 @@ class ProductListSerializer(serializers.ModelSerializer):
         return int(getattr(offer, "stock_qty", 0) or 0)
 
     def get_selected_offer_raw_article(self, obj: Product) -> str:
-        raw_offer = self._selected_raw_offer(obj)
-        if raw_offer is None:
-            return ""
-        payload = raw_offer.raw_payload if isinstance(raw_offer.raw_payload, dict) else {}
-        return (
-            str(payload.get("Артикул ТД") or "")
-            or str(payload.get("Артикул ТД.") or "")
-            or str(payload.get("manufacturer_article") or "")
-            or str(payload.get("article_td") or "")
-            or str(payload.get("Артикул") or "")
-            or str(payload.get("article") or "")
-            or str(getattr(raw_offer, "article", "") or "")
-        ).strip()
+        return ""
 
     def get_selected_offer_raw_brand(self, obj: Product) -> str:
-        raw_offer = self._selected_raw_offer(obj)
-        if raw_offer is None:
-            return ""
-        payload = raw_offer.raw_payload if isinstance(raw_offer.raw_payload, dict) else {}
-        return (
-            str(payload.get("Бренд") or "")
-            or str(payload.get("brand") or "")
-            or str(getattr(raw_offer, "brand_name", "") or "")
-        ).strip()
+        return ""
 
     def get_is_sellable(self, obj: Product) -> bool:
         return self._snapshot(obj).is_sellable
@@ -291,8 +264,22 @@ class ProductListSerializer(serializers.ModelSerializer):
         return resolve_display_stock_qty(obj)
 
     def _get_link_quality_status(self, obj: Product) -> str:
+        cached = getattr(obj, "_public_link_quality_status", None)
+        if cached is not None:
+            return cached
         article_key = str(getattr(obj, "autodb_article_key", "") or "").strip()
         if not article_key:
+            setattr(obj, "_public_link_quality_status", "")
+            return ""
+        prefetched_cache = getattr(obj, "_prefetched_objects_cache", {})
+        prefetched = list(prefetched_cache.get("autodb_link_qualities", []) or [])
+        if prefetched:
+            for quality in prefetched:
+                if str(getattr(quality, "autodb_article_key", "") or "").strip() == article_key:
+                    status = str(getattr(quality, "status", "") or "")
+                    setattr(obj, "_public_link_quality_status", status)
+                    return status
+            setattr(obj, "_public_link_quality_status", "")
             return ""
         quality = (
             AutoDbProductLinkQuality.objects.filter(product=obj, autodb_article_key=article_key)
@@ -300,7 +287,9 @@ class ProductListSerializer(serializers.ModelSerializer):
             .values_list("status", flat=True)
             .first()
         )
-        return str(quality or "")
+        status = str(quality or "")
+        setattr(obj, "_public_link_quality_status", status)
+        return status
 
     def get_link_quality_status(self, obj: Product) -> str:
         return self._get_link_quality_status(obj)
@@ -309,14 +298,30 @@ class ProductListSerializer(serializers.ModelSerializer):
         return get_vehicle_filter_policy(getattr(obj, "category", None))
 
     def get_fitment_count(self, obj: Product) -> int:
-        return len(set(get_public_autodb_fitment_ids(product=obj, include_commercial=True)))
+        cached = getattr(obj, "_public_fitment_count", None)
+        if cached is not None:
+            return int(cached)
+        if getattr(obj, "has_fitment_data", None) is False:
+            setattr(obj, "_public_fitment_count", 0)
+            return 0
+        count = len(set(get_public_autodb_fitment_ids(product=obj, include_commercial=True)))
+        setattr(obj, "_public_fitment_count", int(count))
+        return int(count)
 
     def get_is_autodb_compatible_data_available(self, obj: Product) -> bool:
         return self.get_fitment_count(obj) > 0
 
-    def get_selected_vehicle_compatibility(self, obj: Product) -> dict | None:
+    def _selected_passanger_car_id(self) -> int | None:
+        cached = getattr(self, "_resolved_selected_passanger_car_id", None)
+        if cached is not None:
+            return int(cached) if cached > 0 else None
         request = self.context.get("request")
         selected_vehicle_id = resolve_selected_passanger_car_id(request)
+        setattr(self, "_resolved_selected_passanger_car_id", int(selected_vehicle_id or 0))
+        return selected_vehicle_id
+
+    def get_selected_vehicle_compatibility(self, obj: Product) -> dict | None:
+        selected_vehicle_id = self._selected_passanger_car_id()
         if not selected_vehicle_id:
             return None
         return {

@@ -34,6 +34,7 @@ class SupplierOfferSelector:
         product: Product,
         quantity: int = 1,
         strategy: str = OfferStrategy.BEST_OFFER,
+        include_explainability: bool = True,
     ) -> OfferSelectionResult:
         requested_strategy = strategy if strategy in OfferStrategy.ALL else OfferStrategy.BEST_OFFER
         candidates = self._load_candidates(product)
@@ -55,7 +56,23 @@ class SupplierOfferSelector:
                 continue
 
             fallback_used = attempt != requested_strategy
-            debug_candidates = [item.to_debug_payload() for item in ordered[:8]]
+            explainability: dict[str, object]
+            if include_explainability:
+                debug_candidates = [item.to_debug_payload() for item in ordered[:8]]
+                explainability = {
+                    "requested_strategy": requested_strategy,
+                    "strategy_applied": attempt,
+                    "fallback_used": fallback_used,
+                    "attempt_chain": attempts,
+                    "candidates_considered": len(strategy_candidates),
+                    "ordered_candidates": debug_candidates,
+                }
+            else:
+                explainability = {
+                    "requested_strategy": requested_strategy,
+                    "strategy_applied": attempt,
+                    "fallback_used": fallback_used,
+                }
 
             return OfferSelectionResult(
                 selected_offer=candidate.offer,
@@ -63,15 +80,25 @@ class SupplierOfferSelector:
                 strategy_applied=attempt,
                 fallback_used=fallback_used,
                 reason=self.STRATEGY_REASON.get(attempt, "Offer strategy selected an available supplier offer."),
-                explainability={
-                    "requested_strategy": requested_strategy,
-                    "strategy_applied": attempt,
-                    "fallback_used": fallback_used,
-                    "attempt_chain": attempts,
-                    "candidates_considered": len(strategy_candidates),
-                    "ordered_candidates": debug_candidates,
-                },
+                explainability=explainability,
             )
+
+        empty_explainability: dict[str, object]
+        if include_explainability:
+            empty_explainability = {
+                "requested_strategy": requested_strategy,
+                "strategy_applied": None,
+                "fallback_used": False,
+                "attempt_chain": attempts,
+                "candidates_considered": 0,
+                "ordered_candidates": [],
+            }
+        else:
+            empty_explainability = {
+                "requested_strategy": requested_strategy,
+                "strategy_applied": None,
+                "fallback_used": False,
+            }
 
         return OfferSelectionResult(
             selected_offer=None,
@@ -79,14 +106,7 @@ class SupplierOfferSelector:
             strategy_applied=None,
             fallback_used=False,
             reason="No valid supplier offer found for this product.",
-            explainability={
-                "requested_strategy": requested_strategy,
-                "strategy_applied": None,
-                "fallback_used": False,
-                "attempt_chain": attempts,
-                "candidates_considered": 0,
-                "ordered_candidates": [],
-            },
+            explainability=empty_explainability,
         )
 
     def _filter_candidates_for_strategy(

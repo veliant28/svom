@@ -1,0 +1,51 @@
+name: Deploy production
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        shell: bash
+        run: |
+          PORT="${{ secrets.PROD_SSH_PORT }}"
+          if [ -z "${PORT}" ]; then PORT="22"; fi
+          HOST="${{ secrets.PROD_SSH_HOST }}"
+          if [ -z "${HOST}" ]; then
+            echo "PROD_SSH_HOST is not set"
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.PROD_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "${PORT}" -H "${HOST}" >> ~/.ssh/known_hosts
+
+      - name: Run remote deploy
+        shell: bash
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
+          PROD_APP_DIR: ${{ secrets.PROD_APP_DIR }}
+          PROD_DEPLOY_BRANCH: ${{ secrets.PROD_DEPLOY_BRANCH }}
+        run: |
+          PORT="${PROD_SSH_PORT:-22}"
+          USER="${PROD_SSH_USER:-deploy}"
+          APP_DIR="${PROD_APP_DIR:-/opt/svom}"
+          DEPLOY_BRANCH="${PROD_DEPLOY_BRANCH:-main}"
+          ssh -p "${PORT}" "${USER}@${PROD_SSH_HOST}" \
+            "APP_DIR='${APP_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' '${APP_DIR}/scripts/deploy/deploy_on_server.sh'"

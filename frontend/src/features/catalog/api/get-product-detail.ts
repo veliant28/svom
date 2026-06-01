@@ -1,4 +1,4 @@
-import { getJson } from "@/shared/api/http-client";
+import { getJson, isApiRequestError } from "@/shared/api/http-client";
 
 import type { CatalogFilters, ProductDetail } from "../types";
 
@@ -8,5 +8,17 @@ type ProductDetailParams = Pick<
 >;
 
 export async function getProductDetail(slug: string, locale?: string, params: ProductDetailParams = {}): Promise<ProductDetail> {
-  return getJson<ProductDetail>(`/catalog/products/${slug}/`, { ...params, locale });
+  const request = () => getJson<ProductDetail>(`/catalog/products/${slug}`, { ...params, locale });
+
+  try {
+    return await request();
+  } catch (error: unknown) {
+    if (isApiRequestError(error) && error.isNetworkError && error.isTimeout) {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 400);
+      });
+      return request();
+    }
+    throw error;
+  }
 }

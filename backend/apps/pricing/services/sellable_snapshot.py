@@ -80,11 +80,13 @@ class ProductSellableSnapshotService:
         product: Product,
         quantity: int = 1,
         strategy: str = OfferStrategy.BEST_OFFER,
+        include_explainability: bool = True,
     ) -> SellableSnapshot:
         selection = self.selector.select_for_product(
             product=product,
             quantity=quantity,
             strategy=strategy,
+            include_explainability=include_explainability,
         )
         availability = self.availability_calculator.calculate(
             product=product,
